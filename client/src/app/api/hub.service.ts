@@ -1,6 +1,7 @@
 import { Injectable, OnDestroy, signal } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { Subject } from 'rxjs';
+import { Capacitor } from '@capacitor/core';
 import { environment } from '../../environments/environment';
 import {
     ItemCreatedEvent,
@@ -35,7 +36,7 @@ export class HubService implements OnDestroy {
     readonly reconnected$ = this._reconnected$.asObservable();
 
     private readonly connection = new signalR.HubConnectionBuilder()
-        .withUrl(environment.hubUrl)
+        .withUrl(Capacitor.isNativePlatform() ? environment.nativeHubUrl : environment.hubUrl)
         .withAutomaticReconnect()
         .build();
 

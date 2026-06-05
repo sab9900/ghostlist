@@ -10,12 +10,15 @@ import {
     ShareDelivery,
     UpdateTtlRequest,
 } from '../core/models';
+import { Capacitor } from '@capacitor/core';
 import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
     private readonly http = inject(HttpClient);
-    private readonly BASE = environment.apiBaseUrl;
+    private readonly BASE = Capacitor.isNativePlatform()
+        ? environment.nativeApiBaseUrl
+        : environment.apiBaseUrl;
 
     createList(): Observable<string> {
         return this.http.post<string>(`${this.BASE}/ghostlist`, null);
