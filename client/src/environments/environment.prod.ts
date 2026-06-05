@@ -2,6 +2,6 @@ export const environment = {
     production: true,
     apiBaseUrl: '/api',
     hubUrl: '/hubs/ghostlist',
-    nativeApiBaseUrl: 'https://ghostlist.deine-domain.de/api',
-    nativeHubUrl: 'https://ghostlist.deine-domain.de/hubs/ghostlist',
+    nativeApiBaseUrl: 'http://192.168.10.53/api',
+    nativeHubUrl: 'http://192.168.10.53/hubs/ghostlist',
 };
