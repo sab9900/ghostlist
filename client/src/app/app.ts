@@ -3,6 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
 import { Capacitor } from '@capacitor/core';
+import { Keyboard } from '@capacitor/keyboard';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { LayoutService } from './core/services/layout.service';
 import { ListsComponent } from './features/lists/lists.component';
@@ -37,13 +38,12 @@ export class App {
         if (Capacitor.isNativePlatform()) {
             StatusBar.setStyle({ style: Style.Default }).catch(() => {});
 
-            const vv = window.visualViewport;
-            if (vv) {
-                vv.addEventListener('resize', () => {
-                    const kh = Math.max(0, window.innerHeight - vv.height);
-                    document.documentElement.style.setProperty('--keyboard-height', `${kh}px`);
-                });
-            }
+            Keyboard.addListener('keyboardWillShow', ({ keyboardHeight }) => {
+                document.documentElement.style.setProperty('--keyboard-height', `${keyboardHeight}px`);
+            });
+            Keyboard.addListener('keyboardWillHide', () => {
+                document.documentElement.style.setProperty('--keyboard-height', '0px');
+            });
         }
     }
 

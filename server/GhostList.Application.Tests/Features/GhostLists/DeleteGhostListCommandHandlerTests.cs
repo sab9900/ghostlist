@@ -1,14 +1,19 @@
 using FluentAssertions;
 using GhostList.Application.Common.Exceptions;
+using GhostList.Application.Common.Interfaces;
 using GhostList.Application.Features.GhostLists.Commands.DeleteGhostList;
 using GhostList.Application.Tests.Helpers;
 using GhostList.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using NSubstitute;
 
 namespace GhostList.Application.Tests.Features.GhostLists;
 
 public class DeleteGhostListCommandHandlerTests
 {
+    private static DeleteGhostListCommandHandler CreateHandler(IApplicationDbContext context)
+        => new(context, Substitute.For<IGhostListNotifier>());
+
     [Fact]
     public async Task Handle_ExistingList_DeletesListAndCascadedEntities()
     {
@@ -21,8 +26,7 @@ public class DeleteGhostListCommandHandlerTests
         context.GhostChatMessages.Add(msg);
         await context.SaveChangesAsync();
 
-        var handler = new DeleteGhostListCommandHandler(context);
-        await handler.Handle(new DeleteGhostListCommand(list.Id), CancellationToken.None);
+        await CreateHandler(context).Handle(new DeleteGhostListCommand(list.Id), CancellationToken.None);
 
         (await context.GhostLists.AnyAsync(l => l.Id == list.Id)).Should().BeFalse();
         (await context.GhostListItems.AnyAsync(i => i.GhostListId == list.Id)).Should().BeFalse();
@@ -33,9 +37,8 @@ public class DeleteGhostListCommandHandlerTests
     public async Task Handle_NonExistentList_ThrowsNotFoundException()
     {
         await using var context = DbContextFactory.Create();
-        var handler = new DeleteGhostListCommandHandler(context);
 
-        var act = () => handler.Handle(new DeleteGhostListCommand(Guid.NewGuid()), CancellationToken.None);
+        var act = () => CreateHandler(context).Handle(new DeleteGhostListCommand(Guid.NewGuid()), CancellationToken.None);
 
         await act.Should().ThrowAsync<NotFoundException>();
     }
