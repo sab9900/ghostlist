@@ -9,8 +9,6 @@ services:
 
   client:
     image: ghcr.io/sab9900/ghostlist-client:latest
-    ports:
-      - "80:80"
     depends_on:
       - server
     restart: unless-stopped
