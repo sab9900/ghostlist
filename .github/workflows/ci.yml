@@ -75,12 +75,3 @@ jobs:
           docker build -f client/Dockerfile -t ${{ env.CLIENT_IMAGE }}:latest .
           docker push ${{ env.CLIENT_IMAGE }}:latest
 
-  deploy:
-    name: Deploy to Coolify
-    runs-on: ubuntu-latest
-    needs: [publish]
-    steps:
-      - name: Trigger Coolify deploy
-        run: |
-          curl --silent --show-error --fail \
-            -X GET "${{ secrets.COOLIFY_WEBHOOK_URL }}"
