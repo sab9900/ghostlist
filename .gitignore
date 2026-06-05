@@ -1,0 +1,50 @@
+# ─── .NET ────────────────────────────────────────────────────────────────────
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+.vs/
+_ReSharper*/
+*.DotSettings.user
+project.lock.json
+project.fragment.lock.json
+artifacts/
+# Publish output (not the Migrations folder)
+server/**/publish/
+
+# ─── Node / Angular ──────────────────────────────────────────────────────────
+node_modules/
+/client/dist/
+/client/tmp/
+/client/.angular/
+npm-debug.log
+yarn-error.log
+.sass-cache/
+/client/coverage/
+__screenshots__/
+
+# ─── Docker ──────────────────────────────────────────────────────────────────
+docker-compose.override.yml
+.env
+.env.*
+!.env.example
+
+# ─── ASP.NET secrets ─────────────────────────────────────────────────────────
+appsettings.*.json
+
+# ─── IDE / OS ─────────────────────────────────────────────────────────────────
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/mcp.json
+*.DS_Store
+Thumbs.db

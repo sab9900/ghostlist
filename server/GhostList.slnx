@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="GhostList.Application/GhostList.Application.csproj" />
+  <Project Path="GhostList.Domain/GhostList.Domain.csproj" />
+  <Project Path="GhostList.Infrastructure/GhostList.Infrastructure.csproj" />
+  <Project Path="GhostList.WebApi/GhostList.WebApi.csproj" />
+</Solution>
