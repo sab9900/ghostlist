@@ -1,0 +1,16 @@
+services:
+  server:
+    image: ghcr.io/sab9900/ghostlist-server:latest
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "${DB_CONNECTION_STRING}"
+    restart: unless-stopped
+
+  client:
+    image: ghcr.io/sab9900/ghostlist-client:latest
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+    restart: unless-stopped
