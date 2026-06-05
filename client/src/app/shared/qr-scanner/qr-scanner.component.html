@@ -1,0 +1,22 @@
+<div class="scanner-viewport" [class.scanner-viewport--hidden]="state() !== 'scanning'" role="region"
+    aria-label="Camera viewfinder — point at QR code">
+    <video #video class="scanner-video" autoplay playsinline muted aria-hidden="true"></video>
+    <div class="scanner-overlay" aria-hidden="true">
+        <div class="scanner-frame"></div>
+    </div>
+    <p class="scanner-hint" role="status">Point camera at the QR code</p>
+</div>
+
+@if (state() === 'starting') {
+<div class="scanner-state" role="status" aria-live="polite" aria-label="Starting camera">
+    <div class="spinner" aria-hidden="true"></div>
+    <p class="scanner-state__text">Starting camera…</p>
+</div>
+}
+
+@if (state() === 'error') {
+<div class="scanner-state scanner-state--error" role="alert">
+    <span class="scanner-state__icon" aria-hidden="true">⚠</span>
+    <p class="scanner-state__text">{{ errorMsg() }}</p>
+</div>
+}

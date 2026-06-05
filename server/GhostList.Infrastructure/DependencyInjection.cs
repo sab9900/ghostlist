@@ -19,10 +19,6 @@ public static class DependencyInjection
         return services;
     }
 
-    /// <summary>
-    /// Applies any pending EF Core migrations on startup.
-    /// Call this after app.Build() and before app.Run().
-    /// </summary>
     public static async Task MigrateDatabaseAsync(this IServiceProvider services)
     {
         await using var scope = services.CreateAsyncScope();

@@ -47,11 +47,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         });
     }
 
-    /// <inheritdoc />
     public async Task<int> DeleteExpiredCheckedItemsAsync(CancellationToken cancellationToken)
     {
-        // Single DELETE … USING query — no entities loaded into memory.
-        // PostgreSQL interval syntax: CompletedItemsTtl holds hours as integer.
+
         return await Database.ExecuteSqlRawAsync(
             """
             DELETE FROM "GhostListItems" i

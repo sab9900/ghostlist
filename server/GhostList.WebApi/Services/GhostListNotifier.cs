@@ -24,4 +24,7 @@ public class GhostListNotifier(IHubContext<GhostListHub> hubContext) : IGhostLis
 
     public Task NotifyTtlUpdated(Guid listId, int newTtl) =>
         hubContext.Clients.Group(listId.ToString()).SendAsync("TtlUpdated", newTtl);
+
+    public Task NotifyListDeleted(Guid listId) =>
+        hubContext.Clients.Group(listId.ToString()).SendAsync("ListDeleted", listId);
 }

@@ -10,4 +10,5 @@ public interface IGhostListNotifier
     Task NotifyMessageCreated(Guid listId, MessageCreatedNotification notification);
     Task NotifyMessageDeleted(Guid listId, Guid messageId);
     Task NotifyTtlUpdated(Guid listId, int newTtl);
+    Task NotifyListDeleted(Guid listId);
 }

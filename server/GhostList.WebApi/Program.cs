@@ -14,6 +14,24 @@ builder.Services.AddOpenApi(options =>
     options.AddDocumentTransformer((document, context, cancellationToken) => Task.CompletedTask);
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("DevClient", policy =>
+        policy
+            .WithOrigins("http://localhost:4200", "capacitor://localhost", "ionic://localhost")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials());
+
+    options.AddPolicy("AppClient", policy =>
+        policy
+            .WithOrigins("capacitor://localhost", "ionic://localhost")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials());
+});
+
+builder.Services.AddRouting(options => options.LowercaseUrls = true);
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddControllers()
@@ -21,6 +39,7 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
+builder.Services.AddMemoryCache();
 builder.Services.AddSignalR();
 builder.Services.AddScoped<IGhostListNotifier, GhostListNotifier>();
 builder.Services.AddHostedService<GhostListCleanupWorker>();
@@ -33,11 +52,16 @@ app.UseMiddleware<ExceptionHandlerMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
+    app.UseCors("DevClient");
     app.MapOpenApi();
     app.MapScalarApiReference();
 }
+else
+{
+    app.UseCors("AppClient");
+    app.UseHttpsRedirection();
+}
 
-app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();

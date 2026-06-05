@@ -1,0 +1,95 @@
+@if (layout.isDesktop()) {
+
+<div class="screen screen--desktop">
+
+    <header class="header" role="banner">
+        <h1 class="header__title truncate">{{ listName() }}</h1>
+        <button class="header__settings-btn" (click)="settingsOpen.set(true)" aria-label="Open settings"
+            aria-haspopup="dialog">⚙</button>
+    </header>
+
+    <div class="desktop-body" [class.desktop-body--resizing]="paneResizing()">
+
+        <section class="desktop-pane desktop-pane--items" [style.width]="paneWidth() + '%'" aria-label="Items">
+            <app-items-tab />
+        </section>
+
+        <div class="pane-resizer" [class.pane-resizer--active]="paneResizing()" (mousedown)="onPaneResizeStart($event)"
+            role="separator" aria-orientation="vertical" aria-label="Resize panels" tabindex="0">
+        </div>
+
+        <section class="desktop-pane desktop-pane--chat" aria-label="Chat">
+            <app-chat-tab />
+        </section>
+
+    </div>
+
+    @if (settingsOpen()) {
+    <div class="drawer-backdrop" [class.drawer-backdrop--closing]="drawerClosing()" (click)="closeDrawer()"
+        role="presentation" aria-hidden="true"></div>
+    <aside class="settings-drawer" [class.settings-drawer--closing]="drawerClosing()" role="dialog" aria-modal="true"
+        aria-label="List settings">
+        <div class="settings-drawer__header">
+            <span class="settings-drawer__title">Settings</span>
+            <button class="settings-drawer__close" (click)="closeDrawer()" aria-label="Close settings">×</button>
+        </div>
+        <div class="settings-drawer__body">
+            <app-settings-tab />
+        </div>
+    </aside>
+    }
+
+</div>
+
+} @else {
+
+<div class="screen">
+
+    <header class="header" role="banner">
+        <button class="header__back" (click)="goBack()" aria-label="Back to lists">‹</button>
+        <h1 class="header__title truncate">{{ listName() }}</h1>
+    </header>
+
+    <nav class="tabs" role="tablist" aria-label="List sections">
+        <button class="tabs__tab" [class.tabs__tab--active]="activeTab() === 'items'" role="tab"
+            [attr.aria-selected]="activeTab() === 'items'" id="tab-items" [attr.aria-controls]="'panel-items'"
+            (click)="setTab('items')">
+            Items
+            @if (unreadItems() > 0 && activeTab() !== 'items') {
+            <app-badge [count]="unreadItems()" aria-hidden="true" />
+            }
+        </button>
+        <button class="tabs__tab" [class.tabs__tab--active]="activeTab() === 'chat'" role="tab"
+            [attr.aria-selected]="activeTab() === 'chat'" id="tab-chat" [attr.aria-controls]="'panel-chat'"
+            (click)="setTab('chat')">
+            Chat
+            @if (unreadMessages() > 0 && activeTab() !== 'chat') {
+            <app-badge [count]="unreadMessages()" aria-hidden="true" />
+            }
+        </button>
+        <button class="tabs__tab" [class.tabs__tab--active]="activeTab() === 'settings'" role="tab"
+            [attr.aria-selected]="activeTab() === 'settings'" id="tab-settings" [attr.aria-controls]="'panel-settings'"
+            (click)="setTab('settings')">
+            Settings
+        </button>
+    </nav>
+
+    @if (activeTab() === 'items') {
+    <div class="tab-pane" role="tabpanel" id="panel-items" aria-labelledby="tab-items">
+        <app-items-tab />
+    </div>
+    }
+    @if (activeTab() === 'chat') {
+    <div class="tab-pane" role="tabpanel" id="panel-chat" aria-labelledby="tab-chat">
+        <app-chat-tab />
+    </div>
+    }
+    @if (activeTab() === 'settings') {
+    <div class="tab-pane tab-pane--scroll" role="tabpanel" id="panel-settings" aria-labelledby="tab-settings">
+        <app-settings-tab />
+    </div>
+    }
+
+</div>
+
+}

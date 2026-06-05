@@ -19,6 +19,13 @@ public class GhostListController(IMediator mediator) : ControllerBase
         return Ok(listId);
     }
 
+    [HttpHead("{id:guid}")]
+    public async Task<ActionResult> Exists(Guid id)
+    {
+        var result = await mediator.Send(new GetGhostListByIdQuery(id));
+        return result == null ? NotFound() : Ok();
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<GhostListDto>> GetById(Guid id)
     {

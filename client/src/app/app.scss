@@ -1,0 +1,79 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.desktop {
+  display: flex;
+  height: 100%;
+  background: var(--color-bg);
+  overflow: hidden;
+
+  &--resizing {
+    cursor: col-resize;
+
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  &__sidebar {
+    flex-shrink: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__resizer {
+    width: 4px;
+    flex-shrink: 0;
+    cursor: col-resize;
+    background: var(--color-border);
+    transition: background var(--duration-fast) var(--ease-out);
+    position: relative;
+    outline: none;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0 -4px;
+    }
+
+    &:hover,
+    &--active {
+      background: var(--color-primary);
+    }
+  }
+
+  &__main {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  &__empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-subtle);
+    font-size: var(--text-sm);
+    pointer-events: none;
+  }
+
+  &__outlet {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    &--hidden {
+      display: none;
+    }
+  }
+}

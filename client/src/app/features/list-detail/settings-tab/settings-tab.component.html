@@ -1,0 +1,84 @@
+<section class="settings-section" aria-labelledby="ttl-heading">
+    <h3 class="settings-section__title" id="ttl-heading">Auto-delete checked items</h3>
+    <p class="settings-section__hint" id="ttl-hint">Checked items are removed after this duration.</p>
+    <div class="settings-row">
+        <select class="settings-select" [ngModel]="selectedTtl()" (ngModelChange)="selectedTtl.set($event)"
+            aria-labelledby="ttl-heading" aria-describedby="ttl-hint">
+            @for (opt of ttlOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+            }
+        </select>
+        <button class="btn btn--primary btn--sm" (click)="saveTtl()" [disabled]="savingTtl()"
+            [attr.aria-busy]="savingTtl()">
+            {{ savingTtl() ? 'Saving…' : 'Save' }}
+        </button>
+    </div>
+</section>
+
+<section class="settings-section" aria-labelledby="share-heading">
+    <h3 class="settings-section__title" id="share-heading">Share this list</h3>
+
+    <div class="share-option">
+        <p class="settings-section__hint">Copy a link and send it via any channel.</p>
+        <button class="btn btn--primary btn--sm" (click)="copyShareLink()"
+            [attr.aria-label]="linkCopied() ? 'Link copied' : 'Copy share link'">
+            {{ linkCopied() ? '✓ Copied!' : 'Copy share link' }}
+        </button>
+    </div>
+
+    <div class="share-option">
+        <p class="settings-section__hint" id="share-hint">
+            Or: the other device taps "Import list" and shows a QR code — point your camera at it.
+        </p>
+
+        @if (shareStep() === 'idle') {
+        <button class="btn btn--primary btn--sm" (click)="startShare()" aria-describedby="share-hint">Scan QR
+            code</button>
+        }
+
+        @if (shareStep() === 'scan') {
+        <div class="share-scan" role="region" aria-label="Scan QR code from other device">
+            <app-qr-scanner (detected)="onQrDetected($event)" />
+            <div class="share-scan__actions">
+                <button class="btn btn--ghost btn--sm" (click)="cancelShare()">Cancel</button>
+            </div>
+        </div>
+        }
+
+        @if (shareStep() === 'done') {
+        <p class="share-status share-status--ok" role="status" aria-live="polite">
+            ✓ Key sent — the other device will open the list automatically.
+        </p>
+        <button class="btn btn--ghost btn--sm" (click)="shareStep.set('idle')">Share again</button>
+        }
+
+        @if (shareStep() === 'error') {
+        <p class="share-status share-status--err" role="alert">
+            Could not read QR code. Make sure you're scanning the correct screen.
+        </p>
+        <button class="btn btn--ghost btn--sm" (click)="shareStep.set('scan')">Try again</button>
+        }
+    </div>
+</section>
+
+<section class="settings-section settings-section--danger" aria-labelledby="danger-heading">
+    <h3 class="settings-section__title settings-section__title--danger" id="danger-heading">Danger zone</h3>
+    <div class="danger-row">
+        <div>
+            <p class="danger-label" id="forget-label">Remove from this device</p>
+            <p class="danger-hint" id="forget-hint">Other devices keep access.</p>
+        </div>
+        <button class="btn btn--danger btn--sm" (click)="forgetList()" aria-labelledby="forget-label"
+            aria-describedby="forget-hint">Forget</button>
+    </div>
+    <div class="danger-row">
+        <div>
+            <p class="danger-label" id="delete-label">Delete for everyone</p>
+            <p class="danger-hint" id="delete-hint">Permanently deletes from server.</p>
+        </div>
+        <button class="btn btn--danger btn--sm" (click)="deleteList()" [disabled]="deletingList()"
+            [attr.aria-busy]="deletingList()" aria-labelledby="delete-label" aria-describedby="delete-hint">
+            {{ deletingList() ? 'Deleting…' : 'Delete' }}
+        </button>
+    </div>
+</section>

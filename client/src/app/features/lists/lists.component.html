@@ -1,0 +1,99 @@
+<div class="screen" role="main">
+
+    <header class="header" role="banner">
+        <img class="header__logo" src="/ghost-header.svg" alt="" aria-hidden="true" />
+        <h1 class="header__title">Ghost List</h1>
+        <div class="header__actions">
+            @if (totalUnread() > 0) {
+            <app-badge [count]="totalUnread()" role="status" [attr.aria-label]="totalUnread() + ' unread messages'" />
+            }
+            <button class="header__import" (click)="openImportDialog()" aria-label="Import list from another device">
+                <span aria-hidden="true">⬇</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="content">
+
+        @if (lists().length === 0) {
+        <div class="empty" role="status" aria-live="polite">
+            <p class="empty__headline">No lists yet</p>
+            <p class="empty__sub">Tap + to create one, or ⬇ to import from another device.</p>
+        </div>
+        }
+
+        <ul class="card-list" role="list" aria-label="Your lists">
+            @for (list of lists(); track list.id) {
+            <li class="card" (click)="openList(list.id)" role="button" tabindex="0"
+                [class.card--active]="activeListId() === list.id"
+                [attr.aria-current]="activeListId() === list.id ? 'true' : null"
+                [attr.aria-label]="list.name + (unreadFor(list.id) > 0 ? ', ' + unreadFor(list.id) + ' unread' : '')"
+                (keydown.enter)="openList(list.id)" (keydown.space)="openList(list.id)">
+                <div class="card__body" aria-hidden="true">
+                    <span class="card__name truncate">{{ list.name }}</span>
+                    <span class="card__date">{{ list.addedAt | date:'d MMM yyyy' }}</span>
+                </div>
+                @if (unreadFor(list.id) > 0) {
+                <app-badge [count]="unreadFor(list.id)" aria-hidden="true" />
+                }
+                <span class="card__arrow" aria-hidden="true">›</span>
+            </li>
+            }
+        </ul>
+
+    </main>
+
+    <button class="fab" (click)="openCreateDialog()" aria-label="Create new list">
+        <span aria-hidden="true">+</span>
+    </button>
+
+    @if (showCreateDialog()) {
+    <div class="dialog-backdrop" (click)="closeCreateDialog()" role="presentation">
+        <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+            aria-labelledby="create-dialog-title">
+            <h2 class="dialog__title" id="create-dialog-title">New list</h2>
+            <input #createInput class="dialog__input" type="text" placeholder="List name…" [(ngModel)]="newListName"
+                (keydown.enter)="createList()" maxlength="60" aria-label="List name" aria-required="true" />
+            <div class="dialog__actions">
+                <button class="btn btn--ghost" (click)="closeCreateDialog()" [disabled]="creating()">Cancel</button>
+                <button class="btn btn--primary" (click)="createList()" [disabled]="!newListName().trim() || creating()"
+                    [attr.aria-busy]="creating()">
+                    {{ creating() ? 'Creating…' : 'Create' }}
+                </button>
+            </div>
+        </div>
+    </div>
+    }
+
+    @if (showImportDialog()) {
+    <div class="dialog-backdrop" (click)="closeImportDialog()" role="presentation">
+        <div class="dialog dialog--import" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+            aria-labelledby="import-dialog-title" aria-describedby="import-dialog-hint">
+            <h2 class="dialog__title" id="import-dialog-title">Import list</h2>
+            <p class="dialog__hint" id="import-dialog-hint">
+                Ask the sender to open the list's Settings tab and scan this code.
+            </p>
+
+            <div class="dialog__qr" role="img" aria-label="QR code for receiving this list">
+                @if (importQrData()) {
+                <app-qr-code [data]="importQrData()!" [size]="200" />
+                } @else {
+                <div class="dialog__qr-loading" role="status" aria-live="polite">Generating…</div>
+                }
+            </div>
+
+            <label class="dialog__label" for="import-name-input">Name for this list</label>
+            <input class="dialog__input" id="import-name-input" type="text" placeholder="e.g. Shopping, Backlog…"
+                [(ngModel)]="importName" maxlength="60" aria-required="true" />
+            <p class="dialog__hint dialog__hint--sm" aria-live="polite">
+                Enter a name, then wait — the list will open automatically once received.
+            </p>
+
+            <div class="dialog__actions">
+                <button class="btn btn--ghost" (click)="closeImportDialog()">Cancel</button>
+            </div>
+        </div>
+    </div>
+    }
+
+</div>

@@ -1,0 +1,65 @@
+<ul class="message-list" #messageList role="log" aria-label="Chat messages" aria-live="polite"
+    aria-relevant="additions">
+
+    @if (decryptedMessages().length === 0) {
+    <li class="empty-hint" role="status">No messages yet.</li>
+    }
+
+    @for (msg of decryptedMessages(); track msg.id; let i = $index) {
+    @if (i === firstUnreadIndex()) {
+    <li class="unread-divider" role="separator" aria-label="New messages">
+        <span>New messages</span>
+    </li>
+    }
+    <li class="message" role="article" [class.message--mine]="msg.senderName === (prefs.senderName() || 'Anonymous')"
+        [attr.aria-label]="msg.senderName + ': ' + msg.text">
+        <div class="message__bubble">
+            <p class="message__text">{{ msg.text }}</p>
+            <div class="message__meta">
+                <span class="message__sender">{{ msg.senderName }}</span>
+                <span class="message__time">{{ msg.createdAt | date:'HH:mm' }}</span>
+                @if (msg.senderName === (prefs.senderName() || 'Anonymous')) {
+                <button class="message__delete" (click)="deleteMessage(msg.id)" aria-label="Delete message">×</button>
+                }
+            </div>
+        </div>
+    </li>
+    }
+
+</ul>
+
+<div class="compose" role="form" aria-label="Send a message">
+    <div class="compose__name-row">
+        <span class="compose__name-label" [attr.aria-label]="'Sending as ' + (prefs.senderName() || 'Anonymous')">
+            {{ prefs.senderName() || 'Anonymous' }}
+        </span>
+        <button class="compose__name-edit" (click)="openNameDialog()" aria-label="Edit your display name">Edit
+            name</button>
+    </div>
+    <div class="compose__row">
+        <input class="compose__input" type="text" placeholder="Message…" [ngModel]="newMessageText()"
+            (ngModelChange)="newMessageText.set($event)" (keydown.enter)="sendMessage()" maxlength="2000"
+            aria-label="Message text" />
+        <button class="compose__send" (click)="sendMessage()" [disabled]="!newMessageText().trim() || sendingMessage()"
+            aria-label="Send message" [attr.aria-busy]="sendingMessage()">›</button>
+    </div>
+</div>
+
+@if (showNameDialog()) {
+<div class="dialog-backdrop" (click)="skipNameDialog()" role="presentation">
+    <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+        aria-labelledby="name-dialog-title" aria-describedby="name-dialog-hint">
+        <h2 class="dialog__title" id="name-dialog-title">Your display name</h2>
+        <p class="dialog__hint" id="name-dialog-hint">
+            Used as your sender name in chat. Stored only on this device.
+        </p>
+        <input class="dialog__input" type="text" placeholder="e.g. Simon" [ngModel]="pendingName()"
+            (ngModelChange)="pendingName.set($event)" (keydown.enter)="saveSenderName()" maxlength="40" autofocus
+            aria-label="Display name" aria-required="true" />
+        <div class="dialog__actions">
+            <button class="btn btn--ghost" (click)="skipNameDialog()">Skip</button>
+            <button class="btn btn--primary" (click)="saveSenderName()" [disabled]="!pendingName().trim()">Save</button>
+        </div>
+    </div>
+</div>
+}

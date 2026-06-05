@@ -11,10 +11,12 @@ public record DeleteGhostListCommand(Guid ListId) : IRequest;
 public class DeleteGhostListCommandHandler : IRequestHandler<DeleteGhostListCommand>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IGhostListNotifier _notifier;
 
-    public DeleteGhostListCommandHandler(IApplicationDbContext context)
+    public DeleteGhostListCommandHandler(IApplicationDbContext context, IGhostListNotifier notifier)
     {
         _context = context;
+        _notifier = notifier;
     }
 
     public async Task Handle(DeleteGhostListCommand request, CancellationToken cancellationToken)
@@ -30,5 +32,7 @@ public class DeleteGhostListCommandHandler : IRequestHandler<DeleteGhostListComm
         _context.GhostLists.Remove(list);
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        await _notifier.NotifyListDeleted(request.ListId);
     }
 }

@@ -1,0 +1,13 @@
+.qr-wrap {
+  display: inline-flex;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface-2);
+  padding: var(--space-3);
+
+  img,
+  canvas {
+    display: block;
+    border-radius: var(--radius-sm);
+  }
+}

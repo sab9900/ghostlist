@@ -39,6 +39,10 @@ testem.log
 /typings
 __screenshots__/
 
+# Capacitor native projects
+/ios
+/android
+
 # System files
 .DS_Store
 Thumbs.db

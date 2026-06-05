@@ -1,0 +1,28 @@
+@if (layout.isDesktop()) {
+
+<div class="desktop" [class.desktop--resizing]="resizing()">
+    <aside class="desktop__sidebar" [style.width.px]="sidebarWidth()">
+        <app-lists />
+    </aside>
+    <div class="desktop__resizer" [class.desktop__resizer--active]="resizing()" (mousedown)="onResizeStart($event)"
+        role="separator" aria-orientation="vertical" aria-label="Resize sidebar" tabindex="0">
+    </div>
+    <main class="desktop__main">
+
+        @if (!showDetail()) {
+        <div class="desktop__empty" role="status">
+            <p>Select a list to get started</p>
+        </div>
+        }
+
+        <div class="desktop__outlet" [class.desktop__outlet--hidden]="!showDetail()">
+            <router-outlet />
+        </div>
+    </main>
+</div>
+
+} @else {
+
+<router-outlet />
+
+}

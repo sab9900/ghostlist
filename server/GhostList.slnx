@@ -3,4 +3,6 @@
   <Project Path="GhostList.Domain/GhostList.Domain.csproj" />
   <Project Path="GhostList.Infrastructure/GhostList.Infrastructure.csproj" />
   <Project Path="GhostList.WebApi/GhostList.WebApi.csproj" />
+  <Project Path="GhostList.Domain.Tests/GhostList.Domain.Tests.csproj" />
+  <Project Path="GhostList.Application.Tests/GhostList.Application.Tests.csproj" />
 </Solution>

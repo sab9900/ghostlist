@@ -1,0 +1,45 @@
+<div class="screen" role="main">
+
+    <header class="header" role="banner">
+        <button class="header__back" (click)="goHome()" aria-label="Back to lists">‹</button>
+        <h1 class="header__title">Import list</h1>
+    </header>
+
+    <div class="content">
+
+        @if (state() === 'prompt') {
+        <div class="card" role="region" aria-labelledby="join-heading">
+            <span class="card__icon" aria-hidden="true">👻</span>
+            <h2 class="card__title" id="join-heading">You were invited</h2>
+            <p class="card__hint">Give this list a name on your device, then tap Import.</p>
+            <input class="input" type="text" placeholder="e.g. Shopping, Backlog…" [ngModel]="listName()"
+                (ngModelChange)="listName.set($event)" (keydown.enter)="importList()" maxlength="60" autofocus
+                aria-label="Name for this list" aria-required="true" />
+            <div class="actions">
+                <button class="btn btn--ghost" (click)="goHome()">Cancel</button>
+                <button class="btn btn--primary" (click)="importList()" [disabled]="!listName().trim()">Import</button>
+            </div>
+        </div>
+        }
+
+        @if (state() === 'importing') {
+        <div class="card card--loading" role="status" aria-live="polite" aria-label="Importing list">
+            <div class="spinner" aria-hidden="true"></div>
+            <p class="card__hint">Importing…</p>
+        </div>
+        }
+
+        @if (state() === 'error') {
+        <div class="card card--error" role="alert" aria-labelledby="error-heading">
+            <span class="card__icon" aria-hidden="true">⚠</span>
+            <h2 class="card__title" id="error-heading">Something went wrong</h2>
+            <p class="card__hint">{{ errorMsg() }}</p>
+            <div class="actions">
+                <button class="btn btn--primary" (click)="goHome()">Go to lists</button>
+            </div>
+        </div>
+        }
+
+    </div>
+
+</div>

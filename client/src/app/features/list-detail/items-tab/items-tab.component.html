@@ -1,0 +1,40 @@
+<div class="add-bar" role="search" aria-label="Add item">
+    <input class="add-bar__input" type="text" placeholder="Add item…" [ngModel]="newItemText()"
+        (ngModelChange)="newItemText.set($event)" (keydown.enter)="addItem()" maxlength="500"
+        aria-label="New item text" />
+    <button class="add-bar__btn" (click)="addItem()" [disabled]="!newItemText().trim() || addingItem()"
+        aria-label="Add item" [attr.aria-busy]="addingItem()">+</button>
+</div>
+
+<ul class="item-list" role="list" aria-label="Active items" aria-live="polite" aria-relevant="additions removals">
+
+    @for (item of activeItems(); track item.id) {
+    <li class="item" (click)="toggleItem(item.id)" (keydown.enter)="toggleItem(item.id)"
+        (keydown.space)="$event.preventDefault(); toggleItem(item.id)" tabindex="0" role="button"
+        [attr.aria-label]="'Mark as done: ' + item.text" aria-pressed="false">
+        <span class="item__check" aria-hidden="true"></span>
+        <span class="item__text">{{ item.text }}</span>
+        <button class="item__delete" (click)="$event.stopPropagation(); deleteItem(item.id)"
+            [attr.aria-label]="'Delete: ' + item.text" tabindex="-1">×</button>
+    </li>
+    }
+
+    @if (checkedItems().length > 0) {
+    <li class="section-label" role="separator">Done ({{ checkedItems().length }})</li>
+    @for (item of checkedItems(); track item.id) {
+    <li class="item item--checked" (click)="toggleItem(item.id)" (keydown.enter)="toggleItem(item.id)"
+        (keydown.space)="$event.preventDefault(); toggleItem(item.id)" tabindex="0" role="button"
+        [attr.aria-label]="'Mark as not done: ' + item.text" aria-pressed="true">
+        <span class="item__check item__check--checked" aria-hidden="true">✓</span>
+        <span class="item__text item__text--checked">{{ item.text }}</span>
+        <button class="item__delete" (click)="$event.stopPropagation(); deleteItem(item.id)"
+            [attr.aria-label]="'Delete: ' + item.text" tabindex="-1">×</button>
+    </li>
+    }
+    }
+
+    @if (activeItems().length === 0 && checkedItems().length === 0) {
+    <li class="empty-hint" role="status">Add your first item above.</li>
+    }
+
+</ul>
