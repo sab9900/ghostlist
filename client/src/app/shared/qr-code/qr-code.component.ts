@@ -43,8 +43,8 @@ export class QrCodeComponent implements AfterViewInit, OnChanges, OnDestroy {
             text: this.data,
             width: this.size,
             height: this.size,
-            colorDark: '#ffffff',
-            colorLight: '#1a1a1e',
+            colorDark: '#000000',
+            colorLight: '#ffffff',
             correctLevel: (QRCode as any).CorrectLevel?.M ?? 1,
         });
     }
