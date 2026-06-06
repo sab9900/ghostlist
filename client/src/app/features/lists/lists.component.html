@@ -8,7 +8,11 @@
             <app-badge [count]="totalUnread()" role="status" [attr.aria-label]="totalUnread() + ' unread messages'" />
             }
             <button class="header__import" (click)="openImportDialog()" aria-label="Import list from another device">
-                <span aria-hidden="true">⬇</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
             </button>
         </div>
     </header>
@@ -18,7 +22,7 @@
         @if (lists().length === 0) {
         <div class="empty" role="status" aria-live="polite">
             <p class="empty__headline">No lists yet</p>
-            <p class="empty__sub">Tap + to create one, or ⬇ to import from another device.</p>
+            <p class="empty__sub">Tap + to create one, or the import button to receive from another device.</p>
         </div>
         }
 
