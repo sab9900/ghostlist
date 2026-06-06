@@ -1,7 +1,7 @@
 import { Component, computed, inject, OnDestroy, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { filter, from, of, switchMap } from 'rxjs';
+import { filter, from, of, switchMap, take } from 'rxjs';
 import { HubService } from '../../api/hub.service';
 import { LayoutService } from '../../core/services/layout.service';
 import { SeenService } from '../../core/services/seen.service';
@@ -77,20 +77,26 @@ export class ListDetailComponent implements OnDestroy {
 
     constructor() {
 
+        const listsLoaded$ = toObservable(this.store.listsLoaded).pipe(filter(v => v));
+
         this.route.paramMap.pipe(
             takeUntilDestroyed(),
             switchMap(params => {
                 const id = params.get('id')!;
-                const known = this.store.knownLists().find(l => l.id === id);
-                if (!known) {
-                    this.router.navigate(['/']);
-                    return of(null);
-                }
-
-                return from(
-                    this.store.leaveCurrentList()
-                        .then(() => this.store.joinList(id, known.encryptionKey))
-                        .then(() => { this.seen.markItemsSeen(id); })
+                return listsLoaded$.pipe(
+                    take(1),
+                    switchMap(() => {
+                        const known = this.store.knownLists().find(l => l.id === id);
+                        if (!known) {
+                            this.router.navigate(['/']);
+                            return of(null);
+                        }
+                        return from(
+                            this.store.leaveCurrentList()
+                                .then(() => this.store.joinList(id, known.encryptionKey))
+                                .then(() => { this.seen.markItemsSeen(id); })
+                        );
+                    }),
                 );
             }),
         ).subscribe();
