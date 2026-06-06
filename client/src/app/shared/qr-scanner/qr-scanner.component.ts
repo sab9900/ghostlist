@@ -71,7 +71,7 @@ export class QrScannerComponent implements OnInit, OnDestroy {
 
         const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
         const result = jsQR(imageData.data, imageData.width, imageData.height, {
-            inversionAttempts: 'dontInvert',
+            inversionAttempts: 'attemptBoth',
         });
 
         if (result?.data) {

@@ -95,6 +95,7 @@ export class ListDetailComponent implements OnDestroy {
                             this.store.leaveCurrentList()
                                 .then(() => this.store.joinList(id, known.encryptionKey))
                                 .then(() => { this.seen.markItemsSeen(id); })
+                                .catch(() => { this.router.navigate(['/']); })
                         );
                     }),
                 );
