@@ -59,7 +59,7 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseCors("AppClient");
-    app.UseHttpsRedirection();
+    // No UseHttpsRedirection — server runs behind nginx which handles TLS termination
 }
 
 app.UseAuthorization();
