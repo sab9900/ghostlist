@@ -22,4 +22,13 @@ export class HapticsService {
         Haptics.impact({ style: ImpactStyle.Light }).catch(() => { });
         setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }).catch(() => { }), 80);
     }
+
+    itemAdded(): void {
+        if (!this.enabled) return;
+        Haptics.impact({ style: ImpactStyle.Light }).catch(() => { });
+    }
+    itemDeleted(): void {
+        if (!this.enabled) return;
+        Haptics.impact({ style: ImpactStyle.Heavy }).catch(() => { });
+    }
 }

@@ -330,7 +330,6 @@ export const AppStore = signalStore(
 
             async deleteItem(itemId: string): Promise<void> {
                 await firstValueFrom(api.deleteItem(itemId));
-
             },
 
             async sendMessage(plainMessage: string, plainSenderName: string): Promise<void> {
@@ -393,6 +392,7 @@ export const AppStore = signalStore(
                         createdAt: event.createdAt,
                     } satisfies GhostListItem;
                     patchState(store, { items: [...store.items(), newItem] });
+                    haptics.itemAdded();
                 });
 
                 hub.itemToggled$.subscribe((event) => {
@@ -407,6 +407,7 @@ export const AppStore = signalStore(
 
                 hub.itemDeleted$.subscribe((itemId) => {
                     patchState(store, { items: store.items().filter((i) => i.id !== itemId) });
+                    haptics.itemDeleted();
                 });
 
                 hub.messageReceived$.subscribe((event) => {
