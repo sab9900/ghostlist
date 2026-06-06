@@ -3,7 +3,7 @@
     @if (showThemePopover()) {
     <div class="theme-overlay" (click)="showThemePopover.set(false)"></div>
     <div class="theme-popover" role="menu" aria-label="Theme">
-        @for (option of ([{value: 'system', label: 'System'}, {value: 'light', label: 'Light'}, {value: 'dark', label: 'Dark'}]); track option.value) {
+        @for (option of themeOptions; track option.value) {
         <button class="theme-popover__option" [class.theme-popover__option--active]="themeService.theme() === option.value"
             (click)="setTheme(option.value)" role="menuitem">
             {{ option.label }}

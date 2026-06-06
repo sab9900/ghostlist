@@ -20,6 +20,11 @@ export class ListsComponent implements OnDestroy {
     protected readonly themeService = inject(ThemeService);
 
     protected readonly showThemePopover = signal(false);
+    protected readonly themeOptions: { value: Theme; label: string }[] = [
+        { value: 'system', label: 'System' },
+        { value: 'light', label: 'Light' },
+        { value: 'dark', label: 'Dark' },
+    ];
 
     toggleThemePopover(): void {
         this.showThemePopover.update(v => !v);
