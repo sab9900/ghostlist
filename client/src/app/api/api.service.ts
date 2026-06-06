@@ -12,13 +12,21 @@ import {
 } from '../core/models';
 import { Capacitor } from '@capacitor/core';
 import { environment } from '../../environments/environment';
+import { DeviceTokenService } from '../core/services/device-token.service';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
     private readonly http = inject(HttpClient);
+    private readonly tokenService = inject(DeviceTokenService);
     private readonly BASE = Capacitor.isNativePlatform()
         ? environment.nativeApiBaseUrl
         : environment.apiBaseUrl;
+
+    /** Returns headers containing the FCM device token if available. */
+    private deviceTokenHeaders(): Record<string, string> {
+        const t = this.tokenService.token();
+        return t ? { 'X-Device-Token': t } : {};
+    }
 
     createList(): Observable<string> {
         return this.http.post<string>(`${this.BASE}/ghostlist`, null);
@@ -49,7 +57,8 @@ export class ApiService {
     }
 
     createItem(request: CreateGhostListItemRequest): Observable<string> {
-        return this.http.post<string>(`${this.BASE}/ghostitems`, request);
+        return this.http.post<string>(`${this.BASE}/ghostitems`, request,
+            { headers: this.deviceTokenHeaders() });
     }
 
     toggleItem(id: string): Observable<void> {
@@ -65,7 +74,18 @@ export class ApiService {
     }
 
     createMessage(request: CreateGhostMessageRequest): Observable<string> {
-        return this.http.post<string>(`${this.BASE}/chat`, request);
+        return this.http.post<string>(`${this.BASE}/chat`, request,
+            { headers: this.deviceTokenHeaders() });
+    }
+
+    subscribeToList(listId: string): Observable<void> {
+        return this.http.put<void>(`${this.BASE}/subscriptions/${listId}`, null,
+            { headers: this.deviceTokenHeaders() });
+    }
+
+    unsubscribeFromList(listId: string): Observable<void> {
+        return this.http.delete<void>(`${this.BASE}/subscriptions/${listId}`,
+            { headers: this.deviceTokenHeaders() });
     }
 
     deleteMessage(id: string): Observable<void> {

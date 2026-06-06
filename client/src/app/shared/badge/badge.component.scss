@@ -1,15 +1,15 @@
 :host {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 10px;
-  font-weight: var(--weight-bold);
-  min-width: 18px;
-  height: 18px;
-  border-radius: var(--radius-full);
-  padding: 0 5px;
-  line-height: 1;
-  flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-primary);
+    color: #fff;
+    font-size: 10px;
+    font-weight: var(--weight-bold);
+    min-width: 18px;
+    height: 18px;
+    border-radius: var(--radius-full);
+    padding: 0 5px;
+    line-height: 1;
+    flex-shrink: 0;
 }

@@ -10,6 +10,7 @@ public interface IApplicationDbContext
     DbSet<Domain.Entities.GhostList> GhostLists { get; }
     DbSet<GhostListItem> GhostListItems { get; }
     DbSet<GhostChatMessage> GhostChatMessages { get; }
+    DbSet<DeviceSubscription> DeviceSubscriptions { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 

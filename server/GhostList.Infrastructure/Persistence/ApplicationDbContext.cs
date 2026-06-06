@@ -11,6 +11,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Domain.Entities.GhostList> GhostLists => Set<Domain.Entities.GhostList>();
     public DbSet<GhostListItem> GhostListItems => Set<GhostListItem>();
     public DbSet<GhostChatMessage> GhostChatMessages => Set<GhostChatMessage>();
+    public DbSet<DeviceSubscription> DeviceSubscriptions => Set<DeviceSubscription>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -44,6 +45,16 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.InitializationVector).IsRequired();
             entity.Property(e => e.EncryptedSenderName).IsRequired();
             entity.Property(e => e.SenderNameInitializationVector).IsRequired();
+        });
+
+        modelBuilder.Entity<DeviceSubscription>(entity =>
+        {
+            entity.HasKey(e => new { e.DeviceToken, e.ListId });
+            entity.Property(e => e.DeviceToken).HasMaxLength(512).IsRequired();
+            entity.HasOne<Domain.Entities.GhostList>()
+                  .WithMany()
+                  .HasForeignKey(s => s.ListId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 

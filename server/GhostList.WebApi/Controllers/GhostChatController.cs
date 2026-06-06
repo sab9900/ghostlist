@@ -20,7 +20,8 @@ public class ChatController(IMediator mediator) : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Guid>> Create([FromBody] CreateGhostMessageCommand command)
     {
-        var messageId = await mediator.Send(command);
+        var token = Request.Headers["X-Device-Token"].FirstOrDefault();
+        var messageId = await mediator.Send(command with { SenderDeviceToken = token });
         return Ok(messageId);
     }
 

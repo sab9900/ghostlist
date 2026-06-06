@@ -124,6 +124,31 @@ namespace GhostList.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("GhostList.Domain.Entities.DeviceSubscription", b =>
+                {
+                    b.Property<string>("DeviceToken")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<Guid>("ListId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("RegisteredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("DeviceToken", "ListId");
+
+                    b.HasIndex("ListId");
+
+                    b.ToTable("DeviceSubscriptions");
+
+                    b.HasOne("GhostList.Domain.Entities.GhostList", null)
+                        .WithMany()
+                        .HasForeignKey("ListId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("GhostList.Domain.Entities.GhostList", b =>
                 {
                     b.Navigation("ChatMessages");

@@ -10,17 +10,23 @@ namespace GhostList.Application.Features.GhostListItems.Commands.CreateGhostList
 public record CreateGhostListItemCommand(
     Guid GhostListId,
     string EncryptedPayload,
-    string InitializationVector) : IRequest<Guid>;
+    string InitializationVector,
+    string? SenderDeviceToken = null) : IRequest<Guid>;
 
 public class CreateGhostListItemCommandHandler : IRequestHandler<CreateGhostListItemCommand, Guid>
 {
     private readonly IApplicationDbContext _context;
     private readonly IGhostListNotifier _notifier;
+    private readonly IPushNotificationService _push;
 
-    public CreateGhostListItemCommandHandler(IApplicationDbContext context, IGhostListNotifier notifier)
+    public CreateGhostListItemCommandHandler(
+        IApplicationDbContext context,
+        IGhostListNotifier notifier,
+        IPushNotificationService push)
     {
         _context = context;
         _notifier = notifier;
+        _push = push;
     }
 
     public async Task<Guid> Handle(CreateGhostListItemCommand request, CancellationToken cancellationToken)
@@ -46,6 +52,9 @@ public class CreateGhostListItemCommandHandler : IRequestHandler<CreateGhostList
             newItem.InitializationVector,
             newItem.IsChecked,
             newItem.CreatedAt));
+
+        _ = _push.SendItemNotificationAsync(newItem.GhostListId, request.SenderDeviceToken, cancellationToken)
+                 .ContinueWith(t => { /* swallow — push is best-effort */ }, TaskContinuationOptions.OnlyOnFaulted);
 
         return newItem.Id;
     }

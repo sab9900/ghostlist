@@ -12,17 +12,23 @@ public record CreateGhostMessageCommand(
     string EncryptedMessage,
     string MessageInitializationVector,
     string EncryptedSenderName,
-    string SenderNameInitializationVector) : IRequest<Guid>;
+    string SenderNameInitializationVector,
+    string? SenderDeviceToken = null) : IRequest<Guid>;
 
 public class CreateGhostChatMessageCommandHandler : IRequestHandler<CreateGhostMessageCommand, Guid>
 {
     private readonly IApplicationDbContext _context;
     private readonly IGhostListNotifier _notifier;
+    private readonly IPushNotificationService _push;
 
-    public CreateGhostChatMessageCommandHandler(IApplicationDbContext context, IGhostListNotifier notifier)
+    public CreateGhostChatMessageCommandHandler(
+        IApplicationDbContext context,
+        IGhostListNotifier notifier,
+        IPushNotificationService push)
     {
         _context = context;
         _notifier = notifier;
+        _push = push;
     }
 
     public async Task<Guid> Handle(CreateGhostMessageCommand request, CancellationToken cancellationToken)
@@ -54,6 +60,9 @@ public class CreateGhostChatMessageCommandHandler : IRequestHandler<CreateGhostM
             newMessage.EncryptedSenderName,
             newMessage.SenderNameInitializationVector,
             newMessage.CreatedAt));
+
+        _ = _push.SendMessageNotificationAsync(newMessage.GhostListId, request.SenderDeviceToken, cancellationToken)
+                 .ContinueWith(t => { /* swallow — push is best-effort */ }, TaskContinuationOptions.OnlyOnFaulted);
 
         return newMessage.Id;
     }

@@ -16,6 +16,7 @@ import {
 import { CryptoService } from '../core/services/crypto.service';
 import { HapticsService } from '../core/services/haptics.service';
 import { ListStorageService } from '../core/services/list-storage.service';
+import { PushNotificationService } from '../core/services/push-notification.service';
 
 interface AppState {
 
@@ -75,6 +76,7 @@ export const AppStore = signalStore(
         const hub = inject(HubService);
         const storage = inject(ListStorageService);
         const crypto = inject(CryptoService);
+        const push = inject(PushNotificationService);
 
         function setError(error: string | null) {
             patchState(store, { error, loading: false });
@@ -166,6 +168,7 @@ export const AppStore = signalStore(
             await persistAndTrack(entry);
             await hub.connect();
             await hub.joinList(delivery.listId);
+            await push.subscribeToList(delivery.listId);
 
             return delivery.listId;
         }
@@ -181,6 +184,7 @@ export const AppStore = signalStore(
             await persistAndTrack(entry);
             await hub.connect();
             await hub.joinList(listId);
+            await push.subscribeToList(listId);
         }
 
         return {
@@ -198,6 +202,7 @@ export const AppStore = signalStore(
                     const entry: KnownList = { id, encryptionKey, name, addedAt: new Date().toISOString() };
                     await persistAndTrack(entry);
                     await hub.joinList(id);
+                    await push.subscribeToList(id);
                     return id;
                 } catch (e: unknown) {
                     setError(e instanceof Error ? e.message : 'Failed to create list');
@@ -254,6 +259,7 @@ export const AppStore = signalStore(
             async deleteList(id: string): Promise<void> {
                 patchState(store, { loading: true });
                 try {
+                    await push.unsubscribeFromList(id);
                     await firstValueFrom(api.deleteList(id));
                     await hub.leaveList(id);
                     await storage.remove(id);
@@ -276,6 +282,7 @@ export const AppStore = signalStore(
             },
 
             async forgetList(id: string): Promise<void> {
+                await push.unsubscribeFromList(id);
                 await hub.leaveList(id);
                 await storage.remove(id);
                 const knownLists = store.knownLists().filter((l) => l.id !== id);
@@ -366,6 +373,7 @@ export const AppStore = signalStore(
     withHooks((store) => {
         const hub = inject(HubService);
         const haptics = inject(HapticsService);
+        const push = inject(PushNotificationService);
 
         return {
             async onInit() {
@@ -376,6 +384,9 @@ export const AppStore = signalStore(
                     await hub.connect();
                     await Promise.all(store.knownLists().map((l) => hub.joinList(l.id)));
                 }
+
+                // Initialize push notifications (iOS only, no-op on web)
+                await push.initialize(store.knownLists().map(l => l.id));
 
                 hub.itemCreated$.subscribe((event) => {
                     if (event.ghostListId !== store.currentListId()) {
