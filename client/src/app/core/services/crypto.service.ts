@@ -157,6 +157,16 @@ export class CryptoService {
         return this.bufToB64(await crypto.subtle.exportKey('raw', key));
     }
 
+    toUrlSafeB64(b64: string): string {
+        return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    fromUrlSafeB64(urlSafe: string): string {
+        const b64 = urlSafe.replace(/-/g, '+').replace(/_/g, '/');
+        const pad = b64.length % 4;
+        return pad ? b64 + '='.repeat(4 - pad) : b64;
+    }
+
     bufToB64(buf: ArrayBuffer | Uint8Array): string {
         const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
         let binary = '';

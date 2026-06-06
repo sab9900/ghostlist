@@ -129,7 +129,7 @@
 
     &--primary {
         background: var(--color-primary);
-        color: #fff;
+        color: var(--color-on-primary);
         &:hover:not(:disabled) {
             background: var(--color-primary-hover);
         }

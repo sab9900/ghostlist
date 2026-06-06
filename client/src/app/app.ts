@@ -56,9 +56,10 @@ export class App {
         { initialValue: this.router.url },
     );
 
-    protected readonly showDetail = computed(() =>
-        !!this.currentUrl()?.startsWith('/list/'),
-    );
+    protected readonly showDetail = computed(() => {
+        const url = this.currentUrl();
+        return !!(url?.startsWith('/list/') || url?.startsWith('/settings') || url?.startsWith('/about'));
+    });
 
     protected readonly sidebarWidth = signal(loadSidebarWidth());
     protected readonly resizing = signal(false);

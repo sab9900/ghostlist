@@ -1,3 +1,22 @@
+<section class="settings-section" aria-labelledby="rename-heading">
+    <h3 class="settings-section__title" id="rename-heading">List name</h3>
+    <p class="settings-section__hint">This name is local — only visible on this device.</p>
+    <div class="settings-row">
+        <input class="settings-input" type="text" [ngModel]="listName()" (ngModelChange)="listName.set($event)"
+            (keydown.enter)="saveListName()" maxlength="60" aria-labelledby="rename-heading" />
+        <div class="save-slot">
+            <button class="btn btn--primary btn--sm" (click)="saveListName()"
+                [class.save-slot__hidden]="nameSaved()"
+                [disabled]="renamingList() || !listName().trim()" [attr.aria-busy]="renamingList()">
+                {{ renamingList() ? 'Saving…' : 'Save' }}
+            </button>
+            @if (nameSaved()) {
+            <span class="save-feedback save-slot__overlay" role="status" aria-live="polite">✓ Saved</span>
+            }
+        </div>
+    </div>
+</section>
+
 <section class="settings-section" aria-labelledby="ttl-heading">
     <h3 class="settings-section__title" id="ttl-heading">Auto-delete checked items</h3>
     <p class="settings-section__hint" id="ttl-hint">Checked items are removed after this duration.</p>
@@ -8,10 +27,16 @@
             <option [value]="opt.value">{{ opt.label }}</option>
             }
         </select>
-        <button class="btn btn--primary btn--sm" (click)="saveTtl()" [disabled]="savingTtl()"
-            [attr.aria-busy]="savingTtl()">
-            {{ savingTtl() ? 'Saving…' : 'Save' }}
-        </button>
+        <div class="save-slot">
+            <button class="btn btn--primary btn--sm" (click)="saveTtl()"
+                [class.save-slot__hidden]="ttlSaved()"
+                [disabled]="savingTtl()" [attr.aria-busy]="savingTtl()">
+                {{ savingTtl() ? 'Saving…' : 'Save' }}
+            </button>
+            @if (ttlSaved()) {
+            <span class="save-feedback save-slot__overlay" role="status" aria-live="polite">✓ Saved</span>
+            }
+        </div>
     </div>
 </section>
 

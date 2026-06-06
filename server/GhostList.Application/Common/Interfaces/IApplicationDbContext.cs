@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GhostList.Application.Common.Interfaces;
 
+public record DeletedItemInfo(Guid ItemId, Guid ListId);
+
 public interface IApplicationDbContext
 {
     DbSet<Domain.Entities.GhostList> GhostLists { get; }
@@ -14,5 +16,5 @@ public interface IApplicationDbContext
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 
-    Task<int> DeleteExpiredCheckedItemsAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<DeletedItemInfo>> DeleteExpiredCheckedItemsAsync(CancellationToken cancellationToken);
 }

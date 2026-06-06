@@ -1,8 +1,9 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
 import { DeleteAfterDuration, TTL_LABELS, TTL_VALUE_TO_ENUM } from '../../../core/models';
+import { CryptoService } from '../../../core/services/crypto.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 import { QrScannerComponent } from '../../../shared/qr-scanner/qr-scanner.component';
 import { AppStore } from '../../../store/app.store';
@@ -18,6 +19,7 @@ export class SettingsTabComponent implements OnInit {
     protected readonly store = inject(AppStore);
     protected readonly prefs = inject(UserPreferencesService);
     private readonly router = inject(Router);
+    private readonly crypto = inject(CryptoService);
 
     protected readonly ttlOptions = Object.values(DeleteAfterDuration).map(v => ({
         value: v,
@@ -26,8 +28,13 @@ export class SettingsTabComponent implements OnInit {
 
     protected readonly selectedTtl = signal<DeleteAfterDuration>(DeleteAfterDuration.OneWeek);
     protected readonly savingTtl = signal(false);
+    protected readonly ttlSaved = signal(false);
     protected readonly deletingList = signal(false);
     protected readonly linkCopied = signal(false);
+
+    protected readonly listName = signal('');
+    protected readonly renamingList = signal(false);
+    protected readonly nameSaved = signal(false);
 
     protected readonly shareStep = signal<'idle' | 'scan' | 'done' | 'error'>('idle');
     protected readonly scannedJson = signal('');
@@ -38,14 +45,33 @@ export class SettingsTabComponent implements OnInit {
             const mapped = TTL_VALUE_TO_ENUM[list.ttl];
             if (mapped) this.selectedTtl.set(mapped);
         }
+        const id = this.store.currentListId();
+        const known = this.store.knownLists().find(l => l.id === id);
+        if (known) this.listName.set(known.name);
     }
 
     async saveTtl(): Promise<void> {
         this.savingTtl.set(true);
         try {
             await this.store.updateTtl(this.selectedTtl());
+            this.ttlSaved.set(true);
+            setTimeout(() => this.ttlSaved.set(false), 2000);
         } finally {
             this.savingTtl.set(false);
+        }
+    }
+
+    async saveListName(): Promise<void> {
+        const name = this.listName().trim();
+        const id = this.store.currentListId();
+        if (!name || !id) return;
+        this.renamingList.set(true);
+        try {
+            await this.store.renameList(id, name);
+            this.nameSaved.set(true);
+            setTimeout(() => this.nameSaved.set(false), 2000);
+        } finally {
+            this.renamingList.set(false);
         }
     }
 
@@ -56,7 +82,7 @@ export class SettingsTabComponent implements OnInit {
         const origin = Capacitor.isNativePlatform()
             ? environment.nativeShareBaseUrl
             : window.location.origin;
-        const url = `${origin}/join/${id}#${known.encryptionKey}`;
+        const url = `${origin}/join/${id}#${this.crypto.toUrlSafeB64(known.encryptionKey)}`;
         await navigator.clipboard.writeText(url);
         this.linkCopied.set(true);
         setTimeout(() => this.linkCopied.set(false), 2000);

@@ -1,0 +1,101 @@
+<div class="screen" role="main">
+
+    <header class="header" role="banner">
+        <button class="header__back" (click)="goBack()" aria-label="Back">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6" />
+            </svg>
+        </button>
+        <h1 class="header__title">About</h1>
+    </header>
+
+    <main class="content">
+        <div class="content__inner">
+
+            <div class="hero">
+                <img class="hero__logo" src="/ghost-header.svg" alt="Ghost List" aria-hidden="true" />
+                <p class="hero__name">Ghost List</p>
+                <p class="hero__tagline">Private lists. Zero trust.</p>
+            </div>
+
+            <section class="section" aria-labelledby="what-heading">
+                <h2 class="section__title" id="what-heading">What is Ghost List?</h2>
+                <div class="card">
+                    <p class="card__text">Ghost List is an end-to-end encrypted shared list app. You create lists, add items, chat with people you share with — and none of it is readable by anyone but you and the people you invite. Not even the server.</p>
+                </div>
+            </section>
+
+            <section class="section" aria-labelledby="how-heading">
+                <h2 class="section__title" id="how-heading">How it works</h2>
+                <div class="feature-list">
+                    <div class="feature">
+                        <div class="feature__icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                        </div>
+                        <div class="feature__body">
+                            <p class="feature__label">AES-256-GCM encryption</p>
+                            <p class="feature__desc">Every item, message and list name is encrypted on your device before it ever leaves. The server stores only ciphertext.</p>
+                        </div>
+                    </div>
+                    <div class="feature">
+                        <div class="feature__icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                                <polyline points="16 6 12 2 8 6" />
+                                <line x1="12" y1="2" x2="12" y2="15" />
+                            </svg>
+                        </div>
+                        <div class="feature__body">
+                            <p class="feature__label">QR key exchange</p>
+                            <p class="feature__desc">Sharing uses ECDH P-256 key agreement. The encryption key travels only via QR code or link fragment — never through the server.</p>
+                        </div>
+                    </div>
+                    <div class="feature">
+                        <div class="feature__icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="17 1 21 5 17 9" />
+                                <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                                <polyline points="7 23 3 19 7 15" />
+                                <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                            </svg>
+                        </div>
+                        <div class="feature__body">
+                            <p class="feature__label">Real-time sync</p>
+                            <p class="feature__desc">Changes appear instantly on every connected device via SignalR — all still encrypted end-to-end.</p>
+                        </div>
+                    </div>
+                    <div class="feature">
+                        <div class="feature__icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                            </svg>
+                        </div>
+                        <div class="feature__body">
+                            <p class="feature__label">Zero knowledge server</p>
+                            <p class="feature__desc">No accounts, no tracking, no ads. The server can't read your data. Your keys never leave your device.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" aria-labelledby="built-heading">
+                <h2 class="section__title" id="built-heading">Built with</h2>
+                <div class="card">
+                    <p class="card__text">Angular 22 · .NET 10 · PostgreSQL · SignalR · Web Crypto API · Capacitor</p>
+                </div>
+            </section>
+
+            <p class="footer">Made with care by <strong>Norica Informatics</strong></p>
+
+        </div>
+    </main>
+
+</div>

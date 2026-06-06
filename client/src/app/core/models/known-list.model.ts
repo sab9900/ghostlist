@@ -23,4 +23,17 @@ export interface ShareDelivery {
   senderPublicKey: string;
 
   listId: string;
+
+  listName: string;
+}
+
+export interface ExportQrPayload {
+
+  type: 'export';
+
+  sessionId: string;
+
+  listId: string;
+
+  listName: string;
 }

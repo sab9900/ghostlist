@@ -58,10 +58,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         });
     }
 
-    public async Task<int> DeleteExpiredCheckedItemsAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<DeletedItemInfo>> DeleteExpiredCheckedItemsAsync(CancellationToken cancellationToken)
     {
-
-        return await Database.ExecuteSqlRawAsync(
+        return await Database.SqlQueryRaw<DeletedItemInfo>(
             """
             DELETE FROM "GhostListItems" i
             USING "GhostLists" gl
@@ -69,8 +68,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
               AND i."IsChecked"   = true
               AND i."CheckedAt"  IS NOT NULL
               AND i."CheckedAt"  <= NOW() - (gl."CompletedItemsTtl" * INTERVAL '1 hour')
-            """,
-            cancellationToken);
+            RETURNING i."Id" AS "ItemId", i."GhostListId" AS "ListId"
+            """)
+            .ToListAsync(cancellationToken);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

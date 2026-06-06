@@ -17,6 +17,16 @@ export const routes: Routes = [
             import('./features/join/join.component').then((m) => m.JoinComponent),
     },
     {
+        path: 'settings',
+        loadComponent: () =>
+            import('./features/settings/settings.component').then((m) => m.SettingsComponent),
+    },
+    {
+        path: 'about',
+        loadComponent: () =>
+            import('./features/about/about.component').then((m) => m.AboutComponent),
+    },
+    {
         path: '**',
         redirectTo: '',
     },

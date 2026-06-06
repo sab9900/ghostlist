@@ -6,6 +6,7 @@ import { ApiService } from '../api/api.service';
 import { HubService } from '../api/hub.service';
 import {
     DeleteAfterDuration,
+    ExportQrPayload,
     GhostChatMessage,
     GhostList,
     GhostListItem,
@@ -129,6 +130,7 @@ export const AppStore = signalStore(
         }
 
         const pendingReceives = new Map<string, CryptoKey>();
+        const pendingExportReceives = new Map<string, CryptoKey>();
 
         async function initReceive(): Promise<ReceiveQrPayload> {
             const { publicKeyB64, privateKey } = await crypto.generateEcdhKeypair();
@@ -142,16 +144,18 @@ export const AppStore = signalStore(
             const listKey = store.currentEncryptionKey();
             if (!listId || !listKey) throw new Error('No list is currently open.');
 
+            const listName = store.knownLists().find(l => l.id === listId)?.name ?? '';
             const bundle = await crypto.wrapListKey(listKey, receiverPublicKeyB64);
             const delivery: ShareDelivery = {
                 wrappedKey: bundle.wrappedKey,
                 senderPublicKey: bundle.senderPublicKey,
                 listId,
+                listName,
             };
             await firstValueFrom(api.deliverShare(sessionId, delivery));
         }
 
-        async function claimSharedKey(sessionId: string, name: string): Promise<string> {
+        async function claimSharedKey(sessionId: string): Promise<string> {
             const privateKey = pendingReceives.get(sessionId);
             if (!privateKey) throw new Error('No pending receive for this session. Call initReceive() first.');
 
@@ -164,7 +168,7 @@ export const AppStore = signalStore(
 
             const listKey = await crypto.unwrapListKey(delivery.wrappedKey, delivery.senderPublicKey, privateKey);
 
-            const entry: KnownList = { id: delivery.listId, encryptionKey: listKey, name, addedAt: new Date().toISOString() };
+            const entry: KnownList = { id: delivery.listId, encryptionKey: listKey, name: delivery.listName, addedAt: new Date().toISOString() };
             await persistAndTrack(entry);
             await hub.connect();
             await hub.joinList(delivery.listId);
@@ -175,6 +179,49 @@ export const AppStore = signalStore(
 
         function generateKey(): Promise<string> {
             return crypto.generateKey();
+        }
+
+        function initExportForList(listId: string): ExportQrPayload {
+            const known = store.knownLists().find(l => l.id === listId);
+            if (!known) throw new Error('List not found.');
+            return { type: 'export', sessionId: self.crypto.randomUUID(), listId, listName: known.name };
+        }
+
+        async function pollExportHandshake(sessionId: string, listId: string): Promise<boolean> {
+            const known = store.knownLists().find(l => l.id === listId);
+            if (!known) return false;
+            const handshake = await firstValueFrom(api.pollHandshake(sessionId));
+            const bundle = await crypto.wrapListKey(known.encryptionKey, handshake.receiverPublicKey);
+            const delivery: ShareDelivery = {
+                wrappedKey: bundle.wrappedKey,
+                senderPublicKey: bundle.senderPublicKey,
+                listId,
+                listName: known.name,
+            };
+            await firstValueFrom(api.deliverShare(sessionId, delivery));
+            return true;
+        }
+
+        async function respondToExport(sessionId: string): Promise<void> {
+            const { publicKeyB64, privateKey } = await crypto.generateEcdhKeypair();
+            pendingExportReceives.set(sessionId, privateKey);
+            await firstValueFrom(api.postHandshake(sessionId, publicKeyB64));
+        }
+
+        async function claimExportedKey(sessionId: string, listId: string, listName: string): Promise<string> {
+            const privateKey = pendingExportReceives.get(sessionId);
+            if (!privateKey) throw new Error('No pending export receive for this session.');
+            const delivery = await firstValueFrom(api.pollShare(sessionId));
+            pendingExportReceives.delete(sessionId);
+            const already = store.knownLists().find(l => l.id === listId);
+            if (already) return already.id;
+            const listKey = await crypto.unwrapListKey(delivery.wrappedKey, delivery.senderPublicKey, privateKey);
+            const entry: KnownList = { id: listId, encryptionKey: listKey, name: listName, addedAt: new Date().toISOString() };
+            await persistAndTrack(entry);
+            await hub.connect();
+            await hub.joinList(listId);
+            await push.subscribeToList(listId);
+            return listId;
         }
 
         async function importFromLink(listId: string, encryptionKey: string, name: string): Promise<void> {
@@ -194,6 +241,10 @@ export const AppStore = signalStore(
             shareToReceiver,
             claimSharedKey,
             importFromLink,
+            initExportForList,
+            pollExportHandshake,
+            respondToExport,
+            claimExportedKey,
 
             async createList(encryptionKey: string, name: string): Promise<string> {
                 patchState(store, { loading: true });
@@ -279,6 +330,12 @@ export const AppStore = signalStore(
                     setError(e instanceof Error ? e.message : 'Failed to delete list');
                     throw e;
                 }
+            },
+
+            async renameList(id: string, name: string): Promise<void> {
+                const existing = store.knownLists().find(l => l.id === id);
+                if (!existing) return;
+                await persistAndTrack({ ...existing, name });
             },
 
             async forgetList(id: string): Promise<void> {

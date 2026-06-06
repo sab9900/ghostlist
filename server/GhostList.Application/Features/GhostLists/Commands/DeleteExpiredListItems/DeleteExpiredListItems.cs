@@ -5,9 +5,18 @@ namespace GhostList.Application.Features.GhostLists.Commands.DeleteExpiredListIt
 
 public record DeleteExpiredListItemsCommand : IRequest<int>;
 
-public class DeleteExpiredListItemsCommandHandler(IApplicationDbContext context)
+public class DeleteExpiredListItemsCommandHandler(
+    IApplicationDbContext context,
+    IGhostListNotifier notifier)
     : IRequestHandler<DeleteExpiredListItemsCommand, int>
 {
-    public Task<int> Handle(DeleteExpiredListItemsCommand request, CancellationToken cancellationToken)
-        => context.DeleteExpiredCheckedItemsAsync(cancellationToken);
+    public async Task<int> Handle(DeleteExpiredListItemsCommand request, CancellationToken cancellationToken)
+    {
+        var deleted = await context.DeleteExpiredCheckedItemsAsync(cancellationToken);
+
+        var notifications = deleted.Select(d => notifier.NotifyItemDeleted(d.ListId, d.ItemId));
+        await Task.WhenAll(notifications);
+
+        return deleted.Count;
+    }
 }

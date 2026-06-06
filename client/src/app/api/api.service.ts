@@ -99,4 +99,12 @@ export class ApiService {
     pollShare(sessionId: string): Observable<ShareDelivery> {
         return this.http.get<ShareDelivery>(`${this.BASE}/share/${sessionId}`);
     }
+
+    postHandshake(sessionId: string, receiverPublicKey: string): Observable<void> {
+        return this.http.put<void>(`${this.BASE}/share/${sessionId}/handshake`, { receiverPublicKey });
+    }
+
+    pollHandshake(sessionId: string): Observable<{ receiverPublicKey: string }> {
+        return this.http.get<{ receiverPublicKey: string }>(`${this.BASE}/share/${sessionId}/handshake`);
+    }
 }

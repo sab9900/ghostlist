@@ -172,7 +172,7 @@
 }
 
 .drawer-backdrop {
-    position: absolute;
+    position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.35);
     backdrop-filter: blur(2px);
@@ -181,6 +181,10 @@
 
     &--closing {
         animation: backdropOut var(--duration-normal) var(--ease-out) both;
+    }
+
+    @media (min-width: 900px) {
+        position: absolute;
     }
 }
 

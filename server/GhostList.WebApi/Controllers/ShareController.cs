@@ -3,7 +3,8 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace GhostList.WebApi.Controllers;
 
-public record ShareDeliveryDto(string WrappedKey, string SenderPublicKey, string ListId);
+public record ShareDeliveryDto(string WrappedKey, string SenderPublicKey, string ListId, string ListName);
+public record HandshakeDto(string ReceiverPublicKey);
 
 [ApiController]
 [Route("api/share")]
@@ -27,6 +28,24 @@ public class ShareController(IMemoryCache cache) : ControllerBase
             return NotFound();
 
         cache.Remove(sessionId);
+        return Ok(dto);
+    }
+
+    [HttpPut("{sessionId}/handshake")]
+    public IActionResult PostHandshake(string sessionId, [FromBody] HandshakeDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(sessionId)) return BadRequest();
+        cache.Set($"hs:{sessionId}", dto, CacheOptions);
+        return NoContent();
+    }
+
+    [HttpGet("{sessionId}/handshake")]
+    public ActionResult<HandshakeDto> PollHandshake(string sessionId)
+    {
+        if (!cache.TryGetValue<HandshakeDto>($"hs:{sessionId}", out var dto) || dto is null)
+            return NotFound();
+
+        cache.Remove($"hs:{sessionId}");
         return Ok(dto);
     }
 }

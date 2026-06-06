@@ -1,0 +1,54 @@
+<div class="screen" role="main">
+
+    <header class="header" role="banner">
+        <button class="header__back" (click)="goBack()" aria-label="Back">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6" />
+            </svg>
+        </button>
+        <h1 class="header__title">Settings</h1>
+    </header>
+
+    <main class="content">
+        <div class="content__inner">
+
+        <section class="section" aria-labelledby="theme-heading">
+            <h2 class="section__title" id="theme-heading">Appearance</h2>
+            <div class="option-list" role="radiogroup" aria-labelledby="theme-heading">
+                @for (opt of themeOptions; track opt.value) {
+                <button class="option" [class.option--active]="themeService.theme() === opt.value"
+                    (click)="setTheme(opt.value)" role="radio"
+                    [attr.aria-checked]="themeService.theme() === opt.value">
+                    <div class="option__body">
+                        <span class="option__label">{{ opt.label }}</span>
+                        <span class="option__desc">{{ opt.description }}</span>
+                    </div>
+                    @if (themeService.theme() === opt.value) {
+                    <span class="option__check" aria-hidden="true">✓</span>
+                    }
+                </button>
+                }
+            </div>
+        </section>
+
+        <section class="section" aria-labelledby="accent-heading">
+            <h2 class="section__title" id="accent-heading">Accent colour</h2>
+            <div class="swatch-row" role="radiogroup" aria-labelledby="accent-heading">
+                @for (opt of accentOptions; track opt.value) {
+                <button class="swatch" [class.swatch--active]="themeService.accent() === opt.value"
+                    [class.swatch--noir]="opt.value === 'noir'"
+                    [style.--swatch-color]="opt.color" (click)="setAccent(opt.value)"
+                    role="radio" [attr.aria-checked]="themeService.accent() === opt.value"
+                    [attr.aria-label]="opt.label">
+                    <span class="swatch__dot" aria-hidden="true"></span>
+                    <span class="swatch__label">{{ opt.label }}</span>
+                </button>
+                }
+            </div>
+        </section>
+
+        </div>
+    </main>
+
+</div>
