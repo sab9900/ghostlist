@@ -3,6 +3,7 @@ import { Component, computed, ElementRef, inject, OnDestroy, signal, ViewChild }
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ReceiveQrPayload } from '../../core/models';
+import { HapticsService } from '../../core/services/haptics.service';
 import { Theme, ThemeService } from '../../core/services/theme.service';
 import { BadgeComponent } from '../../shared/badge/badge.component';
 import { QrCodeComponent } from '../../shared/qr-code/qr-code.component';
@@ -18,6 +19,7 @@ export class ListsComponent implements OnDestroy {
     protected readonly store = inject(AppStore);
     private readonly router = inject(Router);
     protected readonly themeService = inject(ThemeService);
+    private readonly haptics = inject(HapticsService);
 
     protected readonly showThemePopover = signal(false);
     protected readonly themeOptions: { value: Theme; label: string }[] = [
@@ -128,6 +130,7 @@ export class ListsComponent implements OnDestroy {
     }
 
     async openList(id: string): Promise<void> {
+        this.haptics.listTap();
         await this.router.navigate(['/list', id]);
     }
 

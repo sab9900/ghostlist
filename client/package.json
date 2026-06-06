@@ -25,6 +25,7 @@
     "@capacitor/android": "^7.0.0",
     "@capacitor/core": "^7.0.0",
     "@capacitor/ios": "^7.0.0",
+    "@capacitor/haptics": "^7.0.0",
     "@capacitor/keyboard": "^7.0.0",
     "@capacitor/status-bar": "^7.0.0",
     "@microsoft/signalr": "^10.0.0",

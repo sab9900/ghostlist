@@ -1,6 +1,7 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { GhostListItem } from '../../../core/models';
+import { HapticsService } from '../../../core/services/haptics.service';
 import { CryptoService } from '../../../core/services/crypto.service';
 import { SeenService } from '../../../core/services/seen.service';
 import { AppStore } from '../../../store/app.store';
@@ -23,6 +24,7 @@ export class ItemsTabComponent {
     private readonly store = inject(AppStore);
     private readonly crypto = inject(CryptoService);
     private readonly seen = inject(SeenService);
+    private readonly haptics = inject(HapticsService);
 
     protected readonly newItemText = signal('');
     protected readonly addingItem = signal(false);
@@ -70,6 +72,7 @@ export class ItemsTabComponent {
     }
 
     async toggleItem(id: string): Promise<void> {
+        this.haptics.itemCheck();
         await this.store.toggleItem(id);
     }
 

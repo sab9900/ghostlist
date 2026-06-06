@@ -14,6 +14,7 @@ import {
     ShareDelivery,
 } from '../core/models';
 import { CryptoService } from '../core/services/crypto.service';
+import { HapticsService } from '../core/services/haptics.service';
 import { ListStorageService } from '../core/services/list-storage.service';
 
 interface AppState {
@@ -365,6 +366,7 @@ export const AppStore = signalStore(
 
     withHooks((store) => {
         const hub = inject(HubService);
+        const haptics = inject(HapticsService);
 
         return {
             async onInit() {
@@ -408,6 +410,7 @@ export const AppStore = signalStore(
                 });
 
                 hub.messageReceived$.subscribe((event) => {
+                    haptics.messageReceived();
                     if (event.ghostListId !== store.currentListId()) {
                         store._incrementUnread(event.ghostListId);
                         return;
