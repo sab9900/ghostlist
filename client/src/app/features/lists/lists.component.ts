@@ -3,6 +3,7 @@ import { Component, computed, ElementRef, inject, OnDestroy, signal, ViewChild }
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ReceiveQrPayload } from '../../core/models';
+import { Theme, ThemeService } from '../../core/services/theme.service';
 import { BadgeComponent } from '../../shared/badge/badge.component';
 import { QrCodeComponent } from '../../shared/qr-code/qr-code.component';
 import { AppStore } from '../../store/app.store';
@@ -16,6 +17,18 @@ import { AppStore } from '../../store/app.store';
 export class ListsComponent implements OnDestroy {
     protected readonly store = inject(AppStore);
     private readonly router = inject(Router);
+    protected readonly themeService = inject(ThemeService);
+
+    protected readonly showThemePopover = signal(false);
+
+    toggleThemePopover(): void {
+        this.showThemePopover.update(v => !v);
+    }
+
+    setTheme(theme: Theme): void {
+        this.themeService.set(theme);
+        this.showThemePopover.set(false);
+    }
 
     @ViewChild('createInput') private createInputRef?: ElementRef<HTMLInputElement>;
 

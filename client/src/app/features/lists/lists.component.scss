@@ -30,9 +30,18 @@
     object-fit: contain;
 
     filter: invert(1);
+    cursor: pointer;
 
     @media (prefers-color-scheme: light) {
       filter: none;
+    }
+
+    :host-context(html[data-theme="light"]) & {
+      filter: none;
+    }
+
+    :host-context(html[data-theme="dark"]) & {
+      filter: invert(1);
     }
   }
 
@@ -321,4 +330,48 @@
       color: var(--color-text);
     }
   }
+}
+
+.theme-popover {
+  position: absolute;
+  top: calc(var(--safe-top) + 64px);
+  left: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: 200;
+  overflow: hidden;
+  min-width: 140px;
+
+  &__option {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    background: none;
+    border: none;
+    color: var(--color-text);
+    font-size: var(--text-base);
+    font-family: var(--font-sans);
+    cursor: pointer;
+    text-align: left;
+    transition: background var(--duration-fast) var(--ease-out);
+
+    &:hover {
+      background: var(--color-surface-2);
+    }
+
+    &--active {
+      color: var(--color-primary);
+      font-weight: var(--weight-medium);
+    }
+  }
+}
+
+.theme-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 199;
 }

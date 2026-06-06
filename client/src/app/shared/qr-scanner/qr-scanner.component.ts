@@ -2,13 +2,7 @@ import {
     Component, ElementRef, EventEmitter, OnDestroy, OnInit,
     Output, ViewChild, signal,
 } from '@angular/core';
-
-declare const BarcodeDetector: {
-    new(opts: { formats: string[] }): {
-        detect(source: ImageBitmap | HTMLVideoElement | HTMLCanvasElement): Promise<Array<{ rawValue: string }>>;
-    };
-    getSupportedFormats(): Promise<string[]>;
-};
+import jsQR from 'jsqr';
 
 @Component({
     selector: 'app-qr-scanner',
@@ -24,7 +18,6 @@ export class QrScannerComponent implements OnInit, OnDestroy {
 
     private stream: MediaStream | null = null;
     private rafId: number | null = null;
-    private detector: InstanceType<typeof BarcodeDetector> | null = null;
     private canvas!: HTMLCanvasElement;
     private ctx!: CanvasRenderingContext2D;
 
@@ -41,18 +34,9 @@ export class QrScannerComponent implements OnInit, OnDestroy {
     }
 
     private async startCamera(): Promise<void> {
-
-        const hasBarcodeDetector = typeof BarcodeDetector !== 'undefined';
-        if (!hasBarcodeDetector) {
-            throw new Error('QR scanning is not supported in this browser. Try Chrome 83+ or Safari 17.4+.');
+        if (!navigator.mediaDevices?.getUserMedia) {
+            throw new Error('Camera not supported on this device.');
         }
-
-        const formats = await BarcodeDetector.getSupportedFormats();
-        if (!formats.includes('qr_code')) {
-            throw new Error('QR code format not supported by this device.');
-        }
-
-        this.detector = new BarcodeDetector({ formats: ['qr_code'] });
 
         this.canvas = document.createElement('canvas');
         this.ctx = this.canvas.getContext('2d', { willReadFrequently: true })!;
@@ -74,22 +58,26 @@ export class QrScannerComponent implements OnInit, OnDestroy {
         this.rafId = requestAnimationFrame(() => this.processFrame());
     }
 
-    private async processFrame(): Promise<void> {
+    private processFrame(): void {
         const video = this.videoRef.nativeElement;
-        if (!this.detector || video.readyState < 2) {
+        if (video.readyState < 2 || video.videoWidth === 0) {
             this.scheduleFrame();
             return;
         }
 
-        try {
-            const results = await this.detector.detect(video);
-            if (results.length > 0) {
-                this.stop();
-                this.detected.emit(results[0].rawValue);
-                return;
-            }
-        } catch {
+        this.canvas.width = video.videoWidth;
+        this.canvas.height = video.videoHeight;
+        this.ctx.drawImage(video, 0, 0, this.canvas.width, this.canvas.height);
 
+        const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        const result = jsQR(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: 'dontInvert',
+        });
+
+        if (result?.data) {
+            this.stop();
+            this.detected.emit(result.data);
+            return;
         }
 
         this.scheduleFrame();
@@ -109,7 +97,7 @@ export class QrScannerComponent implements OnInit, OnDestroy {
     private setError(err: unknown): void {
         const msg = err instanceof Error ? err.message : 'Camera error.';
         const isDenied = msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('denied') || msg.toLowerCase().includes('notallowed');
-        this.errorMsg.set(isDenied ? 'Camera access denied. Please allow camera in your browser settings.' : msg);
+        this.errorMsg.set(isDenied ? 'Camera access denied. Please allow camera in settings.' : msg);
         this.state.set('error');
     }
 }

@@ -118,6 +118,7 @@ export class ChatTabComponent {
         const text = this.newMessageText().trim();
         const sender = this.prefs.senderName() || 'Anonymous';
         if (!text) return;
+        (document.activeElement as HTMLElement)?.blur();
         this.sendingMessage.set(true);
         try {
             await this.store.sendMessage(text, sender);

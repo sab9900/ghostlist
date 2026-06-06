@@ -1,7 +1,20 @@
 <div class="screen" role="main">
 
+    @if (showThemePopover()) {
+    <div class="theme-overlay" (click)="showThemePopover.set(false)"></div>
+    <div class="theme-popover" role="menu" aria-label="Theme">
+        @for (option of ([{value: 'system', label: 'System'}, {value: 'light', label: 'Light'}, {value: 'dark', label: 'Dark'}]); track option.value) {
+        <button class="theme-popover__option" [class.theme-popover__option--active]="themeService.theme() === option.value"
+            (click)="setTheme(option.value)" role="menuitem">
+            {{ option.label }}
+            @if (themeService.theme() === option.value) { ✓ }
+        </button>
+        }
+    </div>
+    }
+
     <header class="header" role="banner">
-        <img class="header__logo" src="/ghost-header.svg" alt="" aria-hidden="true" />
+        <img class="header__logo" src="/ghost-header.svg" alt="Open theme settings" (click)="toggleThemePopover()" />
         <h1 class="header__title">Ghost List</h1>
         <div class="header__actions">
             @if (totalUnread() > 0) {

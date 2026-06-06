@@ -77,30 +77,58 @@
   --keyboard-height: 0px;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --color-bg: #f4f4f6;
-    --color-surface: #ffffff;
-    --color-surface-2: #f0f0f3;
-    --color-surface-3: #e8e8ed;
-    --color-border: #d8d8e0;
+@mixin light-theme {
+  --color-bg: #f4f4f6;
+  --color-surface: #ffffff;
+  --color-surface-2: #f0f0f3;
+  --color-surface-3: #e8e8ed;
+  --color-border: #d8d8e0;
 
-    --color-text: #111114;
-    --color-text-muted: #6b6b78;
-    --color-text-subtle: #a0a0ac;
+  --color-text: #111114;
+  --color-text-muted: #6b6b78;
+  --color-text-subtle: #a0a0ac;
 
-    --color-primary: #5b4de0;
-    --color-primary-hover: #6e5ff0;
-    --color-primary-dim: rgba(91, 77, 224, 0.1);
+  --color-primary: #5b4de0;
+  --color-primary-hover: #6e5ff0;
+  --color-primary-dim: rgba(91, 77, 224, 0.1);
 
-    --color-danger-dim: rgba(247, 90, 90, 0.1);
-    --color-success-dim: rgba(76, 175, 130, 0.1);
+  --color-danger-dim: rgba(247, 90, 90, 0.1);
+  --color-success-dim: rgba(76, 175, 130, 0.1);
 
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.14);
-  }
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.14);
 }
+
+@mixin dark-theme {
+  --color-bg: #0e0e10;
+  --color-surface: #1a1a1e;
+  --color-surface-2: #242428;
+  --color-surface-3: #2e2e34;
+  --color-border: #38383f;
+
+  --color-text: #f0f0f2;
+  --color-text-muted: #8e8e99;
+  --color-text-subtle: #5a5a64;
+
+  --color-primary: #7c6af7;
+  --color-primary-hover: #9182f9;
+  --color-primary-dim: rgba(124, 106, 247, 0.15);
+
+  --color-danger-dim: rgba(247, 90, 90, 0.15);
+  --color-success-dim: rgba(76, 175, 130, 0.12);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+@media (prefers-color-scheme: light) {
+  :root { @include light-theme; }
+}
+
+html[data-theme="light"] { @include light-theme; }
+html[data-theme="dark"] { @include dark-theme; }
 
 *,
 *::before,
