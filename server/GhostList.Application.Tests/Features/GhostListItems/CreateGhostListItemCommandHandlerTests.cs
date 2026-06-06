@@ -19,6 +19,8 @@ public class CreateGhostListItemCommandHandlerTests
         return notifier;
     }
 
+    private static IPushNotificationService MockPush() => Substitute.For<IPushNotificationService>();
+
     [Fact]
     public async Task Handle_ValidCommand_CreatesItemAndReturnsId()
     {
@@ -27,7 +29,7 @@ public class CreateGhostListItemCommandHandlerTests
         context.GhostLists.Add(list);
         await context.SaveChangesAsync();
 
-        var handler = new CreateGhostListItemCommandHandler(context, MockNotifier());
+        var handler = new CreateGhostListItemCommandHandler(context, MockNotifier(), MockPush());
         var cmd = new CreateGhostListItemCommand(list.Id, "enc_payload", "iv");
 
         var id = await handler.Handle(cmd, CancellationToken.None);
@@ -48,7 +50,7 @@ public class CreateGhostListItemCommandHandlerTests
         await context.SaveChangesAsync();
 
         var notifier = MockNotifier();
-        var handler = new CreateGhostListItemCommandHandler(context, notifier);
+        var handler = new CreateGhostListItemCommandHandler(context, notifier, MockPush());
 
         await handler.Handle(new CreateGhostListItemCommand(list.Id, "payload", "iv"), CancellationToken.None);
 
@@ -59,7 +61,7 @@ public class CreateGhostListItemCommandHandlerTests
     public async Task Handle_NonExistentList_ThrowsNotFoundException()
     {
         await using var context = DbContextFactory.Create();
-        var handler = new CreateGhostListItemCommandHandler(context, MockNotifier());
+        var handler = new CreateGhostListItemCommandHandler(context, MockNotifier(), MockPush());
 
         var act = () => handler.Handle(
             new CreateGhostListItemCommand(Guid.NewGuid(), "payload", "iv"),
@@ -79,7 +81,7 @@ public class CreateGhostListItemCommandHandlerTests
         context.GhostListItems.AddRange(items);
         await context.SaveChangesAsync();
 
-        var handler = new CreateGhostListItemCommandHandler(context, MockNotifier());
+        var handler = new CreateGhostListItemCommandHandler(context, MockNotifier(), MockPush());
 
         var act = () => handler.Handle(
             new CreateGhostListItemCommand(list.Id, "one_more", "iv"),
@@ -100,7 +102,7 @@ public class CreateGhostListItemCommandHandlerTests
         context.GhostListItems.AddRange(items);
         await context.SaveChangesAsync();
 
-        var handler = new CreateGhostListItemCommandHandler(context, MockNotifier());
+        var handler = new CreateGhostListItemCommandHandler(context, MockNotifier(), MockPush());
 
         var act = () => handler.Handle(
             new CreateGhostListItemCommand(list.Id, "the_500th", "iv"),

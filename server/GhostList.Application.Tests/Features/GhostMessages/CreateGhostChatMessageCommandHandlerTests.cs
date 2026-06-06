@@ -19,6 +19,8 @@ public class CreateGhostChatMessageCommandHandlerTests
         return notifier;
     }
 
+    private static IPushNotificationService MockPush() => Substitute.For<IPushNotificationService>();
+
     private static CreateGhostMessageCommand ValidCommand(Guid listId) => new(
         GhostListId: listId,
         EncryptedMessage: "enc_msg",
@@ -34,7 +36,7 @@ public class CreateGhostChatMessageCommandHandlerTests
         context.GhostLists.Add(list);
         await context.SaveChangesAsync();
 
-        var handler = new CreateGhostChatMessageCommandHandler(context, MockNotifier());
+        var handler = new CreateGhostChatMessageCommandHandler(context, MockNotifier(), MockPush());
         var id = await handler.Handle(ValidCommand(list.Id), CancellationToken.None);
 
         id.Should().NotBeEmpty();
@@ -53,7 +55,7 @@ public class CreateGhostChatMessageCommandHandlerTests
         await context.SaveChangesAsync();
 
         var notifier = MockNotifier();
-        var handler = new CreateGhostChatMessageCommandHandler(context, notifier);
+        var handler = new CreateGhostChatMessageCommandHandler(context, notifier, MockPush());
         await handler.Handle(ValidCommand(list.Id), CancellationToken.None);
 
         await notifier.Received(1).NotifyMessageCreated(list.Id, Arg.Any<MessageCreatedNotification>());
@@ -63,7 +65,7 @@ public class CreateGhostChatMessageCommandHandlerTests
     public async Task Handle_NonExistentList_ThrowsNotFoundException()
     {
         await using var context = DbContextFactory.Create();
-        var handler = new CreateGhostChatMessageCommandHandler(context, MockNotifier());
+        var handler = new CreateGhostChatMessageCommandHandler(context, MockNotifier(), MockPush());
 
         var act = () => handler.Handle(ValidCommand(Guid.NewGuid()), CancellationToken.None);
 
@@ -81,7 +83,7 @@ public class CreateGhostChatMessageCommandHandlerTests
         context.GhostChatMessages.AddRange(messages);
         await context.SaveChangesAsync();
 
-        var handler = new CreateGhostChatMessageCommandHandler(context, MockNotifier());
+        var handler = new CreateGhostChatMessageCommandHandler(context, MockNotifier(), MockPush());
 
         var act = () => handler.Handle(ValidCommand(list.Id), CancellationToken.None);
 
@@ -100,7 +102,7 @@ public class CreateGhostChatMessageCommandHandlerTests
         context.GhostChatMessages.AddRange(messages);
         await context.SaveChangesAsync();
 
-        var handler = new CreateGhostChatMessageCommandHandler(context, MockNotifier());
+        var handler = new CreateGhostChatMessageCommandHandler(context, MockNotifier(), MockPush());
 
         var act = () => handler.Handle(ValidCommand(list.Id), CancellationToken.None);
 

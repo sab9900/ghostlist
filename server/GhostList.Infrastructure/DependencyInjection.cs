@@ -1,5 +1,3 @@
-using FirebaseAdmin;
-using Google.Apis.Auth.OAuth2;
 using GhostList.Application.Common.Interfaces;
 using GhostList.Infrastructure.Persistence;
 using GhostList.Infrastructure.Services;
@@ -19,17 +17,10 @@ public static class DependencyInjection
             options.UseNpgsql(connectionString, b => b.MigrationsAssembly("GhostList.Infrastructure")));
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
-        // Firebase / FCM — optional: only active when service account JSON is configured
-        var serviceAccountJson = configuration["Firebase:ServiceAccountJson"];
-        if (!string.IsNullOrWhiteSpace(serviceAccountJson) && FirebaseApp.DefaultInstance is null)
-        {
-            FirebaseApp.Create(new AppOptions
-            {
-                Credential = GoogleCredential.FromJson(serviceAccountJson),
-            });
-        }
-
-        services.AddScoped<IPushNotificationService, FcmNotificationService>();
+        // APNs — optional: only active when all four config values are present
+        services.Configure<ApnsOptions>(configuration.GetSection("Apns"));
+        services.AddHttpClient("apns");
+        services.AddScoped<IPushNotificationService, ApnsNotificationService>();
 
         return services;
     }
