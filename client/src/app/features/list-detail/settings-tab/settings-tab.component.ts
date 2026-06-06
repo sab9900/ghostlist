@@ -1,10 +1,12 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Capacitor } from '@capacitor/core';
 import { DeleteAfterDuration, TTL_LABELS, TTL_VALUE_TO_ENUM } from '../../../core/models';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 import { QrScannerComponent } from '../../../shared/qr-scanner/qr-scanner.component';
 import { AppStore } from '../../../store/app.store';
+import { environment } from '../../../../environments/environment';
 
 @Component({
     selector: 'app-settings-tab',
@@ -51,7 +53,10 @@ export class SettingsTabComponent implements OnInit {
         const id = this.store.currentListId();
         const known = this.store.knownLists().find(l => l.id === id);
         if (!id || !known) return;
-        const url = `${window.location.origin}/join/${id}#${known.encryptionKey}`;
+        const origin = Capacitor.isNativePlatform()
+            ? environment.nativeShareBaseUrl
+            : window.location.origin;
+        const url = `${origin}/join/${id}#${known.encryptionKey}`;
         await navigator.clipboard.writeText(url);
         this.linkCopied.set(true);
         setTimeout(() => this.linkCopied.set(false), 2000);
