@@ -6,7 +6,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GhostList.Application.Features.GhostLists.Commands.DeleteGhostList;
 
-public record DeleteGhostListCommand(Guid ListId) : IRequest;
+/// <param name="ListId">List to delete.</param>
+/// <param name="OwnerToken">
+/// Raw owner token supplied by the client.
+/// For lists that have an OwnerTokenHash set, this must hash to the stored value.
+/// Omit for legacy lists (no hash stored) — deletion is allowed without a token.
+/// </param>
+public record DeleteGhostListCommand(Guid ListId, string? OwnerToken = null) : IRequest;
 
 public class DeleteGhostListCommandHandler : IRequestHandler<DeleteGhostListCommand>
 {
@@ -24,6 +30,9 @@ public class DeleteGhostListCommandHandler : IRequestHandler<DeleteGhostListComm
         var list = await _context.GhostLists
             .FirstOrDefaultAsync(gl => gl.Id == request.ListId, cancellationToken)
             ?? throw new NotFoundException(nameof(GhostList), request.ListId);
+
+        if (!list.IsOwnerTokenValid(request.OwnerToken))
+            throw new ForbiddenException("Invalid owner token.");
 
         _context.GhostListItems.RemoveRange(
             _context.GhostListItems.Where(i => i.GhostListId == request.ListId));

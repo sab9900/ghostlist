@@ -1,0 +1,44 @@
+using GhostList.Application.Features.ListMembers.Commands.DeleteListMember;
+using GhostList.Application.Features.ListMembers.Commands.KickListMember;
+using GhostList.Application.Features.ListMembers.Commands.UpsertListMember;
+using GhostList.Application.Features.ListMembers.Queries;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
+
+namespace GhostList.WebApi.Controllers;
+
+public record UpsertMemberRequest(string EncryptedPayload, string InitializationVector);
+
+[ApiController]
+[Route("api/members")]
+public class MembersController(IMediator mediator) : ControllerBase
+{
+    [HttpGet("{listId:guid}")]
+    public async Task<ActionResult<IEnumerable<ListMemberDto>>> GetMembers(Guid listId, CancellationToken ct)
+    {
+        var members = await mediator.Send(new GetListMembersQuery(listId), ct);
+        return Ok(members);
+    }
+
+    [HttpPut("{listId:guid}/{deviceId}")]
+    public async Task<IActionResult> UpsertMember(Guid listId, string deviceId, [FromBody] UpsertMemberRequest request, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(deviceId) || deviceId.Length > 64) return BadRequest();
+        await mediator.Send(new UpsertListMemberCommand(listId, deviceId, request.EncryptedPayload, request.InitializationVector), ct);
+        return NoContent();
+    }
+
+    [HttpDelete("{listId:guid}/{deviceId}")]
+    public async Task<IActionResult> DeleteMember(Guid listId, string deviceId, CancellationToken ct)
+    {
+        await mediator.Send(new DeleteListMemberCommand(listId, deviceId), ct);
+        return NoContent();
+    }
+
+    [HttpDelete("{listId:guid}/{deviceId}/kick")]
+    public async Task<IActionResult> KickMember(Guid listId, string deviceId, [FromQuery] string? ownerToken, CancellationToken ct)
+    {
+        await mediator.Send(new KickListMemberCommand(listId, deviceId, ownerToken), ct);
+        return NoContent();
+    }
+}

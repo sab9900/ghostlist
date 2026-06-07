@@ -7,11 +7,10 @@ namespace GhostList.WebApi.BackgroundServices;
 public class GhostListCleanupWorker(IServiceScopeFactory scopeFactory, ILogger<GhostListCleanupWorker> logger)
     : BackgroundService
 {
-    private static readonly TimeSpan TickInterval      = TimeSpan.FromMinutes(1);
-    private static readonly TimeSpan StaleListInterval = TimeSpan.FromHours(1);
-    private static readonly TimeSpan StaleListThreshold = TimeSpan.FromDays(90);
+    private static readonly TimeSpan TickInterval          = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan MemberlessCheckInterval = TimeSpan.FromHours(1);
 
-    private DateTime _lastStaleCheck = DateTime.MinValue;
+    private DateTime _lastMemberlessCheck = DateTime.MinValue;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -24,17 +23,18 @@ public class GhostListCleanupWorker(IServiceScopeFactory scopeFactory, ILogger<G
                 await using var scope = scopeFactory.CreateAsyncScope();
                 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
+                // Every tick: remove expired checked items.
                 var expiredItems = await mediator.Send(new DeleteExpiredListItemsCommand(), stoppingToken);
                 if (expiredItems > 0)
                     logger.LogInformation("Cleanup: {Count} expired item(s) deleted.", expiredItems);
 
-                if (DateTime.UtcNow - _lastStaleCheck >= StaleListInterval)
+                // Every hour: remove lists that have no members left.
+                if (DateTime.UtcNow - _lastMemberlessCheck >= MemberlessCheckInterval)
                 {
-                    _lastStaleCheck = DateTime.UtcNow;
-                    var staleLists = await mediator.Send(
-                        new DeleteStaleListsCommand(StaleListThreshold), stoppingToken);
-                    if (staleLists > 0)
-                        logger.LogInformation("Cleanup: {Count} stale list(s) deleted.", staleLists);
+                    _lastMemberlessCheck = DateTime.UtcNow;
+                    var memberlessLists = await mediator.Send(new DeleteMemberlessListsCommand(), stoppingToken);
+                    if (memberlessLists > 0)
+                        logger.LogInformation("Cleanup: {Count} memberless list(s) deleted.", memberlessLists);
                 }
             }
             catch (Exception ex) when (ex is not OperationCanceledException)

@@ -5,6 +5,7 @@ import { GhostChatMessage } from '../../../core/models';
 import { CryptoService } from '../../../core/services/crypto.service';
 import { SeenService } from '../../../core/services/seen.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
+import { TranslatePipe } from '@ngx-translate/core';
 import { AppStore } from '../../../store/app.store';
 
 interface DecryptedMessage {
@@ -16,7 +17,7 @@ interface DecryptedMessage {
 
 @Component({
     selector: 'app-chat-tab',
-    imports: [FormsModule, DatePipe],
+    imports: [FormsModule, DatePipe, TranslatePipe],
     templateUrl: './chat-tab.component.html',
     styleUrl: './chat-tab.component.scss',
 })
@@ -133,11 +134,6 @@ export class ChatTabComponent {
 
     async deleteMessage(id: string): Promise<void> {
         await this.store.deleteMessage(id);
-    }
-
-    openNameDialog(): void {
-        this.pendingName.set(this.prefs.senderName());
-        this.showNameDialog.set(true);
     }
 
     saveSenderName(): void {

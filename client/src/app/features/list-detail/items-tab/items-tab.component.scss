@@ -3,6 +3,7 @@
     flex-direction: column;
     flex: 1;
     overflow: hidden;
+    container-type: inline-size;
 }
 
 .add-bar {
@@ -54,6 +55,18 @@
             opacity: 0.4;
             cursor: not-allowed;
         }
+    }
+
+}
+
+@container (max-width: 260px) {
+    .add-bar {
+        flex-direction: column;
+    }
+
+    .add-bar__btn {
+        width: 100%;
+        height: 40px;
     }
 }
 

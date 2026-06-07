@@ -1,8 +1,8 @@
 <div class="screen" role="main">
 
     <header class="header" role="banner">
-        <button class="header__back" (click)="goHome()" aria-label="Back to lists">‹</button>
-        <h1 class="header__title">Import list</h1>
+        <button class="header__back" (click)="goHome()" [attr.aria-label]="'LIST_DETAIL.BACK_ARIA' | translate">‹</button>
+        <h1 class="header__title">{{ 'JOIN.TITLE' | translate }}</h1>
     </header>
 
     <div class="content">
@@ -10,32 +10,33 @@
         @if (state() === 'prompt') {
         <div class="card" role="region" aria-labelledby="join-heading">
             <span class="card__icon" aria-hidden="true">👻</span>
-            <h2 class="card__title" id="join-heading">You were invited</h2>
-            <p class="card__hint">Give this list a name on your device, then tap Import.</p>
-            <input class="input" type="text" placeholder="e.g. Shopping, Backlog…" [ngModel]="listName()"
-                (ngModelChange)="listName.set($event)" (keydown.enter)="importList()" maxlength="60" autofocus
-                aria-label="Name for this list" aria-required="true" />
+            <h2 class="card__title" id="join-heading">{{ 'JOIN.INVITED_TITLE' | translate }}</h2>
+            <p class="card__hint">{{ 'JOIN.INVITED_HINT' | translate }}</p>
+            <input class="input" type="text" [attr.placeholder]="'JOIN.NAME_PLACEHOLDER' | translate"
+                [ngModel]="listName()" (ngModelChange)="listName.set($event)"
+                (keydown.enter)="importList()" maxlength="60" autofocus
+                [attr.aria-label]="'JOIN.NAME_PLACEHOLDER' | translate" aria-required="true" />
             <div class="actions">
-                <button class="btn btn--ghost" (click)="goHome()">Cancel</button>
-                <button class="btn btn--primary" (click)="importList()" [disabled]="!listName().trim()">Import</button>
+                <button class="btn btn--ghost" (click)="goHome()">{{ 'COMMON.CANCEL' | translate }}</button>
+                <button class="btn btn--primary" (click)="importList()" [disabled]="!listName().trim()">{{ 'JOIN.IMPORT_BTN' | translate }}</button>
             </div>
         </div>
         }
 
         @if (state() === 'importing') {
-        <div class="card card--loading" role="status" aria-live="polite" aria-label="Importing list">
+        <div class="card card--loading" role="status" aria-live="polite" [attr.aria-label]="'JOIN.IMPORTING' | translate">
             <div class="spinner" aria-hidden="true"></div>
-            <p class="card__hint">Importing…</p>
+            <p class="card__hint">{{ 'JOIN.IMPORTING' | translate }}</p>
         </div>
         }
 
         @if (state() === 'error') {
         <div class="card card--error" role="alert" aria-labelledby="error-heading">
             <span class="card__icon" aria-hidden="true">⚠</span>
-            <h2 class="card__title" id="error-heading">Something went wrong</h2>
+            <h2 class="card__title" id="error-heading">{{ 'JOIN.ERROR_TITLE' | translate }}</h2>
             <p class="card__hint">{{ errorMsg() }}</p>
             <div class="actions">
-                <button class="btn btn--primary" (click)="goHome()">Go to lists</button>
+                <button class="btn btn--primary" (click)="goHome()">{{ 'JOIN.GO_TO_LISTS' | translate }}</button>
             </div>
         </div>
         }

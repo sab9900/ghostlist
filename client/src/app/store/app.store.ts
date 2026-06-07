@@ -11,13 +11,18 @@ import {
     GhostList,
     GhostListItem,
     KnownList,
+    ListMember,
     ReceiveQrPayload,
     ShareDelivery,
+    SyncQrPayload,
+    SyncSendQrPayload,
 } from '../core/models';
 import { CryptoService } from '../core/services/crypto.service';
+import { DeviceIdService } from '../core/services/device-id.service';
 import { HapticsService } from '../core/services/haptics.service';
 import { ListStorageService } from '../core/services/list-storage.service';
 import { PushNotificationService } from '../core/services/push-notification.service';
+import { UserPreferencesService } from '../core/services/user-preferences.service';
 
 interface AppState {
 
@@ -70,6 +75,13 @@ export const AppStore = signalStore(
         totalUnread: computed(() => Object.values(store.unreadCounts()).reduce((a, b) => a + b, 0)),
 
         canShare: computed(() => store.currentListId() !== null && store.currentEncryptionKey() !== null),
+
+        /** True when the current device is the owner of the currently open list. */
+        isCurrentListOwner: computed(() => {
+            const id = store.currentListId();
+            if (!id) return false;
+            return !!store.knownLists().find(l => l.id === id)?.ownerToken;
+        }),
     })),
 
     withMethods((store) => {
@@ -78,6 +90,8 @@ export const AppStore = signalStore(
         const storage = inject(ListStorageService);
         const crypto = inject(CryptoService);
         const push = inject(PushNotificationService);
+        const deviceId = inject(DeviceIdService);
+        const prefs = inject(UserPreferencesService);
 
         function setError(error: string | null) {
             patchState(store, { error, loading: false });
@@ -107,8 +121,48 @@ export const AppStore = signalStore(
             });
         }
 
+        /** Encrypt and upsert this device's member record for a list. Fire-and-forget safe. */
+        async function registerAsMember(listId: string, encryptionKey: string): Promise<void> {
+            registeredThisSession.add(listId);
+            try {
+                const payload = JSON.stringify({
+                    deviceId: deviceId.deviceId,
+                    displayName: prefs.senderName() || 'Anonymous',
+                    joinedAt: new Date().toISOString(),
+                });
+                const { ciphertext, iv } = await crypto.encrypt(payload, encryptionKey);
+                await firstValueFrom(api.upsertMember(listId, deviceId.deviceId, ciphertext, iv));
+            } catch { /* non-critical — don't block join on member registration failure */ }
+        }
+
+        /** Fetch and decrypt all member records for a list. */
+        async function fetchMembersForList(listId: string, encryptionKey: string): Promise<ListMember[]> {
+            const records = await firstValueFrom(api.getMembers(listId));
+            const members: ListMember[] = [];
+            for (const r of records) {
+                try {
+                    const plain = await crypto.decrypt(r.encryptedPayload, r.initializationVector, encryptionKey);
+                    const parsed = JSON.parse(plain) as { deviceId: string; displayName: string; joinedAt: string };
+                    members.push({
+                        deviceId: parsed.deviceId,
+                        displayName: parsed.displayName || 'Anonymous',
+                        joinedAt: parsed.joinedAt,
+                        isCurrentDevice: parsed.deviceId === deviceId.deviceId,
+                    });
+                } catch { /* skip undecryptable records */ }
+            }
+            return members;
+        }
+
         async function loadKnownLists(): Promise<void> {
-            const knownLists = await storage.getAll();
+            let knownLists: KnownList[];
+            try {
+                knownLists = await storage.getAll();
+            } catch {
+                // IDB unavailable — unblock all waiters so the app doesn't hang.
+                patchState(store, { listsLoaded: true });
+                return;
+            }
             patchState(store, { knownLists, unreadCounts: loadPersistedUnread(), listsLoaded: true });
 
             if (knownLists.length === 0) return;
@@ -128,6 +182,9 @@ export const AppStore = signalStore(
             await Promise.all(deadIds.map(id => storage.remove(id)));
             patchState(store, { knownLists: store.knownLists().filter(l => !deadIds.includes(l.id)) });
         }
+
+        // Tracks which lists have already had registerAsMember called this session
+        const registeredThisSession = new Set<string>();
 
         const pendingReceives = new Map<string, CryptoKey>();
         const pendingExportReceives = new Map<string, CryptoKey>();
@@ -173,6 +230,7 @@ export const AppStore = signalStore(
             await hub.connect();
             await hub.joinList(delivery.listId);
             await push.subscribeToList(delivery.listId);
+            void registerAsMember(delivery.listId, listKey);
 
             return delivery.listId;
         }
@@ -221,6 +279,7 @@ export const AppStore = signalStore(
             await hub.connect();
             await hub.joinList(listId);
             await push.subscribeToList(listId);
+            void registerAsMember(listId, listKey);
             return listId;
         }
 
@@ -232,6 +291,79 @@ export const AppStore = signalStore(
             await hub.connect();
             await hub.joinList(listId);
             await push.subscribeToList(listId);
+            void registerAsMember(listId, encryptionKey);
+        }
+
+        // ── Sync Machine ────────────────────────────────────────────────────
+
+        const pendingSyncReceives = new Map<string, CryptoKey>();
+
+        async function initSyncReceive(): Promise<SyncQrPayload> {
+            const { publicKeyB64, privateKey } = await crypto.generateEcdhKeypair();
+            const sessionId = self.crypto.randomUUID();
+            pendingSyncReceives.set(sessionId, privateKey);
+            return { type: 'sync', publicKey: publicKeyB64, sessionId };
+        }
+
+        async function pushSyncBundle(sessionId: string, receiverPublicKeyB64: string): Promise<void> {
+            const lists = store.knownLists();
+            const payload = JSON.stringify(
+                lists.map(l => ({ id: l.id, name: l.name, encryptionKey: l.encryptionKey, ownerToken: l.ownerToken })),
+            );
+            const bundle = await crypto.wrapPayload(payload, receiverPublicKeyB64);
+            await firstValueFrom(api.putSyncBundle(sessionId, bundle.encryptedPayload, bundle.iv, bundle.senderPublicKey));
+        }
+
+        async function claimSyncBundle(sessionId: string): Promise<number> {
+            const privateKey = pendingSyncReceives.get(sessionId);
+            if (!privateKey) throw new Error('No pending sync receive for this session.');
+            const bundle = await firstValueFrom(api.getSyncBundle(sessionId));
+            pendingSyncReceives.delete(sessionId);
+            const plain = await crypto.unwrapPayload(bundle.encryptedPayload, bundle.iv, bundle.senderPublicKey, privateKey);
+            const entries = JSON.parse(plain) as { id: string; name: string; encryptionKey: string; ownerToken?: string }[];
+            let imported = 0;
+            for (const e of entries) {
+                const already = store.knownLists().find(l => l.id === e.id);
+                if (already) {
+                    // Already have it — backfill ownerToken if sender had it and we don't
+                    if (e.ownerToken && !already.ownerToken) {
+                        await persistAndTrack({ ...already, ownerToken: e.ownerToken });
+                    }
+                    void registerAsMember(e.id, e.encryptionKey);
+                    continue;
+                }
+                const entry: KnownList = { id: e.id, encryptionKey: e.encryptionKey, name: e.name, addedAt: new Date().toISOString(), ownerToken: e.ownerToken };
+                await persistAndTrack(entry);
+                await hub.connect();
+                await hub.joinList(e.id);
+                await push.subscribeToList(e.id);
+                void registerAsMember(e.id, e.encryptionKey);
+                imported++;
+            }
+            return imported;
+        }
+
+        // ── Sync Machine — sender-initiated (mirrors export flow for individual lists) ─
+
+        /** Sender side: generates a session. The QR shows only the sessionId — no crypto keys.
+         *  The receiver scans, generates a keypair, and posts it as a handshake. */
+        function initSyncSend(): SyncSendQrPayload {
+            const sessionId = self.crypto.randomUUID();
+            return { type: 'sync-send', sessionId };
+        }
+
+        /** Receiver side: called after scanning sender's QR.
+         *  Generates ECDH keypair, stores private key for later decryption, posts public key as handshake. */
+        async function respondToSyncSend(sessionId: string): Promise<void> {
+            const { publicKeyB64, privateKey } = await crypto.generateEcdhKeypair();
+            pendingSyncReceives.set(sessionId, privateKey);
+            await firstValueFrom(api.postHandshake(sessionId, publicKeyB64));
+        }
+
+        /** Sender side: polls for receiver's handshake public key, then encrypts + uploads bundle. */
+        async function pollAndPushSyncBundle(sessionId: string): Promise<void> {
+            const handshake = await firstValueFrom(api.pollHandshake(sessionId));
+            await pushSyncBundle(sessionId, handshake.receiverPublicKey);
         }
 
         return {
@@ -245,15 +377,29 @@ export const AppStore = signalStore(
             pollExportHandshake,
             respondToExport,
             claimExportedKey,
+            fetchMembersForList,
+            initSyncReceive,
+            pushSyncBundle,
+            claimSyncBundle,
+            initSyncSend,
+            respondToSyncSend,
+            pollAndPushSyncBundle,
 
             async createList(encryptionKey: string, name: string): Promise<string> {
                 patchState(store, { loading: true });
                 try {
-                    const id = await firstValueFrom(api.createList());
-                    const entry: KnownList = { id, encryptionKey, name, addedAt: new Date().toISOString() };
+                    // Generate a random owner token and send only its hash to the server.
+                    // The raw token stays on the client — the server is zero-knowledge.
+                    const tokenBytes = self.crypto.getRandomValues(new Uint8Array(32));
+                    const ownerToken = btoa(String.fromCharCode(...tokenBytes));
+                    const ownerTokenHash = await crypto.sha256Hex(ownerToken);
+
+                    const id = await firstValueFrom(api.createList(ownerTokenHash));
+                    const entry: KnownList = { id, encryptionKey, name, addedAt: new Date().toISOString(), ownerToken };
                     await persistAndTrack(entry);
                     await hub.joinList(id);
                     await push.subscribeToList(id);
+                    void registerAsMember(id, encryptionKey);
                     return id;
                 } catch (e: unknown) {
                     setError(e instanceof Error ? e.message : 'Failed to create list');
@@ -264,6 +410,13 @@ export const AppStore = signalStore(
             },
 
             async joinList(id: string, encryptionKey: string): Promise<void> {
+                // Register this device as a member if not yet done this session.
+                // Covers: existing lists from before this feature, and link-join (importFromLink
+                // skips registration when already known).
+                if (!registeredThisSession.has(id)) {
+                    void registerAsMember(id, encryptionKey);
+                }
+
                 if (store.currentListId() === id) return;
 
                 patchState(store, {
@@ -311,7 +464,8 @@ export const AppStore = signalStore(
                 patchState(store, { loading: true });
                 try {
                     await push.unsubscribeFromList(id);
-                    await firstValueFrom(api.deleteList(id));
+                    const ownerToken = store.knownLists().find(l => l.id === id)?.ownerToken;
+                    await firstValueFrom(api.deleteList(id, ownerToken));
                     await hub.leaveList(id);
                     await storage.remove(id);
                     const knownLists = store.knownLists().filter((l) => l.id !== id);
@@ -339,6 +493,18 @@ export const AppStore = signalStore(
             },
 
             async forgetList(id: string): Promise<void> {
+                const known = store.knownLists().find(l => l.id === id);
+
+                if (known?.ownerToken) {
+                    // Owner forgetting = delete for everyone (server requires the owner token).
+                    // deleteList handles unsubscribe, hub leave, storage removal, and state patch.
+                    await this.deleteList(id);
+                    return;
+                }
+
+                // Non-owner: remove locally only.
+                // Fire-and-forget member record removal — best effort
+                void firstValueFrom(api.deleteMember(id, deviceId.deviceId)).catch(() => { /* non-critical */ });
                 await push.unsubscribeFromList(id);
                 await hub.leaveList(id);
                 await storage.remove(id);
@@ -354,6 +520,12 @@ export const AppStore = signalStore(
                     });
                 }
                 patchState(store, patch);
+            },
+
+            async kickMember(listId: string, targetDeviceId: string): Promise<void> {
+                const ownerToken = store.knownLists().find(l => l.id === listId)?.ownerToken;
+                if (!ownerToken) throw new Error('Not the list owner.');
+                await firstValueFrom(api.kickMember(listId, targetDeviceId, ownerToken));
             },
 
             async updateTtl(ttl: DeleteAfterDuration): Promise<void> {
@@ -431,6 +603,7 @@ export const AppStore = signalStore(
         const hub = inject(HubService);
         const haptics = inject(HapticsService);
         const push = inject(PushNotificationService);
+        const deviceId = inject(DeviceIdService);
 
         return {
             async onInit() {
@@ -508,6 +681,13 @@ export const AppStore = signalStore(
                 hub.listDeleted$.subscribe(async (listId) => {
 
                     await store.forgetList(listId);
+                });
+
+                hub.memberKicked$.subscribe(async ({ listId, deviceId: kickedDeviceId }) => {
+                    if (kickedDeviceId === deviceId.deviceId) {
+                        // We were kicked — forget that list regardless of which one is active.
+                        await store.forgetList(listId);
+                    }
                 });
 
                 hub.reconnected$.subscribe(async () => {

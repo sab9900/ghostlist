@@ -77,3 +77,54 @@
         }
     }
 }
+
+// ── Biometric lock screen ──────────────────────────────────────────────────
+
+.lock-screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg);
+    z-index: 9999;
+
+    &__card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        padding: 2.5rem 2rem;
+        max-width: 320px;
+        width: 100%;
+        text-align: center;
+    }
+
+    &__icon {
+        color: var(--color-accent);
+        margin-bottom: 0.5rem;
+    }
+
+    &__title {
+        font-size: var(--text-lg);
+        font-weight: 600;
+        color: var(--color-text);
+        margin: 0;
+    }
+
+    &__hint {
+        font-size: var(--text-sm);
+        color: var(--color-text-subtle);
+        margin: 0;
+    }
+
+    &__error {
+        font-size: var(--text-sm);
+        color: var(--color-danger, #f87171);
+        margin: 0;
+    }
+
+    &__retry {
+        margin-top: -0.25rem;
+    }
+}

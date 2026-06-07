@@ -5,6 +5,7 @@ import { filter, from, of, switchMap, take } from 'rxjs';
 import { HubService } from '../../api/hub.service';
 import { LayoutService } from '../../core/services/layout.service';
 import { SeenService } from '../../core/services/seen.service';
+import { TranslatePipe } from '@ngx-translate/core';
 import { BadgeComponent } from '../../shared/badge/badge.component';
 import { AppStore } from '../../store/app.store';
 import { ChatTabComponent } from './chat-tab/chat-tab.component';
@@ -31,7 +32,7 @@ function loadPaneWidth(): number {
 
 @Component({
     selector: 'app-list-detail',
-    imports: [BadgeComponent, ItemsTabComponent, ChatTabComponent, SettingsTabComponent],
+    imports: [BadgeComponent, ItemsTabComponent, ChatTabComponent, SettingsTabComponent, TranslatePipe],
     templateUrl: './list-detail.component.html',
     styleUrl: './list-detail.component.scss',
 })
@@ -95,7 +96,10 @@ export class ListDetailComponent implements OnDestroy {
                             this.store.leaveCurrentList()
                                 .then(() => this.store.joinList(id, known.encryptionKey))
                                 .then(() => { this.seen.markItemsSeen(id); })
-                                .catch(() => { this.router.navigate(['/']); })
+                                .catch((err: unknown) => {
+                                    console.error('[list-detail] joinList failed, redirecting home:', err);
+                                    this.router.navigate(['/']);
+                                })
                         );
                     }),
                 );

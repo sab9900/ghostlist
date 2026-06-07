@@ -1,6 +1,6 @@
 <section class="settings-section" aria-labelledby="rename-heading">
-    <h3 class="settings-section__title" id="rename-heading">List name</h3>
-    <p class="settings-section__hint">This name is local — only visible on this device.</p>
+    <h3 class="settings-section__title" id="rename-heading">{{ 'LIST_SETTINGS.LIST_NAME_TITLE' | translate }}</h3>
+    <p class="settings-section__hint">{{ 'LIST_SETTINGS.LIST_NAME_HINT' | translate }}</p>
     <div class="settings-row">
         <input class="settings-input" type="text" [ngModel]="listName()" (ngModelChange)="listName.set($event)"
             (keydown.enter)="saveListName()" maxlength="60" aria-labelledby="rename-heading" />
@@ -8,102 +8,172 @@
             <button class="btn btn--primary btn--sm" (click)="saveListName()"
                 [class.save-slot__hidden]="nameSaved()"
                 [disabled]="renamingList() || !listName().trim()" [attr.aria-busy]="renamingList()">
-                {{ renamingList() ? 'Saving…' : 'Save' }}
+                {{ renamingList() ? ('COMMON.SAVING' | translate) : ('COMMON.SAVE' | translate) }}
             </button>
             @if (nameSaved()) {
-            <span class="save-feedback save-slot__overlay" role="status" aria-live="polite">✓ Saved</span>
+            <span class="save-feedback save-slot__overlay" role="status" aria-live="polite">{{ 'COMMON.SAVED' | translate }}</span>
             }
         </div>
     </div>
 </section>
 
 <section class="settings-section" aria-labelledby="ttl-heading">
-    <h3 class="settings-section__title" id="ttl-heading">Auto-delete checked items</h3>
-    <p class="settings-section__hint" id="ttl-hint">Checked items are removed after this duration.</p>
+    <h3 class="settings-section__title" id="ttl-heading">{{ 'LIST_SETTINGS.AUTO_DELETE_TITLE' | translate }}</h3>
+    <p class="settings-section__hint" id="ttl-hint">{{ 'LIST_SETTINGS.AUTO_DELETE_HINT' | translate }}</p>
     <div class="settings-row">
         <select class="settings-select" [ngModel]="selectedTtl()" (ngModelChange)="selectedTtl.set($event)"
             aria-labelledby="ttl-heading" aria-describedby="ttl-hint">
             @for (opt of ttlOptions; track opt.value) {
-            <option [value]="opt.value">{{ opt.label }}</option>
+            <option [value]="opt.value">{{ ('LIST_SETTINGS.TTL.' + opt.value) | translate }}</option>
             }
         </select>
         <div class="save-slot">
             <button class="btn btn--primary btn--sm" (click)="saveTtl()"
                 [class.save-slot__hidden]="ttlSaved()"
                 [disabled]="savingTtl()" [attr.aria-busy]="savingTtl()">
-                {{ savingTtl() ? 'Saving…' : 'Save' }}
+                {{ savingTtl() ? ('COMMON.SAVING' | translate) : ('COMMON.SAVE' | translate) }}
             </button>
             @if (ttlSaved()) {
-            <span class="save-feedback save-slot__overlay" role="status" aria-live="polite">✓ Saved</span>
+            <span class="save-feedback save-slot__overlay" role="status" aria-live="polite">{{ 'COMMON.SAVED' | translate }}</span>
             }
         </div>
     </div>
 </section>
 
 <section class="settings-section" aria-labelledby="share-heading">
-    <h3 class="settings-section__title" id="share-heading">Share this list</h3>
+    <h3 class="settings-section__title" id="share-heading">{{ 'LIST_SETTINGS.SHARE_TITLE' | translate }}</h3>
 
     <div class="share-option">
-        <p class="settings-section__hint">Copy a link and send it via any channel.</p>
+        <p class="settings-section__hint">{{ 'LIST_SETTINGS.SHARE_LINK_HINT' | translate }}</p>
         <button class="btn btn--primary btn--sm" (click)="copyShareLink()"
-            [attr.aria-label]="linkCopied() ? 'Link copied' : 'Copy share link'">
-            {{ linkCopied() ? '✓ Copied!' : 'Copy share link' }}
+            [attr.aria-label]="linkCopied() ? ('LIST_SETTINGS.COPIED' | translate) : ('LIST_SETTINGS.COPY_LINK' | translate)">
+            {{ linkCopied() ? ('LIST_SETTINGS.COPIED' | translate) : ('LIST_SETTINGS.COPY_LINK' | translate) }}
         </button>
     </div>
 
     <div class="share-option">
-        <p class="settings-section__hint" id="share-hint">
-            Or: the other device taps "Import list" and shows a QR code — point your camera at it.
-        </p>
+        <p class="settings-section__hint" id="share-hint">{{ 'LIST_SETTINGS.QR_HINT' | translate }}</p>
 
         @if (shareStep() === 'idle') {
-        <button class="btn btn--primary btn--sm" (click)="startShare()" aria-describedby="share-hint">Scan QR
-            code</button>
+        <button class="btn btn--primary btn--sm" (click)="startShare()" aria-describedby="share-hint">
+            {{ 'LIST_SETTINGS.SCAN_QR' | translate }}
+        </button>
         }
 
-        @if (shareStep() === 'scan') {
-        <div class="share-scan" role="region" aria-label="Scan QR code from other device">
-            <app-qr-scanner (detected)="onQrDetected($event)" />
-            <div class="share-scan__actions">
-                <button class="btn btn--ghost btn--sm" (click)="cancelShare()">Cancel</button>
-            </div>
-        </div>
-        }
 
         @if (shareStep() === 'done') {
         <p class="share-status share-status--ok" role="status" aria-live="polite">
-            ✓ Key sent — the other device will open the list automatically.
+            {{ 'LIST_SETTINGS.QR_SENT' | translate }}
         </p>
-        <button class="btn btn--ghost btn--sm" (click)="shareStep.set('idle')">Share again</button>
+        <button class="btn btn--ghost btn--sm" (click)="shareStep.set('idle')">{{ 'LIST_SETTINGS.SHARE_AGAIN' | translate }}</button>
         }
 
         @if (shareStep() === 'error') {
         <p class="share-status share-status--err" role="alert">
-            Could not read QR code. Make sure you're scanning the correct screen.
+            {{ 'LIST_SETTINGS.QR_ERROR' | translate }}
         </p>
-        <button class="btn btn--ghost btn--sm" (click)="shareStep.set('scan')">Try again</button>
+        <button class="btn btn--ghost btn--sm" (click)="shareStep.set('scan')">{{ 'COMMON.TRY_AGAIN' | translate }}</button>
         }
     </div>
 </section>
 
+<section class="settings-section" aria-labelledby="members-heading">
+    <h3 class="settings-section__title" id="members-heading">{{ 'LIST_SETTINGS.MEMBERS_TITLE' | translate }}</h3>
+    <p class="settings-section__hint">{{ 'LIST_SETTINGS.MEMBERS_HINT' | translate }}</p>
+
+    @if (membersLoading()) {
+    <div class="member-list" aria-hidden="true">
+        <div class="member member--skeleton">
+            <div class="member__avatar skeleton-box"></div>
+            <div class="member__info">
+                <div class="skeleton-line skeleton-line--name"></div>
+                <div class="skeleton-line skeleton-line--sub"></div>
+            </div>
+        </div>
+        <div class="member member--skeleton">
+            <div class="member__avatar skeleton-box"></div>
+            <div class="member__info">
+                <div class="skeleton-line skeleton-line--name"></div>
+                <div class="skeleton-line skeleton-line--sub"></div>
+            </div>
+        </div>
+    </div>
+    } @else if (members().length === 0) {
+    <p class="members-empty">{{ 'LIST_SETTINGS.MEMBERS_EMPTY' | translate }}</p>
+    } @else {
+    <div class="member-list" role="list">
+        @for (member of members(); track member.deviceId) {
+        <div class="member" role="listitem">
+            <div class="member__avatar" [class.member__avatar--self]="member.isCurrentDevice" aria-hidden="true">
+                {{ member.displayName.charAt(0).toUpperCase() }}
+            </div>
+            <div class="member__info">
+                <span class="member__name">
+                    {{ member.displayName }}
+                    @if (member.isCurrentDevice) {
+                    <span class="member__you">{{ 'LIST_SETTINGS.MEMBERS_YOU' | translate }}</span>
+                    }
+                </span>
+                <span class="member__joined">{{ 'LIST_SETTINGS.MEMBERS_SINCE' | translate }} {{ member.joinedAt | date:'mediumDate' }}</span>
+            </div>
+            @if (store.isCurrentListOwner() && !member.isCurrentDevice) {
+            <button class="btn btn--danger btn--sm member__kick"
+                [disabled]="kickingDeviceId() === member.deviceId"
+                [attr.aria-busy]="kickingDeviceId() === member.deviceId"
+                [attr.aria-label]="'LIST_SETTINGS.KICK_BTN' | translate"
+                (click)="kickMember(member.deviceId)">
+                {{ 'LIST_SETTINGS.KICK_BTN' | translate }}
+            </button>
+            }
+        </div>
+        }
+    </div>
+    }
+</section>
+
+<!-- ── Share scan modal ── -->
+@if (shareStep() === 'scan') {
+<div class="dialog-backdrop" (click)="cancelShare()" role="presentation">
+    <div class="dialog dialog--qr" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+        aria-labelledby="share-scan-title">
+        <h2 class="dialog__title" id="share-scan-title">{{ 'LIST_SETTINGS.SCAN_QR' | translate }}</h2>
+        <p class="dialog__hint">{{ 'LIST_SETTINGS.QR_HINT' | translate }}</p>
+        <div class="dialog__scanner" role="region" [attr.aria-label]="'LIST_SETTINGS.SCAN_QR' | translate">
+            <app-qr-scanner (detected)="onQrDetected($event)" />
+        </div>
+        <div class="dialog__actions">
+            <button class="btn btn--ghost" (click)="cancelShare()">{{ 'COMMON.CANCEL' | translate }}</button>
+        </div>
+    </div>
+</div>
+}
+
 <section class="settings-section settings-section--danger" aria-labelledby="danger-heading">
-    <h3 class="settings-section__title settings-section__title--danger" id="danger-heading">Danger zone</h3>
+    <h3 class="settings-section__title settings-section__title--danger" id="danger-heading">{{ 'LIST_SETTINGS.DANGER_TITLE' | translate }}</h3>
+
+    @if (!store.isCurrentListOwner()) {
+    <!-- Non-owner: only option is to forget (remove locally) -->
     <div class="danger-row">
         <div>
-            <p class="danger-label" id="forget-label">Remove from this device</p>
-            <p class="danger-hint" id="forget-hint">Other devices keep access.</p>
+            <p class="danger-label" id="forget-label">{{ 'LIST_SETTINGS.FORGET_LABEL' | translate }}</p>
+            <p class="danger-hint" id="forget-hint">{{ 'LIST_SETTINGS.FORGET_HINT' | translate }}</p>
         </div>
         <button class="btn btn--danger btn--sm" (click)="forgetList()" aria-labelledby="forget-label"
-            aria-describedby="forget-hint">Forget</button>
+            aria-describedby="forget-hint">{{ 'LIST_SETTINGS.FORGET_BTN' | translate }}</button>
     </div>
+    }
+
+    @if (store.isCurrentListOwner()) {
+    <!-- Owner: only option is delete for everyone (there is no "forget" without deleting for all) -->
     <div class="danger-row">
         <div>
-            <p class="danger-label" id="delete-label">Delete for everyone</p>
-            <p class="danger-hint" id="delete-hint">Permanently deletes from server.</p>
+            <p class="danger-label" id="delete-label">{{ 'LIST_SETTINGS.DELETE_LABEL' | translate }}</p>
+            <p class="danger-hint" id="delete-hint">{{ 'LIST_SETTINGS.DELETE_HINT' | translate }}</p>
         </div>
         <button class="btn btn--danger btn--sm" (click)="deleteList()" [disabled]="deletingList()"
             [attr.aria-busy]="deletingList()" aria-labelledby="delete-label" aria-describedby="delete-hint">
-            {{ deletingList() ? 'Deleting…' : 'Delete' }}
+            {{ deletingList() ? ('COMMON.DELETING' | translate) : ('COMMON.DELETE' | translate) }}
         </button>
     </div>
+    }
 </section>

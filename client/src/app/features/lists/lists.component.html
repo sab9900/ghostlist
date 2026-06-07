@@ -1,14 +1,14 @@
 <div class="screen" role="main">
 
     <header class="header" role="banner">
-        <img class="header__logo" src="/ghost-header.svg" alt="Ghost List" />
+        <img class="header__logo" src="/ghost-header.svg" [attr.alt]="'Ghost List'" />
         <h1 class="header__title">Ghost List</h1>
         <div class="header__actions">
             @if (totalUnread() > 0) {
             <app-badge [count]="totalUnread()" role="status" [attr.aria-label]="totalUnread() + ' unread messages'" />
             }
             <div class="menu-anchor">
-                <button class="header__action" (click)="toggleMenu()" aria-label="Menu" [attr.aria-expanded]="showMenu()">
+                <button class="header__action" (click)="toggleMenu()" [attr.aria-label]="'LISTS.MENU_SETTINGS' | translate" [attr.aria-expanded]="showMenu()">
                     <!-- Hamburger icon -->
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -20,7 +20,7 @@
 
                 @if (showMenu()) {
                 <div class="menu-overlay" (click)="closeMenu()" aria-hidden="true"></div>
-                <nav class="menu" role="menu" aria-label="Actions">
+                <nav class="menu" role="menu" [attr.aria-label]="'LISTS.MENU_SETTINGS' | translate">
                     <button class="menu-item" (click)="openImportFromMenu()" role="menuitem">
                         <!-- Download / import icon -->
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -29,7 +29,7 @@
                             <polyline points="7 10 12 15 17 10" />
                             <line x1="12" y1="15" x2="12" y2="3" />
                         </svg>
-                        <span>Import list</span>
+                        <span>{{ 'LISTS.MENU_IMPORT' | translate }}</span>
                     </button>
                     <button class="menu-item" (click)="openExportFromMenu()" role="menuitem">
                         <!-- Upload / export icon -->
@@ -39,7 +39,7 @@
                             <polyline points="17 8 12 3 7 8" />
                             <line x1="12" y1="3" x2="12" y2="15" />
                         </svg>
-                        <span>Export list</span>
+                        <span>{{ 'LISTS.MENU_EXPORT' | translate }}</span>
                     </button>
                     <button class="menu-item" (click)="goToSettingsFromMenu()" role="menuitem">
                         <!-- Gear / settings icon -->
@@ -48,7 +48,7 @@
                             <circle cx="12" cy="12" r="3" />
                             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
                         </svg>
-                        <span>Settings</span>
+                        <span>{{ 'LISTS.MENU_SETTINGS' | translate }}</span>
                     </button>
                     @if (showCoffeeLink) {
                     <a class="menu-item" href="https://buymeacoffee.com/sab.norica.informatics" target="_blank"
@@ -62,7 +62,7 @@
                             <line x1="10" y1="2" x2="10" y2="4" />
                             <line x1="14" y1="2" x2="14" y2="4" />
                         </svg>
-                        <span>Buy me a coffee</span>
+                        <span>{{ 'LISTS.MENU_COFFEE' | translate }}</span>
                     </a>
                     }
                     <button class="menu-item" (click)="openAboutFromMenu()" role="menuitem">
@@ -73,7 +73,7 @@
                             <line x1="12" y1="16" x2="12" y2="12" />
                             <line x1="12" y1="8" x2="12.01" y2="8" />
                         </svg>
-                        <span>About</span>
+                        <span>{{ 'LISTS.MENU_ABOUT' | translate }}</span>
                     </button>
                 </nav>
                 }
@@ -85,12 +85,12 @@
 
         @if (lists().length === 0) {
         <div class="empty" role="status" aria-live="polite">
-            <p class="empty__headline">No lists yet</p>
-            <p class="empty__sub">Tap + to create one, or the import button to receive from another device.</p>
+            <p class="empty__headline">{{ 'LISTS.EMPTY_HEADLINE' | translate }}</p>
+            <p class="empty__sub">{{ 'LISTS.EMPTY_SUB' | translate }}</p>
         </div>
         }
 
-        <ul class="card-list" role="list" aria-label="Your lists">
+        <ul class="card-list" role="list" [attr.aria-label]="'LISTS.MENU_IMPORT' | translate">
             @for (list of lists(); track list.id) {
             <li class="card" (click)="openList(list.id)" role="button" tabindex="0"
                 [class.card--active]="activeListId() === list.id"
@@ -111,7 +111,7 @@
 
     </main>
 
-    <button class="fab" (click)="openCreateDialog()" aria-label="Create new list">
+    <button class="fab" (click)="openCreateDialog()" [attr.aria-label]="'LISTS.CREATE_TITLE' | translate">
         <span aria-hidden="true">+</span>
     </button>
 
@@ -120,17 +120,18 @@
     <div class="dialog-backdrop" (click)="closeCreateDialog()" role="presentation">
         <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
             aria-labelledby="create-dialog-title">
-            <h2 class="dialog__title" id="create-dialog-title">New list</h2>
-            <input #createInput class="dialog__input" type="text" placeholder="List name…" [(ngModel)]="newListName"
-                (keydown.enter)="createList()" maxlength="60" aria-label="List name" aria-required="true" />
+            <h2 class="dialog__title" id="create-dialog-title">{{ 'LISTS.CREATE_TITLE' | translate }}</h2>
+            <input #createInput class="dialog__input" type="text" [attr.placeholder]="'LISTS.CREATE_PLACEHOLDER' | translate"
+                [(ngModel)]="newListName" (keydown.enter)="createList()" maxlength="60"
+                [attr.aria-label]="'LISTS.CREATE_PLACEHOLDER' | translate" aria-required="true" />
             @if (createError()) {
             <p class="dialog__error" role="alert">{{ createError() }}</p>
             }
             <div class="dialog__actions">
-                <button class="btn btn--ghost" (click)="closeCreateDialog()" [disabled]="creating()">Cancel</button>
+                <button class="btn btn--ghost" (click)="closeCreateDialog()" [disabled]="creating()">{{ 'COMMON.CANCEL' | translate }}</button>
                 <button class="btn btn--primary" (click)="createList()" [disabled]="!newListName().trim() || creating()"
                     [attr.aria-busy]="creating()">
-                    {{ creating() ? 'Creating…' : 'Create' }}
+                    {{ creating() ? ('LISTS.CREATING_BTN' | translate) : ('LISTS.CREATE_BTN' | translate) }}
                 </button>
             </div>
         </div>
@@ -142,58 +143,58 @@
     <div class="dialog-backdrop" (click)="closeImportDialog()" role="presentation">
         <div class="dialog dialog--qr" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
             aria-labelledby="import-dialog-title">
-            <h2 class="dialog__title" id="import-dialog-title">Import list</h2>
+            <h2 class="dialog__title" id="import-dialog-title">{{ 'LISTS.IMPORT_TITLE' | translate }}</h2>
 
             <div class="dialog__tabs" role="tablist">
                 <button class="dialog__tab" [class.dialog__tab--active]="importMode() === 'show'"
                     (click)="setImportMode('show')" role="tab" [attr.aria-selected]="importMode() === 'show'">
-                    Show QR
+                    {{ 'LISTS.IMPORT_SHOW_QR' | translate }}
                 </button>
                 <button class="dialog__tab" [class.dialog__tab--active]="importMode() === 'scan'"
                     (click)="setImportMode('scan')" role="tab" [attr.aria-selected]="importMode() === 'scan'">
-                    Scan QR
+                    {{ 'LISTS.IMPORT_SCAN_QR' | translate }}
                 </button>
             </div>
 
             @if (importMode() === 'show') {
-            <p class="dialog__hint">Ask the sender to open their list's Settings tab and scan this code.</p>
-            <div class="dialog__qr" role="img" aria-label="QR code for receiving this list">
+            <p class="dialog__hint">{{ 'LISTS.IMPORT_SHOW_HINT' | translate }}</p>
+            <div class="dialog__qr" role="img" [attr.aria-label]="'LISTS.IMPORT_TITLE' | translate">
                 @if (importQrData()) {
                 <app-qr-code [data]="importQrData()!" [size]="200" />
                 } @else {
-                <div class="dialog__qr-loading" role="status" aria-live="polite">Generating…</div>
+                <div class="dialog__qr-loading" role="status" aria-live="polite">{{ 'LISTS.GENERATING' | translate }}</div>
                 }
             </div>
             <p class="dialog__hint dialog__hint--sm" aria-live="polite">
-                Waiting — the list will open automatically once received.
+                {{ 'LISTS.IMPORT_SHOW_WAITING' | translate }}
             </p>
             }
 
             @if (importMode() === 'scan') {
-            <p class="dialog__hint">Scan the QR code shown on the sender's Export screen.</p>
+            <p class="dialog__hint">{{ 'LISTS.IMPORT_SCAN_HINT' | translate }}</p>
 
             @if (scanStep() === 'scanning') {
-            <div class="dialog__scanner" role="region" aria-label="Camera viewfinder">
+            <div class="dialog__scanner" role="region" [attr.aria-label]="'LISTS.IMPORT_SCAN_QR' | translate">
                 <app-qr-scanner (detected)="onExportQrDetected($event)" />
             </div>
             }
 
             @if (scanStep() === 'waiting') {
             <div class="dialog__status dialog__status--ok" role="status" aria-live="polite">
-                QR scanned — waiting for key delivery…
+                {{ 'LISTS.IMPORT_SCAN_WAITING' | translate }}
             </div>
             }
 
             @if (scanStep() === 'error') {
             <div class="dialog__status dialog__status--err" role="alert">
-                Could not read QR code. Make sure you're scanning an export QR.
+                {{ 'LISTS.IMPORT_SCAN_ERROR' | translate }}
             </div>
-            <button class="btn btn--ghost btn--sm" (click)="retryScan()">Try again</button>
+            <button class="btn btn--ghost btn--sm" (click)="retryScan()">{{ 'COMMON.TRY_AGAIN' | translate }}</button>
             }
             }
 
             <div class="dialog__actions">
-                <button class="btn btn--ghost" (click)="closeImportDialog()">Cancel</button>
+                <button class="btn btn--ghost" (click)="closeImportDialog()">{{ 'COMMON.CANCEL' | translate }}</button>
             </div>
         </div>
     </div>
@@ -204,10 +205,10 @@
     <div class="dialog-backdrop" (click)="closeExportDialog()" role="presentation">
         <div class="dialog dialog--qr" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
             aria-labelledby="export-dialog-title">
-            <h2 class="dialog__title" id="export-dialog-title">Export list</h2>
+            <h2 class="dialog__title" id="export-dialog-title">{{ 'LISTS.EXPORT_TITLE' | translate }}</h2>
 
             @if (exportStep() === 'pick') {
-            <p class="dialog__hint">Choose which list to export.</p>
+            <p class="dialog__hint">{{ 'LISTS.EXPORT_PICK_HINT' | translate }}</p>
             <ul class="pick-list" role="list">
                 @for (list of lists(); track list.id) {
                 <li>
@@ -220,34 +221,34 @@
             }
 
             @if (exportStep() === 'qr') {
-            <p class="dialog__hint">The other device taps "Import list" → "Scan QR" and points the camera here.</p>
-            <div class="dialog__qr" role="img" aria-label="QR code for exporting this list">
+            <p class="dialog__hint">{{ 'LISTS.EXPORT_QR_HINT' | translate }}</p>
+            <div class="dialog__qr" role="img" [attr.aria-label]="'LISTS.EXPORT_TITLE' | translate">
                 @if (exportQrData()) {
                 <app-qr-code [data]="exportQrData()!" [size]="200" />
                 } @else {
-                <div class="dialog__qr-loading" role="status" aria-live="polite">Generating…</div>
+                <div class="dialog__qr-loading" role="status" aria-live="polite">{{ 'LISTS.GENERATING' | translate }}</div>
                 }
             </div>
             <p class="dialog__hint dialog__hint--sm" aria-live="polite">
-                Waiting — will complete automatically once scanned.
+                {{ 'LISTS.EXPORT_QR_WAITING' | translate }}
             </p>
             }
 
             @if (exportStep() === 'done') {
             <div class="dialog__status dialog__status--ok" role="status" aria-live="polite">
-                ✓ List exported — the other device will open it automatically.
+                {{ 'LISTS.EXPORT_DONE' | translate }}
             </div>
             }
 
             @if (exportStep() === 'error') {
             <div class="dialog__status dialog__status--err" role="alert">
-                Export failed. Please try again.
+                {{ 'LISTS.EXPORT_ERROR' | translate }}
             </div>
             }
 
             <div class="dialog__actions">
                 <button class="btn btn--ghost" (click)="closeExportDialog()">
-                    {{ exportStep() === 'done' ? 'Close' : 'Cancel' }}
+                    {{ exportStep() === 'done' ? ('COMMON.CLOSE' | translate) : ('COMMON.CANCEL' | translate) }}
                 </button>
             </div>
         </div>

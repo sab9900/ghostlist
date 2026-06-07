@@ -8,14 +8,16 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GhostList.WebApi.Controllers;
 
+public record CreateGhostListRequest(string? OwnerTokenHash = null);
+
 [ApiController]
 [Route("api/[controller]")]
 public class GhostListController(IMediator mediator) : ControllerBase
 {
     [HttpPost]
-    public async Task<ActionResult<Guid>> Create()
+    public async Task<ActionResult<Guid>> Create([FromBody] CreateGhostListRequest? request = null)
     {
-        var listId = await mediator.Send(new CreateGhostListCommand());
+        var listId = await mediator.Send(new CreateGhostListCommand(request?.OwnerTokenHash));
         return Ok(listId);
     }
 
@@ -34,10 +36,12 @@ public class GhostListController(IMediator mediator) : ControllerBase
         return Ok(result);
     }
 
+    /// <param name="id">List ID.</param>
+    /// <param name="ownerToken">Raw owner token. Required for lists created with an owner.</param>
     [HttpDelete("{id:guid}")]
-    public async Task<ActionResult> Delete(Guid id)
+    public async Task<ActionResult> Delete(Guid id, [FromQuery] string? ownerToken = null)
     {
-        await mediator.Send(new DeleteGhostListCommand(id));
+        await mediator.Send(new DeleteGhostListCommand(id, ownerToken));
         return NoContent();
     }
 

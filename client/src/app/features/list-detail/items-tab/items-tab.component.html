@@ -1,30 +1,30 @@
-<div class="add-bar" role="search" aria-label="Add item">
-    <input class="add-bar__input" type="text" placeholder="Add item…" [ngModel]="newItemText()"
-        (ngModelChange)="newItemText.set($event)" (keydown.enter)="addItem()" maxlength="500"
-        aria-label="New item text" />
+<div class="add-bar" role="search" [attr.aria-label]="'ITEMS.ADD_PLACEHOLDER' | translate">
+    <input class="add-bar__input" type="text" [attr.placeholder]="'ITEMS.ADD_PLACEHOLDER' | translate"
+        [ngModel]="newItemText()" (ngModelChange)="newItemText.set($event)" (keydown.enter)="addItem()"
+        maxlength="500" [attr.aria-label]="'ITEMS.ADD_PLACEHOLDER' | translate" />
     <button class="add-bar__btn" (click)="addItem()" [disabled]="!newItemText().trim() || addingItem()"
-        aria-label="Add item" [attr.aria-busy]="addingItem()">+</button>
+        [attr.aria-label]="'ITEMS.ADD_PLACEHOLDER' | translate" [attr.aria-busy]="addingItem()">+</button>
 </div>
 
-<ul class="item-list" role="list" aria-label="Active items" aria-live="polite" aria-relevant="additions removals">
+<ul class="item-list" role="list" [attr.aria-label]="'LIST_DETAIL.TAB_ITEMS' | translate" aria-live="polite" aria-relevant="additions removals">
 
     @for (item of activeItems(); track item.id) {
     <li class="item" (click)="toggleItem(item.id)" (keydown.enter)="toggleItem(item.id)"
         (keydown.space)="$event.preventDefault(); toggleItem(item.id)" tabindex="0" role="button"
-        [attr.aria-label]="'Mark as done: ' + item.text" aria-pressed="false">
+        [attr.aria-label]="('ITEMS.MARK_DONE_ARIA' | translate:{text: item.text})" aria-pressed="false">
         <span class="item__check" aria-hidden="true"></span>
         <span class="item__text">{{ item.text }}</span>
         <button class="item__delete" (click)="$event.stopPropagation(); deleteItem(item.id)"
-            [attr.aria-label]="'Delete: ' + item.text" tabindex="-1">×</button>
+            [attr.aria-label]="('ITEMS.DELETE_ARIA' | translate:{text: item.text})" tabindex="-1">×</button>
     </li>
     }
 
     @if (checkedItems().length > 0) {
-    <li class="section-label" role="separator">Done ({{ checkedItems().length }})</li>
+    <li class="section-label" role="separator">{{ 'ITEMS.DONE_SECTION' | translate:{count: checkedItems().length.toString()} }}</li>
     @for (item of checkedItems(); track item.id) {
     <li class="item item--checked" (click)="toggleItem(item.id)" (keydown.enter)="toggleItem(item.id)"
         (keydown.space)="$event.preventDefault(); toggleItem(item.id)" tabindex="0" role="button"
-        [attr.aria-label]="'Mark as not done: ' + item.text" aria-pressed="true">
+        [attr.aria-label]="('ITEMS.MARK_UNDONE_ARIA' | translate:{text: item.text})" aria-pressed="true">
         <span class="item__check item__check--checked" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"/>
@@ -32,13 +32,13 @@
         </span>
         <span class="item__text item__text--checked">{{ item.text }}</span>
         <button class="item__delete" (click)="$event.stopPropagation(); deleteItem(item.id)"
-            [attr.aria-label]="'Delete: ' + item.text" tabindex="-1">×</button>
+            [attr.aria-label]="('ITEMS.DELETE_ARIA' | translate:{text: item.text})" tabindex="-1">×</button>
     </li>
     }
     }
 
     @if (activeItems().length === 0 && checkedItems().length === 0) {
-    <li class="empty-hint" role="status">Add your first item above.</li>
+    <li class="empty-hint" role="status">{{ 'ITEMS.EMPTY_HINT' | translate }}</li>
     }
 
 </ul>

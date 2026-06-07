@@ -1,0 +1,60 @@
+<div class="screen" role="main">
+
+    <header class="header" role="banner">
+        <button class="header__back" (click)="goHome()" [attr.aria-label]="'LIST_DETAIL.BACK_ARIA' | translate">‹</button>
+        <h1 class="header__title">{{ 'SYNC_SEND.TITLE' | translate }}</h1>
+    </header>
+
+    <div class="content">
+
+        @if (state() === 'confirm') {
+        <div class="card" role="region" aria-labelledby="sync-heading">
+            <span class="card__icon" aria-hidden="true">🔄</span>
+            <h2 class="card__title" id="sync-heading">{{ 'SYNC_SEND.CONFIRM_TITLE' | translate }}</h2>
+            <p class="card__hint">{{ 'SYNC_SEND.CONFIRM_HINT' | translate: { count: store.knownLists().length } }}</p>
+            <div class="actions">
+                <button class="btn btn--ghost" (click)="goHome()">{{ 'COMMON.CANCEL' | translate }}</button>
+                <button class="btn btn--primary" (click)="sendLists()"
+                    [disabled]="store.knownLists().length === 0">
+                    {{ 'SYNC_SEND.CONFIRM_BTN' | translate }}
+                </button>
+            </div>
+        </div>
+        }
+
+        @if (state() === 'sending') {
+        <div class="card card--loading" role="status" aria-live="polite" [attr.aria-label]="'SYNC_SEND.SENDING' | translate">
+            <div class="spinner" aria-hidden="true"></div>
+            <p class="card__hint">{{ 'SYNC_SEND.SENDING' | translate }}</p>
+        </div>
+        }
+
+        @if (state() === 'done') {
+        <div class="card" role="status" aria-live="polite" aria-labelledby="done-heading">
+            <span class="card__icon" aria-hidden="true">✓</span>
+            <h2 class="card__title" id="done-heading">{{ 'SYNC_SEND.DONE_TITLE' | translate }}</h2>
+            <p class="card__hint">{{ 'SYNC_SEND.DONE_HINT' | translate }}</p>
+            <div class="actions">
+                <button class="btn btn--primary" (click)="goHome()">{{ 'SYNC_SEND.GO_HOME' | translate }}</button>
+            </div>
+        </div>
+        }
+
+        @if (state() === 'error') {
+        <div class="card card--error" role="alert" aria-labelledby="error-heading">
+            <span class="card__icon" aria-hidden="true">⚠</span>
+            <h2 class="card__title" id="error-heading">{{ 'SYNC_SEND.ERROR_TITLE' | translate }}</h2>
+            <p class="card__hint">
+                @if (errorKey() === 'invalid') { {{ 'SYNC_SEND.ERROR_INVALID' | translate }} }
+                @if (errorKey() === 'no-lists') { {{ 'SYNC_SEND.ERROR_NO_LISTS' | translate }} }
+                @if (errorKey() === 'failed') { {{ 'SYNC_SEND.ERROR_FAILED' | translate }} }
+            </p>
+            <div class="actions">
+                <button class="btn btn--primary" (click)="goHome()">{{ 'SYNC_SEND.GO_HOME' | translate }}</button>
+            </div>
+        </div>
+        }
+
+    </div>
+
+</div>

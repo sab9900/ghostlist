@@ -1,54 +1,308 @@
 <div class="screen" role="main">
 
     <header class="header" role="banner">
-        <button class="header__back" (click)="goBack()" aria-label="Back">
+        <button class="header__back" (click)="goBack()" [attr.aria-label]="'LIST_DETAIL.BACK_ARIA' | translate">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <polyline points="15 18 9 12 15 6" />
             </svg>
         </button>
-        <h1 class="header__title">Settings</h1>
+        <h1 class="header__title">{{ 'SETTINGS.TITLE' | translate }}</h1>
     </header>
 
     <main class="content">
         <div class="content__inner">
 
-        <section class="section" aria-labelledby="theme-heading">
-            <h2 class="section__title" id="theme-heading">Appearance</h2>
-            <div class="option-list" role="radiogroup" aria-labelledby="theme-heading">
-                @for (opt of themeOptions; track opt.value) {
-                <button class="option" [class.option--active]="themeService.theme() === opt.value"
-                    (click)="setTheme(opt.value)" role="radio"
-                    [attr.aria-checked]="themeService.theme() === opt.value">
-                    <div class="option__body">
-                        <span class="option__label">{{ opt.label }}</span>
-                        <span class="option__desc">{{ opt.description }}</span>
+        <!-- Full-width: display name -->
+        <section class="section section--banner" aria-labelledby="name-heading">
+            <div class="section__desc">
+                <h2 class="section__title" id="name-heading">{{ 'CHAT.NAME_DIALOG_TITLE' | translate }}</h2>
+                <p class="section__hint">{{ 'CHAT.NAME_DIALOG_HINT' | translate }}</p>
+            </div>
+            <div class="section__body">
+                <div class="settings-row">
+                    <input class="settings-input" type="text" [attr.placeholder]="'CHAT.NAME_DIALOG_PLACEHOLDER' | translate"
+                        [ngModel]="pendingName()" (ngModelChange)="pendingName.set($event)"
+                        (keydown.enter)="saveName()" maxlength="40" aria-labelledby="name-heading" />
+                    <div class="save-slot">
+                        <button class="btn btn--primary btn--sm" (click)="saveName()"
+                            [class.save-slot__hidden]="nameSaved()"
+                            [disabled]="!pendingName().trim()">
+                            {{ 'COMMON.SAVE' | translate }}
+                        </button>
+                        @if (nameSaved()) {
+                        <span class="save-feedback save-slot__overlay" role="status" aria-live="polite">{{ 'COMMON.SAVED' | translate }}</span>
+                        }
                     </div>
-                    @if (themeService.theme() === opt.value) {
-                    <span class="option__check" aria-hidden="true">✓</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Two-column grid -->
+        <div class="settings-grid">
+
+        <div class="settings-col">
+
+        <section class="section" aria-labelledby="theme-heading">
+            <div class="section__desc">
+                <h2 class="section__title" id="theme-heading">{{ 'SETTINGS.APPEARANCE_TITLE' | translate }}</h2>
+            </div>
+            <div class="section__body">
+                <div class="option-list" role="radiogroup" aria-labelledby="theme-heading">
+                    @for (opt of themeOptions; track opt.value) {
+                    <button class="option" [class.option--active]="themeService.theme() === opt.value"
+                        (click)="setTheme(opt.value)" role="radio"
+                        [attr.aria-checked]="themeService.theme() === opt.value">
+                        <div class="option__body">
+                            <span class="option__label">{{ opt.labelKey | translate }}</span>
+                            <span class="option__desc">{{ opt.descKey | translate }}</span>
+                        </div>
+                        @if (themeService.theme() === opt.value) {
+                        <span class="option__check" aria-hidden="true">✓</span>
+                        }
+                    </button>
+                    }
+                </div>
+            </div>
+        </section>
+
+        <section class="section" aria-labelledby="security-heading">
+            <div class="section__desc">
+                <h2 class="section__title" id="security-heading">{{ 'SETTINGS.SECURITY.TITLE' | translate }}</h2>
+                <p class="section__hint">{{ 'SETTINGS.SECURITY.HINT' | translate }}</p>
+            </div>
+            <div class="section__body">
+                @if (!webAuthn.isSupported) {
+                <p class="security-status security-status--warn" role="status">
+                    {{ 'SETTINGS.SECURITY.UNSUPPORTED' | translate }}
+                </p>
+                } @else if (webAuthn.isEnabled()) {
+                <div class="security-row">
+                    <span class="security-badge">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                        {{ 'SETTINGS.SECURITY.ENABLED' | translate }}
+                    </span>
+                    <button class="btn btn--ghost btn--sm btn--danger" (click)="disableBiometricLock()"
+                        [disabled]="biometricWorking()">
+                        @if (biometricWorking()) {
+                            {{ 'SETTINGS.SECURITY.DISABLING' | translate }}
+                        } @else {
+                            {{ 'SETTINGS.SECURITY.DISABLE_BTN' | translate }}
+                        }
+                    </button>
+                </div>
+                } @else {
+                <button class="btn btn--primary btn--sm" (click)="enableBiometricLock()"
+                    [disabled]="biometricWorking()">
+                    @if (biometricWorking()) {
+                        {{ 'SETTINGS.SECURITY.ENABLING' | translate }}
+                    } @else {
+                        {{ 'SETTINGS.SECURITY.ENABLE_BTN' | translate }}
                     }
                 </button>
                 }
+
+                @if (biometricError() === 'unsupported') {
+                <p class="security-status security-status--err" role="alert">{{ 'SETTINGS.SECURITY.UNSUPPORTED' | translate }}</p>
+                } @else if (biometricError() === 'failed') {
+                <p class="security-status security-status--err" role="alert">{{ 'SETTINGS.SECURITY.ENABLE_ERROR' | translate }}</p>
+                }
+
+                @if (webAuthn.isEnabled()) {
+                <div class="section__sub" aria-labelledby="auto-lock-heading">
+                    <h3 class="section__sub-title" id="auto-lock-heading">{{ 'SETTINGS.SECURITY.AUTO_LOCK.TITLE' | translate }}</h3>
+                    <div class="option-list" role="radiogroup" aria-labelledby="auto-lock-heading">
+                        @for (opt of autoLockOptions; track opt.value) {
+                        <button class="option" [class.option--active]="webAuthn.autoLockTimeout() === opt.value"
+                            (click)="webAuthn.setAutoLockTimeout(opt.value)" role="radio"
+                            [attr.aria-checked]="webAuthn.autoLockTimeout() === opt.value">
+                            <div class="option__body">
+                                <span class="option__label">{{ opt.labelKey | translate }}</span>
+                            </div>
+                            @if (webAuthn.autoLockTimeout() === opt.value) {
+                            <span class="option__check" aria-hidden="true">✓</span>
+                            }
+                        </button>
+                        }
+                    </div>
+                </div>
+                }
+            </div>
+        </section>
+
+        <section class="section" aria-labelledby="sync-heading">
+            <div class="section__desc">
+                <h2 class="section__title" id="sync-heading">{{ 'SETTINGS.SYNC_TITLE' | translate }}</h2>
+                <p class="section__hint">{{ 'SETTINGS.SYNC_HINT' | translate }}</p>
+            </div>
+            <div class="section__body">
+
+            @if (!webAuthn.isEnabled()) {
+            <p class="security-status security-status--warn" role="status">
+                {{ 'SETTINGS.SYNC_REQUIRES_BIOMETRIC' | translate }}
+            </p>
+            }
+
+            <div class="sync-actions">
+                <button class="btn btn--primary btn--sm btn--icon" (click)="startSyncReceive()"
+                    [disabled]="!webAuthn.isEnabled()">
+                    <!-- download / import icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    {{ 'SETTINGS.SYNC_RECEIVE' | translate }}
+                </button>
+                <button class="btn btn--primary btn--sm btn--icon" (click)="startSyncSend()"
+                    [disabled]="!webAuthn.isEnabled() || store.knownLists().length === 0">
+                    <!-- upload / export icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    {{ 'SETTINGS.SYNC_SEND' | translate }}
+                </button>
+            </div>
+
+            @if (syncStep() === 'receive-done') {
+            <p class="sync-status sync-status--ok" role="status" aria-live="polite">
+                {{ 'SETTINGS.SYNC_RECEIVE_DONE' | translate: { count: syncImportedCount() } }}
+            </p>
+            }
+            @if (syncStep() === 'send-done' || syncStep() === 'send-qr-done') {
+            <p class="sync-status sync-status--ok" role="status" aria-live="polite">
+                {{ 'SETTINGS.SYNC_SEND_DONE' | translate }}
+            </p>
+            }
+            @if (syncStep() === 'error') {
+            <p class="sync-status sync-status--err" role="alert">{{ 'SETTINGS.SYNC_ERROR' | translate }}</p>
+            }
+
+            </div><!-- /.section__body -->
+        </section>
+
+        </div><!-- /.settings-col -->
+
+        <div class="settings-col">
+
+        <section class="section" aria-labelledby="lang-heading">
+            <div class="section__desc">
+                <h2 class="section__title" id="lang-heading">{{ 'SETTINGS.LANGUAGE_TITLE' | translate }}</h2>
+            </div>
+            <div class="section__body">
+                <div class="option-list" role="radiogroup" aria-labelledby="lang-heading">
+                    @for (lang of supportedLangs; track lang.code) {
+                    <button class="option" [class.option--active]="langService.currentLang() === lang.code"
+                        (click)="setLanguage(lang.code)" role="radio"
+                        [attr.aria-checked]="langService.currentLang() === lang.code">
+                        <div class="option__body">
+                            <span class="option__label">{{ lang.label }}</span>
+                        </div>
+                        @if (langService.currentLang() === lang.code) {
+                        <span class="option__check" aria-hidden="true">✓</span>
+                        }
+                    </button>
+                    }
+                </div>
             </div>
         </section>
 
         <section class="section" aria-labelledby="accent-heading">
-            <h2 class="section__title" id="accent-heading">Accent colour</h2>
-            <div class="swatch-row" role="radiogroup" aria-labelledby="accent-heading">
-                @for (opt of accentOptions; track opt.value) {
-                <button class="swatch" [class.swatch--active]="themeService.accent() === opt.value"
-                    [class.swatch--noir]="opt.value === 'noir'"
-                    [style.--swatch-color]="opt.color" (click)="setAccent(opt.value)"
-                    role="radio" [attr.aria-checked]="themeService.accent() === opt.value"
-                    [attr.aria-label]="opt.label">
-                    <span class="swatch__dot" aria-hidden="true"></span>
-                    <span class="swatch__label">{{ opt.label }}</span>
-                </button>
-                }
+            <div class="section__desc">
+                <h2 class="section__title" id="accent-heading">{{ 'SETTINGS.ACCENT_TITLE' | translate }}</h2>
+            </div>
+            <div class="section__body">
+                <div class="swatch-row" role="radiogroup" aria-labelledby="accent-heading">
+                    @for (opt of accentOptions; track opt.value) {
+                    <button class="swatch" [class.swatch--active]="themeService.accent() === opt.value"
+                        [class.swatch--noir]="opt.value === 'noir'"
+                        [style.--swatch-color]="opt.color" (click)="setAccent(opt.value)"
+                        role="radio" [attr.aria-checked]="themeService.accent() === opt.value"
+                        [attr.aria-label]="opt.labelKey | translate">
+                        <span class="swatch__dot" aria-hidden="true"></span>
+                        <span class="swatch__label">{{ opt.labelKey | translate }}</span>
+                    </button>
+                    }
+                </div>
             </div>
         </section>
 
-        </div>
+        </div><!-- /.settings-col (right) -->
+
+        </div><!-- /.settings-grid -->
+
+        </div><!-- /.content__inner -->
     </main>
+
+<!-- ── Sync Machine dialog ── -->
+@if (syncStep() !== 'idle' && syncStep() !== 'receive-done' && syncStep() !== 'send-done' && syncStep() !== 'send-qr-done' && syncStep() !== 'error') {
+<div class="dialog-backdrop" (click)="resetSync()" role="presentation">
+    <div class="dialog dialog--qr" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+        aria-labelledby="sync-dialog-title">
+
+        @if (syncStep() === 'receive-qr') {
+        <h2 class="dialog__title" id="sync-dialog-title">{{ 'SETTINGS.SYNC_RECEIVE' | translate }}</h2>
+        <p class="dialog__hint">{{ 'SETTINGS.SYNC_RECEIVE_HINT' | translate }}</p>
+        @if (syncQrData()) {
+        <div class="dialog__qr">
+            <app-qr-code [data]="syncQrData()!" [size]="200" />
+        </div>
+        } @else {
+        <div class="dialog__qr"><div class="dialog__qr-loading" role="status">…</div></div>
+        }
+        <button class="btn btn--ghost btn--sm btn--icon" (click)="copySyncLink()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            {{ syncLinkCopied() ? ('SETTINGS.SYNC_LINK_COPIED' | translate) : ('SETTINGS.SYNC_COPY_LINK' | translate) }}
+        </button>
+        <p class="dialog__hint dialog__hint--sm" aria-live="polite">{{ 'SETTINGS.SYNC_WAITING' | translate }}</p>
+        }
+
+        @if (syncStep() === 'send-choose') {
+        <h2 class="dialog__title" id="sync-dialog-title">{{ 'SETTINGS.SYNC_SEND' | translate }}</h2>
+        <p class="dialog__hint">{{ 'SETTINGS.SYNC_SEND_CHOOSE_HINT' | translate }}</p>
+        <div class="dialog__choices">
+            <button class="btn btn--primary" (click)="startSyncSendQr()">{{ 'SETTINGS.SYNC_SHOW_QR' | translate }}</button>
+            <button class="btn btn--ghost" (click)="startSyncSendScan()">{{ 'SETTINGS.SYNC_SCAN_QR' | translate }}</button>
+        </div>
+        }
+
+        @if (syncStep() === 'send-qr') {
+        <h2 class="dialog__title" id="sync-dialog-title">{{ 'SETTINGS.SYNC_SEND' | translate }}</h2>
+        <p class="dialog__hint">{{ 'SETTINGS.SYNC_SEND_QR_HINT' | translate }}</p>
+        @if (syncQrData()) {
+        <div class="dialog__qr">
+            <app-qr-code [data]="syncQrData()!" [size]="200" />
+        </div>
+        } @else {
+        <div class="dialog__qr"><div class="dialog__qr-loading" role="status">…</div></div>
+        }
+        <p class="dialog__hint dialog__hint--sm" aria-live="polite">{{ 'SETTINGS.SYNC_WAITING' | translate }}</p>
+        }
+
+        @if (syncStep() === 'send-scan') {
+        <h2 class="dialog__title" id="sync-dialog-title">{{ 'SETTINGS.SYNC_SCAN_QR' | translate }}</h2>
+        <p class="dialog__hint">{{ 'SETTINGS.SYNC_SEND_HINT' | translate }}</p>
+        <div class="dialog__scanner">
+            <app-qr-scanner (detected)="onSyncQrDetected($event)" />
+        </div>
+        }
+
+        <div class="dialog__actions">
+            <button class="btn btn--ghost" (click)="resetSync()">{{ 'COMMON.CANCEL' | translate }}</button>
+        </div>
+    </div>
+</div>
+}
 
 </div>

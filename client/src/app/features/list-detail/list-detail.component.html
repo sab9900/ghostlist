@@ -4,7 +4,7 @@
 
     <header class="header" role="banner">
         <h1 class="header__title truncate">{{ listName() }}</h1>
-        <button class="header__settings-btn" (click)="settingsOpen.set(true)" aria-label="Open settings"
+        <button class="header__settings-btn" (click)="settingsOpen.set(true)" [attr.aria-label]="'LIST_DETAIL.SETTINGS_ARIA' | translate"
             aria-haspopup="dialog">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="3"/>
@@ -15,15 +15,15 @@
 
     <div class="desktop-body" [class.desktop-body--resizing]="paneResizing()">
 
-        <section class="desktop-pane desktop-pane--items" [style.width]="paneWidth() + '%'" aria-label="Items">
+        <section class="desktop-pane desktop-pane--items" [style.width]="paneWidth() + '%'" [attr.aria-label]="'LIST_DETAIL.TAB_ITEMS' | translate">
             <app-items-tab />
         </section>
 
         <div class="pane-resizer" [class.pane-resizer--active]="paneResizing()" (mousedown)="onPaneResizeStart($event)"
-            role="separator" aria-orientation="vertical" aria-label="Resize panels" tabindex="0">
+            role="separator" aria-orientation="vertical" [attr.aria-label]="'LIST_DETAIL.RESIZE_ARIA' | translate" tabindex="0">
         </div>
 
-        <section class="desktop-pane desktop-pane--chat" aria-label="Chat">
+        <section class="desktop-pane desktop-pane--chat" [attr.aria-label]="'LIST_DETAIL.TAB_CHAT' | translate">
             <app-chat-tab />
         </section>
 
@@ -33,10 +33,10 @@
     <div class="drawer-backdrop" [class.drawer-backdrop--closing]="drawerClosing()" (click)="closeDrawer()"
         role="presentation" aria-hidden="true"></div>
     <aside class="settings-drawer" [class.settings-drawer--closing]="drawerClosing()" role="dialog" aria-modal="true"
-        aria-label="List settings">
+        [attr.aria-label]="'LIST_DETAIL.DRAWER_TITLE' | translate">
         <div class="settings-drawer__header">
-            <span class="settings-drawer__title">Settings</span>
-            <button class="settings-drawer__close" (click)="closeDrawer()" aria-label="Close settings">×</button>
+            <span class="settings-drawer__title">{{ 'LIST_DETAIL.DRAWER_TITLE' | translate }}</span>
+            <button class="settings-drawer__close" (click)="closeDrawer()" [attr.aria-label]="'LIST_DETAIL.DRAWER_CLOSE_ARIA' | translate">×</button>
         </div>
         <div class="settings-drawer__body">
             <app-settings-tab />
@@ -51,15 +51,15 @@
 <div class="screen">
 
     <header class="header" role="banner">
-        <button class="header__back" (click)="goBack()" aria-label="Back to lists">‹</button>
+        <button class="header__back" (click)="goBack()" [attr.aria-label]="'LIST_DETAIL.BACK_ARIA' | translate">‹</button>
         <h1 class="header__title truncate">{{ listName() }}</h1>
     </header>
 
-    <nav class="tabs" role="tablist" aria-label="List sections">
+    <nav class="tabs" role="tablist" [attr.aria-label]="'LIST_DETAIL.TAB_ITEMS' | translate">
         <button class="tabs__tab" [class.tabs__tab--active]="activeTab() === 'items'" role="tab"
             [attr.aria-selected]="activeTab() === 'items'" id="tab-items" [attr.aria-controls]="'panel-items'"
             (click)="setTab('items')">
-            Items
+            {{ 'LIST_DETAIL.TAB_ITEMS' | translate }}
             @if (unreadItems() > 0 && activeTab() !== 'items') {
             <app-badge [count]="unreadItems()" aria-hidden="true" />
             }
@@ -67,7 +67,7 @@
         <button class="tabs__tab" [class.tabs__tab--active]="activeTab() === 'chat'" role="tab"
             [attr.aria-selected]="activeTab() === 'chat'" id="tab-chat" [attr.aria-controls]="'panel-chat'"
             (click)="setTab('chat')">
-            Chat
+            {{ 'LIST_DETAIL.TAB_CHAT' | translate }}
             @if (unreadMessages() > 0 && activeTab() !== 'chat') {
             <app-badge [count]="unreadMessages()" aria-hidden="true" />
             }
@@ -75,7 +75,7 @@
         <button class="tabs__tab" [class.tabs__tab--active]="activeTab() === 'settings'" role="tab"
             [attr.aria-selected]="activeTab() === 'settings'" id="tab-settings" [attr.aria-controls]="'panel-settings'"
             (click)="setTab('settings')">
-            Settings
+            {{ 'LIST_DETAIL.TAB_SETTINGS' | translate }}
         </button>
     </nav>
 

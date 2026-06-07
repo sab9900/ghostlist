@@ -2,10 +2,13 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
+import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
 import { StatusBar, Style } from '@capacitor/status-bar';
+import { TranslatePipe } from '@ngx-translate/core';
 import { LayoutService } from './core/services/layout.service';
+import { WebAuthnService } from './core/services/webauthn.service';
 import { ListsComponent } from './features/lists/lists.component';
 
 const SIDEBAR_WIDTH_KEY = 'gl_sidebar_width';
@@ -26,15 +29,37 @@ function loadSidebarWidth(): number {
 
 @Component({
     selector: 'app-root',
-    imports: [RouterOutlet, ListsComponent],
+    imports: [RouterOutlet, ListsComponent, TranslatePipe],
     templateUrl: './app.html',
     styleUrl: './app.scss',
 })
 export class App {
     protected readonly layout = inject(LayoutService);
+    protected readonly webAuthn = inject(WebAuthnService);
     private readonly router = inject(Router);
 
+    // ── Biometric lock ────────────────────────────────────────────────────────
+
+    protected readonly locked    = signal(false);
+    protected readonly unlocking = signal(false);
+    protected readonly lockError = signal(false);
+
+    /** Timestamp when the app was backgrounded (Capacitor only). */
+    private backgroundedAt: number | null = null;
+
+    /** Handle for the inactivity auto-lock timer. */
+    private inactivityTimer: ReturnType<typeof setTimeout> | null = null;
+
     constructor() {
+        // Init is async (IndexedDB); lock the app as soon as we know a credential exists.
+        void this.webAuthn.init().then(() => {
+            if (this.webAuthn.isEnabled()) {
+                this.locked.set(true);
+                // Trigger biometric immediately — don't wait for a button tap.
+                void this.triggerBiometric();
+            }
+        });
+
         if (Capacitor.isNativePlatform()) {
             StatusBar.setStyle({ style: Style.Default }).catch(() => {});
 
@@ -44,8 +69,97 @@ export class App {
             Keyboard.addListener('keyboardWillHide', () => {
                 document.documentElement.style.setProperty('--keyboard-height', '0px');
             });
+
+            CapacitorApp.addListener('appUrlOpen', ({ url }: { url: string }) => {
+                try {
+                    const parsed = new URL(url);
+                    const slug = parsed.pathname + parsed.search + (parsed.hash ? parsed.hash : '');
+                    if (slug) void this.router.navigateByUrl(slug);
+                } catch { /* ignore malformed URLs */ }
+            });
+
+            // Auto-lock on resume from background if timeout elapsed.
+            CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+                if (!isActive) {
+                    this.backgroundedAt = Date.now();
+                    this.clearInactivityTimer();
+                } else {
+                    if (this.webAuthn.isEnabled() && this.backgroundedAt !== null) {
+                        const ms = this.webAuthn.getTimeoutMs();
+                        if (ms !== null && Date.now() - this.backgroundedAt >= ms) {
+                            this.engageLock();
+                        }
+                    }
+                    this.backgroundedAt = null;
+                    this.scheduleInactivityTimer();
+                }
+            });
+        }
+
+        // Track user activity for inactivity-based auto-lock.
+        this.setupActivityListeners();
+        this.scheduleInactivityTimer();
+    }
+
+    /** Lock the app and immediately trigger biometric. */
+    engageLock(): void {
+        if (this.locked()) return;
+        this.locked.set(true);
+        void this.triggerBiometric();
+    }
+
+    /** Trigger the biometric prompt. Retries are possible via the retry button. */
+    async triggerBiometric(): Promise<void> {
+        this.unlocking.set(true);
+        this.lockError.set(false);
+        try {
+            const ok = await this.webAuthn.authenticate();
+            if (ok) {
+                this.locked.set(false);
+                this.scheduleInactivityTimer();
+            } else {
+                this.lockError.set(true);
+            }
+        } catch {
+            this.lockError.set(true);
+        } finally {
+            this.unlocking.set(false);
         }
     }
+
+    // ── Activity tracking ─────────────────────────────────────────────────────
+
+    private setupActivityListeners(): void {
+        const onActivity = () => this.onUserActivity();
+        for (const evt of ['mousemove', 'touchstart', 'keydown', 'click', 'scroll']) {
+            document.addEventListener(evt, onActivity, { passive: true });
+        }
+    }
+
+    private onUserActivity(): void {
+        if (!this.locked()) {
+            this.scheduleInactivityTimer();
+        }
+    }
+
+    private clearInactivityTimer(): void {
+        if (this.inactivityTimer !== null) {
+            clearTimeout(this.inactivityTimer);
+            this.inactivityTimer = null;
+        }
+    }
+
+    private scheduleInactivityTimer(): void {
+        this.clearInactivityTimer();
+        if (!this.webAuthn.isEnabled()) return;
+        const ms = this.webAuthn.getTimeoutMs();
+        if (ms === null) return; // 'never'
+        this.inactivityTimer = setTimeout(() => {
+            this.engageLock();
+        }, ms);
+    }
+
+    // ── Routing helpers ───────────────────────────────────────────────────────
 
     protected readonly currentUrl = toSignal(
         this.router.events.pipe(
@@ -58,8 +172,10 @@ export class App {
 
     protected readonly showDetail = computed(() => {
         const url = this.currentUrl();
-        return !!(url?.startsWith('/list/') || url?.startsWith('/settings') || url?.startsWith('/about'));
+        return !!(url && url !== '/');
     });
+
+    // ── Desktop sidebar resize ────────────────────────────────────────────────
 
     protected readonly sidebarWidth = signal(loadSidebarWidth());
     protected readonly resizing = signal(false);

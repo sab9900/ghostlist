@@ -23,6 +23,7 @@ export class HubService implements OnDestroy {
     private readonly _messageDeleted$ = new Subject<string>();
     private readonly _ttlUpdated$ = new Subject<number>();
     private readonly _listDeleted$ = new Subject<string>();
+    private readonly _memberKicked$ = new Subject<{ listId: string; deviceId: string }>();
     private readonly _reconnected$ = new Subject<void>();
 
     readonly itemCreated$ = this._itemCreated$.asObservable();
@@ -32,6 +33,7 @@ export class HubService implements OnDestroy {
     readonly messageDeleted$ = this._messageDeleted$.asObservable();
     readonly ttlUpdated$ = this._ttlUpdated$.asObservable();
     readonly listDeleted$ = this._listDeleted$.asObservable();
+    readonly memberKicked$ = this._memberKicked$.asObservable();
 
     readonly reconnected$ = this._reconnected$.asObservable();
 
@@ -48,6 +50,7 @@ export class HubService implements OnDestroy {
         this.connection.on('MessageDeleted', (id: string) => this._messageDeleted$.next(id));
         this.connection.on('TtlUpdated', (ttl: number) => this._ttlUpdated$.next(ttl));
         this.connection.on('ListDeleted', (id: string) => this._listDeleted$.next(id));
+        this.connection.on('MemberKicked', (listId: string, deviceId: string) => this._memberKicked$.next({ listId, deviceId }));
 
         this.connection.onreconnecting(() =>
             this.connectionState.set(signalR.HubConnectionState.Reconnecting),

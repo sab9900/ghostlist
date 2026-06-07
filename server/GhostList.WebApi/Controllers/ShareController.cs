@@ -5,6 +5,7 @@ namespace GhostList.WebApi.Controllers;
 
 public record ShareDeliveryDto(string WrappedKey, string SenderPublicKey, string ListId, string ListName);
 public record HandshakeDto(string ReceiverPublicKey);
+public record SyncBundleDto(string EncryptedPayload, string Iv, string SenderPublicKey);
 
 [ApiController]
 [Route("api/share")]
@@ -46,6 +47,24 @@ public class ShareController(IMemoryCache cache) : ControllerBase
             return NotFound();
 
         cache.Remove($"hs:{sessionId}");
+        return Ok(dto);
+    }
+
+    [HttpPut("{sessionId}/sync-bundle")]
+    public IActionResult PutSyncBundle(string sessionId, [FromBody] SyncBundleDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(sessionId)) return BadRequest();
+        cache.Set($"sync:{sessionId}", dto, CacheOptions);
+        return NoContent();
+    }
+
+    [HttpGet("{sessionId}/sync-bundle")]
+    public ActionResult<SyncBundleDto> GetSyncBundle(string sessionId)
+    {
+        if (!cache.TryGetValue<SyncBundleDto>($"sync:{sessionId}", out var dto) || dto is null)
+            return NotFound();
+
+        cache.Remove($"sync:{sessionId}");
         return Ok(dto);
     }
 }

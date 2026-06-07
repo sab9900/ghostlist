@@ -1,3 +1,33 @@
+@if (locked()) {
+
+<div class="lock-screen" role="main" aria-label="Locked">
+    <div class="lock-screen__card">
+        <div class="lock-screen__icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+        </div>
+        <p class="lock-screen__title">{{ 'SECURITY.LOCK_TITLE' | translate }}</p>
+
+        @if (unlocking()) {
+        <p class="lock-screen__hint" role="status" aria-live="polite">
+            {{ 'SECURITY.UNLOCKING' | translate }}
+        </p>
+        } @else if (lockError()) {
+        <p class="lock-screen__error" role="alert">{{ 'SECURITY.UNLOCK_ERROR' | translate }}</p>
+        <button class="btn btn--ghost btn--sm lock-screen__retry" (click)="triggerBiometric()">
+            {{ 'COMMON.TRY_AGAIN' | translate }}
+        </button>
+        } @else {
+        <p class="lock-screen__hint">{{ 'SECURITY.LOCK_HINT' | translate }}</p>
+        }
+    </div>
+</div>
+
+} @else {
+
 @if (layout.isDesktop()) {
 
 <div class="desktop" [class.desktop--resizing]="resizing()">
@@ -24,5 +54,7 @@
 } @else {
 
 <router-outlet />
+
+}
 
 }

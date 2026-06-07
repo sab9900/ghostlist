@@ -30,5 +30,11 @@ public static class DependencyInjection
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await db.Database.MigrateAsync();
+
+        // Belt-and-suspenders: ensure OwnerTokenHash exists regardless of migration history state.
+        await db.Database.ExecuteSqlRawAsync("""
+            ALTER TABLE "GhostLists"
+            ADD COLUMN IF NOT EXISTS "OwnerTokenHash" character varying(64);
+            """);
     }
 }

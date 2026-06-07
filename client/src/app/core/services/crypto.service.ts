@@ -11,6 +11,7 @@ export interface WrappedKeyBundle {
 }
 
 const HKDF_INFO = new TextEncoder().encode('GhostList key exchange v1');
+const HKDF_INFO_PAYLOAD = new TextEncoder().encode('GhostList payload v1');
 
 @Injectable({ providedIn: 'root' })
 export class CryptoService {
@@ -79,6 +80,45 @@ export class CryptoService {
         };
     }
 
+    /** Encrypt an arbitrary string payload for a receiver identified by their ECDH public key. */
+    async wrapPayload(payload: string, receiverPublicKeyB64: string): Promise<{ encryptedPayload: string; iv: string; senderPublicKey: string }> {
+        const senderKeypair = await crypto.subtle.generateKey(
+            { name: 'ECDH', namedCurve: 'P-256' },
+            false,
+            ['deriveBits'],
+        );
+        const receiverPubKey = await this.importEcdhPublicKey(receiverPublicKeyB64);
+        const aesKey = await this.deriveAesGcmKey(senderKeypair.privateKey, receiverPubKey, 'encrypt');
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const buf = await crypto.subtle.encrypt(
+            { name: 'AES-GCM', iv },
+            aesKey,
+            new TextEncoder().encode(payload),
+        );
+        return {
+            encryptedPayload: this.bufToB64(buf),
+            iv: this.bufToB64(iv),
+            senderPublicKey: this.bufToB64(await crypto.subtle.exportKey('raw', senderKeypair.publicKey)),
+        };
+    }
+
+    /** Decrypt an arbitrary string payload encrypted by wrapPayload. */
+    async unwrapPayload(
+        encryptedPayloadB64: string,
+        ivB64: string,
+        senderPublicKeyB64: string,
+        receiverPrivateKey: CryptoKey,
+    ): Promise<string> {
+        const senderPubKey = await this.importEcdhPublicKey(senderPublicKeyB64);
+        const aesKey = await this.deriveAesGcmKey(receiverPrivateKey, senderPubKey, 'decrypt');
+        const buf = await crypto.subtle.decrypt(
+            { name: 'AES-GCM', iv: this.b64ToBuf(ivB64) },
+            aesKey,
+            this.b64ToBuf(encryptedPayloadB64),
+        );
+        return new TextDecoder().decode(buf);
+    }
+
     async unwrapListKey(
         wrappedKeyB64: string,
         senderPublicKeyB64: string,
@@ -133,6 +173,26 @@ export class CryptoService {
         );
     }
 
+    private async deriveAesGcmKey(
+        privateKey: CryptoKey,
+        publicKey: CryptoKey,
+        usage: 'encrypt' | 'decrypt',
+    ): Promise<CryptoKey> {
+        const sharedBits = await crypto.subtle.deriveBits(
+            { name: 'ECDH', public: publicKey },
+            privateKey,
+            256,
+        );
+        const hkdfKey = await crypto.subtle.importKey('raw', sharedBits, 'HKDF', false, ['deriveKey']);
+        return crypto.subtle.deriveKey(
+            { name: 'HKDF', hash: 'SHA-256', salt: new Uint8Array(32), info: HKDF_INFO_PAYLOAD },
+            hkdfKey,
+            { name: 'AES-GCM', length: 256 },
+            false,
+            [usage],
+        );
+    }
+
     private importAesKey(keyB64: string, extractable = false): Promise<CryptoKey> {
         return crypto.subtle.importKey(
             'raw',
@@ -155,6 +215,12 @@ export class CryptoService {
 
     private async exportRawB64(key: CryptoKey): Promise<string> {
         return this.bufToB64(await crypto.subtle.exportKey('raw', key));
+    }
+
+    /** SHA-256 of a UTF-8 string, returned as lowercase hex. */
+    async sha256Hex(data: string): Promise<string> {
+        const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(data));
+        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
     toUrlSafeB64(b64: string): string {

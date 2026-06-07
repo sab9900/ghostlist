@@ -1,16 +1,18 @@
-import { Component, OnInit, effect, inject, signal } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { combineLatest, take } from 'rxjs';
 import { CryptoService } from '../../core/services/crypto.service';
+import { TranslatePipe } from '@ngx-translate/core';
 import { AppStore } from '../../store/app.store';
 
 @Component({
     selector: 'app-join',
-    imports: [FormsModule],
+    imports: [FormsModule, TranslatePipe],
     templateUrl: './join.component.html',
     styleUrl: './join.component.scss',
 })
-export class JoinComponent implements OnInit {
+export class JoinComponent {
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
     private readonly crypto = inject(CryptoService);
@@ -23,7 +25,33 @@ export class JoinComponent implements OnInit {
     protected readonly errorMsg = signal('');
 
     constructor() {
+        // Use Observables — snapshot.fragment/queryParams are unreliable on initial
+        // navigation for lazy-loaded routes.
+        combineLatest([this.route.paramMap, this.route.queryParamMap, this.route.fragment])
+            .pipe(take(1))
+            .subscribe(([params, queryParams, fragment]) => {
+                const id = params.get('id') ?? '';
+                const key = fragment ? this.crypto.fromUrlSafeB64(fragment) : '';
 
+                if (!id || !key) {
+                    this.errorMsg.set('Invalid share link — missing list ID or key.');
+                    this.state.set('error');
+                    return;
+                }
+
+                this.listId.set(id);
+                this.encryptionKey.set(key);
+
+                // If the link includes a list name (?n=...), skip the name prompt and
+                // import directly — same UX as the QR-code flow.
+                const nameFromUrl = queryParams.get('n');
+                if (nameFromUrl) {
+                    this.listName.set(nameFromUrl);
+                    void this.importList();
+                }
+            });
+
+        // If the list is already known (re-opened share link), skip to it directly.
         effect(() => {
             if (!this.store.listsLoaded()) return;
             const id = this.listId();
@@ -33,22 +61,6 @@ export class JoinComponent implements OnInit {
                 this.router.navigate(['/list', id]);
             }
         });
-    }
-
-    ngOnInit(): void {
-        const id = this.route.snapshot.paramMap.get('id') ?? '';
-
-        const key = this.crypto.fromUrlSafeB64(window.location.hash.replace('#', ''));
-
-        if (!id || !key) {
-            this.errorMsg.set('Invalid share link — missing list ID or key.');
-            this.state.set('error');
-            return;
-        }
-
-        this.listId.set(id);
-        this.encryptionKey.set(key);
-
     }
 
     async importList(): Promise<void> {

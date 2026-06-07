@@ -12,6 +12,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<GhostListItem> GhostListItems => Set<GhostListItem>();
     public DbSet<GhostChatMessage> GhostChatMessages => Set<GhostChatMessage>();
     public DbSet<DeviceSubscription> DeviceSubscriptions => Set<DeviceSubscription>();
+    public DbSet<GhostListMember> GhostListMembers => Set<GhostListMember>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -21,6 +22,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.CompletedItemsTtl).HasConversion<int>();
+            entity.Property(e => e.OwnerTokenHash).HasMaxLength(64);
             entity.HasMany(e => e.Items)
                   .WithOne()
                   .HasForeignKey(i => i.GhostListId)
@@ -54,6 +56,19 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.HasOne<Domain.Entities.GhostList>()
                   .WithMany()
                   .HasForeignKey(s => s.ListId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<GhostListMember>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.GhostListId, e.DeviceId }).IsUnique();
+            entity.Property(e => e.DeviceId).HasMaxLength(64).IsRequired();
+            entity.Property(e => e.EncryptedPayload).IsRequired();
+            entity.Property(e => e.InitializationVector).IsRequired();
+            entity.HasOne<Domain.Entities.GhostList>()
+                  .WithMany()
+                  .HasForeignKey(m => m.GhostListId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }

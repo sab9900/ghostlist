@@ -4,6 +4,7 @@ import { GhostListItem } from '../../../core/models';
 import { HapticsService } from '../../../core/services/haptics.service';
 import { CryptoService } from '../../../core/services/crypto.service';
 import { SeenService } from '../../../core/services/seen.service';
+import { TranslatePipe } from '@ngx-translate/core';
 import { AppStore } from '../../../store/app.store';
 
 interface DecryptedItem {
@@ -16,7 +17,7 @@ interface DecryptedItem {
 
 @Component({
     selector: 'app-items-tab',
-    imports: [FormsModule],
+    imports: [FormsModule, TranslatePipe],
     templateUrl: './items-tab.component.html',
     styleUrl: './items-tab.component.scss',
 })

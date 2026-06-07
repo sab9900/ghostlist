@@ -13,6 +13,7 @@ public interface IApplicationDbContext
     DbSet<GhostListItem> GhostListItems { get; }
     DbSet<GhostChatMessage> GhostChatMessages { get; }
     DbSet<DeviceSubscription> DeviceSubscriptions { get; }
+    DbSet<GhostListMember> GhostListMembers { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 

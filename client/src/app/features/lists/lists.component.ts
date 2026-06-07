@@ -1,6 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, ElementRef, inject, OnDestroy, signal, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TranslatePipe } from '@ngx-translate/core';
 import { Router } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
 import { ExportQrPayload, ReceiveQrPayload } from '../../core/models';
@@ -12,7 +13,7 @@ import { AppStore } from '../../store/app.store';
 
 @Component({
     selector: 'app-lists',
-    imports: [FormsModule, DatePipe, QrCodeComponent, QrScannerComponent, BadgeComponent],
+    imports: [FormsModule, DatePipe, QrCodeComponent, QrScannerComponent, BadgeComponent, TranslatePipe],
     templateUrl: './lists.component.html',
     styleUrl: './lists.component.scss',
 })

@@ -7,6 +7,7 @@ import {
     GhostChatMessage,
     GhostList,
     GhostListItem,
+    ListMember,
     ShareDelivery,
     UpdateTtlRequest,
 } from '../core/models';
@@ -28,8 +29,9 @@ export class ApiService {
         return t ? { 'X-Device-Token': t } : {};
     }
 
-    createList(): Observable<string> {
-        return this.http.post<string>(`${this.BASE}/ghostlist`, null);
+    createList(ownerTokenHash?: string): Observable<string> {
+        const body = ownerTokenHash ? { ownerTokenHash } : null;
+        return this.http.post<string>(`${this.BASE}/ghostlist`, body);
     }
 
     getList(id: string): Observable<GhostList> {
@@ -40,7 +42,10 @@ export class ApiService {
         return this.http.head<void>(`${this.BASE}/ghostlist/${id}`);
     }
 
-    deleteList(id: string): Observable<void> {
+    deleteList(id: string, ownerToken?: string): Observable<void> {
+        if (ownerToken) {
+            return this.http.delete<void>(`${this.BASE}/ghostlist/${id}`, { params: { ownerToken } });
+        }
         return this.http.delete<void>(`${this.BASE}/ghostlist/${id}`);
     }
 
@@ -106,5 +111,37 @@ export class ApiService {
 
     pollHandshake(sessionId: string): Observable<{ receiverPublicKey: string }> {
         return this.http.get<{ receiverPublicKey: string }>(`${this.BASE}/share/${sessionId}/handshake`);
+    }
+
+    // ── Members ─────────────────────────────────────────────────────────────
+
+    getMembers(listId: string): Observable<{ deviceId: string; encryptedPayload: string; initializationVector: string }[]> {
+        return this.http.get<{ deviceId: string; encryptedPayload: string; initializationVector: string }[]>(
+            `${this.BASE}/members/${listId}`,
+        );
+    }
+
+    upsertMember(listId: string, deviceId: string, encryptedPayload: string, initializationVector: string): Observable<void> {
+        return this.http.put<void>(`${this.BASE}/members/${listId}/${deviceId}`, { encryptedPayload, initializationVector });
+    }
+
+    deleteMember(listId: string, deviceId: string): Observable<void> {
+        return this.http.delete<void>(`${this.BASE}/members/${listId}/${deviceId}`);
+    }
+
+    kickMember(listId: string, deviceId: string, ownerToken: string): Observable<void> {
+        return this.http.delete<void>(`${this.BASE}/members/${listId}/${deviceId}/kick`, { params: { ownerToken } });
+    }
+
+    // ── Sync ─────────────────────────────────────────────────────────────────
+
+    putSyncBundle(sessionId: string, encryptedPayload: string, iv: string, senderPublicKey: string): Observable<void> {
+        return this.http.put<void>(`${this.BASE}/share/${sessionId}/sync-bundle`, { encryptedPayload, iv, senderPublicKey });
+    }
+
+    getSyncBundle(sessionId: string): Observable<{ encryptedPayload: string; iv: string; senderPublicKey: string }> {
+        return this.http.get<{ encryptedPayload: string; iv: string; senderPublicKey: string }>(
+            `${this.BASE}/share/${sessionId}/sync-bundle`,
+        );
     }
 }

@@ -41,6 +41,11 @@ public class ExceptionHandlerMiddleware(RequestDelegate next, ILogger<ExceptionH
                 body = new { error = e.Message };
                 break;
 
+            case ForbiddenException e:
+                statusCode = HttpStatusCode.Forbidden;
+                body = new { error = e.Message };
+                break;
+
             case ArgumentException:
             case InvalidOperationException:
                 statusCode = HttpStatusCode.BadRequest;

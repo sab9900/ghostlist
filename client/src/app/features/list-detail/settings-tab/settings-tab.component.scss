@@ -209,3 +209,184 @@
         }
     }
 }
+
+// ── Dialog (share scan modal) ─────────────────────────────────────────────────
+
+.dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+    z-index: 100;
+}
+
+.dialog {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    box-shadow: var(--shadow-lg);
+
+    &--qr {
+        max-width: 340px;
+    }
+
+    &__title {
+        font-size: var(--text-lg);
+        font-weight: var(--weight-semi);
+    }
+
+    &__hint {
+        font-size: var(--text-sm);
+        color: var(--color-text-muted);
+        line-height: var(--leading-normal);
+    }
+
+    &__scanner {
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        width: 200px;
+        height: 200px;
+        align-self: center;
+    }
+
+    &__actions {
+        display: flex;
+        gap: var(--space-3);
+        justify-content: flex-end;
+    }
+}
+
+// ── Members ──────────────────────────────────────────────────────────────────
+
+.members-loading,
+.members-empty {
+    font-size: var(--text-sm);
+    color: var(--color-text-subtle);
+    padding: var(--space-2) 0;
+}
+
+.member-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.member {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+
+    &__avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-full);
+        background: var(--color-surface-2);
+        border: 1px solid var(--color-border);
+        color: var(--color-text-muted);
+        font-size: var(--text-sm);
+        font-weight: var(--weight-semi);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+
+        &--self {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: var(--color-on-primary);
+        }
+    }
+
+    &__info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    &__name {
+        font-size: var(--text-sm);
+        font-weight: var(--weight-medium);
+        color: var(--color-text);
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+    }
+
+    &__you {
+        font-size: var(--text-xs);
+        color: var(--color-primary);
+        font-weight: var(--weight-normal);
+    }
+
+    &__joined {
+        font-size: var(--text-xs);
+        color: var(--color-text-subtle);
+    }
+
+    &__kick {
+        flex-shrink: 0;
+        margin-left: auto;
+    }
+
+    &--skeleton {
+        pointer-events: none;
+    }
+}
+
+// ── Skeleton loading ──────────────────────────────────────────────────────────
+
+@keyframes shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position:  200% center; }
+}
+
+%skeleton-base {
+    background: linear-gradient(
+        90deg,
+        var(--color-surface-2) 25%,
+        color-mix(in srgb, var(--color-surface-2) 60%, var(--color-border)) 50%,
+        var(--color-surface-2) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+    border-radius: var(--radius-sm);
+}
+
+.skeleton-box {
+    @extend %skeleton-base;
+    // overrides the text content of member__avatar
+    color: transparent;
+    &::after { content: none; }
+}
+
+.skeleton-line {
+    @extend %skeleton-base;
+    height: 12px;
+
+    &--name {
+        width: 55%;
+        height: 13px;
+        margin-bottom: var(--space-1);
+    }
+
+    &--sub {
+        width: 38%;
+        height: 11px;
+    }
+}

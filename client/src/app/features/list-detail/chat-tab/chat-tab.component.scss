@@ -68,7 +68,7 @@
     }
 
     &--mine &__sender {
-        color: rgba(255, 255, 255, 0.75);
+        color: color-mix(in srgb, var(--color-on-primary) 75%, transparent);
     }
 
     &__time {
@@ -78,7 +78,7 @@
     }
 
     &--mine &__time {
-        color: rgba(255, 255, 255, 0.6);
+        color: color-mix(in srgb, var(--color-on-primary) 60%, transparent);
     }
 
     &__delete {
@@ -94,7 +94,7 @@
     }
 
     &--mine &__delete {
-        color: rgba(255, 255, 255, 0.6);
+        color: color-mix(in srgb, var(--color-on-primary) 60%, transparent);
     }
 
     &:hover &__delete {
@@ -136,13 +136,14 @@
 }
 
 .compose {
+    container-type: inline-size;
     flex-shrink: 0;
     border-top: 1px solid var(--color-border);
     padding: var(--space-3) var(--space-4);
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
-    background: var(--color-surface);
+    // background: var(--color-surface);
 
     &__name-row {
         display: flex;
@@ -219,6 +220,17 @@
         &:disabled {
             opacity: 0.4;
             cursor: not-allowed;
+        }
+    }
+
+    @container (max-width: 260px) {
+        &__row {
+            flex-direction: column;
+        }
+
+        &__send {
+            width: 100%;
+            height: 40px;
         }
     }
 }

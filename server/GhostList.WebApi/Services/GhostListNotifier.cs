@@ -27,4 +27,7 @@ public class GhostListNotifier(IHubContext<GhostListHub> hubContext) : IGhostLis
 
     public Task NotifyListDeleted(Guid listId) =>
         hubContext.Clients.Group(listId.ToString()).SendAsync("ListDeleted", listId);
+
+    public Task NotifyMemberKicked(Guid listId, string deviceId) =>
+        hubContext.Clients.Group(listId.ToString()).SendAsync("MemberKicked", listId, deviceId);
 }

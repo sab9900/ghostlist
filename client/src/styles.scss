@@ -274,10 +274,12 @@ html[data-accent='noir'] {
         --color-primary: #111114;
         --color-primary-hover: #38383f;
         --color-primary-dim: rgba(17, 17, 20, 0.08);
+        --color-on-primary: #ffffff;
     }
 }
 html[data-accent='noir'][data-theme='light'] {
     --color-primary: #111114;
     --color-primary-hover: #38383f;
     --color-primary-dim: rgba(17, 17, 20, 0.08);
+    --color-on-primary: #ffffff;
 }

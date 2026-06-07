@@ -1,13 +1,13 @@
 <div class="screen" role="main">
 
     <header class="header" role="banner">
-        <button class="header__back" (click)="goBack()" aria-label="Back">
+        <button class="header__back" (click)="goBack()" [attr.aria-label]="'LIST_DETAIL.BACK_ARIA' | translate">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <polyline points="15 18 9 12 15 6" />
             </svg>
         </button>
-        <h1 class="header__title">About</h1>
+        <h1 class="header__title">{{ 'ABOUT.TITLE' | translate }}</h1>
     </header>
 
     <main class="content">
@@ -16,18 +16,18 @@
             <div class="hero">
                 <img class="hero__logo" src="/ghost-header.svg" alt="Ghost List" aria-hidden="true" />
                 <p class="hero__name">Ghost List</p>
-                <p class="hero__tagline">Private lists. Zero trust.</p>
+                <p class="hero__tagline">{{ 'ABOUT.TAGLINE' | translate }}</p>
             </div>
 
             <section class="section" aria-labelledby="what-heading">
-                <h2 class="section__title" id="what-heading">What is Ghost List?</h2>
+                <h2 class="section__title" id="what-heading">{{ 'ABOUT.WHAT_TITLE' | translate }}</h2>
                 <div class="card">
-                    <p class="card__text">Ghost List is an end-to-end encrypted shared list app. You create lists, add items, chat with people you share with — and none of it is readable by anyone but you and the people you invite. Not even the server.</p>
+                    <p class="card__text">{{ 'ABOUT.WHAT_TEXT' | translate }}</p>
                 </div>
             </section>
 
             <section class="section" aria-labelledby="how-heading">
-                <h2 class="section__title" id="how-heading">How it works</h2>
+                <h2 class="section__title" id="how-heading">{{ 'ABOUT.HOW_TITLE' | translate }}</h2>
                 <div class="feature-list">
                     <div class="feature">
                         <div class="feature__icon" aria-hidden="true">
@@ -38,8 +38,8 @@
                             </svg>
                         </div>
                         <div class="feature__body">
-                            <p class="feature__label">AES-256-GCM encryption</p>
-                            <p class="feature__desc">Every item, message and list name is encrypted on your device before it ever leaves. The server stores only ciphertext.</p>
+                            <p class="feature__label">{{ 'ABOUT.FEATURE_ENCRYPTION_LABEL' | translate }}</p>
+                            <p class="feature__desc">{{ 'ABOUT.FEATURE_ENCRYPTION_DESC' | translate }}</p>
                         </div>
                     </div>
                     <div class="feature">
@@ -52,8 +52,8 @@
                             </svg>
                         </div>
                         <div class="feature__body">
-                            <p class="feature__label">QR key exchange</p>
-                            <p class="feature__desc">Sharing uses ECDH P-256 key agreement. The encryption key travels only via QR code or link fragment — never through the server.</p>
+                            <p class="feature__label">{{ 'ABOUT.FEATURE_QR_LABEL' | translate }}</p>
+                            <p class="feature__desc">{{ 'ABOUT.FEATURE_QR_DESC' | translate }}</p>
                         </div>
                     </div>
                     <div class="feature">
@@ -67,8 +67,8 @@
                             </svg>
                         </div>
                         <div class="feature__body">
-                            <p class="feature__label">Real-time sync</p>
-                            <p class="feature__desc">Changes appear instantly on every connected device via SignalR — all still encrypted end-to-end.</p>
+                            <p class="feature__label">{{ 'ABOUT.FEATURE_REALTIME_LABEL' | translate }}</p>
+                            <p class="feature__desc">{{ 'ABOUT.FEATURE_REALTIME_DESC' | translate }}</p>
                         </div>
                     </div>
                     <div class="feature">
@@ -79,21 +79,21 @@
                             </svg>
                         </div>
                         <div class="feature__body">
-                            <p class="feature__label">Zero knowledge server</p>
-                            <p class="feature__desc">No accounts, no tracking, no ads. The server can't read your data. Your keys never leave your device.</p>
+                            <p class="feature__label">{{ 'ABOUT.FEATURE_ZERO_LABEL' | translate }}</p>
+                            <p class="feature__desc">{{ 'ABOUT.FEATURE_ZERO_DESC' | translate }}</p>
                         </div>
                     </div>
                 </div>
             </section>
 
             <section class="section" aria-labelledby="built-heading">
-                <h2 class="section__title" id="built-heading">Built with</h2>
+                <h2 class="section__title" id="built-heading">{{ 'ABOUT.BUILT_TITLE' | translate }}</h2>
                 <div class="card">
-                    <p class="card__text">Angular 22 · .NET 10 · PostgreSQL · SignalR · Web Crypto API · Capacitor</p>
+                    <p class="card__text">{{ 'ABOUT.BUILT_TEXT' | translate }}</p>
                 </div>
             </section>
 
-            <p class="footer">Made with care by <strong>Norica Informatics</strong></p>
+            <p class="footer">{{ 'ABOUT.FOOTER' | translate }} <strong>Norica Informatics</strong></p>
 
         </div>
     </main>

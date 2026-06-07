@@ -1,28 +1,60 @@
-import { Component, inject } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Capacitor } from '@capacitor/core';
+import { TranslatePipe } from '@ngx-translate/core';
+import { environment } from '../../../environments/environment';
+import { SyncQrPayload } from '../../core/models';
+import { CryptoService } from '../../core/services/crypto.service';
+import { LanguageService } from '../../core/services/language.service';
 import { Theme, ThemeAccent, ThemeService } from '../../core/services/theme.service';
+import { UserPreferencesService } from '../../core/services/user-preferences.service';
+import { AUTO_LOCK_OPTIONS, WebAuthnService } from '../../core/services/webauthn.service';
+import { AppStore } from '../../store/app.store';
+import { QrCodeComponent } from '../../shared/qr-code/qr-code.component';
+import { QrScannerComponent } from '../../shared/qr-scanner/qr-scanner.component';
 
 @Component({
     selector: 'app-settings',
+    imports: [TranslatePipe, FormsModule, QrCodeComponent, QrScannerComponent],
     templateUrl: './settings.component.html',
     styleUrl: './settings.component.scss',
 })
 export class SettingsComponent {
     protected readonly themeService = inject(ThemeService);
+    protected readonly langService = inject(LanguageService);
+    protected readonly prefs = inject(UserPreferencesService);
+    protected readonly store = inject(AppStore);
+    protected readonly webAuthn = inject(WebAuthnService);
     private readonly router = inject(Router);
+    private readonly crypto = inject(CryptoService);
 
-    protected readonly themeOptions: { value: Theme; label: string; description: string }[] = [
-        { value: 'system', label: 'System', description: 'Follows your device setting' },
-        { value: 'light', label: 'Light', description: 'Always light' },
-        { value: 'dark', label: 'Dark', description: 'Always dark' },
+    protected readonly themeOptions: { value: Theme; labelKey: string; descKey: string }[] = [
+        { value: 'system', labelKey: 'SETTINGS.THEME.SYSTEM', descKey: 'SETTINGS.THEME.SYSTEM_DESC' },
+        { value: 'light',  labelKey: 'SETTINGS.THEME.LIGHT',  descKey: 'SETTINGS.THEME.LIGHT_DESC'  },
+        { value: 'dark',   labelKey: 'SETTINGS.THEME.DARK',   descKey: 'SETTINGS.THEME.DARK_DESC'   },
     ];
 
-    protected readonly accentOptions: { value: ThemeAccent; label: string; color: string }[] = [
-        { value: 'violet', label: 'Violet', color: '#7c6af7' },
-        { value: 'cyan',   label: 'Cyan',   color: '#06b6d4' },
-        { value: 'red',    label: 'Red',    color: '#f87171' },
-        { value: 'noir',   label: 'Noir',   color: 'linear-gradient(135deg, #111114 50%, #f0f0f2 50%)' },
+    protected readonly accentOptions: { value: ThemeAccent; labelKey: string; color: string }[] = [
+        { value: 'violet', labelKey: 'SETTINGS.ACCENT.VIOLET', color: '#7c6af7' },
+        { value: 'cyan',   labelKey: 'SETTINGS.ACCENT.CYAN',   color: '#06b6d4' },
+        { value: 'red',    labelKey: 'SETTINGS.ACCENT.RED',    color: '#f87171' },
+        { value: 'noir',   labelKey: 'SETTINGS.ACCENT.NOIR',   color: 'linear-gradient(135deg, #111114 50%, #f0f0f2 50%)' },
     ];
+
+    protected readonly supportedLangs = LanguageService.SUPPORTED;
+
+    protected readonly pendingName = signal('');
+    protected readonly nameSaved = signal(false);
+
+    constructor() {
+        // Sync pendingName once prefs.initialize() populates the sender name.
+        // Only overwrites if the user hasn't started typing yet.
+        effect(() => {
+            const name = this.prefs.senderName();
+            if (name && !this.pendingName()) this.pendingName.set(name);
+        });
+    }
 
     setTheme(theme: Theme): void {
         this.themeService.set(theme);
@@ -32,7 +64,199 @@ export class SettingsComponent {
         this.themeService.setAccent(accent);
     }
 
+    async setLanguage(code: string): Promise<void> {
+        await this.langService.setLanguage(code);
+    }
+
+    saveName(): void {
+        const name = this.pendingName().trim();
+        if (!name) return;
+        this.prefs.setSenderName(name);
+        this.nameSaved.set(true);
+        setTimeout(() => this.nameSaved.set(false), 2000);
+    }
+
     goBack(): void {
         this.router.navigate(['/']);
+    }
+
+    // ── Biometric lock ────────────────────────────────────────────────────────
+
+    protected readonly autoLockOptions = AUTO_LOCK_OPTIONS;
+
+    protected readonly biometricWorking = signal(false);
+    protected readonly biometricError = signal<'unsupported' | 'failed' | null>(null);
+
+    async enableBiometricLock(): Promise<void> {
+        if (!this.webAuthn.isSupported) {
+            this.biometricError.set('unsupported');
+            return;
+        }
+        this.biometricWorking.set(true);
+        this.biometricError.set(null);
+        try {
+            await this.webAuthn.register();
+        } catch {
+            this.biometricError.set('failed');
+        } finally {
+            this.biometricWorking.set(false);
+        }
+    }
+
+    async disableBiometricLock(): Promise<void> {
+        this.biometricWorking.set(true);
+        this.biometricError.set(null);
+        try {
+            const ok = await this.webAuthn.authenticate();
+            if (ok) {
+                await this.webAuthn.disable();
+            } else {
+                this.biometricError.set('failed');
+            }
+        } catch {
+            this.biometricError.set('failed');
+        } finally {
+            this.biometricWorking.set(false);
+        }
+    }
+
+    // ── Sync Machine ─────────────────────────────────────────────────────────
+
+    /** Biometric authentication gate for sync. Sync is only reachable when WebAuthn is enabled. */
+    private async confirmSyncAuth(): Promise<boolean> {
+        try {
+            return await this.webAuthn.authenticate();
+        } catch {
+            return false;
+        }
+    }
+
+    /** Sync state machine:
+     *  idle → receive-qr → receive-done
+     *  idle → send-choose → send-scan → send-done
+     *                     → send-qr   → send-qr-done
+     *  any → error
+     */
+    protected readonly syncStep = signal<
+        'idle' | 'receive-qr' | 'receive-done' |
+        'send-choose' | 'send-scan' | 'send-done' |
+        'send-qr' | 'send-qr-done' |
+        'error'
+    >('idle');
+    protected readonly syncQrData = signal<string | null>(null);
+    protected readonly syncImportedCount = signal(0);
+    protected readonly syncLinkCopied = signal(false);
+    private syncPollTimer: ReturnType<typeof setInterval> | null = null;
+    private syncSessionId: string | null = null;
+    private syncPayload: SyncQrPayload | null = null;
+
+    // ── Receive flow (receiver-initiated) ────────────────────────────────────
+
+    async startSyncReceive(): Promise<void> {
+        if (!await this.confirmSyncAuth()) return;
+        this.resetSync();
+        try {
+            const payload: SyncQrPayload = await this.store.initSyncReceive();
+            this.syncSessionId = payload.sessionId;
+            this.syncPayload = payload;
+            this.syncQrData.set(JSON.stringify(payload));
+            this.syncStep.set('receive-qr');
+            this.startReceivePoll(payload.sessionId);
+        } catch {
+            this.syncStep.set('error');
+        }
+    }
+
+    async copySyncLink(): Promise<void> {
+        if (!this.syncPayload) return;
+        const origin = Capacitor.isNativePlatform()
+            ? environment.nativeShareBaseUrl
+            : window.location.origin;
+        const url = `${origin}/sync/${this.syncPayload.sessionId}#${this.crypto.toUrlSafeB64(this.syncPayload.publicKey)}`;
+        try {
+            await navigator.clipboard.writeText(url);
+        } catch { /* clipboard blocked — ignore */ }
+        this.syncLinkCopied.set(true);
+        setTimeout(() => this.syncLinkCopied.set(false), 2000);
+    }
+
+    private startReceivePoll(sessionId: string): void {
+        this.syncPollTimer = setInterval(async () => {
+            try {
+                const count = await this.store.claimSyncBundle(sessionId);
+                this.stopSyncPoll();
+                this.syncImportedCount.set(count);
+                this.syncStep.set('receive-done');
+            } catch { /* 404 = not yet */ }
+        }, 2000);
+    }
+
+    // ── Send flow — choose method ─────────────────────────────────────────────
+
+    async startSyncSend(): Promise<void> {
+        if (!await this.confirmSyncAuth()) return;
+        this.resetSync();
+        this.syncStep.set('send-choose');
+    }
+
+    // ── Send flow — scan receiver's QR (receiver-initiated, existing) ─────────
+
+    startSyncSendScan(): void {
+        this.syncStep.set('send-scan');
+    }
+
+    async onSyncQrDetected(raw: string): Promise<void> {
+        try {
+            const payload = JSON.parse(raw) as SyncQrPayload;
+            if (payload.type !== 'sync') throw new Error('Not a sync QR.');
+            await this.store.pushSyncBundle(payload.sessionId, payload.publicKey);
+            this.syncStep.set('send-done');
+        } catch {
+            this.syncStep.set('error');
+        }
+    }
+
+    // ── Send flow — show QR for receiver to scan (sender-initiated, new) ──────
+
+    startSyncSendQr(): void {
+        this.resetSync();
+        try {
+            const payload = this.store.initSyncSend();
+            this.syncSessionId = payload.sessionId;
+            this.syncQrData.set(JSON.stringify(payload));
+            this.syncStep.set('send-qr');
+            this.startSendQrPoll(payload.sessionId);
+        } catch {
+            this.syncStep.set('error');
+        }
+    }
+
+    private startSendQrPoll(sessionId: string): void {
+        this.syncPollTimer = setInterval(async () => {
+            try {
+                await this.store.pollAndPushSyncBundle(sessionId);
+                this.stopSyncPoll();
+                this.syncStep.set('send-qr-done');
+            } catch { /* 404 = receiver hasn't scanned yet */ }
+        }, 2000);
+    }
+
+    // ── Shared ────────────────────────────────────────────────────────────────
+
+    private stopSyncPoll(): void {
+        if (this.syncPollTimer !== null) {
+            clearInterval(this.syncPollTimer);
+            this.syncPollTimer = null;
+        }
+    }
+
+    resetSync(): void {
+        this.stopSyncPoll();
+        this.syncQrData.set(null);
+        this.syncLinkCopied.set(false);
+        this.syncSessionId = null;
+        this.syncPayload = null;
+        this.syncImportedCount.set(0);
+        this.syncStep.set('idle');
     }
 }

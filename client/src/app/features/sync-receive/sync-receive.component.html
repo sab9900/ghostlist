@@ -1,0 +1,49 @@
+<div class="screen" role="main">
+
+    <header class="header" role="banner">
+        <button class="header__back" (click)="goHome()" [attr.aria-label]="'LIST_DETAIL.BACK_ARIA' | translate">‹</button>
+        <h1 class="header__title">{{ 'SYNC_RECEIVE_PAGE.TITLE' | translate }}</h1>
+    </header>
+
+    <div class="content">
+
+        @if (state() === 'handshake') {
+        <div class="card card--loading" role="status" aria-live="polite">
+            <div class="spinner" aria-hidden="true"></div>
+            <p class="card__hint">{{ 'SYNC_RECEIVE_PAGE.CONNECTING' | translate }}</p>
+        </div>
+        }
+
+        @if (state() === 'waiting') {
+        <div class="card card--loading" role="status" aria-live="polite">
+            <div class="spinner" aria-hidden="true"></div>
+            <p class="card__hint">{{ 'SYNC_RECEIVE_PAGE.WAITING' | translate }}</p>
+            <button class="btn btn--ghost" (click)="goHome()">{{ 'COMMON.CANCEL' | translate }}</button>
+        </div>
+        }
+
+        @if (state() === 'done') {
+        <div class="card" role="status" aria-live="polite" aria-labelledby="done-heading">
+            <span class="card__icon" aria-hidden="true">✓</span>
+            <h2 class="card__title" id="done-heading">{{ 'SYNC_RECEIVE_PAGE.DONE_TITLE' | translate }}</h2>
+            <p class="card__hint">{{ 'SYNC_RECEIVE_PAGE.DONE_HINT' | translate: { count: importedCount() } }}</p>
+            <div class="actions">
+                <button class="btn btn--primary" (click)="goHome()">{{ 'SYNC_RECEIVE_PAGE.GO_HOME' | translate }}</button>
+            </div>
+        </div>
+        }
+
+        @if (state() === 'error') {
+        <div class="card card--error" role="alert" aria-labelledby="error-heading">
+            <span class="card__icon" aria-hidden="true">⚠</span>
+            <h2 class="card__title" id="error-heading">{{ 'SYNC_RECEIVE_PAGE.ERROR_TITLE' | translate }}</h2>
+            <p class="card__hint">{{ 'SYNC_RECEIVE_PAGE.ERROR_HINT' | translate }}</p>
+            <div class="actions">
+                <button class="btn btn--primary" (click)="goHome()">{{ 'SYNC_RECEIVE_PAGE.GO_HOME' | translate }}</button>
+            </div>
+        </div>
+        }
+
+    </div>
+
+</div>

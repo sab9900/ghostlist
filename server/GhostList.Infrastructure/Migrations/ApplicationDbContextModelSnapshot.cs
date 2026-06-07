@@ -68,6 +68,10 @@ namespace GhostList.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("OwnerTokenHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.HasKey("Id");
 
                     b.ToTable("GhostLists");
@@ -145,6 +149,45 @@ namespace GhostList.Infrastructure.Migrations
                     b.HasOne("GhostList.Domain.Entities.GhostList", null)
                         .WithMany()
                         .HasForeignKey("ListId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GhostList.Domain.Entities.GhostListMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DeviceId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("EncryptedPayload")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("GhostListId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("InitializationVector")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GhostListId", "DeviceId")
+                        .IsUnique();
+
+                    b.ToTable("GhostListMembers");
+
+                    b.HasOne("GhostList.Domain.Entities.GhostList", null)
+                        .WithMany()
+                        .HasForeignKey("GhostListId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

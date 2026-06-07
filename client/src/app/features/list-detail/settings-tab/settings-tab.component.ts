@@ -1,25 +1,29 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { Component, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
-import { DeleteAfterDuration, TTL_LABELS, TTL_VALUE_TO_ENUM } from '../../../core/models';
+import { DeleteAfterDuration, ListMember, TTL_LABELS, TTL_VALUE_TO_ENUM } from '../../../core/models';
 import { CryptoService } from '../../../core/services/crypto.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 import { QrScannerComponent } from '../../../shared/qr-scanner/qr-scanner.component';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { firstValueFrom } from 'rxjs';
 import { AppStore } from '../../../store/app.store';
 import { environment } from '../../../../environments/environment';
 
 @Component({
     selector: 'app-settings-tab',
-    imports: [FormsModule, QrScannerComponent],
+    imports: [DatePipe, FormsModule, QrScannerComponent, TranslatePipe],
     templateUrl: './settings-tab.component.html',
     styleUrl: './settings-tab.component.scss',
 })
-export class SettingsTabComponent implements OnInit {
+export class SettingsTabComponent {
     protected readonly store = inject(AppStore);
     protected readonly prefs = inject(UserPreferencesService);
     private readonly router = inject(Router);
     private readonly crypto = inject(CryptoService);
+    private readonly translate = inject(TranslateService);
 
     protected readonly ttlOptions = Object.values(DeleteAfterDuration).map(v => ({
         value: v,
@@ -39,15 +43,57 @@ export class SettingsTabComponent implements OnInit {
     protected readonly shareStep = signal<'idle' | 'scan' | 'done' | 'error'>('idle');
     protected readonly scannedJson = signal('');
 
-    ngOnInit(): void {
+    protected readonly members = signal<ListMember[]>([]);
+    protected readonly membersLoading = signal(false);
+    protected readonly kickingDeviceId = signal<string | null>(null);
+
+    constructor() {
+        // Re-initialize whenever the active list changes (e.g. user selects a different
+        // list while the settings drawer is still open on desktop).
+        effect(() => {
+            const id = this.store.currentListId();
+            untracked(() => this.initForList(id));
+        });
+    }
+
+    private initForList(id: string | null): void {
+        // Reset transient UI state
+        this.shareStep.set('idle');
+        this.scannedJson.set('');
+        this.nameSaved.set(false);
+        this.ttlSaved.set(false);
+        this.linkCopied.set(false);
+        this.members.set([]);
+
+        if (!id) return;
+
         const list = this.store.currentList();
         if (list?.ttl != null) {
             const mapped = TTL_VALUE_TO_ENUM[list.ttl];
             if (mapped) this.selectedTtl.set(mapped);
         }
-        const id = this.store.currentListId();
+
         const known = this.store.knownLists().find(l => l.id === id);
-        if (known) this.listName.set(known.name);
+        if (known) {
+            this.listName.set(known.name);
+            void this.loadMembers(known.id, known.encryptionKey);
+        }
+    }
+
+    private async loadMembers(listId: string, encryptionKey: string): Promise<void> {
+        this.membersLoading.set(true);
+        try {
+            const members = await this.store.fetchMembersForList(listId, encryptionKey);
+            // Sort: current device first, then alphabetically
+            members.sort((a, b) => {
+                if (a.isCurrentDevice) return -1;
+                if (b.isCurrentDevice) return 1;
+                return a.displayName.localeCompare(b.displayName);
+            });
+            this.members.set(members);
+        } catch { /* ignore fetch errors */ } finally {
+            this.membersLoading.set(false);
+        }
     }
 
     async saveTtl(): Promise<void> {
@@ -82,7 +128,7 @@ export class SettingsTabComponent implements OnInit {
         const origin = Capacitor.isNativePlatform()
             ? environment.nativeShareBaseUrl
             : window.location.origin;
-        const url = `${origin}/join/${id}#${this.crypto.toUrlSafeB64(known.encryptionKey)}`;
+        const url = `${origin}/join/${id}?n=${encodeURIComponent(known.name)}#${this.crypto.toUrlSafeB64(known.encryptionKey)}`;
         await navigator.clipboard.writeText(url);
         this.linkCopied.set(true);
         setTimeout(() => this.linkCopied.set(false), 2000);
@@ -114,7 +160,8 @@ export class SettingsTabComponent implements OnInit {
     }
 
     async deleteList(): Promise<void> {
-        if (!confirm('Delete this list for everyone? This cannot be undone.')) return;
+        const msg = await firstValueFrom(this.translate.get('LIST_SETTINGS.CONFIRM_DELETE'));
+        if (!confirm(msg)) return;
         this.deletingList.set(true);
         try {
             const id = this.store.currentListId()!;
@@ -126,9 +173,24 @@ export class SettingsTabComponent implements OnInit {
     }
 
     async forgetList(): Promise<void> {
-        if (!confirm('Remove this list from this device?')) return;
+        const msg = await firstValueFrom(this.translate.get('LIST_SETTINGS.CONFIRM_FORGET'));
+        if (!confirm(msg)) return;
         const id = this.store.currentListId()!;
         await this.store.forgetList(id);
         await this.router.navigate(['/']);
+    }
+
+    async kickMember(targetDeviceId: string): Promise<void> {
+        const msg = await firstValueFrom(this.translate.get('LIST_SETTINGS.KICK_CONFIRM'));
+        if (!confirm(msg)) return;
+        const id = this.store.currentListId();
+        if (!id) return;
+        this.kickingDeviceId.set(targetDeviceId);
+        try {
+            await this.store.kickMember(id, targetDeviceId);
+            this.members.update(list => list.filter(m => m.deviceId !== targetDeviceId));
+        } catch { /* ignore — member may already be gone */ } finally {
+            this.kickingDeviceId.set(null);
+        }
     }
 }
