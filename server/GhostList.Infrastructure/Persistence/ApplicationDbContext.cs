@@ -104,7 +104,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         => base.SaveChangesAsync(cancellationToken);
 
-    public Task IncrementDailyUsageAsync(UsageMetric metric, CancellationToken cancellationToken)
+    public async Task IncrementDailyUsageAsync(UsageMetric metric, CancellationToken cancellationToken)
     {
         var column = metric switch
         {
@@ -115,7 +115,31 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             _ => throw new ArgumentOutOfRangeException(nameof(metric), metric, null)
         };
 
-        return Database.ExecuteSqlRawAsync(
+        if (!Database.IsRelational())
+        {
+            // In-memory provider (used by tests) doesn't support raw SQL.
+            // Fall back to a plain EF Core upsert — not atomic, but fine for tests.
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var stat = await DailyUsageStats.FindAsync([today], cancellationToken);
+            if (stat is null)
+            {
+                stat = new DailyUsageStat { Date = today };
+                DailyUsageStats.Add(stat);
+            }
+
+            switch (metric)
+            {
+                case UsageMetric.List: stat.ListsCreated++; break;
+                case UsageMetric.Item: stat.ItemsCreated++; break;
+                case UsageMetric.Message: stat.MessagesCreated++; break;
+                case UsageMetric.Member: stat.MembersCreated++; break;
+            }
+
+            await SaveChangesAsync(cancellationToken);
+            return;
+        }
+
+        await Database.ExecuteSqlRawAsync(
             $"""
             INSERT INTO "DailyUsageStats" ("Date", "ListsCreated", "ItemsCreated", "MessagesCreated", "MembersCreated")
             VALUES (CURRENT_DATE, 0, 0, 0, 0)
