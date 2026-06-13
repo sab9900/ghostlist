@@ -30,9 +30,12 @@ export class ItemsTabComponent {
     protected readonly addingItem = signal(false);
     protected readonly decryptedItems = signal<DecryptedItem[]>([]);
 
+    /** Ids of items created by this device during the current session — never shown as "new". */
+    private readonly ownItemIds = new Set<string>();
+
     private readonly sortedItems = computed(() => {
-        const lastActivity = (item: DecryptedItem) => new Date(item.isChecked ? (item.checkedAt ?? item.createdAt) : item.createdAt).getTime();
-        return [...this.decryptedItems()].sort((a, b) => lastActivity(b) - lastActivity(a));
+        const createdAt = (item: DecryptedItem) => new Date(item.createdAt).getTime();
+        return [...this.decryptedItems()].sort((a, b) => createdAt(b) - createdAt(a));
     });
 
     protected readonly activeItems = computed(() => this.sortedItems().filter(i => !i.isChecked));
@@ -61,7 +64,7 @@ export class ItemsTabComponent {
                 isChecked: item.isChecked,
                 checkedAt: item.checkedAt,
                 createdAt: item.createdAt,
-                isNew: new Date(item.createdAt).getTime() > cutoff,
+                isNew: new Date(item.createdAt).getTime() > cutoff && !this.ownItemIds.has(item.id),
             })),
         );
         this.decryptedItems.set(items);
@@ -71,9 +74,18 @@ export class ItemsTabComponent {
         const text = this.newItemText().trim();
         if (!text) return;
         this.addingItem.set(true);
+        const idsBefore = new Set(this.store.items().map(i => i.id));
         try {
             await this.store.addItem(text);
             this.newItemText.set('');
+            const added = this.store.items().find(i => !idsBefore.has(i.id));
+            if (added) {
+                this.ownItemIds.add(added.id);
+                // The optimistic patchState(s) above already triggered decryptItems()
+                // with the old ownItemIds, so the "new" dot may briefly show — re-run
+                // it now that the id is marked as our own.
+                void this.decryptItems();
+            }
         } finally {
             this.addingItem.set(false);
         }

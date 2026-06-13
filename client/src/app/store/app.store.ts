@@ -85,6 +85,14 @@ function resolveCreatedItemId(items: GhostListItem[], tempItemId: string, realId
     return items.map(i => i.id === tempItemId ? { ...i, id: realId } : i);
 }
 
+/** Same id-reconciliation as {@link resolveCreatedItemId}, but for chat messages. */
+function resolveCreatedMessageId(messages: GhostChatMessage[], tempMessageId: string, realId: string): GhostChatMessage[] {
+    if (messages.some(m => m.id === realId)) {
+        return messages.filter(m => m.id !== tempMessageId);
+    }
+    return messages.map(m => m.id === tempMessageId ? { ...m, id: realId } : m);
+}
+
 export const AppStore = signalStore(
     { providedIn: 'root' },
 
@@ -494,7 +502,7 @@ export const AppStore = signalStore(
                 try {
                     const realId = await firstValueFrom(api.createMessage(payload));
                     patchState(store, {
-                        messages: store.messages().map(m => m.id === id ? { ...m, id: realId } : m),
+                        messages: resolveCreatedMessageId(store.messages(), id, realId),
                     });
                     void persistCurrentList();
                 } catch (e: unknown) {
@@ -650,7 +658,7 @@ export const AppStore = signalStore(
                                     const realId = await firstValueFrom(api.createMessage(op.payload));
                                     if (store.currentListId() === op.listId) {
                                         patchState(store, {
-                                            messages: store.messages().map(m => m.id === op.tempMessageId ? { ...m, id: realId } : m),
+                                            messages: resolveCreatedMessageId(store.messages(), op.tempMessageId, realId),
                                         });
                                         void persistCurrentList();
                                     }
