@@ -1,5 +1,7 @@
 using GhostList.Application.Features.ListMembers.Commands.DeleteListMember;
 using GhostList.Application.Features.ListMembers.Commands.KickListMember;
+using GhostList.Application.Features.ListMembers.Commands.MarkItemsRead;
+using GhostList.Application.Features.ListMembers.Commands.MarkMessagesRead;
 using GhostList.Application.Features.ListMembers.Commands.UpdateReadReceipt;
 using GhostList.Application.Features.ListMembers.Commands.UpsertListMember;
 using GhostList.Application.Features.ListMembers.Queries;
@@ -11,6 +13,8 @@ namespace GhostList.WebApi.Controllers;
 public record UpsertMemberRequest(string EncryptedPayload, string InitializationVector);
 
 public record ReadReceiptRequest(DateTimeOffset? LastReadMessageAt, DateTimeOffset? LastReadItemAt);
+
+public record MarkReadRequest(List<Guid> Ids);
 
 [ApiController]
 [Route("api/members")]
@@ -60,5 +64,23 @@ public class MembersController(IMediator mediator) : ControllerBase
         var userId = Request.Headers["X-User-Id"].FirstOrDefault();
         var summary = await mediator.Send(new GetGhostListUnreadSummaryQuery(listId, deviceId, userId), ct);
         return Ok(summary);
+    }
+
+    /// <summary>Marks the given chat messages as read by this device (granular per-message read receipts).</summary>
+    [HttpPost("{listId:guid}/{deviceId}/read-receipts/messages")]
+    public async Task<IActionResult> MarkMessagesRead(Guid listId, string deviceId, [FromBody] MarkReadRequest request, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(deviceId) || deviceId.Length > 64) return BadRequest();
+        await mediator.Send(new MarkMessagesReadCommand(listId, deviceId, request.Ids), ct);
+        return NoContent();
+    }
+
+    /// <summary>Marks the given list items as read (seen) by this device (granular per-item read receipts).</summary>
+    [HttpPost("{listId:guid}/{deviceId}/read-receipts/items")]
+    public async Task<IActionResult> MarkItemsRead(Guid listId, string deviceId, [FromBody] MarkReadRequest request, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(deviceId) || deviceId.Length > 64) return BadRequest();
+        await mediator.Send(new MarkItemsReadCommand(listId, deviceId, request.Ids), ct);
+        return NoContent();
     }
 }

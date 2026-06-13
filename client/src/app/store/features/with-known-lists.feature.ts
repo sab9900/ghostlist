@@ -87,6 +87,14 @@ export function withKnownLists() {
                 async _registerAsMember(listId: string, encryptionKey: string): Promise<void> {
                     if (registeredThisSession.has(listId)) return;
                     registeredThisSession.add(listId);
+
+                    // Wait for the sender name to be hydrated from IDB, and for the
+                    // user to have responded to the first-run name onboarding dialog
+                    // (saved a name or explicitly skipped it), so we never persist
+                    // "Anonymous" before the user had a chance to set their name.
+                    await prefs.whenHydrated();
+                    await prefs.whenOnboarded();
+
                     try {
                         const payload = JSON.stringify({
                             deviceId: deviceId.deviceId,

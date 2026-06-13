@@ -11,6 +11,7 @@ import { HapticsService } from '../../../core/services/haptics.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AppStore } from '../../../store/app.store';
+import { ViewportDwellDirective } from '../../../core/directives/viewport-dwell.directive';
 
 interface DecryptedMessage {
     id: string;
@@ -29,7 +30,7 @@ const SHOW_READ_RECEIPT_CHECKMARK = false;
 
 @Component({
     selector: 'app-chat-tab',
-    imports: [FormsModule, DatePipe, TranslatePipe],
+    imports: [FormsModule, DatePipe, TranslatePipe, ViewportDwellDirective],
     templateUrl: './chat-tab.component.html',
     styleUrl: './chat-tab.component.scss',
 })
@@ -54,9 +55,6 @@ export class ChatTabComponent {
     protected readonly openMenuId = signal<string | null>(null);
     protected readonly highlightedId = signal<string | null>(null);
 
-    protected readonly showNameDialog = signal(false);
-    protected readonly pendingName = signal('');
-
     protected readonly swipeTriggerDistance = SWIPE_TRIGGER_DISTANCE;
     protected readonly showReadReceiptCheckmark = SHOW_READ_RECEIPT_CHECKMARK;
 
@@ -74,17 +72,28 @@ export class ChatTabComponent {
         return map;
     });
 
-    protected readonly firstUnreadIndex = computed(() => {
+    private readonly unreadMessageIds = computed(() => {
         const id = this.store.currentListId();
-        if (!id) return -1;
-        const ts = this.store.messagesReadDivider()[id];
-        if (!ts) return -1;
-        const cutoff = new Date(ts).getTime();
-        const idx = this.decryptedMessages().findIndex(
-            m => new Date(m.createdAt).getTime() > cutoff && this.isMineBySenderIds(m.senderUserId, m.senderDeviceId) !== true,
-        );
+        if (!id) return new Set<string>();
+        return new Set(this.store.unreadMessageIds()[id] ?? []);
+    });
+
+    protected readonly firstUnreadIndex = computed(() => {
+        const unread = this.unreadMessageIds();
+        if (unread.size === 0) return -1;
+        const idx = this.decryptedMessages().findIndex(m => unread.has(m.id));
         return idx > 0 ? idx : -1;
     });
+
+    /** Whether this message hasn't been seen by this device yet (drives dwell-tracking). */
+    protected isUnread(messageId: string): boolean {
+        return this.unreadMessageIds().has(messageId);
+    }
+
+    /** Called once a message has been visible long enough to count as "read". */
+    onMessageDwellRead(messageId: string): void {
+        this.store.markMessageRead(messageId);
+    }
 
     /**
      * Returns whether a message/item was sent by this person, based on the stable
@@ -105,11 +114,6 @@ export class ChatTabComponent {
     });
 
     constructor() {
-        if (!this.prefs.senderName()) {
-            this.pendingName.set('');
-            this.showNameDialog.set(true);
-        }
-
         if (Capacitor.isNativePlatform()) {
             const listener = Keyboard.addListener('keyboardDidShow', () => {
                 // Wait for the --keyboard-height CSS transition to finish before
@@ -132,12 +136,10 @@ export class ChatTabComponent {
                     this.scrollToFirstUnreadOrBottom();
                     setTimeout(() => {
                         this._fullyOpened = true;
-                        void this.store.markMessagesRead();
                     }, 1200);
                 } else if (this._fullyOpened) {
 
                     this.scrollToBottom();
-                    void this.store.markMessagesRead();
                 }
             });
         });
@@ -306,7 +308,6 @@ export class ChatTabComponent {
             await this.store.sendMessage(text, sender, replyId);
             this.newMessageText.set('');
             this.replyingTo.set(null);
-            void this.store.markMessagesRead();
         } finally {
             this.sendingMessage.set(false);
         }
@@ -334,7 +335,6 @@ export class ChatTabComponent {
             const replyId = this.replyingTo()?.id ?? null;
             await this.store.shareImage(dataUrl, sender, replyId);
             this.replyingTo.set(null);
-            void this.store.markMessagesRead();
         } catch {
         } finally {
             this.sendingImage.set(false);
@@ -371,14 +371,4 @@ export class ChatTabComponent {
         });
     }
 
-    saveSenderName(): void {
-        const name = this.pendingName().trim();
-        if (!name) return;
-        this.prefs.setSenderName(name);
-        this.showNameDialog.set(false);
-    }
-
-    skipNameDialog(): void {
-        this.showNameDialog.set(false);
-    }
 }

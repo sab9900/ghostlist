@@ -11,7 +11,8 @@
     @for (item of activeItems(); track item.id) {
     <li class="item" (click)="toggleItem(item.id)" (keydown.enter)="toggleItem(item.id)"
         (keydown.space)="$event.preventDefault(); toggleItem(item.id)" tabindex="0" role="button"
-        [attr.aria-label]="('ITEMS.MARK_DONE_ARIA' | translate:{text: item.text})" aria-pressed="false">
+        [attr.aria-label]="('ITEMS.MARK_DONE_ARIA' | translate:{text: item.text})" aria-pressed="false"
+        [appViewportDwell]="item.isNew ? item.id : ''" (dwellRead)="onItemDwellRead($event)">
         <span class="item__check" aria-hidden="true"></span>
         <span class="item__text">{{ item.text }}</span>
         @if (item.isNew) {
@@ -27,7 +28,8 @@
     @for (item of checkedItems(); track item.id) {
     <li class="item item--checked" (click)="toggleItem(item.id)" (keydown.enter)="toggleItem(item.id)"
         (keydown.space)="$event.preventDefault(); toggleItem(item.id)" tabindex="0" role="button"
-        [attr.aria-label]="('ITEMS.MARK_UNDONE_ARIA' | translate:{text: item.text})" aria-pressed="true">
+        [attr.aria-label]="('ITEMS.MARK_UNDONE_ARIA' | translate:{text: item.text})" aria-pressed="true"
+        [appViewportDwell]="item.isNew ? item.id : ''" (dwellRead)="onItemDwellRead($event)">
         <span class="item__check item__check--checked" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"/>

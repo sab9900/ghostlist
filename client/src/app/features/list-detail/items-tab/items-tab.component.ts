@@ -3,10 +3,9 @@ import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { GhostListItem } from '../../../core/models';
 import { CryptoService } from '../../../core/services/crypto.service';
-import { DeviceIdService } from '../../../core/services/device-id.service';
-import { UserIdService } from '../../../core/services/user-id.service';
 import { HapticsService } from '../../../core/services/haptics.service';
 import { AppStore } from '../../../store/app.store';
+import { ViewportDwellDirective } from '../../../core/directives/viewport-dwell.directive';
 
 interface DecryptedItem {
     id: string;
@@ -19,7 +18,7 @@ interface DecryptedItem {
 
 @Component({
     selector: 'app-items-tab',
-    imports: [FormsModule, TranslatePipe],
+    imports: [FormsModule, TranslatePipe, ViewportDwellDirective],
     templateUrl: './items-tab.component.html',
     styleUrl: './items-tab.component.scss',
 })
@@ -27,8 +26,6 @@ export class ItemsTabComponent {
     private readonly store = inject(AppStore);
     private readonly crypto = inject(CryptoService);
     private readonly haptics = inject(HapticsService);
-    private readonly deviceId = inject(DeviceIdService);
-    private readonly userId = inject(UserIdService);
 
     protected readonly newItemText = signal('');
     protected readonly addingItem = signal(false);
@@ -46,9 +43,7 @@ export class ItemsTabComponent {
 
         effect(() => {
             void this.store.items();
-            void this.decryptItems().then(() => {
-                void this.store.markItemsRead();
-            });
+            void this.decryptItems();
         });
     }
 
@@ -56,8 +51,7 @@ export class ItemsTabComponent {
         const key = this.store.currentEncryptionKey();
         if (!key) return;
         const listId = this.store.currentListId();
-        const divider = listId ? this.store.itemsReadDivider()[listId] : null;
-        const cutoff = divider ? new Date(divider).getTime() : 0;
+        const unread = listId ? new Set(this.store.unreadItemIds()[listId] ?? []) : new Set<string>();
         const items = await Promise.all(
             this.store.items().map(async (item: GhostListItem) => ({
                 id: item.id,
@@ -65,10 +59,15 @@ export class ItemsTabComponent {
                 isChecked: item.isChecked,
                 checkedAt: item.checkedAt,
                 createdAt: item.createdAt,
-                isNew: new Date(item.createdAt).getTime() > cutoff && !this.isMine(item.senderUserId, item.senderDeviceId),
+                isNew: unread.has(item.id),
             })),
         );
         this.decryptedItems.set(items);
+    }
+
+    /** Called once an item has been visible long enough to count as "read". */
+    onItemDwellRead(itemId: string): void {
+        this.store.markItemRead(itemId);
     }
 
     async addItem(): Promise<void> {
@@ -90,15 +89,5 @@ export class ItemsTabComponent {
 
     async deleteItem(id: string): Promise<void> {
         await this.store.deleteItem(id);
-    }
-
-    /**
-     * True if this item was created by this person, based on the stable
-     * `senderUserId` (preferred, survives machine sync) or `senderDeviceId`
-     * (legacy fallback for rows created before `userId` existed).
-     */
-    private isMine(senderUserId: string | null, senderDeviceId: string | null): boolean {
-        if (senderUserId !== null) return senderUserId === this.userId.userId();
-        return senderDeviceId === this.deviceId.deviceId;
     }
 }

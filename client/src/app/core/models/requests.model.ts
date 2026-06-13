@@ -21,6 +21,11 @@ export interface ReadReceiptRequest {
     lastReadItemAt?: string | null;
 }
 
+/** Body for the granular per-message/per-item "mark as read" endpoints. */
+export interface MarkReadRequest {
+    ids: string[];
+}
+
 /** Mirrors GhostList.Domain.Entities.DevicePlatform (serialized as a string). */
 export type DevicePlatformDto = 'Ios' | 'Android' | 'Web';
 

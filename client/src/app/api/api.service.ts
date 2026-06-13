@@ -10,6 +10,7 @@ import {
     GhostMessageImageDto,
     InfoMessage,
     ListMember,
+    MarkReadRequest,
     ReadReceiptRequest,
     ShareDelivery,
     SubscribeRequest,
@@ -161,6 +162,14 @@ export class ApiService {
     getUnreadSummary(listId: string, deviceId: string): Observable<UnreadSummary> {
         return this.http.get<UnreadSummary>(`${this.BASE}/members/${listId}/${deviceId}/unread`,
             { headers: this.userIdHeaders() });
+    }
+
+    markMessagesRead(listId: string, deviceId: string, ids: string[]): Observable<void> {
+        return this.http.post<void>(`${this.BASE}/members/${listId}/${deviceId}/read-receipts/messages`, { ids } satisfies MarkReadRequest);
+    }
+
+    markItemsRead(listId: string, deviceId: string, ids: string[]): Observable<void> {
+        return this.http.post<void>(`${this.BASE}/members/${listId}/${deviceId}/read-receipts/items`, { ids } satisfies MarkReadRequest);
     }
 
     putSyncBundle(sessionId: string, encryptedPayload: string, iv: string, senderPublicKey: string): Observable<void> {

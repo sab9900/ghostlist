@@ -2,7 +2,7 @@ import { computed, inject } from '@angular/core';
 import { patchState, signalStoreFeature, type, withComputed, withMethods, withState } from '@ngrx/signals';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../api/api.service';
-import { KnownList, ListMember, ReadReceiptRequest } from '../../core/models';
+import { KnownList, ListMember } from '../../core/models';
 import { DeviceIdService } from '../../core/services/device-id.service';
 
 interface ReadReceiptsState {
@@ -11,13 +11,11 @@ interface ReadReceiptsState {
 
     unreadItemCounts: Record<string, number>;
 
-    lastReadMessageAt: Record<string, string | null>;
+    /** Ids of messages not yet seen by this device, per list. */
+    unreadMessageIds: Record<string, string[]>;
 
-    lastReadItemAt: Record<string, string | null>;
-
-    messagesReadDivider: Record<string, string | null>;
-
-    itemsReadDivider: Record<string, string | null>;
+    /** Ids of items not yet seen by this device, per list. */
+    unreadItemIds: Record<string, string[]>;
 
     othersLastReadMessageAt: Record<string, string | null>;
 }
@@ -25,12 +23,17 @@ interface ReadReceiptsState {
 const initialState: ReadReceiptsState = {
     unreadCounts: {},
     unreadItemCounts: {},
-    lastReadMessageAt: {},
-    lastReadItemAt: {},
-    messagesReadDivider: {},
-    itemsReadDivider: {},
+    unreadMessageIds: {},
+    unreadItemIds: {},
     othersLastReadMessageAt: {},
 };
+
+/**
+ * How long to wait after the first viewport-dwell "read" event before sending
+ * the batched read-receipt request, so scrolling through several
+ * messages/items at once results in one request instead of many.
+ */
+const FLUSH_DELAY_MS = 600;
 
 export function withReadReceipts() {
     return signalStoreFeature(
@@ -56,45 +59,94 @@ export function withReadReceipts() {
             const api = inject(ApiService);
             const deviceId = inject(DeviceIdService);
 
-            async function pushReadReceipt(listId: string, receipt: ReadReceiptRequest): Promise<void> {
+            const pendingMessageIds: Record<string, Set<string>> = {};
+            const pendingItemIds: Record<string, Set<string>> = {};
+            const flushTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+
+            async function flushMessages(listId: string): Promise<void> {
+                const ids = pendingMessageIds[listId];
+                if (!ids || ids.size === 0) return;
+                const batch = [...ids];
+                ids.clear();
                 try {
-                    await firstValueFrom(api.updateReadReceipt(listId, deviceId.deviceId, receipt));
+                    await firstValueFrom(api.markMessagesRead(listId, deviceId.deviceId, batch));
                 } catch { }
             }
 
+            async function flushItems(listId: string): Promise<void> {
+                const ids = pendingItemIds[listId];
+                if (!ids || ids.size === 0) return;
+                const batch = [...ids];
+                ids.clear();
+                try {
+                    await firstValueFrom(api.markItemsRead(listId, deviceId.deviceId, batch));
+                } catch { }
+            }
+
+            function scheduleFlush(listId: string, kind: 'messages' | 'items'): void {
+                const key = `${kind}:${listId}`;
+                if (flushTimers[key]) return;
+                flushTimers[key] = setTimeout(() => {
+                    delete flushTimers[key];
+                    void (kind === 'messages' ? flushMessages(listId) : flushItems(listId));
+                }, FLUSH_DELAY_MS);
+            }
+
             return {
-                _incrementUnread(listId: string): void {
-                    const counts = { ...store.unreadCounts() };
-                    counts[listId] = (counts[listId] ?? 0) + 1;
-                    patchState(store, { unreadCounts: counts });
+                /** Registers a newly-arrived message id as unread for `listId` (no-op if already tracked). */
+                _addUnreadMessage(listId: string, messageId: string): void {
+                    const ids = store.unreadMessageIds()[listId] ?? [];
+                    if (ids.includes(messageId)) return;
+                    patchState(store, {
+                        unreadMessageIds: { ...store.unreadMessageIds(), [listId]: [...ids, messageId] },
+                        unreadCounts: { ...store.unreadCounts(), [listId]: (store.unreadCounts()[listId] ?? 0) + 1 },
+                    });
                 },
 
-                _incrementUnreadItems(listId: string): void {
-                    const counts = { ...store.unreadItemCounts() };
-                    counts[listId] = (counts[listId] ?? 0) + 1;
-                    patchState(store, { unreadItemCounts: counts });
+                /** Registers a newly-arrived item id as unread for `listId` (no-op if already tracked). */
+                _addUnreadItem(listId: string, itemId: string): void {
+                    const ids = store.unreadItemIds()[listId] ?? [];
+                    if (ids.includes(itemId)) return;
+                    patchState(store, {
+                        unreadItemIds: { ...store.unreadItemIds(), [listId]: [...ids, itemId] },
+                        unreadItemCounts: { ...store.unreadItemCounts(), [listId]: (store.unreadItemCounts()[listId] ?? 0) + 1 },
+                    });
                 },
 
-                async markMessagesRead(listId?: string): Promise<void> {
+                /**
+                 * Marks a single message as read once the user has actually had a
+                 * chance to see it (called by the viewport-dwell directive).
+                 * Updates local state immediately and batches the server-side
+                 * receipt with other recently-read messages.
+                 */
+                markMessageRead(messageId: string, listId?: string): void {
                     const id = listId ?? store.currentListId();
                     if (!id) return;
-                    const now = new Date().toISOString();
+                    const ids = store.unreadMessageIds()[id];
+                    if (!ids || !ids.includes(messageId)) return;
                     patchState(store, {
-                        unreadCounts: { ...store.unreadCounts(), [id]: 0 },
-                        lastReadMessageAt: { ...store.lastReadMessageAt(), [id]: now },
+                        unreadMessageIds: { ...store.unreadMessageIds(), [id]: ids.filter(i => i !== messageId) },
+                        unreadCounts: { ...store.unreadCounts(), [id]: Math.max(0, (store.unreadCounts()[id] ?? 0) - 1) },
                     });
-                    await pushReadReceipt(id, { lastReadMessageAt: now });
+                    (pendingMessageIds[id] ??= new Set()).add(messageId);
+                    scheduleFlush(id, 'messages');
                 },
 
-                async markItemsRead(listId?: string): Promise<void> {
+                /**
+                 * Marks a single item as seen/read once the user has actually had a
+                 * chance to see it (called by the viewport-dwell directive).
+                 */
+                markItemRead(itemId: string, listId?: string): void {
                     const id = listId ?? store.currentListId();
                     if (!id) return;
-                    const now = new Date().toISOString();
+                    const ids = store.unreadItemIds()[id];
+                    if (!ids || !ids.includes(itemId)) return;
                     patchState(store, {
-                        unreadItemCounts: { ...store.unreadItemCounts(), [id]: 0 },
-                        lastReadItemAt: { ...store.lastReadItemAt(), [id]: now },
+                        unreadItemIds: { ...store.unreadItemIds(), [id]: ids.filter(i => i !== itemId) },
+                        unreadItemCounts: { ...store.unreadItemCounts(), [id]: Math.max(0, (store.unreadItemCounts()[id] ?? 0) - 1) },
                     });
-                    await pushReadReceipt(id, { lastReadItemAt: now });
+                    (pendingItemIds[id] ??= new Set()).add(itemId);
+                    scheduleFlush(id, 'items');
                 },
 
                 async refreshOthersReadReceipt(listId?: string): Promise<void> {
@@ -112,6 +164,26 @@ export function withReadReceipts() {
                     } catch { }
                 },
 
+                /**
+                 * Fetches unread message/item ids for a single list and seeds local
+                 * state from them, unless this list has already been seeded (e.g.
+                 * by `seedUnreadSummaries()` at startup). Used when opening a list
+                 * that wasn't covered by the last summary pass — e.g. one just
+                 * created or joined during this session.
+                 */
+                async ensureUnreadSeeded(listId: string): Promise<void> {
+                    if (store.unreadMessageIds()[listId] !== undefined) return;
+                    try {
+                        const summary = await firstValueFrom(api.getUnreadSummary(listId, deviceId.deviceId));
+                        patchState(store, {
+                            unreadCounts: { ...store.unreadCounts(), [listId]: summary.unreadMessageCount },
+                            unreadItemCounts: { ...store.unreadItemCounts(), [listId]: summary.unreadItemCount },
+                            unreadMessageIds: { ...store.unreadMessageIds(), [listId]: summary.unreadMessageIds },
+                            unreadItemIds: { ...store.unreadItemIds(), [listId]: summary.unreadItemIds },
+                        });
+                    } catch { }
+                },
+
                 async seedUnreadSummaries(): Promise<void> {
                     const lists = store.knownLists();
                     if (lists.length === 0) return;
@@ -126,29 +198,24 @@ export function withReadReceipts() {
 
                     const unreadCounts = { ...store.unreadCounts() };
                     const unreadItemCounts = { ...store.unreadItemCounts() };
-                    const lastReadMessageAt = { ...store.lastReadMessageAt() };
-                    const lastReadItemAt = { ...store.lastReadItemAt() };
-                    const messagesReadDivider = { ...store.messagesReadDivider() };
-                    const itemsReadDivider = { ...store.itemsReadDivider() };
+                    const unreadMessageIds = { ...store.unreadMessageIds() };
+                    const unreadItemIds = { ...store.unreadItemIds() };
                     const currentListId = store.currentListId();
 
                     for (const r of results) {
                         if (!r) continue;
                         // The currently-open list's read state is actively maintained
-                        // (markMessagesRead/markItemsRead + live SignalR events) and
-                        // already reflects what the server has. Overwriting it here
-                        // would reset the "new since last visit" divider while the
-                        // user is still looking at it, so leave it untouched.
+                        // via dwell-tracking + live SignalR events and already
+                        // reflects what the server has. Overwriting it here would
+                        // resurrect ids the user already read, so leave it untouched.
                         if (r.id === currentListId) continue;
                         unreadCounts[r.id] = r.summary.unreadMessageCount;
                         unreadItemCounts[r.id] = r.summary.unreadItemCount;
-                        lastReadMessageAt[r.id] = r.summary.lastReadMessageAt;
-                        lastReadItemAt[r.id] = r.summary.lastReadItemAt;
-                        messagesReadDivider[r.id] = r.summary.lastReadMessageAt;
-                        itemsReadDivider[r.id] = r.summary.lastReadItemAt;
+                        unreadMessageIds[r.id] = r.summary.unreadMessageIds;
+                        unreadItemIds[r.id] = r.summary.unreadItemIds;
                     }
 
-                    patchState(store, { unreadCounts, unreadItemCounts, lastReadMessageAt, lastReadItemAt, messagesReadDivider, itemsReadDivider });
+                    patchState(store, { unreadCounts, unreadItemCounts, unreadMessageIds, unreadItemIds });
                 },
             };
         }),

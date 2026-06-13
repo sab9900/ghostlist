@@ -128,3 +128,100 @@
         margin-top: -0.25rem;
     }
 }
+
+.dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+    z-index: 200;
+}
+
+.dialog {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    box-shadow: var(--shadow-lg);
+
+    &__title {
+        font-size: var(--text-lg);
+        font-weight: var(--weight-semi);
+    }
+
+    &__hint {
+        font-size: var(--text-sm);
+        color: var(--color-text-muted);
+        line-height: var(--leading-normal);
+    }
+
+    &__input {
+        background: var(--color-surface-2);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        padding: var(--space-3) var(--space-4);
+        color: var(--color-text);
+        font-size: var(--text-base);
+        font-family: var(--font-sans);
+        width: 100%;
+        outline: none;
+        transition: border-color var(--duration-fast) var(--ease-out);
+
+        &::placeholder {
+            color: var(--color-text-subtle);
+        }
+        &:focus {
+            border-color: var(--color-primary);
+        }
+    }
+
+    &__actions {
+        display: flex;
+        gap: var(--space-3);
+        justify-content: flex-end;
+    }
+}
+
+.btn {
+    padding: var(--space-2) var(--space-5);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-base);
+    font-weight: var(--weight-medium);
+    font-family: var(--font-sans);
+    cursor: pointer;
+    border: none;
+    transition:
+        background var(--duration-fast) var(--ease-out),
+        opacity var(--duration-fast) var(--ease-out);
+
+    &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    &--primary {
+        background: var(--color-primary);
+        color: var(--color-on-primary);
+        &:hover:not(:disabled) {
+            background: var(--color-primary-hover);
+        }
+    }
+
+    &--ghost {
+        background: transparent;
+        color: var(--color-text-muted);
+        &:hover:not(:disabled) {
+            background: var(--color-surface-2);
+            color: var(--color-text);
+        }
+    }
+}

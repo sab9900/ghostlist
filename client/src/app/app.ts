@@ -7,8 +7,10 @@ import { Capacitor } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { TranslatePipe } from '@ngx-translate/core';
+import { FormsModule } from '@angular/forms';
 import { InfoCenterService } from './core/services/info-center.service';
 import { LayoutService } from './core/services/layout.service';
+import { UserPreferencesService } from './core/services/user-preferences.service';
 import { WebAuthnService } from './core/services/webauthn.service';
 import { ListsComponent } from './features/lists/lists.component';
 import { InfoOverlayComponent } from './shared/info-overlay/info-overlay.component';
@@ -33,7 +35,7 @@ function loadSidebarWidth(): number {
 
 @Component({
     selector: 'app-root',
-    imports: [RouterOutlet, ListsComponent, TranslatePipe, PwaInstallBannerComponent, OfflineBannerComponent, InfoOverlayComponent],
+    imports: [RouterOutlet, ListsComponent, TranslatePipe, FormsModule, PwaInstallBannerComponent, OfflineBannerComponent, InfoOverlayComponent],
     templateUrl: './app.html',
     styleUrl: './app.scss',
 })
@@ -41,11 +43,17 @@ export class App {
     protected readonly layout = inject(LayoutService);
     protected readonly webAuthn = inject(WebAuthnService);
     protected readonly infoCenter = inject(InfoCenterService);
+    protected readonly prefs = inject(UserPreferencesService);
     private readonly router = inject(Router);
 
     protected readonly locked    = signal(false);
     protected readonly unlocking = signal(false);
     protected readonly lockError = signal(false);
+
+    /** First-run name onboarding dialog: shown once preferences are hydrated and
+     *  the user hasn't yet saved a name or explicitly skipped the prompt. */
+    protected readonly showNameDialog = computed(() => this.prefs.hydrated() && !this.prefs.onboarded());
+    protected readonly pendingName = signal('');
 
     private backgroundedAt: number | null = null;
 
@@ -195,5 +203,17 @@ export class App {
 
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);
+    }
+
+    saveSenderName(): void {
+        const name = this.pendingName().trim();
+        if (!name) return;
+        this.prefs.setSenderName(name);
+        this.pendingName.set('');
+    }
+
+    skipNameDialog(): void {
+        this.prefs.markOnboarded();
+        this.pendingName.set('');
     }
 }

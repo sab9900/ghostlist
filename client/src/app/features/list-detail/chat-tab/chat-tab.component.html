@@ -25,7 +25,8 @@
         [attr.data-message-id]="msg.id"
         [attr.aria-label]="msg.senderName + ': ' + (msg.isImage ? ('CHAT.IMAGE' | translate) : msg.text)"
         (touchstart)="onTouchStart($event, msg)" (touchmove)="onTouchMove($event, msg)"
-        (touchend)="onTouchEnd(msg)" (touchcancel)="onTouchEnd(msg)">
+        (touchend)="onTouchEnd(msg)" (touchcancel)="onTouchEnd(msg)"
+        [appViewportDwell]="isUnread(msg.id) ? msg.id : ''" (dwellRead)="onMessageDwellRead($event)">
 
         <div class="message__swipe-hint" aria-hidden="true" [style.opacity]="swipeOffset(msg.id) / swipeTriggerDistance">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -188,20 +189,3 @@
     </div>
 </div>
 
-@if (showNameDialog()) {
-<div class="dialog-backdrop" (click)="skipNameDialog()" role="presentation">
-    <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
-        aria-labelledby="name-dialog-title" aria-describedby="name-dialog-hint">
-        <h2 class="dialog__title" id="name-dialog-title">{{ 'CHAT.NAME_DIALOG_TITLE' | translate }}</h2>
-        <p class="dialog__hint" id="name-dialog-hint">{{ 'CHAT.NAME_DIALOG_HINT' | translate }}</p>
-        <input class="dialog__input" type="text" [attr.placeholder]="'CHAT.NAME_DIALOG_PLACEHOLDER' | translate"
-            [ngModel]="pendingName()" (ngModelChange)="pendingName.set($event)" (keydown.enter)="saveSenderName()"
-            maxlength="40" autofocus [attr.aria-label]="'CHAT.NAME_DIALOG_TITLE' | translate" aria-required="true" />
-        <div class="dialog__actions">
-            <button class="btn btn--ghost" (click)="skipNameDialog()">{{ 'COMMON.SKIP' | translate }}</button>
-            <button class="btn btn--primary" (click)="saveSenderName()" [disabled]="!pendingName().trim()">{{
-                'COMMON.SAVE' | translate }}</button>
-        </div>
-    </div>
-</div>
-}

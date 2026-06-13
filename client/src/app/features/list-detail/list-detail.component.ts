@@ -75,23 +75,13 @@ export class ListDetailComponent implements OnDestroy {
     protected readonly unreadItems = computed(() => {
         const id = this.store.currentListId();
         if (!id) return 0;
-        const ts = this.store.itemsReadDivider()[id];
-        const cutoff = ts ? new Date(ts).getTime() : 0;
-        // Matches items-tab's `isNew` flag (applies to all items regardless of
-        // checked state) so the tab badge and the "new" markers stay in sync.
-        return this.store.items().filter(
-            i => new Date(i.createdAt).getTime() > cutoff,
-        ).length;
+        return this.store.unreadItemCounts()[id] ?? 0;
     });
 
     protected readonly unreadMessages = computed(() => {
         const id = this.store.currentListId();
         if (!id) return 0;
-        const ts = this.store.messagesReadDivider()[id];
-        const cutoff = ts ? new Date(ts).getTime() : 0;
-        return this.store.messages().filter(
-            m => new Date(m.createdAt).getTime() > cutoff,
-        ).length;
+        return this.store.unreadCounts()[id] ?? 0;
     });
 
     constructor() {
@@ -152,11 +142,6 @@ export class ListDetailComponent implements OnDestroy {
         if (id && this.routeTab() !== tab) {
             void this.router.navigate(['/list', id, tab]);
         }
-
-        const currentId = this.store.currentListId();
-        if (!currentId) return;
-        if (tab === 'items') void this.store.markItemsRead(currentId);
-        if (tab === 'chat') void this.store.markMessagesRead(currentId);
     }
 
     closeDrawer(): void {

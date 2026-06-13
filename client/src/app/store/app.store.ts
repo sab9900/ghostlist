@@ -238,8 +238,6 @@ export const AppStore = signalStore(
                     messages: cached?.messages ?? [],
                     error: null,
                     loading: !cached,
-                    messagesReadDivider: { ...store.messagesReadDivider(), [id]: store.lastReadMessageAt()[id] ?? null },
-                    itemsReadDivider: { ...store.itemsReadDivider(), [id]: store.lastReadItemAt()[id] ?? null },
                 });
 
                 try {
@@ -269,7 +267,7 @@ export const AppStore = signalStore(
                     }
 
                     await registration;
-                    await Promise.all([store.markMessagesRead(id), store.markItemsRead(id)]);
+                    await store.ensureUnreadSeeded(id);
                     if (store.currentListId() === id) void store.refreshOthersReadReceipt(id);
                 } catch (e: unknown) {
                     if (store.currentListId() === id) patchState(store, { loading: false });
@@ -780,11 +778,15 @@ export const AppStore = signalStore(
                 hub.itemCreated$.subscribe((event) => {
                     if (event.ghostListId !== store.currentListId()) {
                         if (!isOwnSender(event.senderUserId, event.senderDeviceId)) {
-                            store._incrementUnreadItems(event.ghostListId);
+                            store._addUnreadItem(event.ghostListId, event.id);
                         }
                         return;
                     }
                     if (store.items().some((i) => i.id === event.id)) return;
+
+                    if (!isOwnSender(event.senderUserId, event.senderDeviceId)) {
+                        store._addUnreadItem(event.ghostListId, event.id);
+                    }
 
                     // If this is our own item and we still have an optimistic placeholder
                     // for it (waiting on createItem's HTTP response), resolve the
@@ -844,12 +846,15 @@ export const AppStore = signalStore(
                     if (event.ghostListId !== store.currentListId()) {
                         if (!isOwnSender(event.senderUserId, event.senderDeviceId)) {
                             haptics.messageReceived();
-                            store._incrementUnread(event.ghostListId);
+                            store._addUnreadMessage(event.ghostListId, event.id);
                         }
                         return;
                     }
                     if (store.messages().some((m) => m.id === event.id)) return;
-                    if (!isOwnSender(event.senderUserId, event.senderDeviceId)) haptics.messageReceived();
+                    if (!isOwnSender(event.senderUserId, event.senderDeviceId)) {
+                        haptics.messageReceived();
+                        store._addUnreadMessage(event.ghostListId, event.id);
+                    }
 
                     // If this is our own message and we still have an optimistic
                     // placeholder for it (waiting on createMessage's HTTP response),
