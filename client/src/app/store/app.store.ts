@@ -133,6 +133,7 @@ export const AppStore = signalStore(
         const deviceId = inject(DeviceIdService);
         const userId = inject(UserIdService);
         const foreground = inject(ForegroundService);
+        const connectivity = inject(ConnectivityService);
 
         function setError(error: string | null) {
             patchState(store, { error, loading: false });
@@ -398,7 +399,11 @@ export const AppStore = signalStore(
                     });
                     void persistCurrentList();
                 } catch (e: unknown) {
-                    if (!isNetworkError(e)) {
+                    // Only queue for offline retry if we're actually offline. A network
+                    // error (status 0) while the browser still reports itself online
+                    // doesn't necessarily mean the request never reached the server —
+                    // retrying it via the outbox risks creating a duplicate item.
+                    if (!isNetworkError(e) || connectivity.online()) {
                         patchState(store, { items: store.items().filter(i => i.id !== id) });
                         void persistCurrentList();
                         throw e;
@@ -511,7 +516,11 @@ export const AppStore = signalStore(
                     });
                     void persistCurrentList();
                 } catch (e: unknown) {
-                    if (!isNetworkError(e)) {
+                    // Only queue for offline retry if we're actually offline. A network
+                    // error (status 0) while the browser still reports itself online
+                    // doesn't necessarily mean the request never reached the server —
+                    // retrying it via the outbox risks creating a duplicate message.
+                    if (!isNetworkError(e) || connectivity.online()) {
                         patchState(store, { messages: store.messages().filter(m => m.id !== id) });
                         void persistCurrentList();
                         throw e;
@@ -776,6 +785,28 @@ export const AppStore = signalStore(
                         return;
                     }
                     if (store.items().some((i) => i.id === event.id)) return;
+
+                    // If this is our own item and we still have an optimistic placeholder
+                    // for it (waiting on createItem's HTTP response), resolve the
+                    // placeholder to the real id in-place instead of appending a second
+                    // copy — avoids a brief duplicate flash while that response is pending.
+                    if (isOwnSender(event.senderUserId, event.senderDeviceId)) {
+                        const optimisticMatch = store.items().find((i) =>
+                            i.id.startsWith('local-') &&
+                            i.encryptedPayload === event.encryptedPayload &&
+                            i.initializationVector === event.initializationVector,
+                        );
+                        if (optimisticMatch) {
+                            patchState(store, {
+                                items: store.items().map((i) =>
+                                    i.id === optimisticMatch.id ? { ...i, id: event.id, createdAt: event.createdAt } : i,
+                                ),
+                            });
+                            void store._persistCurrentList();
+                            return;
+                        }
+                    }
+
                     const newItem = {
                         id: event.id,
                         ghostListId: event.ghostListId,
@@ -819,6 +850,29 @@ export const AppStore = signalStore(
                     }
                     if (store.messages().some((m) => m.id === event.id)) return;
                     if (!isOwnSender(event.senderUserId, event.senderDeviceId)) haptics.messageReceived();
+
+                    // If this is our own message and we still have an optimistic
+                    // placeholder for it (waiting on createMessage's HTTP response),
+                    // resolve the placeholder to the real id in-place instead of
+                    // appending a second copy — avoids a brief duplicate flash while
+                    // that response is pending.
+                    if (isOwnSender(event.senderUserId, event.senderDeviceId)) {
+                        const optimisticMatch = store.messages().find((m) =>
+                            m.id.startsWith('local-') &&
+                            m.encryptedMessage === event.encryptedMessage &&
+                            m.messageInitializationVector === event.initializationVector,
+                        );
+                        if (optimisticMatch) {
+                            patchState(store, {
+                                messages: store.messages().map((m) =>
+                                    m.id === optimisticMatch.id ? { ...m, id: event.id, createdAt: event.createdAt } : m,
+                                ),
+                            });
+                            void store._persistCurrentList();
+                            return;
+                        }
+                    }
+
                     const newMessage = {
                         id: event.id,
                         ghostListId: event.ghostListId,
