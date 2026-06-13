@@ -30,7 +30,7 @@ public class DeviceSubscription
         string deviceToken,
         DevicePlatform platform,
         bool notifyOnMessage = true,
-        bool notifyOnItemsChanged = true) => new()
+        bool notifyOnItemsChanged = false) => new()
     {
         DeviceId = deviceId,
         ListId = listId,

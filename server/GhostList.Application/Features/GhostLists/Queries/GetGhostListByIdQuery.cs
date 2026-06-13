@@ -7,8 +7,8 @@ namespace GhostList.Application.Features.GhostLists.Queries.GetGhostListById;
 public record GetGhostListByIdQuery(Guid Id) : IRequest<GhostListDto?>;
 
 public record GhostListDto(Guid Id, int Ttl, DateTime CreatedAt, List<GhostListItemDto> Items, List<GhostChatMessageDto> ChatMessages);
-public record GhostListItemDto(Guid Id, string EncryptedPayload, string InitializationVector, bool IsChecked);
-public record GhostChatMessageDto(Guid Id, string EncryptedMessage, string MessageInitializationVector, string EncryptedSenderName, string SenderNameInitializationVector, DateTime CreatedAt);
+public record GhostListItemDto(Guid Id, string EncryptedPayload, string InitializationVector, bool IsChecked, DateTime? CheckedAt, DateTime CreatedAt, string? SenderDeviceId, string? SenderUserId);
+public record GhostChatMessageDto(Guid Id, string EncryptedMessage, string MessageInitializationVector, string EncryptedSenderName, string SenderNameInitializationVector, Guid? ReplyToMessageId, DateTime CreatedAt, string? SenderDeviceId, string? SenderUserId);
 
 public class GetGhostListByIdQueryHandler(IApplicationDbContext context) : IRequestHandler<GetGhostListByIdQuery, GhostListDto?>
 {
@@ -26,7 +26,7 @@ public class GetGhostListByIdQueryHandler(IApplicationDbContext context) : IRequ
             (int)list.CompletedItemsTtl,
             list.CreatedAt,
             list.Items
-                .Select(i => new GhostListItemDto(i.Id, i.EncryptedPayload, i.InitializationVector, i.IsChecked))
+                .Select(i => new GhostListItemDto(i.Id, i.EncryptedPayload, i.InitializationVector, i.IsChecked, i.CheckedAt, i.CreatedAt, i.SenderDeviceId, i.SenderUserId))
                 .ToList(),
             list.ChatMessages
                 .OrderBy(m => m.CreatedAt)
@@ -36,7 +36,10 @@ public class GetGhostListByIdQueryHandler(IApplicationDbContext context) : IRequ
                     m.InitializationVector,
                     m.EncryptedSenderName,
                     m.SenderNameInitializationVector,
-                    m.CreatedAt))
+                    m.ReplyToMessageId,
+                    m.CreatedAt,
+                    m.SenderDeviceId,
+                    m.SenderUserId))
                 .ToList());
     }
 }

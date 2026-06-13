@@ -79,21 +79,10 @@
         </button>
     </nav>
 
-    @if (activeTab() === 'items') {
-    <div class="tab-pane" role="tabpanel" id="panel-items" aria-labelledby="tab-items">
-        <app-items-tab />
+    <div class="tab-pane" [class.tab-pane--scroll]="activeTab() === 'settings'" role="tabpanel"
+        [id]="'panel-' + activeTab()" [attr.aria-labelledby]="'tab-' + activeTab()">
+        <router-outlet />
     </div>
-    }
-    @if (activeTab() === 'chat') {
-    <div class="tab-pane" role="tabpanel" id="panel-chat" aria-labelledby="tab-chat">
-        <app-chat-tab />
-    </div>
-    }
-    @if (activeTab() === 'settings') {
-    <div class="tab-pane tab-pane--scroll" role="tabpanel" id="panel-settings" aria-labelledby="tab-settings">
-        <app-settings-tab />
-    </div>
-    }
 
 </div>
 

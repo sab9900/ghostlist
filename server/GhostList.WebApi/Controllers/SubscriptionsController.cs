@@ -9,7 +9,7 @@ public record SubscribeRequest(
     string DeviceToken,
     DevicePlatform Platform,
     bool NotifyOnMessage = true,
-    bool NotifyOnItemsChanged = true);
+    bool NotifyOnItemsChanged = false);
 
 [ApiController]
 [Route("api/[controller]")]

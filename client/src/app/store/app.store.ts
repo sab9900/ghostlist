@@ -17,6 +17,7 @@ import {
 import { ConnectivityService } from '../core/services/connectivity.service';
 import { CryptoService } from '../core/services/crypto.service';
 import { DeviceIdService } from '../core/services/device-id.service';
+import { UserIdService } from '../core/services/user-id.service';
 import { ForegroundService } from '../core/services/foreground.service';
 import { HapticsService } from '../core/services/haptics.service';
 import { ListStorageService } from '../core/services/list-storage.service';
@@ -130,6 +131,7 @@ export const AppStore = signalStore(
         const crypto = inject(CryptoService);
         const push = inject(PushNotificationService);
         const deviceId = inject(DeviceIdService);
+        const userId = inject(UserIdService);
         const foreground = inject(ForegroundService);
 
         function setError(error: string | null) {
@@ -258,8 +260,8 @@ export const AppStore = signalStore(
                     if (store.currentListId() === id) {
                         patchState(store, {
                             currentList: list,
-                            items: list.items as unknown as GhostListItem[],
-                            messages: list.chatMessages as GhostChatMessage[],
+                            items: list.items,
+                            messages: list.chatMessages,
                             loading: false,
                         });
                         void persistCurrentList();
@@ -383,6 +385,8 @@ export const AppStore = signalStore(
                     isChecked: false,
                     checkedAt: null,
                     createdAt: new Date().toISOString(),
+                    senderDeviceId: deviceId.deviceId,
+                    senderUserId: userId.userId(),
                 };
                 patchState(store, { items: [...store.items(), optimisticItem] });
                 void persistCurrentList();
@@ -491,11 +495,12 @@ export const AppStore = signalStore(
                     senderNameInitializationVector: payload.senderNameInitializationVector,
                     replyToMessageId: payload.replyToMessageId ?? null,
                     createdAt: new Date().toISOString(),
+                    senderDeviceId: deviceId.deviceId,
+                    senderUserId: userId.userId(),
                 };
 
                 patchState(store, {
                     messages: [...store.messages(), optimisticMessage],
-                    messagesReadDivider: { ...store.messagesReadDivider(), [listId]: new Date().toISOString() },
                 });
                 void persistCurrentList();
 
@@ -571,11 +576,31 @@ export const AppStore = signalStore(
                     await hub.relayImage(listId, messageId, image.ciphertext, image.iv);
                 } catch { }
 
-                patchState(store, {
-                    messagesReadDivider: { ...store.messagesReadDivider(), [listId]: new Date().toISOString() },
-                });
-
                 return messageId;
+            },
+
+            /**
+             * Fetches and decrypts a chat image that wasn't received via the
+             * live SignalR relay (e.g. this device was offline or hadn't
+             * opened the list yet when it was sent). The server only retains
+             * image blobs temporarily — a 404 means it already expired or
+             * was never persisted, which is expected and not an error.
+             * No-op if the image is already cached.
+             */
+            async fetchAndCacheImage(messageId: string): Promise<void> {
+                if (store.imageDataUrls()[messageId]) return;
+
+                const key = store.currentEncryptionKey();
+                if (!key) return;
+
+                try {
+                    const image = await firstValueFrom(api.getMessageImage(messageId));
+                    const dataUrl = await crypto.decrypt(image.encryptedImage, image.imageInitializationVector, key);
+                    cacheImage(messageId, dataUrl);
+                } catch {
+                    // Not found/expired, offline, or decryption failed — leave
+                    // the placeholder as-is.
+                }
             },
 
             /** Replays queued offline mutations against the API. Safe to call repeatedly. */
@@ -695,9 +720,20 @@ export const AppStore = signalStore(
         const haptics = inject(HapticsService);
         const push = inject(PushNotificationService);
         const deviceId = inject(DeviceIdService);
+        const userId = inject(UserIdService);
         const foreground = inject(ForegroundService);
         const crypto = inject(CryptoService);
         const storage = inject(ListStorageService);
+
+        /**
+         * Determines whether an item/message was sent by this person, preferring the
+         * stable `senderUserId` (which survives machine sync) and falling back to
+         * `senderDeviceId` for legacy rows that predate `userId`.
+         */
+        function isOwnSender(senderUserId: string | null, senderDeviceId: string | null): boolean {
+            if (senderUserId !== null) return senderUserId === userId.userId();
+            return senderDeviceId === deviceId.deviceId;
+        }
 
         return {
             async onInit() {
@@ -734,7 +770,9 @@ export const AppStore = signalStore(
 
                 hub.itemCreated$.subscribe((event) => {
                     if (event.ghostListId !== store.currentListId()) {
-                        store._incrementUnreadItems(event.ghostListId);
+                        if (!isOwnSender(event.senderUserId, event.senderDeviceId)) {
+                            store._incrementUnreadItems(event.ghostListId);
+                        }
                         return;
                     }
                     if (store.items().some((i) => i.id === event.id)) return;
@@ -746,6 +784,8 @@ export const AppStore = signalStore(
                         isChecked: event.isChecked,
                         checkedAt: null,
                         createdAt: event.createdAt,
+                        senderDeviceId: event.senderDeviceId,
+                        senderUserId: event.senderUserId,
                     } satisfies GhostListItem;
                     patchState(store, { items: [...store.items(), newItem] });
                     void store._persistCurrentList();
@@ -770,12 +810,15 @@ export const AppStore = signalStore(
                 });
 
                 hub.messageReceived$.subscribe((event) => {
-                    haptics.messageReceived();
                     if (event.ghostListId !== store.currentListId()) {
-                        store._incrementUnread(event.ghostListId);
+                        if (!isOwnSender(event.senderUserId, event.senderDeviceId)) {
+                            haptics.messageReceived();
+                            store._incrementUnread(event.ghostListId);
+                        }
                         return;
                     }
                     if (store.messages().some((m) => m.id === event.id)) return;
+                    if (!isOwnSender(event.senderUserId, event.senderDeviceId)) haptics.messageReceived();
                     const newMessage = {
                         id: event.id,
                         ghostListId: event.ghostListId,
@@ -785,6 +828,8 @@ export const AppStore = signalStore(
                         senderNameInitializationVector: event.senderNameInitializationVector,
                         replyToMessageId: event.replyToMessageId,
                         createdAt: event.createdAt,
+                        senderDeviceId: event.senderDeviceId,
+                        senderUserId: event.senderUserId,
                     } satisfies GhostChatMessage;
                     patchState(store, { messages: [...store.messages(), newMessage] });
                     void store._persistCurrentList();

@@ -7,9 +7,11 @@ import { Capacitor } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { TranslatePipe } from '@ngx-translate/core';
+import { InfoCenterService } from './core/services/info-center.service';
 import { LayoutService } from './core/services/layout.service';
 import { WebAuthnService } from './core/services/webauthn.service';
 import { ListsComponent } from './features/lists/lists.component';
+import { InfoOverlayComponent } from './shared/info-overlay/info-overlay.component';
 import { OfflineBannerComponent } from './shared/offline-banner/offline-banner.component';
 import { PwaInstallBannerComponent } from './shared/pwa-install-banner/pwa-install-banner.component';
 
@@ -17,6 +19,19 @@ const SIDEBAR_WIDTH_KEY = 'gl_sidebar_width';
 const SIDEBAR_MIN = 280;
 const SIDEBAR_MAX = 520;
 const SIDEBAR_DEFAULT = 320;
+
+/**
+ * iOS/Android home-screen PWAs (display-mode: standalone) report
+ * env(safe-area-inset-bottom) on top of a viewport that already excludes
+ * that area, so the inset gets applied twice and leaves a large empty gap
+ * at the bottom. Capacitor's WKWebView doesn't have this issue, so it's
+ * explicitly excluded here.
+ */
+function isPwaStandalone(): boolean {
+    if (Capacitor.isNativePlatform()) return false;
+    if (window.matchMedia?.('(display-mode: standalone)').matches) return true;
+    return (navigator as unknown as { standalone?: boolean }).standalone === true;
+}
 
 function loadSidebarWidth(): number {
     try {
@@ -31,13 +46,14 @@ function loadSidebarWidth(): number {
 
 @Component({
     selector: 'app-root',
-    imports: [RouterOutlet, ListsComponent, TranslatePipe, PwaInstallBannerComponent, OfflineBannerComponent],
+    imports: [RouterOutlet, ListsComponent, TranslatePipe, PwaInstallBannerComponent, OfflineBannerComponent, InfoOverlayComponent],
     templateUrl: './app.html',
     styleUrl: './app.scss',
 })
 export class App {
     protected readonly layout = inject(LayoutService);
     protected readonly webAuthn = inject(WebAuthnService);
+    protected readonly infoCenter = inject(InfoCenterService);
     private readonly router = inject(Router);
 
     protected readonly locked    = signal(false);
@@ -49,6 +65,10 @@ export class App {
     private inactivityTimer: ReturnType<typeof setTimeout> | null = null;
 
     constructor() {
+        if (isPwaStandalone()) {
+            document.documentElement.style.setProperty('--safe-bottom', '0px');
+        }
+
         void this.webAuthn.init().then(() => {
             if (this.webAuthn.isEnabled()) {
                 this.locked.set(true);
@@ -93,6 +113,8 @@ export class App {
 
         this.setupActivityListeners();
         this.scheduleInactivityTimer();
+
+        this.infoCenter.checkForUpdates();
     }
 
     engageLock(): void {

@@ -6,6 +6,9 @@
 /out-tsc
 /bazel-out
 
+# Auto-generated
+/src/app/version.ts
+
 # Node
 /node_modules
 npm-debug.log

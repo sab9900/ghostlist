@@ -9,4 +9,6 @@ export interface GhostListItemSummary {
 export interface GhostListItem extends GhostListItemSummary {
     checkedAt: string | null;
     createdAt: string;
+    senderDeviceId: string | null;
+    senderUserId: string | null;
 }

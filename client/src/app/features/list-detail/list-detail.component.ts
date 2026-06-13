@@ -1,7 +1,7 @@
-import { Component, computed, inject, OnDestroy, signal } from '@angular/core';
-import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
-import { filter, from, of, switchMap, take } from 'rxjs';
+import { Component, computed, effect, inject, OnDestroy, signal } from '@angular/core';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { filter, from, map, of, switchMap, take } from 'rxjs';
 import { HubService } from '../../api/hub.service';
 import { LayoutService } from '../../core/services/layout.service';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -31,7 +31,7 @@ function loadPaneWidth(): number {
 
 @Component({
     selector: 'app-list-detail',
-    imports: [BadgeComponent, ItemsTabComponent, ChatTabComponent, SettingsTabComponent, TranslatePipe],
+    imports: [BadgeComponent, ItemsTabComponent, ChatTabComponent, SettingsTabComponent, RouterOutlet, TranslatePipe],
     templateUrl: './list-detail.component.html',
     styleUrl: './list-detail.component.scss',
 })
@@ -42,7 +42,25 @@ export class ListDetailComponent implements OnDestroy {
     private readonly router = inject(Router);
     protected readonly layout = inject(LayoutService);
 
-    protected readonly activeTab = signal<Tab>('items');
+    // Tracks the active child route ('items' | 'chat' | 'settings') on mobile/tablet.
+    private readonly currentUrl = toSignal(
+        this.router.events.pipe(
+            filter(e => e instanceof NavigationEnd),
+            map(() => this.router.url),
+        ),
+        { initialValue: this.router.url },
+    );
+
+    private readonly routeTab = computed<Tab | null>(() => {
+        const url = this.currentUrl().split(/[?#]/)[0];
+        if (url.endsWith('/chat')) return 'chat';
+        if (url.endsWith('/items')) return 'items';
+        if (url.endsWith('/settings')) return 'settings';
+        return null;
+    });
+
+    protected readonly activeTab = computed<Tab>(() => this.routeTab() ?? 'items');
+
     protected readonly settingsOpen = signal(false);
     protected readonly drawerClosing = signal(false);
 
@@ -109,6 +127,20 @@ export class ListDetailComponent implements OnDestroy {
             takeUntilDestroyed(),
             filter(listId => listId === this.store.currentListId()),
         ).subscribe(() => this.router.navigate(['/']));
+
+        // On mobile/tablet, items/chat/settings are routed child views. If we
+        // land on the bare /list/:id (no tab segment), default into the items
+        // tab. Desktop never gets a tab segment appended.
+        effect(() => {
+            if (this.layout.isDesktop()) return;
+            if (this.routeTab() !== null) return;
+            const url = this.currentUrl().split(/[?#]/)[0];
+            const id = this.route.snapshot.paramMap.get('id');
+            if (!id) return;
+            if (url === `/list/${id}` || url === `/list/${id}/`) {
+                void this.router.navigate(['/list', id, 'items'], { replaceUrl: true });
+            }
+        });
     }
 
     async ngOnDestroy(): Promise<void> {
@@ -116,11 +148,15 @@ export class ListDetailComponent implements OnDestroy {
     }
 
     setTab(tab: Tab): void {
-        this.activeTab.set(tab);
-        const id = this.store.currentListId();
-        if (!id) return;
-        if (tab === 'items') void this.store.markItemsRead(id);
-        if (tab === 'chat') void this.store.markMessagesRead(id);
+        const id = this.route.snapshot.paramMap.get('id');
+        if (id && this.routeTab() !== tab) {
+            void this.router.navigate(['/list', id, tab]);
+        }
+
+        const currentId = this.store.currentListId();
+        if (!currentId) return;
+        if (tab === 'items') void this.store.markItemsRead(currentId);
+        if (tab === 'chat') void this.store.markMessagesRead(currentId);
     }
 
     closeDrawer(): void {

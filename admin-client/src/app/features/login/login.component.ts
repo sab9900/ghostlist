@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AdminStatsService } from '../../core/services/admin-stats.service';
 import { AuthService } from '../../core/services/auth.service';
+import { APP_VERSION } from '../../version';
 
 @Component({
     selector: 'app-login',
@@ -14,6 +15,8 @@ export class LoginComponent {
     private readonly auth = inject(AuthService);
     private readonly stats = inject(AdminStatsService);
     private readonly router = inject(Router);
+
+    readonly version = APP_VERSION;
 
     readonly username = signal('');
     readonly password = signal('');

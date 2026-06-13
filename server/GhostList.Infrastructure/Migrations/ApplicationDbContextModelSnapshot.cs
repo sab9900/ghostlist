@@ -70,6 +70,14 @@ namespace GhostList.Infrastructure.Migrations
                     b.Property<Guid?>("ReplyToMessageId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("SenderDeviceId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("SenderUserId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<string>("SenderNameInitializationVector")
                         .IsRequired()
                         .HasColumnType("text");
@@ -128,11 +136,72 @@ namespace GhostList.Infrastructure.Migrations
                     b.Property<bool>("IsChecked")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("SenderDeviceId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("SenderUserId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("GhostListId");
 
                     b.ToTable("GhostListItems");
+                });
+
+            modelBuilder.Entity("GhostList.Domain.Entities.GhostMessageImage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EncryptedImage")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("GhostListId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ImageInitializationVector")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("GhostMessageImages");
+                });
+
+            modelBuilder.Entity("GhostList.Domain.Entities.InfoMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.ToTable("InfoMessages");
                 });
 
             modelBuilder.Entity("GhostList.Domain.Entities.GhostChatMessage", b =>
@@ -149,6 +218,15 @@ namespace GhostList.Infrastructure.Migrations
                     b.HasOne("GhostList.Domain.Entities.GhostList", null)
                         .WithMany("Items")
                         .HasForeignKey("GhostListId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GhostList.Domain.Entities.GhostMessageImage", b =>
+                {
+                    b.HasOne("GhostList.Domain.Entities.GhostChatMessage", null)
+                        .WithOne()
+                        .HasForeignKey("GhostList.Domain.Entities.GhostMessageImage", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -205,6 +283,10 @@ namespace GhostList.Infrastructure.Migrations
 
                     b.Property<string>("DeviceId")
                         .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("UserId")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 

@@ -132,19 +132,19 @@
     <div class="member-list" role="list">
         @for (member of members(); track member.deviceId) {
         <div class="member" role="listitem">
-            <div class="member__avatar" [class.member__avatar--self]="member.isCurrentDevice" aria-hidden="true">
+            <div class="member__avatar" [class.member__avatar--self]="member.isCurrentUser" aria-hidden="true">
                 {{ member.displayName.charAt(0).toUpperCase() }}
             </div>
             <div class="member__info">
                 <span class="member__name">
                     {{ member.displayName }}
-                    @if (member.isCurrentDevice) {
+                    @if (member.isCurrentUser) {
                     <span class="member__you">{{ 'LIST_SETTINGS.MEMBERS_YOU' | translate }}</span>
                     }
                 </span>
                 <span class="member__joined">{{ 'LIST_SETTINGS.MEMBERS_SINCE' | translate }} {{ member.joinedAt | date:'mediumDate' }}</span>
             </div>
-            @if (store.isCurrentListOwner() && !member.isCurrentDevice) {
+            @if (store.isCurrentListOwner() && !member.isCurrentUser) {
             <button class="btn btn--danger btn--sm member__kick"
                 [disabled]="kickingDeviceId() === member.deviceId"
                 [attr.aria-busy]="kickingDeviceId() === member.deviceId"

@@ -13,7 +13,7 @@ export interface KnownList {
   /** Push: notify this device on new chat messages in this list. Default (undefined) = true. */
   notifyOnMessage?: boolean;
 
-  /** Push: notify this device when items in this list change (added/checked/removed). Default (undefined) = true. */
+  /** Push: notify this device when items in this list change (added/checked/removed). Default (undefined) = false (opt-in). */
   notifyOnItemsChanged?: boolean;
 }
 
@@ -64,8 +64,10 @@ export interface SyncSendQrPayload {
 
 export interface ListMember {
   deviceId: string;
+  userId: string | null;
   displayName: string;
   joinedAt: string;
   isCurrentDevice: boolean;
+  isCurrentUser: boolean;
   lastReadMessageAt: string | null;
 }

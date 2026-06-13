@@ -14,6 +14,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<DeviceSubscription> DeviceSubscriptions => Set<DeviceSubscription>();
     public DbSet<GhostListMember> GhostListMembers => Set<GhostListMember>();
     public DbSet<DailyUsageStat> DailyUsageStats => Set<DailyUsageStat>();
+    public DbSet<GhostMessageImage> GhostMessageImages => Set<GhostMessageImage>();
+    public DbSet<InfoMessage> InfoMessages => Set<InfoMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -39,6 +41,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.EncryptedPayload).IsRequired();
             entity.Property(e => e.InitializationVector).IsRequired();
+            entity.Property(e => e.SenderDeviceId).HasMaxLength(64);
+            entity.Property(e => e.SenderUserId).HasMaxLength(64);
         });
 
         modelBuilder.Entity<GhostChatMessage>(entity =>
@@ -49,6 +53,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.EncryptedSenderName).IsRequired();
             entity.Property(e => e.SenderNameInitializationVector).IsRequired();
             entity.Property(e => e.ReplyToMessageId).IsRequired(false);
+            entity.Property(e => e.SenderDeviceId).HasMaxLength(64);
+            entity.Property(e => e.SenderUserId).HasMaxLength(64);
         });
 
         modelBuilder.Entity<DeviceSubscription>(entity =>
@@ -69,6 +75,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => new { e.GhostListId, e.DeviceId }).IsUnique();
             entity.Property(e => e.DeviceId).HasMaxLength(64).IsRequired();
+            entity.Property(e => e.UserId).HasMaxLength(64);
             entity.Property(e => e.EncryptedPayload).IsRequired();
             entity.Property(e => e.InitializationVector).IsRequired();
             entity.Property(e => e.LastReadMessageAt).IsRequired(false);
@@ -83,6 +90,26 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         {
             entity.HasKey(e => e.Date);
             entity.Property(e => e.Date).HasColumnType("date");
+        });
+
+        modelBuilder.Entity<GhostMessageImage>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EncryptedImage).IsRequired();
+            entity.Property(e => e.ImageInitializationVector).IsRequired();
+            entity.HasOne<GhostChatMessage>()
+                  .WithOne()
+                  .HasForeignKey<GhostMessageImage>(e => e.Id)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<InfoMessage>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Type).HasConversion<int>();
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Body).IsRequired().HasMaxLength(4000);
+            entity.HasIndex(e => e.CreatedAt);
         });
     }
 
@@ -103,6 +130,29 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         => base.SaveChangesAsync(cancellationToken);
+
+    public async Task<int> DeleteExpiredImageBlobsAsync(TimeSpan maxAge, CancellationToken cancellationToken)
+    {
+        if (!Database.IsRelational())
+        {
+            // In-memory provider (used by tests) doesn't support raw SQL.
+            var cutoff = DateTime.UtcNow - maxAge;
+            var expired = await GhostMessageImages
+                .Where(i => i.CreatedAt <= cutoff)
+                .ToListAsync(cancellationToken);
+            if (expired.Count == 0) return 0;
+            GhostMessageImages.RemoveRange(expired);
+            await SaveChangesAsync(cancellationToken);
+            return expired.Count;
+        }
+
+        return await Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            DELETE FROM "GhostMessageImages"
+            WHERE "CreatedAt" <= NOW() - {maxAge}
+            """,
+            cancellationToken);
+    }
 
     public async Task IncrementDailyUsageAsync(UsageMetric metric, CancellationToken cancellationToken)
     {

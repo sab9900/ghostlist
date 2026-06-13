@@ -6,7 +6,10 @@
     }
 
     @for (msg of decryptedMessages(); track msg.id; let i = $index) {
-    @let mine = msg.senderName === (prefs.senderName() || ('CHAT.ANONYMOUS' | translate));
+    @let mineById = isMineBySenderIds(msg.senderUserId, msg.senderDeviceId);
+    @let mine = mineById !== null
+        ? mineById
+        : msg.senderName === (prefs.senderName() || ('CHAT.ANONYMOUS' | translate));
     @let preview = replyPreview(msg);
     @let imgUrl = msg.isImage ? imageDataUrl(msg.id) : null;
 

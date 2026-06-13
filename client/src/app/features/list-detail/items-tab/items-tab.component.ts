@@ -3,6 +3,8 @@ import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { GhostListItem } from '../../../core/models';
 import { CryptoService } from '../../../core/services/crypto.service';
+import { DeviceIdService } from '../../../core/services/device-id.service';
+import { UserIdService } from '../../../core/services/user-id.service';
 import { HapticsService } from '../../../core/services/haptics.service';
 import { AppStore } from '../../../store/app.store';
 
@@ -25,13 +27,12 @@ export class ItemsTabComponent {
     private readonly store = inject(AppStore);
     private readonly crypto = inject(CryptoService);
     private readonly haptics = inject(HapticsService);
+    private readonly deviceId = inject(DeviceIdService);
+    private readonly userId = inject(UserIdService);
 
     protected readonly newItemText = signal('');
     protected readonly addingItem = signal(false);
     protected readonly decryptedItems = signal<DecryptedItem[]>([]);
-
-    /** Ids of items created by this device during the current session — never shown as "new". */
-    private readonly ownItemIds = new Set<string>();
 
     private readonly sortedItems = computed(() => {
         const createdAt = (item: DecryptedItem) => new Date(item.createdAt).getTime();
@@ -64,7 +65,7 @@ export class ItemsTabComponent {
                 isChecked: item.isChecked,
                 checkedAt: item.checkedAt,
                 createdAt: item.createdAt,
-                isNew: new Date(item.createdAt).getTime() > cutoff && !this.ownItemIds.has(item.id),
+                isNew: new Date(item.createdAt).getTime() > cutoff && !this.isMine(item.senderUserId, item.senderDeviceId),
             })),
         );
         this.decryptedItems.set(items);
@@ -74,18 +75,9 @@ export class ItemsTabComponent {
         const text = this.newItemText().trim();
         if (!text) return;
         this.addingItem.set(true);
-        const idsBefore = new Set(this.store.items().map(i => i.id));
         try {
             await this.store.addItem(text);
             this.newItemText.set('');
-            const added = this.store.items().find(i => !idsBefore.has(i.id));
-            if (added) {
-                this.ownItemIds.add(added.id);
-                // The optimistic patchState(s) above already triggered decryptItems()
-                // with the old ownItemIds, so the "new" dot may briefly show — re-run
-                // it now that the id is marked as our own.
-                void this.decryptItems();
-            }
         } finally {
             this.addingItem.set(false);
         }
@@ -98,5 +90,15 @@ export class ItemsTabComponent {
 
     async deleteItem(id: string): Promise<void> {
         await this.store.deleteItem(id);
+    }
+
+    /**
+     * True if this item was created by this person, based on the stable
+     * `senderUserId` (preferred, survives machine sync) or `senderDeviceId`
+     * (legacy fallback for rows created before `userId` existed).
+     */
+    private isMine(senderUserId: string | null, senderDeviceId: string | null): boolean {
+        if (senderUserId !== null) return senderUserId === this.userId.userId();
+        return senderDeviceId === this.deviceId.deviceId;
     }
 }

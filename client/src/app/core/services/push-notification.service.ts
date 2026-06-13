@@ -50,8 +50,9 @@ export class PushNotificationService {
 
         PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
             const listId = action.notification.data?.listId as string | undefined;
+            const type = action.notification.data?.type as string | undefined;
             if (listId) {
-                this.router.navigate(['/list', listId]);
+                this.router.navigate(['/list', listId, type === 'message' ? 'chat' : 'items']);
             }
         });
     }
@@ -96,8 +97,9 @@ export class PushNotificationService {
 
             onMessage(this.messaging, (payload: MessagePayload) => {
                 const listId = payload.data?.['listId'];
+                const type = payload.data?.['type'];
                 if (listId) {
-                    this.router.navigate(['/list', listId]);
+                    this.router.navigate(['/list', listId, type === 'message' ? 'chat' : 'items']);
                 }
             });
         } catch (err) {

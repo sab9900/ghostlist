@@ -22,7 +22,8 @@ public class GhostItemsController(IMediator mediator) : ControllerBase
     public async Task<ActionResult<Guid>> Create([FromBody] CreateGhostListItemCommand command)
     {
         var deviceId = Request.Headers["X-Device-Id"].FirstOrDefault();
-        var itemId = await mediator.Send(command with { SenderDeviceId = deviceId });
+        var userId = Request.Headers["X-User-Id"].FirstOrDefault();
+        var itemId = await mediator.Send(command with { SenderDeviceId = deviceId, SenderUserId = userId });
         return Ok(itemId);
     }
 

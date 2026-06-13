@@ -3,6 +3,7 @@ export * from './errors.model';
 export * from './ghost-chat-message.model';
 export * from './ghost-list-item.model';
 export * from './ghost-list.model';
+export * from './info-message.model';
 export * from './known-list.model';
 export * from './offline.model';
 export * from './requests.model';

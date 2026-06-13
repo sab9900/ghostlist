@@ -1,6 +1,7 @@
 using GhostList.Application.Features.GhostMessages.Commands.CreateGhostChatMessage;
 using GhostList.Application.Features.GhostMessages.Commands.DeleteGhostChatMessage;
 using GhostList.Application.Features.GhostMessages.Queries.GetGhostChatMessagesByListId;
+using GhostList.Application.Features.GhostMessages.Queries.GetGhostMessageImage;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -21,7 +22,8 @@ public class ChatController(IMediator mediator) : ControllerBase
     public async Task<ActionResult<Guid>> Create([FromBody] CreateGhostMessageCommand command)
     {
         var deviceId = Request.Headers["X-Device-Id"].FirstOrDefault();
-        var messageId = await mediator.Send(command with { SenderDeviceId = deviceId });
+        var userId = Request.Headers["X-User-Id"].FirstOrDefault();
+        var messageId = await mediator.Send(command with { SenderDeviceId = deviceId, SenderUserId = userId });
         return Ok(messageId);
     }
 
@@ -30,5 +32,12 @@ public class ChatController(IMediator mediator) : ControllerBase
     {
         await mediator.Send(new DeleteGhostChatMessageCommand(id));
         return NoContent();
+    }
+
+    [HttpGet("{messageId:guid}/image")]
+    public async Task<ActionResult<GhostMessageImageDto>> GetImage(Guid messageId)
+    {
+        var image = await mediator.Send(new GetGhostMessageImageQuery(messageId));
+        return Ok(image);
     }
 }

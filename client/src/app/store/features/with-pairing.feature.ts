@@ -15,8 +15,10 @@ import {
 } from '../../core/models';
 import { CryptoService } from '../../core/services/crypto.service';
 import { DeviceIdService } from '../../core/services/device-id.service';
+import { UserIdService } from '../../core/services/user-id.service';
 import { ForegroundService } from '../../core/services/foreground.service';
 import { PushNotificationService } from '../../core/services/push-notification.service';
+import { UserPreferencesService } from '../../core/services/user-preferences.service';
 
 export function withPairing() {
     return signalStoreFeature(
@@ -39,7 +41,9 @@ export function withPairing() {
             const crypto = inject(CryptoService);
             const push = inject(PushNotificationService);
             const deviceId = inject(DeviceIdService);
+            const userId = inject(UserIdService);
             const foreground = inject(ForegroundService);
+            const prefs = inject(UserPreferencesService);
 
             const pendingReceives = new Map<string, CryptoKey>();
             const pendingExportReceives = new Map<string, CryptoKey>();
@@ -175,12 +179,17 @@ export function withPairing() {
                     for (const r of records) {
                         try {
                             const plain = await crypto.decrypt(r.encryptedPayload, r.initializationVector, encryptionKey);
-                            const parsed = JSON.parse(plain) as { deviceId: string; displayName: string; joinedAt: string };
+                            const parsed = JSON.parse(plain) as { deviceId: string; userId?: string; displayName: string; joinedAt: string };
+                            const isCurrentDevice = parsed.deviceId === deviceId.deviceId;
+                            const isCurrentUser = isCurrentDevice
+                                || (!!parsed.userId && parsed.userId === userId.userId());
                             members.push({
                                 deviceId: parsed.deviceId,
+                                userId: parsed.userId ?? null,
                                 displayName: parsed.displayName || 'Anonymous',
                                 joinedAt: parsed.joinedAt,
-                                isCurrentDevice: parsed.deviceId === deviceId.deviceId,
+                                isCurrentDevice,
+                                isCurrentUser,
                                 lastReadMessageAt: r.lastReadMessageAt,
                             });
                         } catch { }
@@ -197,9 +206,15 @@ export function withPairing() {
 
                 async pushSyncBundle(sessionId: string, receiverPublicKeyB64: string): Promise<void> {
                     const lists = store.knownLists();
-                    const payload = JSON.stringify(
-                        lists.map(l => ({ id: l.id, name: l.name, encryptionKey: l.encryptionKey, ownerToken: l.ownerToken })),
-                    );
+                    const payload = JSON.stringify({
+                        lists: lists.map(l => ({ id: l.id, name: l.name, encryptionKey: l.encryptionKey, ownerToken: l.ownerToken })),
+                        // Carry the display name across so the receiving device shows up as "you"
+                        // (same name) instead of "Anonymous" when it registers as a list member.
+                        senderName: prefs.senderName() || null,
+                        // Carry our person-identity across so the receiving device "remains"
+                        // this same person — its items/messages are recognized as "mine" too.
+                        userId: userId.userId(),
+                    });
                     const bundle = await crypto.wrapPayload(payload, receiverPublicKeyB64);
                     await firstValueFrom(api.putSyncBundle(sessionId, bundle.encryptedPayload, bundle.iv, bundle.senderPublicKey));
                 },
@@ -210,7 +225,28 @@ export function withPairing() {
                     const bundle = await firstValueFrom(api.getSyncBundle(sessionId));
                     pendingSyncReceives.delete(sessionId);
                     const plain = await crypto.unwrapPayload(bundle.encryptedPayload, bundle.iv, bundle.senderPublicKey, privateKey);
-                    const entries = JSON.parse(plain) as { id: string; name: string; encryptionKey: string; ownerToken?: string }[];
+                    const parsed = JSON.parse(plain) as
+                        | { lists: { id: string; name: string; encryptionKey: string; ownerToken?: string }[]; senderName?: string | null; userId?: string | null }
+                        | { id: string; name: string; encryptionKey: string; ownerToken?: string }[];
+
+                    // Older clients sent a bare array; newer ones send { lists, senderName, userId }.
+                    const entries = Array.isArray(parsed) ? parsed : parsed.lists;
+                    const syncedSenderName = Array.isArray(parsed) ? null : parsed.senderName;
+                    const syncedUserId = Array.isArray(parsed) ? null : parsed.userId;
+
+                    // Adopt the sending device's display name so this device shows up as "you"
+                    // (same name) in member lists/chat, rather than "Anonymous".
+                    if (syncedSenderName && !prefs.senderName()) {
+                        prefs.setSenderName(syncedSenderName);
+                    }
+
+                    // Adopt the sending device's userId — both devices now represent the
+                    // same person, so this device's items/messages are recognized as
+                    // "mine" everywhere too, and unread counts stay correct after sync.
+                    if (syncedUserId) {
+                        userId.setUserId(syncedUserId);
+                    }
+
                     let imported = 0;
                     for (const e of entries) {
                         const already = store.knownLists().find(l => l.id === e.id);

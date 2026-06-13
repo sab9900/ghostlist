@@ -1,7 +1,13 @@
 <div class="dashboard">
     <header class="dashboard__header">
-        <h1>Ghost List — Admin</h1>
-        <button class="dashboard__logout" (click)="logout()">Logout</button>
+        <div class="dashboard__title">
+            <h1>Ghost List — Admin</h1>
+            <span class="dashboard__meta">Backend · v{{ version }}</span>
+        </div>
+        <div class="dashboard__actions">
+            <a class="dashboard__info-center" routerLink="/info-center">Info Center</a>
+            <button class="dashboard__logout" (click)="logout()">Logout</button>
+        </div>
     </header>
 
     @if (loading()) {
@@ -34,6 +40,49 @@
                 <span class="stat-card__label">Device subscriptions</span>
                 <span class="stat-card__value">{{ s.current.deviceSubscriptions }}</span>
                 <span class="stat-card__sub">currently active</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card__label">Unique users</span>
+                <span class="stat-card__value">{{ s.current.uniqueUsers }}</span>
+                <span class="stat-card__sub">distinct people (synced userId)</span>
+            </div>
+        </section>
+
+        <section class="stat-grid">
+            <div class="stat-card">
+                <span class="stat-card__label">Avg. items / list</span>
+                <span class="stat-card__value">{{ round1(s.engagement.avgItemsPerList) }}</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card__label">Avg. members / list</span>
+                <span class="stat-card__value">{{ round1(s.engagement.avgMembersPerList) }}</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card__label">Item completion rate</span>
+                <span class="stat-card__value">{{ pct(s.engagement.itemCompletionRate) }}</span>
+                <span class="stat-card__sub">of current items checked off</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card__label">Collaborative lists</span>
+                <span class="stat-card__value">{{ pct(s.engagement.collaborativeListsShare) }}</span>
+                <span class="stat-card__sub">have 2+ members</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card__label">Push opt-in rate</span>
+                <span class="stat-card__value">{{ pct(s.engagement.pushOptInRate) }}</span>
+                <span class="stat-card__sub">of device subscriptions</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card__label">Multi-device users</span>
+                <span class="stat-card__value">{{ pct(s.engagement.multiDeviceUserShare) }}</span>
+                <span class="stat-card__sub">synced across 2+ devices</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card__label">Platform mix</span>
+                <span class="stat-card__value stat-card__value--small">
+                    {{ s.engagement.platformIos }} iOS · {{ s.engagement.platformAndroid }} Android · {{ s.engagement.platformWeb }} Web
+                </span>
+                <span class="stat-card__sub">push subscriptions by platform</span>
             </div>
         </section>
 

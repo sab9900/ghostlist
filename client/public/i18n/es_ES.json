@@ -200,9 +200,17 @@
     "UNLOCKING": "Desbloqueando…",
     "UNLOCK_ERROR": "Autenticación fallida. Por favor, inténtalo de nuevo."
   },
+  "INFO_CENTER": {
+    "TYPE_INFO": "Información",
+    "TYPE_RELEASE_NOTES": "Novedades",
+    "TYPE_MAINTENANCE": "Mantenimiento",
+    "DISMISS": "Entendido"
+  },
   "ABOUT": {
     "TITLE": "Acerca de",
     "TAGLINE": "Listas privadas. Cero confianza.",
+    "VERSION_FRONTEND": "Frontend v{{version}}",
+    "VERSION_BACKEND": "Backend v{{version}}",
     "WHAT_TITLE": "¿Qué es Ghost List?",
     "WHAT_TEXT": "Ghost List es una aplicación de listas compartidas con cifrado de extremo a extremo. Creas listas, añades elementos, chateas con las personas con quienes compartes — y nada de eso es legible por nadie más que tú y las personas que invitas. Ni siquiera el servidor.",
     "HOW_TITLE": "Cómo funciona",

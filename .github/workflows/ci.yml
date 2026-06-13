@@ -13,6 +13,13 @@ env:
   ADMIN_CLIENT_IMAGE: ghcr.io/${{ github.repository_owner }}/ghostlist-admin-client
 
 jobs:
+  version-sync:
+    name: Version Sync Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node scripts/sync-version.js --check
+
   test-server:
     name: .NET Tests
     runs-on: ubuntu-latest

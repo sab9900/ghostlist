@@ -174,9 +174,17 @@
     "SYNC_SEND_QR_HINT": "Sull'altro dispositivo: Impostazioni → Sync Machine → Ricevi → scansiona il codice QR.",
     "SYNC_REQUIRES_BIOMETRIC": "Attiva il blocco biometrico (sopra) per usare la Sync Machine."
   },
+  "INFO_CENTER": {
+    "TYPE_INFO": "Info",
+    "TYPE_RELEASE_NOTES": "Novità",
+    "TYPE_MAINTENANCE": "Manutenzione",
+    "DISMISS": "Capito"
+  },
   "ABOUT": {
     "TITLE": "Informazioni",
     "TAGLINE": "Liste private. Zero fiducia.",
+    "VERSION_FRONTEND": "Frontend v{{version}}",
+    "VERSION_BACKEND": "Backend v{{version}}",
     "WHAT_TITLE": "Cos'è Ghost List?",
     "WHAT_TEXT": "Ghost List è un'app per liste condivise con crittografia end-to-end. Crei liste, aggiungi elementi, chatti con le persone con cui condividi — e niente di tutto ciò è leggibile da nessuno tranne te e le persone che inviti. Nemmeno il server.",
     "HOW_TITLE": "Come funziona",

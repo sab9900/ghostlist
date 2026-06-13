@@ -64,9 +64,9 @@ public class GhostList
         CompletedItemsTtl = ttl;
     }
 
-    public GhostListItem CreateListItem(string encryptedPayload, string initializationVector)
+    public GhostListItem CreateListItem(string encryptedPayload, string initializationVector, string? senderDeviceId = null, string? senderUserId = null)
     {
-        return GhostListItem.Create(Id, encryptedPayload, initializationVector);
+        return GhostListItem.Create(Id, encryptedPayload, initializationVector, senderDeviceId, senderUserId);
     }
 
     public GhostChatMessage CreateMessage(
@@ -74,7 +74,9 @@ public class GhostList
         string initializationVector,
         string encryptedSenderName,
         string senderNameInitializationVector,
-        Guid? replyToMessageId = null)
+        Guid? replyToMessageId = null,
+        string? senderDeviceId = null,
+        string? senderUserId = null)
     {
         return GhostChatMessage.Create(
             Id,
@@ -82,7 +84,9 @@ public class GhostList
             initializationVector,
             encryptedSenderName,
             senderNameInitializationVector,
-            replyToMessageId
+            replyToMessageId,
+            senderDeviceId,
+            senderUserId
         );
     }
 }

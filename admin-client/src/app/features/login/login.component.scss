@@ -19,9 +19,16 @@
 }
 
 .login__title {
-    margin: 0 0 8px;
+    margin: 0;
     font-size: 20px;
     text-align: center;
+}
+
+.login__meta {
+    margin: 0 0 8px;
+    font-size: 12px;
+    text-align: center;
+    color: var(--color-text-muted);
 }
 
 .login__field {

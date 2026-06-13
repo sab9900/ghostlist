@@ -15,10 +15,18 @@ public interface IApplicationDbContext
     DbSet<DeviceSubscription> DeviceSubscriptions { get; }
     DbSet<GhostListMember> GhostListMembers { get; }
     DbSet<DailyUsageStat> DailyUsageStats { get; }
+    DbSet<GhostMessageImage> GhostMessageImages { get; }
+    DbSet<InfoMessage> InfoMessages { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 
     Task<IReadOnlyList<DeletedItemInfo>> DeleteExpiredCheckedItemsAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Deletes stored image blobs older than <paramref name="maxAge"/> and
+    /// returns how many rows were removed.
+    /// </summary>
+    Task<int> DeleteExpiredImageBlobsAsync(TimeSpan maxAge, CancellationToken cancellationToken);
 
     /// <summary>
     /// Atomically bumps today's counter for the given metric in <see cref="DailyUsageStat"/>.

@@ -1,8 +1,12 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, effect, ElementRef, HostListener, inject, signal, ViewChild } from '@angular/core';
+import { Component, computed, DestroyRef, effect, ElementRef, HostListener, inject, signal, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Capacitor } from '@capacitor/core';
+import { Keyboard } from '@capacitor/keyboard';
 import { GhostChatMessage } from '../../../core/models';
 import { CryptoService } from '../../../core/services/crypto.service';
+import { DeviceIdService } from '../../../core/services/device-id.service';
+import { UserIdService } from '../../../core/services/user-id.service';
 import { HapticsService } from '../../../core/services/haptics.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -15,6 +19,8 @@ interface DecryptedMessage {
     createdAt: string;
     replyToMessageId: string | null;
     isImage: boolean;
+    senderDeviceId: string | null;
+    senderUserId: string | null;
 }
 
 const SWIPE_TRIGGER_DISTANCE = 56;
@@ -32,6 +38,8 @@ export class ChatTabComponent {
     private readonly crypto = inject(CryptoService);
     protected readonly prefs = inject(UserPreferencesService);
     private readonly haptics = inject(HapticsService);
+    protected readonly deviceId = inject(DeviceIdService);
+    protected readonly userId = inject(UserIdService);
 
     @ViewChild('messageList') private messageListRef?: ElementRef<HTMLUListElement>;
     @ViewChild('fileInput') private fileInputRef?: ElementRef<HTMLInputElement>;
@@ -73,10 +81,22 @@ export class ChatTabComponent {
         if (!ts) return -1;
         const cutoff = new Date(ts).getTime();
         const idx = this.decryptedMessages().findIndex(
-            m => new Date(m.createdAt).getTime() > cutoff,
+            m => new Date(m.createdAt).getTime() > cutoff && this.isMineBySenderIds(m.senderUserId, m.senderDeviceId) !== true,
         );
         return idx > 0 ? idx : -1;
     });
+
+    /**
+     * Returns whether a message/item was sent by this person, based on the stable
+     * `senderUserId` (preferred, survives machine sync) or `senderDeviceId` (legacy
+     * fallback). Returns null if neither identifier is present on the row, in which
+     * case callers should fall back to comparing display names.
+     */
+    protected isMineBySenderIds(senderUserId: string | null, senderDeviceId: string | null): boolean | null {
+        if (senderUserId !== null) return senderUserId === this.userId.userId();
+        if (senderDeviceId !== null) return senderDeviceId === this.deviceId.deviceId;
+        return null;
+    }
 
     private readonly othersLastRead = computed(() => {
         const id = this.store.currentListId();
@@ -88,6 +108,17 @@ export class ChatTabComponent {
         if (!this.prefs.senderName()) {
             this.pendingName.set('');
             this.showNameDialog.set(true);
+        }
+
+        if (Capacitor.isNativePlatform()) {
+            const listener = Keyboard.addListener('keyboardDidShow', () => {
+                // Wait for the --keyboard-height CSS transition to finish before
+                // measuring scroll bounds, so the compose bar stays visible.
+                setTimeout(() => this.scrollToBottom(), 250);
+            });
+            inject(DestroyRef).onDestroy(() => {
+                void listener.then(handle => handle.remove());
+            });
         }
 
         effect(() => {
@@ -152,10 +183,20 @@ export class ChatTabComponent {
                     createdAt: msg.createdAt,
                     replyToMessageId: msg.replyToMessageId,
                     isImage,
+                    senderDeviceId: msg.senderDeviceId,
+                    senderUserId: msg.senderUserId,
                 } satisfies DecryptedMessage;
             }),
         );
         this.decryptedMessages.set(messages);
+
+        const imageDataUrls = this.store.imageDataUrls();
+        for (const msg of messages) {
+            if (msg.isImage && !imageDataUrls[msg.id]) {
+                void this.store.fetchAndCacheImage(msg.id);
+            }
+        }
+
         return true;
     }
 

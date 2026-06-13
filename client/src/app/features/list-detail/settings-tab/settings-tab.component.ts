@@ -48,7 +48,7 @@ export class SettingsTabComponent {
     protected readonly kickingDeviceId = signal<string | null>(null);
 
     protected readonly notifyOnMessage = signal(true);
-    protected readonly notifyOnItemsChanged = signal(true);
+    protected readonly notifyOnItemsChanged = signal(false);
 
     constructor() {
         effect(() => {
@@ -77,7 +77,7 @@ export class SettingsTabComponent {
         if (known) {
             this.listName.set(known.name);
             this.notifyOnMessage.set(known.notifyOnMessage ?? true);
-            this.notifyOnItemsChanged.set(known.notifyOnItemsChanged ?? true);
+            this.notifyOnItemsChanged.set(known.notifyOnItemsChanged ?? false);
             void this.loadMembers(known.id, known.encryptionKey);
         }
     }
@@ -87,8 +87,8 @@ export class SettingsTabComponent {
         try {
             const members = await this.store.fetchMembersForList(listId, encryptionKey);
             members.sort((a, b) => {
-                if (a.isCurrentDevice) return -1;
-                if (b.isCurrentDevice) return 1;
+                if (a.isCurrentUser) return -1;
+                if (b.isCurrentUser) return 1;
                 return a.displayName.localeCompare(b.displayName);
             });
             this.members.set(members);

@@ -5,6 +5,8 @@ export interface ItemCreatedEvent {
   initializationVector: string;
   isChecked: boolean;
   createdAt: string;
+  senderDeviceId: string | null;
+  senderUserId: string | null;
 }
 
 export interface ItemToggledEvent {
@@ -22,6 +24,8 @@ export interface MessageCreatedEvent {
   senderNameInitializationVector: string;
   replyToMessageId: string | null;
   createdAt: string;
+  senderDeviceId: string | null;
+  senderUserId: string | null;
 }
 
 export interface ImageSharedEvent {

@@ -1,0 +1,80 @@
+<div class="info-center">
+    <header class="info-center__header">
+        <div class="info-center__title">
+            <h1>Info Center</h1>
+            <span class="info-center__meta">Broadcast messages to the standard client</span>
+        </div>
+        <a class="info-center__back" routerLink="/">Back to dashboard</a>
+    </header>
+
+    <section class="composer">
+        <h2>New message</h2>
+
+        <label class="composer__field">
+            <span>Type</span>
+            <select [ngModel]="type()" (ngModelChange)="type.set($event)">
+                <option [value]="InfoMessageType.Info">Info</option>
+                <option [value]="InfoMessageType.ReleaseNotes">Release Notes</option>
+                <option [value]="InfoMessageType.Maintenance">Maintenance</option>
+            </select>
+        </label>
+
+        <label class="composer__field">
+            <span>Title</span>
+            <input
+                type="text"
+                maxlength="200"
+                [ngModel]="title()"
+                (ngModelChange)="title.set($event)"
+            >
+        </label>
+
+        <label class="composer__field">
+            <span>Message</span>
+            <textarea
+                rows="4"
+                maxlength="4000"
+                [ngModel]="body()"
+                (ngModelChange)="body.set($event)"
+            ></textarea>
+        </label>
+
+        @if (sendError()) {
+            <p class="composer__error">{{ sendError() }}</p>
+        }
+
+        <button
+            class="composer__submit"
+            [disabled]="sending() || !title().trim() || !body().trim()"
+            (click)="send()"
+        >
+            {{ sending() ? 'Sending…' : 'Send' }}
+        </button>
+    </section>
+
+    <section class="history">
+        <h2>History</h2>
+
+        @if (loading()) {
+            <p class="history__status">Loading…</p>
+        } @else if (error()) {
+            <p class="history__status history__status--error">{{ error() }}</p>
+        } @else if (messages().length === 0) {
+            <p class="history__status">No messages sent yet.</p>
+        } @else {
+            <ul class="history__list">
+                @for (message of messages(); track message.id) {
+                    <li class="history__item">
+                        <div class="history__item-main">
+                            <span class="history__badge" [class]="'history__badge--' + message.type">{{ message.type }}</span>
+                            <span class="history__item-title">{{ message.title }}</span>
+                            <span class="history__item-date">{{ formatDate(message.createdAt) }}</span>
+                        </div>
+                        <p class="history__item-body">{{ message.body }}</p>
+                        <button class="history__delete" (click)="delete(message.id)">Delete</button>
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+</div>

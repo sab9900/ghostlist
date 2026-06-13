@@ -97,6 +97,12 @@
         color: var(--color-text-subtle);
         letter-spacing: 0.03em;
     }
+
+    &__version {
+        font-size: var(--text-xs);
+        color: var(--color-text-subtle);
+        opacity: 0.7;
+    }
 }
 
 .section {

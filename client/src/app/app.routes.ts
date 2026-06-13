@@ -10,6 +10,23 @@ export const routes: Routes = [
         path: 'list/:id',
         loadComponent: () =>
             import('./features/list-detail/list-detail.component').then((m) => m.ListDetailComponent),
+        children: [
+            {
+                path: 'items',
+                loadComponent: () =>
+                    import('./features/list-detail/items-tab/items-tab.component').then((m) => m.ItemsTabComponent),
+            },
+            {
+                path: 'chat',
+                loadComponent: () =>
+                    import('./features/list-detail/chat-tab/chat-tab.component').then((m) => m.ChatTabComponent),
+            },
+            {
+                path: 'settings',
+                loadComponent: () =>
+                    import('./features/list-detail/settings-tab/settings-tab.component').then((m) => m.SettingsTabComponent),
+            },
+        ],
     },
     {
         path: 'join/:id',

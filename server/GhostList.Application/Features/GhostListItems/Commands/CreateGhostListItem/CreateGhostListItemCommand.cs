@@ -11,7 +11,8 @@ public record CreateGhostListItemCommand(
     Guid GhostListId,
     string EncryptedPayload,
     string InitializationVector,
-    string? SenderDeviceId = null) : IRequest<Guid>;
+    string? SenderDeviceId = null,
+    string? SenderUserId = null) : IRequest<Guid>;
 
 public class CreateGhostListItemCommandHandler : IRequestHandler<CreateGhostListItemCommand, Guid>
 {
@@ -41,7 +42,7 @@ public class CreateGhostListItemCommandHandler : IRequestHandler<CreateGhostList
         if (itemCount >= 500)
             throw new InvalidOperationException("Cannot add more than 500 items to a ghost list.");
 
-        var newItem = ghostList.CreateListItem(request.EncryptedPayload, request.InitializationVector);
+        var newItem = ghostList.CreateListItem(request.EncryptedPayload, request.InitializationVector, request.SenderDeviceId, request.SenderUserId);
         _context.GhostListItems.Add(newItem);
         await _context.SaveChangesAsync(cancellationToken);
         await _context.IncrementDailyUsageAsync(UsageMetric.Item, cancellationToken);
@@ -52,7 +53,9 @@ public class CreateGhostListItemCommandHandler : IRequestHandler<CreateGhostList
             newItem.EncryptedPayload,
             newItem.InitializationVector,
             newItem.IsChecked,
-            newItem.CreatedAt));
+            newItem.CreatedAt,
+            newItem.SenderDeviceId,
+            newItem.SenderUserId));
 
         _ = _push.SendNotificationAsync(newItem.GhostListId, PushNotificationType.ItemsChanged, request.SenderDeviceId, cancellationToken)
                  .ContinueWith(t => { }, TaskContinuationOptions.OnlyOnFaulted);

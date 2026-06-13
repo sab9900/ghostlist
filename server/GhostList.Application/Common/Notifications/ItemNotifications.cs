@@ -6,7 +6,9 @@ public record ItemCreatedNotification(
     string EncryptedPayload,
     string InitializationVector,
     bool IsChecked,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    string? SenderDeviceId,
+    string? SenderUserId);
 
 public record ItemToggledNotification(
     Guid ItemId,
@@ -21,7 +23,9 @@ public record MessageCreatedNotification(
     string EncryptedSenderName,
     string SenderNameInitializationVector,
     Guid? ReplyToMessageId,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    string? SenderDeviceId,
+    string? SenderUserId);
 
 /// <summary>
 /// Live, non-persisted relay of an encrypted image blob to currently-connected

@@ -1,5 +1,6 @@
 using GhostList.Application.Features.GhostLists.Commands.DeleteExpiredListItems;
 using GhostList.Application.Features.GhostLists.Commands.DeleteStaleLists;
+using GhostList.Application.Features.GhostMessages.Commands.DeleteExpiredImageBlobs;
 using MediatR;
 
 namespace GhostList.WebApi.BackgroundServices;
@@ -26,6 +27,10 @@ public class GhostListCleanupWorker(IServiceScopeFactory scopeFactory, ILogger<G
                 var expiredItems = await mediator.Send(new DeleteExpiredListItemsCommand(), stoppingToken);
                 if (expiredItems > 0)
                     logger.LogInformation("Cleanup: {Count} expired item(s) deleted.", expiredItems);
+
+                var expiredImages = await mediator.Send(new DeleteExpiredImageBlobsCommand(), stoppingToken);
+                if (expiredImages > 0)
+                    logger.LogInformation("Cleanup: {Count} expired image blob(s) deleted.", expiredImages);
 
                 if (DateTime.UtcNow - _lastMemberlessCheck >= MemberlessCheckInterval)
                 {

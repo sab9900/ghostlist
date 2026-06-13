@@ -16,6 +16,24 @@
     }
 }
 
+.dashboard__title {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.dashboard__meta {
+    font-size: 12px;
+    color: var(--color-text-muted);
+}
+
+.dashboard__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dashboard__info-center,
 .dashboard__logout {
     padding: 8px 14px;
     font-size: 13px;
@@ -23,6 +41,7 @@
     background: var(--color-surface-2);
     border: 1px solid var(--color-border);
     border-radius: 8px;
+    text-decoration: none;
 
     &:hover {
         border-color: var(--color-primary);
@@ -62,6 +81,11 @@
 .stat-card__value {
     font-size: 28px;
     font-weight: 700;
+
+    &--small {
+        font-size: 16px;
+        font-weight: 600;
+    }
 }
 
 .stat-card__sub {

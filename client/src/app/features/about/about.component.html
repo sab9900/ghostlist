@@ -17,6 +17,12 @@
                 <img class="hero__logo" src="/ghost-header.svg" alt="Ghost List" aria-hidden="true" />
                 <p class="hero__name">Ghost List</p>
                 <p class="hero__tagline">{{ 'ABOUT.TAGLINE' | translate }}</p>
+                <p class="hero__version">
+                    {{ 'ABOUT.VERSION_FRONTEND' | translate:{ version: frontendVersion } }}
+                    @if (backendVersion(); as backend) {
+                        · {{ 'ABOUT.VERSION_BACKEND' | translate:{ version: backend } }}
+                    }
+                </p>
             </div>
 
             <section class="section" aria-labelledby="what-heading">

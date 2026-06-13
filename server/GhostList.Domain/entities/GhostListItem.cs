@@ -12,9 +12,25 @@ public class GhostListItem
     public DateTime? CheckedAt { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
+    /// <summary>
+    /// Id of the device that created this item. Used so clients can recognize
+    /// their own contributions (e.g. to suppress "new" indicators and exclude
+    /// them from unread counts) without any local-only bookkeeping.
+    /// </summary>
+    public string? SenderDeviceId { get; private set; }
+
+    /// <summary>
+    /// Stable "person" identity of whoever created this item, distinct from
+    /// <see cref="SenderDeviceId"/> (per-installation). Survives machine sync,
+    /// so a person's own items are recognized as "mine" on every device they use.
+    /// Null for rows created before this field existed (legacy fallback to
+    /// <see cref="SenderDeviceId"/> on the client).
+    /// </summary>
+    public string? SenderUserId { get; private set; }
+
     private GhostListItem() { }
 
-    public static GhostListItem Create(Guid ghostListId, string encryptedPayload, string initializationVector)
+    public static GhostListItem Create(Guid ghostListId, string encryptedPayload, string initializationVector, string? senderDeviceId = null, string? senderUserId = null)
     {
         return new GhostListItem
         {
@@ -23,7 +39,9 @@ public class GhostListItem
             EncryptedPayload = encryptedPayload,
             InitializationVector = initializationVector,
             IsChecked = false,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            SenderDeviceId = senderDeviceId,
+            SenderUserId = senderUserId
         };
     }
 

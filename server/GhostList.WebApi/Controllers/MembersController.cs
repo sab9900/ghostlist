@@ -27,7 +27,8 @@ public class MembersController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> UpsertMember(Guid listId, string deviceId, [FromBody] UpsertMemberRequest request, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(deviceId) || deviceId.Length > 64) return BadRequest();
-        await mediator.Send(new UpsertListMemberCommand(listId, deviceId, request.EncryptedPayload, request.InitializationVector), ct);
+        var userId = Request.Headers["X-User-Id"].FirstOrDefault();
+        await mediator.Send(new UpsertListMemberCommand(listId, deviceId, request.EncryptedPayload, request.InitializationVector, userId), ct);
         return NoContent();
     }
 
@@ -56,7 +57,8 @@ public class MembersController(IMediator mediator) : ControllerBase
     [HttpGet("{listId:guid}/{deviceId}/unread")]
     public async Task<ActionResult<UnreadSummaryDto>> GetUnreadSummary(Guid listId, string deviceId, CancellationToken ct)
     {
-        var summary = await mediator.Send(new GetGhostListUnreadSummaryQuery(listId, deviceId), ct);
+        var userId = Request.Headers["X-User-Id"].FirstOrDefault();
+        var summary = await mediator.Send(new GetGhostListUnreadSummaryQuery(listId, deviceId, userId), ct);
         return Ok(summary);
     }
 }

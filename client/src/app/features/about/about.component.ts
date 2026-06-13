@@ -1,6 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+import { ApiService } from '../../api/api.service';
+import { APP_VERSION } from '../../version';
 
 @Component({
     selector: 'app-about',
@@ -8,8 +10,19 @@ import { TranslatePipe } from '@ngx-translate/core';
     templateUrl: './about.component.html',
     styleUrl: './about.component.scss',
 })
-export class AboutComponent {
+export class AboutComponent implements OnInit {
     private readonly router = inject(Router);
+    private readonly api = inject(ApiService);
+
+    readonly frontendVersion = APP_VERSION;
+    readonly backendVersion = signal<string | null>(null);
+
+    ngOnInit(): void {
+        this.api.getBackendVersion().subscribe({
+            next: (res) => this.backendVersion.set(res.version),
+            error: () => this.backendVersion.set(null),
+        });
+    }
 
     goBack(): void {
         this.router.navigate(['/']);

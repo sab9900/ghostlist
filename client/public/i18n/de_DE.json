@@ -202,9 +202,17 @@
     "UNLOCKING": "Entsperre…",
     "UNLOCK_ERROR": "Entsperren fehlgeschlagen. Bitte erneut versuchen."
   },
+  "INFO_CENTER": {
+    "TYPE_INFO": "Info",
+    "TYPE_RELEASE_NOTES": "Neuigkeiten",
+    "TYPE_MAINTENANCE": "Wartung",
+    "DISMISS": "Verstanden"
+  },
   "ABOUT": {
     "TITLE": "Über die App",
     "TAGLINE": "Private Listen. Zero Trust.",
+    "VERSION_FRONTEND": "Frontend v{{version}}",
+    "VERSION_BACKEND": "Backend v{{version}}",
     "WHAT_TITLE": "Was ist Ghost List?",
     "WHAT_TEXT": "Ghost List ist eine Ende-zu-Ende-verschlüsselte App für gemeinsame Listen. Du erstellst Listen, fügst Einträge hinzu und chattest mit Personen, mit denen du teilst — und nichts davon ist für irgendjemanden außer dir und den eingeladenen Personen lesbar. Nicht einmal für den Server.",
     "HOW_TITLE": "So funktioniert es",

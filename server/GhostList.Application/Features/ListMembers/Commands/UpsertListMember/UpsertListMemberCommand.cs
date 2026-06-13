@@ -10,7 +10,8 @@ public record UpsertListMemberCommand(
     Guid ListId,
     string DeviceId,
     string EncryptedPayload,
-    string InitializationVector) : IRequest;
+    string InitializationVector,
+    string? UserId = null) : IRequest;
 
 public class UpsertListMemberCommandHandler(IApplicationDbContext context)
     : IRequestHandler<UpsertListMemberCommand>
@@ -37,6 +38,7 @@ public class UpsertListMemberCommandHandler(IApplicationDbContext context)
         {
             existing.EncryptedPayload = request.EncryptedPayload;
             existing.InitializationVector = request.InitializationVector;
+            existing.UserId = request.UserId;
             existing.UpdatedAt = DateTimeOffset.UtcNow;
         }
         else
@@ -46,6 +48,7 @@ public class UpsertListMemberCommandHandler(IApplicationDbContext context)
                 Id = Guid.NewGuid(),
                 GhostListId = request.ListId,
                 DeviceId = request.DeviceId,
+                UserId = request.UserId,
                 EncryptedPayload = request.EncryptedPayload,
                 InitializationVector = request.InitializationVector,
                 UpdatedAt = DateTimeOffset.UtcNow,

@@ -7,6 +7,8 @@ import {
     GhostChatMessage,
     GhostList,
     GhostListItem,
+    GhostMessageImageDto,
+    InfoMessage,
     ListMember,
     ReadReceiptRequest,
     ShareDelivery,
@@ -18,12 +20,14 @@ import { Capacitor } from '@capacitor/core';
 import { environment } from '../../environments/environment';
 import { DeviceTokenService } from '../core/services/device-token.service';
 import { DeviceIdService } from '../core/services/device-id.service';
+import { UserIdService } from '../core/services/user-id.service';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
     private readonly http = inject(HttpClient);
     private readonly tokenService = inject(DeviceTokenService);
     private readonly deviceIdService = inject(DeviceIdService);
+    private readonly userIdService = inject(UserIdService);
     private readonly BASE = Capacitor.isNativePlatform()
         ? environment.nativeApiBaseUrl
         : environment.apiBaseUrl;
@@ -35,6 +39,10 @@ export class ApiService {
 
     private deviceIdHeaders(): Record<string, string> {
         return { 'X-Device-Id': this.deviceIdService.deviceId };
+    }
+
+    private userIdHeaders(): Record<string, string> {
+        return { 'X-User-Id': this.userIdService.userId() };
     }
 
     createList(ownerTokenHash?: string): Observable<string> {
@@ -71,7 +79,7 @@ export class ApiService {
 
     createItem(request: CreateGhostListItemRequest): Observable<string> {
         return this.http.post<string>(`${this.BASE}/ghostitems`, request,
-            { headers: { ...this.deviceTokenHeaders(), ...this.deviceIdHeaders() } });
+            { headers: { ...this.deviceTokenHeaders(), ...this.deviceIdHeaders(), ...this.userIdHeaders() } });
     }
 
     toggleItem(id: string): Observable<void> {
@@ -90,7 +98,7 @@ export class ApiService {
 
     createMessage(request: CreateGhostMessageRequest): Observable<string> {
         return this.http.post<string>(`${this.BASE}/chat`, request,
-            { headers: { ...this.deviceTokenHeaders(), ...this.deviceIdHeaders() } });
+            { headers: { ...this.deviceTokenHeaders(), ...this.deviceIdHeaders(), ...this.userIdHeaders() } });
     }
 
     subscribeToList(listId: string, request: SubscribeRequest): Observable<void> {
@@ -105,6 +113,10 @@ export class ApiService {
 
     deleteMessage(id: string): Observable<void> {
         return this.http.delete<void>(`${this.BASE}/chat/${id}`);
+    }
+
+    getMessageImage(messageId: string): Observable<GhostMessageImageDto> {
+        return this.http.get<GhostMessageImageDto>(`${this.BASE}/chat/${messageId}/image`);
     }
 
     deliverShare(sessionId: string, delivery: ShareDelivery): Observable<void> {
@@ -130,7 +142,8 @@ export class ApiService {
     }
 
     upsertMember(listId: string, deviceId: string, encryptedPayload: string, initializationVector: string): Observable<void> {
-        return this.http.put<void>(`${this.BASE}/members/${listId}/${deviceId}`, { encryptedPayload, initializationVector });
+        return this.http.put<void>(`${this.BASE}/members/${listId}/${deviceId}`, { encryptedPayload, initializationVector },
+            { headers: this.userIdHeaders() });
     }
 
     deleteMember(listId: string, deviceId: string): Observable<void> {
@@ -146,7 +159,8 @@ export class ApiService {
     }
 
     getUnreadSummary(listId: string, deviceId: string): Observable<UnreadSummary> {
-        return this.http.get<UnreadSummary>(`${this.BASE}/members/${listId}/${deviceId}/unread`);
+        return this.http.get<UnreadSummary>(`${this.BASE}/members/${listId}/${deviceId}/unread`,
+            { headers: this.userIdHeaders() });
     }
 
     putSyncBundle(sessionId: string, encryptedPayload: string, iv: string, senderPublicKey: string): Observable<void> {
@@ -157,5 +171,13 @@ export class ApiService {
         return this.http.get<{ encryptedPayload: string; iv: string; senderPublicKey: string }>(
             `${this.BASE}/share/${sessionId}/sync-bundle`,
         );
+    }
+
+    getBackendVersion(): Observable<{ version: string }> {
+        return this.http.get<{ version: string }>(`${this.BASE}/version`);
+    }
+
+    getLatestInfoMessage(): Observable<InfoMessage | null> {
+        return this.http.get<InfoMessage | null>(`${this.BASE}/info/latest`);
     }
 }

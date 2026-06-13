@@ -6,6 +6,7 @@ import { ApiService } from '../../api/api.service';
 import { KnownList, ListFullError } from '../../core/models';
 import { CryptoService } from '../../core/services/crypto.service';
 import { DeviceIdService } from '../../core/services/device-id.service';
+import { UserIdService } from '../../core/services/user-id.service';
 import { ListStorageService } from '../../core/services/list-storage.service';
 import { PushNotificationService } from '../../core/services/push-notification.service';
 import { UserPreferencesService } from '../../core/services/user-preferences.service';
@@ -24,6 +25,7 @@ export function withKnownLists() {
             const storage = inject(ListStorageService);
             const crypto = inject(CryptoService);
             const deviceId = inject(DeviceIdService);
+            const userId = inject(UserIdService);
             const prefs = inject(UserPreferencesService);
             const push = inject(PushNotificationService);
 
@@ -88,6 +90,7 @@ export function withKnownLists() {
                     try {
                         const payload = JSON.stringify({
                             deviceId: deviceId.deviceId,
+                            userId: userId.userId(),
                             displayName: prefs.senderName() || 'Anonymous',
                             joinedAt: new Date().toISOString(),
                         });
