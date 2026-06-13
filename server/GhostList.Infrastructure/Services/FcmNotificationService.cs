@@ -4,6 +4,7 @@ using GhostList.Application.Common.Interfaces;
 using GhostList.Domain.Entities;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -19,7 +20,7 @@ public class FcmOptions
 }
 
 public class FcmNotificationService(
-    IApplicationDbContext context,
+    IServiceScopeFactory scopeFactory,
     IPresenceTracker presence,
     IOptions<FcmOptions> opts,
     ILogger<FcmNotificationService> logger) : IPushNotificationService
@@ -32,6 +33,15 @@ public class FcmNotificationService(
     {
         var app = GetOrCreateApp();
         if (app is null) return;
+
+        // This runs fire-and-forget alongside the request that triggered it, so it
+        // must NOT share the request-scoped DbContext (EF Core's DbContext is not
+        // safe for concurrent use). Create an independent scope/context, and don't
+        // tie the work to the request's CancellationToken since the request may
+        // complete (and cancel its token) before this finishes.
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        ct = CancellationToken.None;
 
         IQueryable<DeviceSubscription> query = context.DeviceSubscriptions
             .Where(s => s.ListId == listId);

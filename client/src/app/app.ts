@@ -20,19 +20,6 @@ const SIDEBAR_MIN = 280;
 const SIDEBAR_MAX = 520;
 const SIDEBAR_DEFAULT = 320;
 
-/**
- * iOS/Android home-screen PWAs (display-mode: standalone) report
- * env(safe-area-inset-bottom) on top of a viewport that already excludes
- * that area, so the inset gets applied twice and leaves a large empty gap
- * at the bottom. Capacitor's WKWebView doesn't have this issue, so it's
- * explicitly excluded here.
- */
-function isPwaStandalone(): boolean {
-    if (Capacitor.isNativePlatform()) return false;
-    if (window.matchMedia?.('(display-mode: standalone)').matches) return true;
-    return (navigator as unknown as { standalone?: boolean }).standalone === true;
-}
-
 function loadSidebarWidth(): number {
     try {
         const stored = localStorage.getItem(SIDEBAR_WIDTH_KEY);
@@ -65,10 +52,6 @@ export class App {
     private inactivityTimer: ReturnType<typeof setTimeout> | null = null;
 
     constructor() {
-        if (isPwaStandalone()) {
-            document.documentElement.style.setProperty('--safe-bottom', '0px');
-        }
-
         void this.webAuthn.init().then(() => {
             if (this.webAuthn.isEnabled()) {
                 this.locked.set(true);
