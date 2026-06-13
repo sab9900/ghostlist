@@ -5,7 +5,7 @@
         <h1 class="header__title">Ghost List</h1>
         <div class="header__actions">
             @if (totalUnread() > 0) {
-            <app-badge [count]="totalUnread()" role="status" [attr.aria-label]="totalUnread() + ' unread messages'" />
+            <app-badge [count]="totalUnread()" role="status" [attr.aria-label]="totalUnread() + ' unread'" />
             }
             <div class="menu-anchor">
                 <button class="header__action" (click)="toggleMenu()" [attr.aria-label]="'LISTS.MENU_SETTINGS' | translate" [attr.aria-expanded]="showMenu()">

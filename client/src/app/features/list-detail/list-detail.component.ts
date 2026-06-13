@@ -59,8 +59,10 @@ export class ListDetailComponent implements OnDestroy {
         if (!id) return 0;
         const ts = this.store.itemsReadDivider()[id];
         const cutoff = ts ? new Date(ts).getTime() : 0;
+        // Matches items-tab's `isNew` flag (applies to all items regardless of
+        // checked state) so the tab badge and the "new" markers stay in sync.
         return this.store.items().filter(
-            i => !i.isChecked && new Date(i.createdAt).getTime() > cutoff,
+            i => new Date(i.createdAt).getTime() > cutoff,
         ).length;
     });
 

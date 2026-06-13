@@ -130,9 +130,16 @@ export function withReadReceipts() {
                     const lastReadItemAt = { ...store.lastReadItemAt() };
                     const messagesReadDivider = { ...store.messagesReadDivider() };
                     const itemsReadDivider = { ...store.itemsReadDivider() };
+                    const currentListId = store.currentListId();
 
                     for (const r of results) {
                         if (!r) continue;
+                        // The currently-open list's read state is actively maintained
+                        // (markMessagesRead/markItemsRead + live SignalR events) and
+                        // already reflects what the server has. Overwriting it here
+                        // would reset the "new since last visit" divider while the
+                        // user is still looking at it, so leave it untouched.
+                        if (r.id === currentListId) continue;
                         unreadCounts[r.id] = r.summary.unreadMessageCount;
                         unreadItemCounts[r.id] = r.summary.unreadItemCount;
                         lastReadMessageAt[r.id] = r.summary.lastReadMessageAt;

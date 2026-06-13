@@ -72,6 +72,19 @@ function tempId(): string {
     return `local-${self.crypto.randomUUID()}`;
 }
 
+/**
+ * Resolves an optimistic item's temp id to its real server id once `createItem`
+ * returns. The server's SignalR broadcast is sent to all list members including
+ * the creator, so it can race with this response and add the real item first —
+ * in that case drop our optimistic placeholder instead of creating a duplicate.
+ */
+function resolveCreatedItemId(items: GhostListItem[], tempItemId: string, realId: string): GhostListItem[] {
+    if (items.some(i => i.id === realId)) {
+        return items.filter(i => i.id !== tempItemId);
+    }
+    return items.map(i => i.id === tempItemId ? { ...i, id: realId } : i);
+}
+
 export const AppStore = signalStore(
     { providedIn: 'root' },
 
@@ -231,19 +244,24 @@ export const AppStore = signalStore(
 
                 try {
                     const list = await firstValueFrom(api.getList(id));
-                    patchState(store, {
-                        currentList: list,
-                        items: list.items as unknown as GhostListItem[],
-                        messages: list.chatMessages as GhostChatMessage[],
-                        loading: false,
-                    });
-                    void persistCurrentList();
+                    // The user may have navigated to a different list while this request
+                    // was in flight. Don't clobber the now-current list's state (and don't
+                    // decrypt its items/messages with the wrong encryption key).
+                    if (store.currentListId() === id) {
+                        patchState(store, {
+                            currentList: list,
+                            items: list.items as unknown as GhostListItem[],
+                            messages: list.chatMessages as GhostChatMessage[],
+                            loading: false,
+                        });
+                        void persistCurrentList();
+                    }
 
                     await registration;
                     await Promise.all([store.markMessagesRead(id), store.markItemsRead(id)]);
-                    void store.refreshOthersReadReceipt(id);
+                    if (store.currentListId() === id) void store.refreshOthersReadReceipt(id);
                 } catch (e: unknown) {
-                    patchState(store, { loading: false });
+                    if (store.currentListId() === id) patchState(store, { loading: false });
                     if (cached) return;
                     setError(e instanceof Error ? e.message : 'Failed to open list');
                     throw e;
@@ -267,7 +285,14 @@ export const AppStore = signalStore(
                 try {
                     await push.unsubscribeFromList(id);
                     const ownerToken = store.knownLists().find(l => l.id === id)?.ownerToken;
-                    await firstValueFrom(api.deleteList(id, ownerToken));
+                    try {
+                        await firstValueFrom(api.deleteList(id, ownerToken));
+                    } catch (e: unknown) {
+                        // Server-side cleanup may have already removed this list (e.g. it
+                        // became memberless and was garbage-collected). Treat that as
+                        // success so the stale entry still gets cleaned up locally.
+                        if (!(e instanceof HttpErrorResponse && e.status === 404)) throw e;
+                    }
                     await hub.leaveList(id);
                     await storage.remove(id);
                     const knownLists = store.knownLists().filter((l) => l.id !== id);
@@ -357,7 +382,7 @@ export const AppStore = signalStore(
                 try {
                     const realId = await firstValueFrom(api.createItem(payload));
                     patchState(store, {
-                        items: store.items().map(i => i.id === id ? { ...i, id: realId } : i),
+                        items: resolveCreatedItemId(store.items(), id, realId),
                     });
                     void persistCurrentList();
                 } catch (e: unknown) {
@@ -573,7 +598,7 @@ export const AppStore = signalStore(
                                     const realId = await firstValueFrom(api.createItem(op.payload));
                                     if (store.currentListId() === op.listId) {
                                         patchState(store, {
-                                            items: store.items().map(i => i.id === op.tempItemId ? { ...i, id: realId } : i),
+                                            items: resolveCreatedItemId(store.items(), op.tempItemId, realId),
                                         });
                                         void persistCurrentList();
                                     }
@@ -803,6 +828,9 @@ export const AppStore = signalStore(
                         await Promise.all(known.map((l) => hub.joinList(l.id).catch(() => { })));
                     }
                     void store.flushPendingOps();
+                    // Re-sync unread counts after being offline/disconnected — events
+                    // missed while disconnected would otherwise leave the badges stale.
+                    void store.seedUnreadSummaries();
                 };
 
                 hub.reconnected$.subscribe(() => void rejoinAndFlush());

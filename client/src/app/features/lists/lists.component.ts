@@ -81,7 +81,7 @@ export class ListsComponent implements OnDestroy {
     protected readonly lists = computed(() =>
         [...this.store.knownLists()].sort((a, b) => a.name.localeCompare(b.name)),
     );
-    protected readonly totalUnread = computed(() => this.store.totalUnread());
+    protected readonly totalUnread = computed(() => this.store.totalUnread() + this.store.totalUnreadItems());
     protected readonly activeListId = computed(() => this.store.currentListId());
 
     protected readonly showCreateDialog = signal(false);
@@ -122,7 +122,7 @@ export class ListsComponent implements OnDestroy {
     }
 
     unreadFor(id: string): number {
-        return this.store.unreadCounts()[id] ?? 0;
+        return (this.store.unreadCounts()[id] ?? 0) + (this.store.unreadItemCounts()[id] ?? 0);
     }
 
     openCreateDialog(): void {
