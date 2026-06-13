@@ -16,6 +16,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<DailyUsageStat> DailyUsageStats => Set<DailyUsageStat>();
     public DbSet<GhostMessageImage> GhostMessageImages => Set<GhostMessageImage>();
     public DbSet<InfoMessage> InfoMessages => Set<InfoMessage>();
+    public DbSet<MessageReadReceipt> MessageReadReceipts => Set<MessageReadReceipt>();
+    public DbSet<ItemReadReceipt> ItemReadReceipts => Set<ItemReadReceipt>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -110,6 +112,26 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
             entity.Property(e => e.Body).IsRequired().HasMaxLength(4000);
             entity.HasIndex(e => e.CreatedAt);
+        });
+
+        modelBuilder.Entity<MessageReadReceipt>(entity =>
+        {
+            entity.HasKey(e => new { e.MessageId, e.DeviceId });
+            entity.Property(e => e.DeviceId).HasMaxLength(64).IsRequired();
+            entity.HasOne<GhostChatMessage>()
+                  .WithMany()
+                  .HasForeignKey(e => e.MessageId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ItemReadReceipt>(entity =>
+        {
+            entity.HasKey(e => new { e.ItemId, e.DeviceId });
+            entity.Property(e => e.DeviceId).HasMaxLength(64).IsRequired();
+            entity.HasOne<GhostListItem>()
+                  .WithMany()
+                  .HasForeignKey(e => e.ItemId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 

@@ -5,16 +5,22 @@ using Microsoft.EntityFrameworkCore;
 namespace GhostList.Application.Features.ListMembers.Queries;
 
 /// <summary>
-/// Computes how many messages/items have arrived since this device last read
-/// the list, based on the read-receipt timestamps stored on its member record.
-/// Powers unread badges/bubbles without the client needing to fetch full
-/// message/item history just to count.
+/// Computes which messages/items in a list this device has not yet seen,
+/// based on the granular per-message/per-item read receipts it has recorded
+/// (see <see cref="Commands.MarkMessagesRead.MarkMessagesReadCommand"/> /
+/// <see cref="Commands.MarkItemsRead.MarkItemsReadCommand"/>).
+///
+/// Returns both counts (for unread badges on lists that aren't open) and the
+/// exact unread ids (so an open list can highlight/divider exactly the
+/// right messages/items without re-deriving it from a single timestamp).
 /// </summary>
 public record GetGhostListUnreadSummaryQuery(Guid ListId, string DeviceId, string? UserId = null) : IRequest<UnreadSummaryDto>;
 
 public record UnreadSummaryDto(
     int UnreadMessageCount,
     int UnreadItemCount,
+    List<Guid> UnreadMessageIds,
+    List<Guid> UnreadItemIds,
     DateTimeOffset? LastReadMessageAt,
     DateTimeOffset? LastReadItemAt);
 
@@ -28,31 +34,46 @@ public class GetGhostListUnreadSummaryQueryHandler(IApplicationDbContext context
             .Select(m => new { m.LastReadMessageAt, m.LastReadItemAt })
             .FirstOrDefaultAsync(cancellationToken);
 
-        var lastReadMessageAt = member?.LastReadMessageAt;
-        var lastReadItemAt = member?.LastReadItemAt;
-
-        var lastReadMessageAtUtc = lastReadMessageAt?.UtcDateTime;
-        var lastReadItemAtUtc = lastReadItemAt?.UtcDateTime;
-
-        // A message/item counts as "mine" (and is excluded from unread counts) if it
-        // was sent from this same device, or — for senders who have synced their
-        // stable userId across devices — by this same person from any device.
-        var unreadMessageCount = await context.GhostChatMessages
+        // A message/item counts as "mine" (and is never unread) if it was sent
+        // from this same device, or — for senders who have synced their stable
+        // userId across devices — by this same person from any device.
+        var candidateMessageIds = await context.GhostChatMessages
             .Where(m => m.GhostListId == request.ListId)
-            .Where(m => lastReadMessageAtUtc == null || m.CreatedAt > lastReadMessageAtUtc.Value)
             .Where(m => !(
                 (m.SenderDeviceId != null && m.SenderDeviceId == request.DeviceId)
                 || (request.UserId != null && m.SenderUserId != null && m.SenderUserId == request.UserId)))
-            .CountAsync(cancellationToken);
+            .Select(m => m.Id)
+            .ToListAsync(cancellationToken);
 
-        var unreadItemCount = await context.GhostListItems
+        var candidateItemIds = await context.GhostListItems
             .Where(i => i.GhostListId == request.ListId)
-            .Where(i => lastReadItemAtUtc == null || i.CreatedAt > lastReadItemAtUtc.Value)
             .Where(i => !(
                 (i.SenderDeviceId != null && i.SenderDeviceId == request.DeviceId)
                 || (request.UserId != null && i.SenderUserId != null && i.SenderUserId == request.UserId)))
-            .CountAsync(cancellationToken);
+            .Select(i => i.Id)
+            .ToListAsync(cancellationToken);
 
-        return new UnreadSummaryDto(unreadMessageCount, unreadItemCount, lastReadMessageAt, lastReadItemAt);
+        var readMessageIds = (await context.MessageReadReceipts
+            .Where(r => r.DeviceId == request.DeviceId)
+            .Select(r => r.MessageId)
+            .ToListAsync(cancellationToken))
+            .ToHashSet();
+
+        var readItemIds = (await context.ItemReadReceipts
+            .Where(r => r.DeviceId == request.DeviceId)
+            .Select(r => r.ItemId)
+            .ToListAsync(cancellationToken))
+            .ToHashSet();
+
+        var unreadMessageIds = candidateMessageIds.Where(id => !readMessageIds.Contains(id)).ToList();
+        var unreadItemIds = candidateItemIds.Where(id => !readItemIds.Contains(id)).ToList();
+
+        return new UnreadSummaryDto(
+            unreadMessageIds.Count,
+            unreadItemIds.Count,
+            unreadMessageIds,
+            unreadItemIds,
+            member?.LastReadMessageAt,
+            member?.LastReadItemAt);
     }
 }

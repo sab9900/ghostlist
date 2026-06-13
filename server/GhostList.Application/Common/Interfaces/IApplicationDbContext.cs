@@ -17,6 +17,8 @@ public interface IApplicationDbContext
     DbSet<DailyUsageStat> DailyUsageStats { get; }
     DbSet<GhostMessageImage> GhostMessageImages { get; }
     DbSet<InfoMessage> InfoMessages { get; }
+    DbSet<MessageReadReceipt> MessageReadReceipts { get; }
+    DbSet<ItemReadReceipt> ItemReadReceipts { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 
