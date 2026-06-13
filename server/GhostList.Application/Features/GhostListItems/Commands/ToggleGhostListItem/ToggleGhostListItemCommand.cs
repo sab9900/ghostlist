@@ -7,17 +7,22 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GhostList.Application.Features.GhostListItems.Commands.ToggleGhostListItem;
 
-public record ToggleGhostListItemCommand(Guid ItemId) : IRequest;
+public record ToggleGhostListItemCommand(Guid ItemId, string? SenderDeviceId = null) : IRequest;
 
 public class ToggleGhostListItemCommandHandler : IRequestHandler<ToggleGhostListItemCommand>
 {
     private readonly IApplicationDbContext _context;
     private readonly IGhostListNotifier _notifier;
+    private readonly IPushNotificationService _push;
 
-    public ToggleGhostListItemCommandHandler(IApplicationDbContext context, IGhostListNotifier notifier)
+    public ToggleGhostListItemCommandHandler(
+        IApplicationDbContext context,
+        IGhostListNotifier notifier,
+        IPushNotificationService push)
     {
         _context = context;
         _notifier = notifier;
+        _push = push;
     }
 
     public async Task Handle(ToggleGhostListItemCommand request, CancellationToken cancellationToken)
@@ -33,5 +38,8 @@ public class ToggleGhostListItemCommandHandler : IRequestHandler<ToggleGhostList
             item.Id,
             item.IsChecked,
             item.CheckedAt));
+
+        _ = _push.SendNotificationAsync(item.GhostListId, PushNotificationType.ItemsChanged, request.SenderDeviceId, cancellationToken)
+                 .ContinueWith(t => { }, TaskContinuationOptions.OnlyOnFaulted);
     }
 }

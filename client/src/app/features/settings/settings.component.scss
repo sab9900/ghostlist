@@ -286,13 +286,11 @@
     }
 }
 
-
 .sync-actions {
     display: flex;
     gap: var(--space-3);
     flex-wrap: wrap;
 }
-
 
 .sync-status {
     font-size: var(--text-sm);
@@ -311,7 +309,6 @@
         background: var(--color-danger-dim);
     }
 }
-
 
 .btn {
     display: inline-flex;
@@ -345,7 +342,6 @@
     }
 }
 
-
 .security-row {
     display: flex;
     align-items: center;
@@ -376,7 +372,6 @@
     color: var(--color-danger);
     &:hover { background: color-mix(in srgb, var(--color-danger) 12%, transparent); }
 }
-
 
 .dialog-backdrop {
     position: fixed;

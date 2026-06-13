@@ -7,6 +7,9 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: "${DB_CONNECTION_STRING}"
+      Admin__Username: "${ADMIN_USERNAME}"
+      Admin__Password: "${ADMIN_PASSWORD}"
+      Fcm__CredentialsJson: "${FCM_CREDENTIALS_JSON}"
     restart: unless-stopped
 
   client:
@@ -15,6 +18,16 @@ services:
       dockerfile: client/Dockerfile
     ports:
       - "80:80"
+    depends_on:
+      - server
+    restart: unless-stopped
+
+  admin-client:
+    build:
+      context: .
+      dockerfile: admin-client/Dockerfile
+    ports:
+      - "8081:80"
     depends_on:
       - server
     restart: unless-stopped

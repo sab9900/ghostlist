@@ -14,6 +14,9 @@
         [attr.aria-label]="('ITEMS.MARK_DONE_ARIA' | translate:{text: item.text})" aria-pressed="false">
         <span class="item__check" aria-hidden="true"></span>
         <span class="item__text">{{ item.text }}</span>
+        @if (item.isNew) {
+        <span class="item__new-dot" aria-hidden="true"></span>
+        }
         <button class="item__delete" (click)="$event.stopPropagation(); deleteItem(item.id)"
             [attr.aria-label]="('ITEMS.DELETE_ARIA' | translate:{text: item.text})" tabindex="-1">×</button>
     </li>
@@ -31,6 +34,9 @@
             </svg>
         </span>
         <span class="item__text item__text--checked">{{ item.text }}</span>
+        @if (item.isNew) {
+        <span class="item__new-dot" aria-hidden="true"></span>
+        }
         <button class="item__delete" (click)="$event.stopPropagation(); deleteItem(item.id)"
             [attr.aria-label]="('ITEMS.DELETE_ARIA' | translate:{text: item.text})" tabindex="-1">×</button>
     </li>

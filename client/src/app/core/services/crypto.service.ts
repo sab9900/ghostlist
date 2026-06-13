@@ -80,7 +80,6 @@ export class CryptoService {
         };
     }
 
-    /** Encrypt an arbitrary string payload for a receiver identified by their ECDH public key. */
     async wrapPayload(payload: string, receiverPublicKeyB64: string): Promise<{ encryptedPayload: string; iv: string; senderPublicKey: string }> {
         const senderKeypair = await crypto.subtle.generateKey(
             { name: 'ECDH', namedCurve: 'P-256' },
@@ -102,7 +101,6 @@ export class CryptoService {
         };
     }
 
-    /** Decrypt an arbitrary string payload encrypted by wrapPayload. */
     async unwrapPayload(
         encryptedPayloadB64: string,
         ivB64: string,
@@ -217,7 +215,6 @@ export class CryptoService {
         return this.bufToB64(await crypto.subtle.exportKey('raw', key));
     }
 
-    /** SHA-256 of a UTF-8 string, returned as lowercase hex. */
     async sha256Hex(data: string): Promise<string> {
         const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(data));
         return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');

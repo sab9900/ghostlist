@@ -1,0 +1,15 @@
+@if (visible()) {
+<div class="offline-banner" role="status" aria-live="polite">
+    @if (!online()) {
+    <span class="offline-banner__dot" aria-hidden="true"></span>
+    <span>{{ 'OFFLINE.OFFLINE' | translate }}</span>
+    @if (pendingOpsCount() > 0) {
+    <span class="offline-banner__sep">·</span>
+    <span>{{ 'OFFLINE.PENDING' | translate: { count: pendingOpsCount() } }}</span>
+    }
+    } @else {
+    <span class="offline-banner__spinner" aria-hidden="true"></span>
+    <span>{{ 'OFFLINE.SYNCING' | translate: { count: pendingOpsCount() } }}</span>
+    }
+</div>
+}

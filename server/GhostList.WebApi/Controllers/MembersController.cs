@@ -1,5 +1,6 @@
 using GhostList.Application.Features.ListMembers.Commands.DeleteListMember;
 using GhostList.Application.Features.ListMembers.Commands.KickListMember;
+using GhostList.Application.Features.ListMembers.Commands.UpdateReadReceipt;
 using GhostList.Application.Features.ListMembers.Commands.UpsertListMember;
 using GhostList.Application.Features.ListMembers.Queries;
 using MediatR;
@@ -8,6 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace GhostList.WebApi.Controllers;
 
 public record UpsertMemberRequest(string EncryptedPayload, string InitializationVector);
+
+public record ReadReceiptRequest(DateTimeOffset? LastReadMessageAt, DateTimeOffset? LastReadItemAt);
 
 [ApiController]
 [Route("api/members")]
@@ -40,5 +43,20 @@ public class MembersController(IMediator mediator) : ControllerBase
     {
         await mediator.Send(new KickListMemberCommand(listId, deviceId, ownerToken), ct);
         return NoContent();
+    }
+
+    [HttpPut("{listId:guid}/{deviceId}/read-receipt")]
+    public async Task<IActionResult> UpdateReadReceipt(Guid listId, string deviceId, [FromBody] ReadReceiptRequest request, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(deviceId) || deviceId.Length > 64) return BadRequest();
+        await mediator.Send(new UpdateReadReceiptCommand(listId, deviceId, request.LastReadMessageAt, request.LastReadItemAt), ct);
+        return NoContent();
+    }
+
+    [HttpGet("{listId:guid}/{deviceId}/unread")]
+    public async Task<ActionResult<UnreadSummaryDto>> GetUnreadSummary(Guid listId, string deviceId, CancellationToken ct)
+    {
+        var summary = await mediator.Send(new GetGhostListUnreadSummaryQuery(listId, deviceId), ct);
+        return Ok(summary);
     }
 }

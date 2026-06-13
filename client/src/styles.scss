@@ -222,11 +222,6 @@ app-root {
     white-space: nowrap;
 }
 
-// ── Accent colours ────────────────────────────────────────────────────────────
-// Rules come after theme rules so accent always wins at equal specificity.
-// Compound selectors ([data-accent][data-theme]) beat single-attribute theme
-// rules, ensuring the right shade for each light/dark combination.
-
 html[data-accent='cyan'] {
     --color-primary: #06b6d4;
     --color-primary-hover: #22d3ee;

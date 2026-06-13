@@ -1,0 +1,74 @@
+.pwa-banner {
+    position: fixed;
+    left: var(--space-3);
+    right: var(--space-3);
+    bottom: calc(var(--space-3) + var(--safe-bottom));
+    z-index: 1000;
+
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+
+    &__text {
+        flex: 1;
+        font-size: var(--text-sm);
+        color: var(--color-text);
+    }
+
+    &__actions {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        flex-shrink: 0;
+    }
+
+    &__btn {
+        font-family: var(--font-sans);
+        cursor: pointer;
+        border: none;
+        transition: opacity var(--duration-fast) var(--ease-out);
+
+        &:hover {
+            opacity: 0.9;
+        }
+    }
+
+    &__btn--install {
+        padding: var(--space-2) var(--space-4);
+        border-radius: var(--radius-sm);
+        font-size: var(--text-sm);
+        font-weight: var(--weight-medium);
+        background: var(--color-primary);
+        color: #fff;
+    }
+
+    &__btn--dismiss {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        border-radius: var(--radius-sm);
+        background: transparent;
+        color: var(--color-text-muted);
+
+        &:hover {
+            background: var(--color-surface-3);
+            color: var(--color-text);
+        }
+    }
+}
+
+@media (min-width: 900px) {
+    .pwa-banner {
+        left: auto;
+        max-width: 360px;
+    }
+}

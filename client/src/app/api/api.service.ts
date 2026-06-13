@@ -8,25 +8,33 @@ import {
     GhostList,
     GhostListItem,
     ListMember,
+    ReadReceiptRequest,
     ShareDelivery,
+    SubscribeRequest,
+    UnreadSummary,
     UpdateTtlRequest,
 } from '../core/models';
 import { Capacitor } from '@capacitor/core';
 import { environment } from '../../environments/environment';
 import { DeviceTokenService } from '../core/services/device-token.service';
+import { DeviceIdService } from '../core/services/device-id.service';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
     private readonly http = inject(HttpClient);
     private readonly tokenService = inject(DeviceTokenService);
+    private readonly deviceIdService = inject(DeviceIdService);
     private readonly BASE = Capacitor.isNativePlatform()
         ? environment.nativeApiBaseUrl
         : environment.apiBaseUrl;
 
-    /** Returns headers containing the FCM device token if available. */
     private deviceTokenHeaders(): Record<string, string> {
         const t = this.tokenService.token();
         return t ? { 'X-Device-Token': t } : {};
+    }
+
+    private deviceIdHeaders(): Record<string, string> {
+        return { 'X-Device-Id': this.deviceIdService.deviceId };
     }
 
     createList(ownerTokenHash?: string): Observable<string> {
@@ -63,15 +71,17 @@ export class ApiService {
 
     createItem(request: CreateGhostListItemRequest): Observable<string> {
         return this.http.post<string>(`${this.BASE}/ghostitems`, request,
-            { headers: this.deviceTokenHeaders() });
+            { headers: { ...this.deviceTokenHeaders(), ...this.deviceIdHeaders() } });
     }
 
     toggleItem(id: string): Observable<void> {
-        return this.http.put<void>(`${this.BASE}/ghostitems/${id}/toggle`, null);
+        return this.http.put<void>(`${this.BASE}/ghostitems/${id}/toggle`, null,
+            { headers: this.deviceIdHeaders() });
     }
 
     deleteItem(id: string): Observable<void> {
-        return this.http.delete<void>(`${this.BASE}/ghostitems/${id}`);
+        return this.http.delete<void>(`${this.BASE}/ghostitems/${id}`,
+            { headers: this.deviceIdHeaders() });
     }
 
     getMessages(listId: string): Observable<GhostChatMessage[]> {
@@ -80,17 +90,17 @@ export class ApiService {
 
     createMessage(request: CreateGhostMessageRequest): Observable<string> {
         return this.http.post<string>(`${this.BASE}/chat`, request,
-            { headers: this.deviceTokenHeaders() });
+            { headers: { ...this.deviceTokenHeaders(), ...this.deviceIdHeaders() } });
     }
 
-    subscribeToList(listId: string): Observable<void> {
-        return this.http.put<void>(`${this.BASE}/subscriptions/${listId}`, null,
-            { headers: this.deviceTokenHeaders() });
+    subscribeToList(listId: string, request: SubscribeRequest): Observable<void> {
+        return this.http.put<void>(`${this.BASE}/subscriptions/${listId}`, request,
+            { headers: this.deviceIdHeaders() });
     }
 
     unsubscribeFromList(listId: string): Observable<void> {
         return this.http.delete<void>(`${this.BASE}/subscriptions/${listId}`,
-            { headers: this.deviceTokenHeaders() });
+            { headers: this.deviceIdHeaders() });
     }
 
     deleteMessage(id: string): Observable<void> {
@@ -113,10 +123,8 @@ export class ApiService {
         return this.http.get<{ receiverPublicKey: string }>(`${this.BASE}/share/${sessionId}/handshake`);
     }
 
-    // ── Members ─────────────────────────────────────────────────────────────
-
-    getMembers(listId: string): Observable<{ deviceId: string; encryptedPayload: string; initializationVector: string }[]> {
-        return this.http.get<{ deviceId: string; encryptedPayload: string; initializationVector: string }[]>(
+    getMembers(listId: string): Observable<{ deviceId: string; encryptedPayload: string; initializationVector: string; lastReadMessageAt: string | null }[]> {
+        return this.http.get<{ deviceId: string; encryptedPayload: string; initializationVector: string; lastReadMessageAt: string | null }[]>(
             `${this.BASE}/members/${listId}`,
         );
     }
@@ -133,7 +141,13 @@ export class ApiService {
         return this.http.delete<void>(`${this.BASE}/members/${listId}/${deviceId}/kick`, { params: { ownerToken } });
     }
 
-    // ── Sync ─────────────────────────────────────────────────────────────────
+    updateReadReceipt(listId: string, deviceId: string, receipt: ReadReceiptRequest): Observable<void> {
+        return this.http.put<void>(`${this.BASE}/members/${listId}/${deviceId}/read-receipt`, receipt);
+    }
+
+    getUnreadSummary(listId: string, deviceId: string): Observable<UnreadSummary> {
+        return this.http.get<UnreadSummary>(`${this.BASE}/members/${listId}/${deviceId}/unread`);
+    }
 
     putSyncBundle(sessionId: string, encryptedPayload: string, iv: string, senderPublicKey: string): Observable<void> {
         return this.http.put<void>(`${this.BASE}/share/${sessionId}/sync-bundle`, { encryptedPayload, iv, senderPublicKey });

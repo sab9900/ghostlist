@@ -4,7 +4,6 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { filter, from, of, switchMap, take } from 'rxjs';
 import { HubService } from '../../api/hub.service';
 import { LayoutService } from '../../core/services/layout.service';
-import { SeenService } from '../../core/services/seen.service';
 import { TranslatePipe } from '@ngx-translate/core';
 import { BadgeComponent } from '../../shared/badge/badge.component';
 import { AppStore } from '../../store/app.store';
@@ -39,7 +38,6 @@ function loadPaneWidth(): number {
 export class ListDetailComponent implements OnDestroy {
     protected readonly store = inject(AppStore);
     private readonly hub = inject(HubService);
-    private readonly seen = inject(SeenService);
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
     protected readonly layout = inject(LayoutService);
@@ -59,7 +57,7 @@ export class ListDetailComponent implements OnDestroy {
     protected readonly unreadItems = computed(() => {
         const id = this.store.currentListId();
         if (!id) return 0;
-        const ts = this.seen.seenItem()[id];
+        const ts = this.store.itemsReadDivider()[id];
         const cutoff = ts ? new Date(ts).getTime() : 0;
         return this.store.items().filter(
             i => !i.isChecked && new Date(i.createdAt).getTime() > cutoff,
@@ -69,7 +67,7 @@ export class ListDetailComponent implements OnDestroy {
     protected readonly unreadMessages = computed(() => {
         const id = this.store.currentListId();
         if (!id) return 0;
-        const ts = this.seen.seenMsg()[id];
+        const ts = this.store.messagesReadDivider()[id];
         const cutoff = ts ? new Date(ts).getTime() : 0;
         return this.store.messages().filter(
             m => new Date(m.createdAt).getTime() > cutoff,
@@ -95,7 +93,6 @@ export class ListDetailComponent implements OnDestroy {
                         return from(
                             this.store.leaveCurrentList()
                                 .then(() => this.store.joinList(id, known.encryptionKey))
-                                .then(() => { this.seen.markItemsSeen(id); })
                                 .catch((err: unknown) => {
                                     console.error('[list-detail] joinList failed, redirecting home:', err);
                                     this.router.navigate(['/']);
@@ -119,7 +116,9 @@ export class ListDetailComponent implements OnDestroy {
     setTab(tab: Tab): void {
         this.activeTab.set(tab);
         const id = this.store.currentListId();
-        if (id && tab === 'items') this.seen.markItemsSeen(id);
+        if (!id) return;
+        if (tab === 'items') void this.store.markItemsRead(id);
+        if (tab === 'chat') void this.store.markMessagesRead(id);
     }
 
     closeDrawer(): void {

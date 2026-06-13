@@ -1,8 +1,10 @@
 import { Injectable, signal } from '@angular/core';
+import { Capacitor } from '@capacitor/core';
+import { BiometricAuth } from '@aparajita/capacitor-biometric-auth';
 
-const DB_NAME      = 'ghostlist';
-const DB_VERSION   = 1;
-const STORE_NAME   = 'security';
+const DB_NAME        = 'ghostlist';
+const DB_VERSION     = 1;
+const STORE_NAME     = 'security';
 const CREDENTIAL_KEY = 'credential_id';
 const AUTO_LOCK_KEY  = 'gl_auto_lock_timeout';
 
@@ -19,34 +21,21 @@ export const AUTO_LOCK_OPTIONS: { value: AutoLockTimeout; labelKey: string }[] =
 @Injectable({ providedIn: 'root' })
 export class WebAuthnService {
 
-    /** True when a credential has been registered on this device. */
     readonly isEnabled = signal<boolean>(false);
 
-    /** How long without activity before the app locks itself. */
+    readonly isSupported = signal<boolean>(false);
+
     readonly autoLockTimeout = signal<AutoLockTimeout>(
         (localStorage.getItem(AUTO_LOCK_KEY) as AutoLockTimeout | null) ?? 'never',
     );
 
-    /** True when the platform supports WebAuthn (navigator.credentials + PublicKeyCredential). */
-    get isSupported(): boolean {
-        return (
-            typeof window !== 'undefined' &&
-            !!window.PublicKeyCredential &&
-            typeof window.PublicKeyCredential === 'function' &&
-            !!navigator.credentials
-        );
+    private get isNative(): boolean {
+        return Capacitor.isNativePlatform();
     }
 
-    /**
-     * The relying-party ID.
-     * On Capacitor native the WKWebView/WebView runs at "localhost",
-     * which is fine for a local platform credential (not a synced passkey).
-     */
     private get rpId(): string {
         return window.location.hostname || 'localhost';
     }
-
-    // ── IndexedDB helpers ─────────────────────────────────────────────────────
 
     private openDb(): Promise<IDBDatabase> {
         return new Promise((resolve, reject) => {
@@ -83,23 +72,32 @@ export class WebAuthnService {
         });
     }
 
-    // ── Public API ────────────────────────────────────────────────────────────
-
-    /**
-     * Load the credential state from IndexedDB and update isEnabled.
-     * Must be called once during app bootstrap before checking isEnabled().
-     */
     async init(): Promise<void> {
+        if (this.isNative) {
+            try {
+                const { isAvailable } = await BiometricAuth.checkBiometry();
+                this.isSupported.set(isAvailable);
+            } catch {
+                this.isSupported.set(false);
+            }
+        } else {
+            this.isSupported.set(
+                typeof window !== 'undefined' &&
+                !!window.PublicKeyCredential &&
+                typeof window.PublicKeyCredential === 'function' &&
+                !!navigator.credentials,
+            );
+        }
+
         try {
-            const db = await this.openDb();
-            const id = await this.idbGet(db, CREDENTIAL_KEY);
-            this.isEnabled.set(!!id);
+            const db  = await this.openDb();
+            const val = await this.idbGet(db, CREDENTIAL_KEY);
+            this.isEnabled.set(!!val);
         } catch {
             this.isEnabled.set(false);
         }
     }
 
-    /** Returns the auto-lock timeout in milliseconds, or null if set to 'never'. */
     getTimeoutMs(): number | null {
         switch (this.autoLockTimeout()) {
             case '1min':  return    60_000;
@@ -115,17 +113,20 @@ export class WebAuthnService {
         this.autoLockTimeout.set(t);
     }
 
-    /**
-     * Register a new platform credential.
-     * Throws if WebAuthn is unsupported or the user cancels.
-     */
     async register(): Promise<void> {
+        if (this.isNative) {
+            await BiometricAuth.authenticate({ reason: 'Enable biometric lock' });
+            const db = await this.openDb();
+            await this.idbPut(db, CREDENTIAL_KEY, 'native');
+            this.isEnabled.set(true);
+            return;
+        }
+
         const challenge = crypto.getRandomValues(new Uint8Array(32));
 
-        // Fixed synthetic user ID — we have no real user accounts.
         const userId = new Uint8Array(16);
-        userId[0] = 0x67; // 'g'
-        userId[1] = 0x6c; // 'l'
+        userId[0] = 0x67;
+        userId[1] = 0x6c;
 
         const cred = (await navigator.credentials.create({
             publicKey: {
@@ -140,8 +141,8 @@ export class WebAuthnService {
                     displayName: 'Device Owner',
                 },
                 pubKeyCredParams: [
-                    { alg: -7,   type: 'public-key' },  // ES256
-                    { alg: -257, type: 'public-key' },  // RS256
+                    { alg: -7, type: 'public-key' },
+                    { alg: -257, type: 'public-key' },
                 ],
                 authenticatorSelection: {
                     authenticatorAttachment: 'platform',
@@ -155,16 +156,21 @@ export class WebAuthnService {
         if (!cred) throw new Error('WebAuthn registration returned null.');
 
         const b64 = btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));
-        const db = await this.openDb();
+        const db  = await this.openDb();
         await this.idbPut(db, CREDENTIAL_KEY, b64);
         this.isEnabled.set(true);
     }
 
-    /**
-     * Assert the previously registered credential.
-     * Returns true on success, false if the user cancels or authentication fails.
-     */
     async authenticate(): Promise<boolean> {
+        if (this.isNative) {
+            try {
+                await BiometricAuth.authenticate({ reason: 'Unlock Ghost List' });
+                return true;
+            } catch {
+                return false;
+            }
+        }
+
         try {
             const db  = await this.openDb();
             const b64 = await this.idbGet(db, CREDENTIAL_KEY);
@@ -194,7 +200,6 @@ export class WebAuthnService {
         }
     }
 
-    /** Remove the stored credential and disable biometric lock. */
     async disable(): Promise<void> {
         try {
             const db = await this.openDb();

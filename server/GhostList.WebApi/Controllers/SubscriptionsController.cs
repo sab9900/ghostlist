@@ -5,27 +5,52 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GhostList.WebApi.Controllers;
 
+public record SubscribeRequest(
+    string DeviceToken,
+    DevicePlatform Platform,
+    bool NotifyOnMessage = true,
+    bool NotifyOnItemsChanged = true);
+
 [ApiController]
 [Route("api/[controller]")]
 public class SubscriptionsController(IApplicationDbContext context) : ControllerBase
 {
-    /// <summary>Register this device for push notifications on a list.</summary>
+    /// <summary>
+    /// Register (or update) this device's push subscription for a list —
+    /// including its push token, platform, and per-list notification
+    /// preferences. Called whenever the token changes or the user updates
+    /// their notification settings.
+    /// </summary>
     [HttpPut("{listId:guid}")]
-    public async Task<ActionResult> Subscribe(Guid listId, CancellationToken ct)
+    public async Task<ActionResult> Subscribe(Guid listId, [FromBody] SubscribeRequest request, CancellationToken ct)
     {
-        var deviceToken = Request.Headers["X-Device-Token"].FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(deviceToken))
-            return BadRequest("X-Device-Token header is required.");
+        var deviceId = Request.Headers["X-Device-Id"].FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(deviceId))
+            return BadRequest("X-Device-Id header is required.");
 
-        var exists = await context.DeviceSubscriptions
-            .AnyAsync(s => s.ListId == listId && s.DeviceToken == deviceToken, ct);
+        if (string.IsNullOrWhiteSpace(request.DeviceToken))
+            return BadRequest("DeviceToken is required.");
 
-        if (!exists)
+        var sub = await context.DeviceSubscriptions
+            .FirstOrDefaultAsync(s => s.ListId == listId && s.DeviceId == deviceId, ct);
+
+        if (sub is null)
         {
-            context.DeviceSubscriptions.Add(DeviceSubscription.Create(deviceToken, listId));
-            await context.SaveChangesAsync(ct);
+            context.DeviceSubscriptions.Add(DeviceSubscription.Create(
+                deviceId,
+                listId,
+                request.DeviceToken,
+                request.Platform,
+                request.NotifyOnMessage,
+                request.NotifyOnItemsChanged));
+        }
+        else
+        {
+            sub.UpdateToken(request.DeviceToken, request.Platform);
+            sub.UpdatePreferences(request.NotifyOnMessage, request.NotifyOnItemsChanged);
         }
 
+        await context.SaveChangesAsync(ct);
         return NoContent();
     }
 
@@ -33,12 +58,12 @@ public class SubscriptionsController(IApplicationDbContext context) : Controller
     [HttpDelete("{listId:guid}")]
     public async Task<ActionResult> Unsubscribe(Guid listId, CancellationToken ct)
     {
-        var deviceToken = Request.Headers["X-Device-Token"].FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(deviceToken))
-            return BadRequest("X-Device-Token header is required.");
+        var deviceId = Request.Headers["X-Device-Id"].FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(deviceId))
+            return BadRequest("X-Device-Id header is required.");
 
         var sub = await context.DeviceSubscriptions
-            .FirstOrDefaultAsync(s => s.ListId == listId && s.DeviceToken == deviceToken, ct);
+            .FirstOrDefaultAsync(s => s.ListId == listId && s.DeviceId == deviceId, ct);
 
         if (sub is not null)
         {

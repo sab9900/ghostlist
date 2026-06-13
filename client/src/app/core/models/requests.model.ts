@@ -11,6 +11,22 @@ export interface CreateGhostMessageRequest {
     messageInitializationVector: string;
     encryptedSenderName: string;
     senderNameInitializationVector: string;
+    replyToMessageId?: string | null;
 }
 
 export type UpdateTtlRequest = DeleteAfterDuration;
+
+export interface ReadReceiptRequest {
+    lastReadMessageAt?: string | null;
+    lastReadItemAt?: string | null;
+}
+
+/** Mirrors GhostList.Domain.Entities.DevicePlatform (serialized as a string). */
+export type DevicePlatformDto = 'Ios' | 'Android' | 'Web';
+
+export interface SubscribeRequest {
+    deviceToken: string;
+    platform: DevicePlatformDto;
+    notifyOnMessage?: boolean;
+    notifyOnItemsChanged?: boolean;
+}

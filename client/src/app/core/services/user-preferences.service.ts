@@ -11,26 +11,18 @@ interface EncryptedEntry { key: string; ciphertext: string; iv: string; }
 export class UserPreferencesService {
     private readonly storage = inject(ListStorageService);
 
-    /**
-     * Synchronous initial value from localStorage so the UI is never blank on load.
-     * IDB holds an encrypted copy as the authoritative store; on load it syncs back
-     * to localStorage so the next refresh is also instant.
-     */
     readonly senderName = signal<string>(localStorage.getItem(LS_KEY) ?? '');
 
     constructor() {
-        // Self-initializing — does not block app startup.
         void this.loadFromIdb();
     }
 
     setSenderName(name: string): void {
         const trimmed = name.trim();
         this.senderName.set(trimmed);
-        localStorage.setItem(LS_KEY, trimmed);   // instant sync fallback
-        void this.saveToIdb(trimmed);            // encrypted async write
+        localStorage.setItem(LS_KEY, trimmed);
+        void this.saveToIdb(trimmed);
     }
-
-    // ── Private ──────────────────────────────────────────────────────────────
 
     private async loadFromIdb(): Promise<void> {
         try {
@@ -38,16 +30,14 @@ export class UserPreferencesService {
             const encKey = await this.getOrCreateKey(db);
             const stored = await this.idbGet<EncryptedEntry>(db, KEY_SENDER_NAME);
             if (!stored) {
-                // First run: encrypt whatever is already in localStorage.
                 const existing = localStorage.getItem(LS_KEY);
                 if (existing) await this.saveToIdb(existing);
                 return;
             }
             const plain = await this.decrypt(stored.ciphertext, stored.iv, encKey);
-            // Update signal and keep localStorage in sync so next refresh is instant.
             this.senderName.set(plain);
             localStorage.setItem(LS_KEY, plain);
-        } catch { /* IDB unavailable — localStorage remains the sole source */ }
+        } catch { }
     }
 
     private async saveToIdb(name: string): Promise<void> {
@@ -56,13 +46,9 @@ export class UserPreferencesService {
             const encKey = await this.getOrCreateKey(db);
             const { ciphertext, iv } = await this.encrypt(name, encKey);
             await this.idbPut<EncryptedEntry>(db, { key: KEY_SENDER_NAME, ciphertext, iv });
-        } catch { /* IDB unavailable — localStorage fallback is already written */ }
+        } catch { }
     }
 
-    /**
-     * Non-extractable AES-GCM key stored as a CryptoKey object in IDB.
-     * Raw bytes are never exposed to JavaScript.
-     */
     private async getOrCreateKey(db: IDBDatabase): Promise<CryptoKey> {
         const existing = await this.idbGet<{ key: string; value: CryptoKey }>(db, KEY_CRYPTO_KEY);
         if (existing?.value) return existing.value;

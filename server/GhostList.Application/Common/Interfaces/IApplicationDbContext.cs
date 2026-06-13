@@ -14,8 +14,15 @@ public interface IApplicationDbContext
     DbSet<GhostChatMessage> GhostChatMessages { get; }
     DbSet<DeviceSubscription> DeviceSubscriptions { get; }
     DbSet<GhostListMember> GhostListMembers { get; }
+    DbSet<DailyUsageStat> DailyUsageStats { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 
     Task<IReadOnlyList<DeletedItemInfo>> DeleteExpiredCheckedItemsAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Atomically bumps today's counter for the given metric in <see cref="DailyUsageStat"/>.
+    /// Safe to call from concurrent requests (upsert).
+    /// </summary>
+    Task IncrementDailyUsageAsync(UsageMetric metric, CancellationToken cancellationToken);
 }

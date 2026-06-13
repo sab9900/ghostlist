@@ -18,7 +18,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("DevClient", policy =>
         policy
-            .WithOrigins("http://localhost:4200", "capacitor://localhost", "ionic://localhost")
+            .WithOrigins("http://localhost:4200", "http://localhost:4201", "capacitor://localhost", "ionic://localhost")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials());
@@ -40,8 +40,12 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
 builder.Services.AddMemoryCache();
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options =>
+{
+    options.MaximumReceiveMessageSize = 5 * 1024 * 1024;
+});
 builder.Services.AddScoped<IGhostListNotifier, GhostListNotifier>();
+builder.Services.AddSingleton<IPresenceTracker, PresenceTracker>();
 builder.Services.AddHostedService<GhostListCleanupWorker>();
 
 var app = builder.Build();
@@ -59,10 +63,11 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseCors("AppClient");
-    // No UseHttpsRedirection — server runs behind nginx which handles TLS termination
 }
 
 app.UseAuthorization();
+
+app.UseMiddleware<AdminAuthMiddleware>();
 
 app.MapControllers();
 app.MapHub<GhostListHub>("/hubs/ghostlist");

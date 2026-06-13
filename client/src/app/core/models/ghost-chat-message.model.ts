@@ -5,5 +5,6 @@ export interface GhostChatMessage {
     messageInitializationVector: string;
     encryptedSenderName: string;
     senderNameInitializationVector: string;
+    replyToMessageId: string | null;
     createdAt: string;
 }

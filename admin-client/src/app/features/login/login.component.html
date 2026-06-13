@@ -1,0 +1,37 @@
+<div class="login">
+    <form class="login__card" (ngSubmit)="submit()">
+        <h1 class="login__title">Ghost List Admin</h1>
+
+        <label class="login__field">
+            <span>Username</span>
+            <input
+                type="text"
+                name="username"
+                autocomplete="username"
+                required
+                [ngModel]="username()"
+                (ngModelChange)="username.set($event)"
+            >
+        </label>
+
+        <label class="login__field">
+            <span>Password</span>
+            <input
+                type="password"
+                name="password"
+                autocomplete="current-password"
+                required
+                [ngModel]="password()"
+                (ngModelChange)="password.set($event)"
+            >
+        </label>
+
+        @if (error()) {
+            <p class="login__error">{{ error() }}</p>
+        }
+
+        <button type="submit" class="login__submit" [disabled]="loading()">
+            {{ loading() ? 'Signing in…' : 'Sign in' }}
+        </button>
+    </form>
+</div>

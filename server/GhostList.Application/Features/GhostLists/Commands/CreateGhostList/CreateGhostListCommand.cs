@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using GhostList.Application.Common.Interfaces;
+using GhostList.Domain.Entities;
 using MediatR;
 
 namespace GhostList.Application.Features.GhostLists.Commands.CreateGhostList;
@@ -28,6 +29,7 @@ public class CreateGhostListCommandHandler : IRequestHandler<CreateGhostListComm
         _context.GhostLists.Add(newList);
 
         await _context.SaveChangesAsync(cancellationToken);
+        await _context.IncrementDailyUsageAsync(UsageMetric.List, cancellationToken);
 
         return newList.Id;
     }

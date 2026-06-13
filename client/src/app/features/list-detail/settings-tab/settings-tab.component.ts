@@ -47,9 +47,10 @@ export class SettingsTabComponent {
     protected readonly membersLoading = signal(false);
     protected readonly kickingDeviceId = signal<string | null>(null);
 
+    protected readonly notifyOnMessage = signal(true);
+    protected readonly notifyOnItemsChanged = signal(true);
+
     constructor() {
-        // Re-initialize whenever the active list changes (e.g. user selects a different
-        // list while the settings drawer is still open on desktop).
         effect(() => {
             const id = this.store.currentListId();
             untracked(() => this.initForList(id));
@@ -57,7 +58,6 @@ export class SettingsTabComponent {
     }
 
     private initForList(id: string | null): void {
-        // Reset transient UI state
         this.shareStep.set('idle');
         this.scannedJson.set('');
         this.nameSaved.set(false);
@@ -76,6 +76,8 @@ export class SettingsTabComponent {
         const known = this.store.knownLists().find(l => l.id === id);
         if (known) {
             this.listName.set(known.name);
+            this.notifyOnMessage.set(known.notifyOnMessage ?? true);
+            this.notifyOnItemsChanged.set(known.notifyOnItemsChanged ?? true);
             void this.loadMembers(known.id, known.encryptionKey);
         }
     }
@@ -84,14 +86,13 @@ export class SettingsTabComponent {
         this.membersLoading.set(true);
         try {
             const members = await this.store.fetchMembersForList(listId, encryptionKey);
-            // Sort: current device first, then alphabetically
             members.sort((a, b) => {
                 if (a.isCurrentDevice) return -1;
                 if (b.isCurrentDevice) return 1;
                 return a.displayName.localeCompare(b.displayName);
             });
             this.members.set(members);
-        } catch { /* ignore fetch errors */ } finally {
+        } catch { } finally {
             this.membersLoading.set(false);
         }
     }
@@ -180,6 +181,20 @@ export class SettingsTabComponent {
         await this.router.navigate(['/']);
     }
 
+    async setNotifyOnMessage(value: boolean): Promise<void> {
+        const id = this.store.currentListId();
+        if (!id) return;
+        this.notifyOnMessage.set(value);
+        await this.store.updateNotificationPreferences(id, value, this.notifyOnItemsChanged());
+    }
+
+    async setNotifyOnItemsChanged(value: boolean): Promise<void> {
+        const id = this.store.currentListId();
+        if (!id) return;
+        this.notifyOnItemsChanged.set(value);
+        await this.store.updateNotificationPreferences(id, this.notifyOnMessage(), value);
+    }
+
     async kickMember(targetDeviceId: string): Promise<void> {
         const msg = await firstValueFrom(this.translate.get('LIST_SETTINGS.KICK_CONFIRM'));
         if (!confirm(msg)) return;
@@ -189,7 +204,7 @@ export class SettingsTabComponent {
         try {
             await this.store.kickMember(id, targetDeviceId);
             this.members.update(list => list.filter(m => m.deviceId !== targetDeviceId));
-        } catch { /* ignore — member may already be gone */ } finally {
+        } catch { } finally {
             this.kickingDeviceId.set(null);
         }
     }

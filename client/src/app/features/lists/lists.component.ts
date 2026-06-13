@@ -1,19 +1,23 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, ElementRef, inject, OnDestroy, signal, ViewChild } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, OnDestroy, signal, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Router } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
-import { ExportQrPayload, ReceiveQrPayload } from '../../core/models';
+import { ExportQrPayload, ListFullError, ListMember, ReceiveQrPayload } from '../../core/models';
 import { HapticsService } from '../../core/services/haptics.service';
+import { AvatarComponent } from '../../shared/avatar/avatar.component';
 import { BadgeComponent } from '../../shared/badge/badge.component';
 import { QrCodeComponent } from '../../shared/qr-code/qr-code.component';
 import { QrScannerComponent } from '../../shared/qr-scanner/qr-scanner.component';
 import { AppStore } from '../../store/app.store';
 
+/** Max avatars shown before collapsing the rest into a "+N" badge. */
+const MAX_VISIBLE_AVATARS = 3;
+
 @Component({
     selector: 'app-lists',
-    imports: [FormsModule, DatePipe, QrCodeComponent, QrScannerComponent, BadgeComponent, TranslatePipe],
+    imports: [FormsModule, DatePipe, QrCodeComponent, QrScannerComponent, BadgeComponent, AvatarComponent, TranslatePipe],
     templateUrl: './lists.component.html',
     styleUrl: './lists.component.scss',
 })
@@ -22,9 +26,47 @@ export class ListsComponent implements OnDestroy {
     private readonly router = inject(Router);
     private readonly haptics = inject(HapticsService);
 
+    private readonly memberLists = signal<Record<string, ListMember[]>>({});
+    private readonly memberFetchAttempted = new Set<string>();
+
+    constructor() {
+        effect(() => {
+            if (!this.store.listsLoaded()) return;
+            for (const list of this.store.knownLists()) {
+                if (this.memberFetchAttempted.has(list.id)) continue;
+                this.memberFetchAttempted.add(list.id);
+                void this.loadMembers(list.id, list.encryptionKey);
+            }
+        });
+    }
+
+    private async loadMembers(listId: string, encryptionKey: string): Promise<void> {
+        try {
+            const members = await this.store.fetchMembersForList(listId, encryptionKey);
+            this.memberLists.update(m => ({ ...m, [listId]: members }));
+        } catch {
+            // Offline or unreachable — leave unset, no avatars shown for this list.
+        }
+    }
+
+    protected membersFor(listId: string): ListMember[] {
+        return this.memberLists()[listId] ?? [];
+    }
+
+    protected isShared(listId: string): boolean {
+        return this.membersFor(listId).length > 1;
+    }
+
+    protected avatarMembers(listId: string): ListMember[] {
+        return this.membersFor(listId).slice(0, MAX_VISIBLE_AVATARS);
+    }
+
+    protected extraMemberCount(listId: string): number {
+        return Math.max(0, this.membersFor(listId).length - MAX_VISIBLE_AVATARS);
+    }
+
     @ViewChild('createInput') private createInputRef?: ElementRef<HTMLInputElement>;
 
-    // ── burger menu ───────────────────────────────────────────────────────
     protected readonly showMenu = signal(false);
     protected readonly showCoffeeLink = !(Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios');
 
@@ -36,20 +78,17 @@ export class ListsComponent implements OnDestroy {
     goToSettingsFromMenu(): void { this.closeMenu(); this.router.navigate(['/settings']); }
     openAboutFromMenu(): void { this.closeMenu(); this.router.navigate(['/about']); }
 
-    // ── list ──────────────────────────────────────────────────────────────
     protected readonly lists = computed(() =>
         [...this.store.knownLists()].sort((a, b) => a.name.localeCompare(b.name)),
     );
     protected readonly totalUnread = computed(() => this.store.totalUnread());
     protected readonly activeListId = computed(() => this.store.currentListId());
 
-    // ── create ────────────────────────────────────────────────────────────
     protected readonly showCreateDialog = signal(false);
     protected readonly newListName = signal('');
     protected readonly creating = signal(false);
     protected readonly createError = signal<string | null>(null);
 
-    // ── import (receiver shows QR) ────────────────────────────────────────
     protected readonly showImportDialog = signal(false);
     protected readonly importMode = signal<'show' | 'scan'>('show');
     protected readonly importQrData = signal<string | null>(null);
@@ -57,14 +96,13 @@ export class ListsComponent implements OnDestroy {
     private importPollTimer: ReturnType<typeof setInterval> | null = null;
     private importSessionId: string | null = null;
 
-    // scan-mode state (receiver scans export QR)
+    protected readonly importErrorMsg = signal<string | null>(null);
     protected readonly scanStep = signal<'scanning' | 'waiting' | 'error'>('scanning');
     private exportSessionId: string | null = null;
     private exportListId: string | null = null;
     private exportListName: string | null = null;
     private exportClaimTimer: ReturnType<typeof setInterval> | null = null;
 
-    // ── export (sender shows QR) ──────────────────────────────────────────
     protected readonly showExportDialog = signal(false);
     protected readonly exportSelectedListId = signal<string | null>(null);
     protected readonly exportQrData = signal<string | null>(null);
@@ -78,7 +116,6 @@ export class ListsComponent implements OnDestroy {
         this.stopExportHandshakePolling();
     }
 
-    // ── navigation ────────────────────────────────────────────────────────
     async openList(id: string): Promise<void> {
         this.haptics.listTap();
         await this.router.navigate(['/list', id]);
@@ -88,7 +125,6 @@ export class ListsComponent implements OnDestroy {
         return this.store.unreadCounts()[id] ?? 0;
     }
 
-    // ── create ────────────────────────────────────────────────────────────
     openCreateDialog(): void {
         this.newListName.set('');
         this.createError.set(null);
@@ -118,11 +154,11 @@ export class ListsComponent implements OnDestroy {
         }
     }
 
-    // ── import ────────────────────────────────────────────────────────────
     async openImportDialog(): Promise<void> {
         this.importMode.set('show');
         this.importQrData.set(null);
         this.scanStep.set('scanning');
+        this.importErrorMsg.set(null);
         this.showImportDialog.set(true);
         await this.startShowMode();
     }
@@ -132,6 +168,7 @@ export class ListsComponent implements OnDestroy {
         this.stopExportClaimPolling();
         this.showImportDialog.set(false);
         this.importQrData.set(null);
+        this.importErrorMsg.set(null);
         this.importSessionId = null;
         this.exportSessionId = null;
         this.exportListId = null;
@@ -143,6 +180,7 @@ export class ListsComponent implements OnDestroy {
         this.stopExportClaimPolling();
         this.importMode.set(mode);
         this.scanStep.set('scanning');
+        this.importErrorMsg.set(null);
         if (mode === 'show') await this.startShowMode();
     }
 
@@ -166,7 +204,12 @@ export class ListsComponent implements OnDestroy {
                 this.stopImportPolling();
                 this.showImportDialog.set(false);
                 await this.router.navigate(['/list', id]);
-            } catch { /* 404 = not yet */ }
+            } catch (e: unknown) {
+                if (e instanceof ListFullError) {
+                    this.stopImportPolling();
+                    this.importErrorMsg.set('LISTS.ERROR_LIST_FULL');
+                }
+            }
         }, 2000);
     }
 
@@ -177,7 +220,6 @@ export class ListsComponent implements OnDestroy {
         }
     }
 
-    // scan mode (receiver scans export QR from sender)
     async onExportQrDetected(raw: string): Promise<void> {
         try {
             const payload = JSON.parse(raw) as ExportQrPayload;
@@ -201,7 +243,13 @@ export class ListsComponent implements OnDestroy {
                 this.stopExportClaimPolling();
                 this.showImportDialog.set(false);
                 await this.router.navigate(['/list', id]);
-            } catch { /* 404 = not yet */ }
+            } catch (e: unknown) {
+                if (e instanceof ListFullError) {
+                    this.stopExportClaimPolling();
+                    this.importErrorMsg.set('LISTS.ERROR_LIST_FULL');
+                    this.scanStep.set('error');
+                }
+            }
         }, 2000);
     }
 
@@ -214,10 +262,10 @@ export class ListsComponent implements OnDestroy {
 
     retryScan(): void {
         this.scanStep.set('scanning');
+        this.importErrorMsg.set(null);
         this.exportSessionId = null;
     }
 
-    // ── export ────────────────────────────────────────────────────────────
     openExportDialog(): void {
         const activeId = this.store.currentListId();
         this.exportSelectedListId.set(activeId);
@@ -258,7 +306,7 @@ export class ListsComponent implements OnDestroy {
                 await this.store.pollExportHandshake(sessionId, listId);
                 this.stopExportHandshakePolling();
                 this.exportStep.set('done');
-            } catch { /* 404 = receiver hasn't scanned yet */ }
+            } catch { }
         }, 2000);
     }
 

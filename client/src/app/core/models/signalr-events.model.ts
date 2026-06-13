@@ -20,5 +20,20 @@ export interface MessageCreatedEvent {
   initializationVector: string;
   encryptedSenderName: string;
   senderNameInitializationVector: string;
+  replyToMessageId: string | null;
   createdAt: string;
+}
+
+export interface ImageSharedEvent {
+  messageId: string;
+  ghostListId: string;
+  encryptedImage: string;
+  imageInitializationVector: string;
+  senderConnectionId: string;
+}
+
+export interface ReadReceiptUpdatedEvent {
+  ghostListId: string;
+  deviceId: string;
+  lastReadMessageAt: string | null;
 }

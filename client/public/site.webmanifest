@@ -1,6 +1,9 @@
 {
+  "id": "/",
   "name": "Ghost List",
   "short_name": "Ghost List",
+  "start_url": "/",
+  "scope": "/",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",

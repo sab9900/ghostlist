@@ -50,7 +50,7 @@ public class GhostList
     /// </summary>
     public bool IsOwnerTokenValid(string? rawToken)
     {
-        if (OwnerTokenHash is null) return true; // legacy list, no restriction
+        if (OwnerTokenHash is null) return true;
         if (rawToken is null) return false;
 
         var hashBytes = System.Security.Cryptography.SHA256.HashData(
@@ -73,14 +73,16 @@ public class GhostList
         string encryptedMessage,
         string initializationVector,
         string encryptedSenderName,
-        string senderNameInitializationVector)
+        string senderNameInitializationVector,
+        Guid? replyToMessageId = null)
     {
         return GhostChatMessage.Create(
             Id,
             encryptedMessage,
             initializationVector,
             encryptedSenderName,
-            senderNameInitializationVector
+            senderNameInitializationVector,
+            replyToMessageId
         );
     }
 }

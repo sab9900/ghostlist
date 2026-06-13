@@ -21,6 +21,28 @@ namespace GhostList.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("GhostList.Domain.Entities.DailyUsageStat", b =>
+                {
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<int>("ItemsCreated")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ListsCreated")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MembersCreated")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MessagesCreated")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Date");
+
+                    b.ToTable("DailyUsageStats");
+                });
+
             modelBuilder.Entity("GhostList.Domain.Entities.GhostChatMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -44,6 +66,9 @@ namespace GhostList.Infrastructure.Migrations
                     b.Property<string>("InitializationVector")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<Guid?>("ReplyToMessageId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("SenderNameInitializationVector")
                         .IsRequired()
@@ -130,17 +155,36 @@ namespace GhostList.Infrastructure.Migrations
 
             modelBuilder.Entity("GhostList.Domain.Entities.DeviceSubscription", b =>
                 {
-                    b.Property<string>("DeviceToken")
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)");
+                    b.Property<string>("DeviceId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<Guid>("ListId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("DeviceToken")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<bool>("NotifyOnItemsChanged")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("NotifyOnMessage")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Platform")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("RegisteredAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.HasKey("DeviceToken", "ListId");
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("DeviceId", "ListId");
+
+                    b.HasIndex("DeviceToken");
 
                     b.HasIndex("ListId");
 
@@ -174,6 +218,12 @@ namespace GhostList.Infrastructure.Migrations
                     b.Property<string>("InitializationVector")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("LastReadItemAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("LastReadMessageAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");

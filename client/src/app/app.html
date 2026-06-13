@@ -28,6 +28,9 @@
 
 } @else {
 
+<app-offline-banner />
+<app-pwa-install-banner />
+
 @if (layout.isDesktop()) {
 
 <div class="desktop" [class.desktop--resizing]="resizing()">

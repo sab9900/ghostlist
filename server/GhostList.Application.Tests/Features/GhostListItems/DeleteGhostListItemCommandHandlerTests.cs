@@ -18,6 +18,8 @@ public class DeleteGhostListItemCommandHandlerTests
         return notifier;
     }
 
+    private static IPushNotificationService MockPush() => Substitute.For<IPushNotificationService>();
+
     [Fact]
     public async Task Handle_ExistingItem_DeletesItem()
     {
@@ -28,7 +30,7 @@ public class DeleteGhostListItemCommandHandlerTests
         context.GhostListItems.Add(item);
         await context.SaveChangesAsync();
 
-        var handler = new DeleteGhostListItemCommandHandler(context, MockNotifier());
+        var handler = new DeleteGhostListItemCommandHandler(context, MockNotifier(), MockPush());
         await handler.Handle(new DeleteGhostListItemCommand(item.Id), CancellationToken.None);
 
         (await context.GhostListItems.AnyAsync(i => i.Id == item.Id)).Should().BeFalse();
@@ -45,7 +47,7 @@ public class DeleteGhostListItemCommandHandlerTests
         await context.SaveChangesAsync();
 
         var notifier = MockNotifier();
-        var handler = new DeleteGhostListItemCommandHandler(context, notifier);
+        var handler = new DeleteGhostListItemCommandHandler(context, notifier, MockPush());
         await handler.Handle(new DeleteGhostListItemCommand(item.Id), CancellationToken.None);
 
         await notifier.Received(1).NotifyItemDeleted(list.Id, item.Id);
@@ -55,7 +57,7 @@ public class DeleteGhostListItemCommandHandlerTests
     public async Task Handle_NonExistentItem_ThrowsNotFoundException()
     {
         await using var context = DbContextFactory.Create();
-        var handler = new DeleteGhostListItemCommandHandler(context, MockNotifier());
+        var handler = new DeleteGhostListItemCommandHandler(context, MockNotifier(), MockPush());
 
         var act = () => handler.Handle(new DeleteGhostListItemCommand(Guid.NewGuid()), CancellationToken.None);
 

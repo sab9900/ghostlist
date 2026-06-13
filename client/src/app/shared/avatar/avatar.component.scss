@@ -1,0 +1,15 @@
+:host {
+    display: inline-flex;
+}
+
+.avatar {
+    border-radius: var(--radius-full);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--weight-semi);
+    flex-shrink: 0;
+    line-height: 1;
+    user-select: none;
+}

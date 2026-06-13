@@ -68,8 +68,6 @@
     }
 }
 
-// ── Hero ──────────────────────────────────────────────────────────────────────
-
 .hero {
     display: flex;
     flex-direction: column;
@@ -101,8 +99,6 @@
     }
 }
 
-// ── Sections ─────────────────────────────────────────────────────────────────
-
 .section {
     display: flex;
     flex-direction: column;
@@ -130,8 +126,6 @@
         line-height: var(--leading-normal);
     }
 }
-
-// ── Feature list ─────────────────────────────────────────────────────────────
 
 .feature-list {
     display: flex;
@@ -174,8 +168,6 @@
         line-height: var(--leading-normal);
     }
 }
-
-// ── Footer ────────────────────────────────────────────────────────────────────
 
 .footer {
     font-size: var(--text-xs);

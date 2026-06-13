@@ -23,12 +23,10 @@ public class GhostListCleanupWorker(IServiceScopeFactory scopeFactory, ILogger<G
                 await using var scope = scopeFactory.CreateAsyncScope();
                 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-                // Every tick: remove expired checked items.
                 var expiredItems = await mediator.Send(new DeleteExpiredListItemsCommand(), stoppingToken);
                 if (expiredItems > 0)
                     logger.LogInformation("Cleanup: {Count} expired item(s) deleted.", expiredItems);
 
-                // Every hour: remove lists that have no members left.
                 if (DateTime.UtcNow - _lastMemberlessCheck >= MemberlessCheckInterval)
                 {
                     _lastMemberlessCheck = DateTime.UtcNow;

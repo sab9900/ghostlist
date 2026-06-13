@@ -77,8 +77,6 @@
     }
 }
 
-// ── Burger menu ──────────────────────────────────────────────────────────────
-
 .menu-anchor {
     position: relative;
 }
@@ -125,8 +123,6 @@
     svg { flex-shrink: 0; color: var(--color-text-muted); }
     span { flex: 1; }
 }
-
-// ── Content ──────────────────────────────────────────────────────────────────
 
 .content {
     flex: 1;
@@ -216,6 +212,37 @@
         flex-shrink: 0;
         line-height: 1;
     }
+
+    &__avatars {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    &__avatar {
+        border: 2px solid var(--color-surface);
+        border-radius: var(--radius-full);
+
+        &:not(:first-child) {
+            margin-left: -8px;
+        }
+    }
+
+    &__avatar-extra {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        margin-left: -8px;
+        border: 2px solid var(--color-surface);
+        border-radius: var(--radius-full);
+        background: var(--color-surface-3);
+        color: var(--color-text-muted);
+        font-size: 10px;
+        font-weight: var(--weight-semi);
+        flex-shrink: 0;
+    }
 }
 
 .fab {
@@ -247,8 +274,6 @@
         transform: scale(0.96);
     }
 }
-
-// ── Dialogs ──────────────────────────────────────────────────────────────────
 
 .dialog-backdrop {
     position: fixed;

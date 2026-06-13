@@ -38,6 +38,9 @@ docker-compose.override.yml
 # ─── ASP.NET secrets ─────────────────────────────────────────────────────────
 appsettings.*.json
 
+# ─── Landing page (own repo) ─────────────────────────────────────────────────
+/landing-page/
+
 # ─── IDE / OS ─────────────────────────────────────────────────────────────────
 .idea/
 .vscode/*

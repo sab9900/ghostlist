@@ -6,38 +6,178 @@
     }
 
     @for (msg of decryptedMessages(); track msg.id; let i = $index) {
+    @let mine = msg.senderName === (prefs.senderName() || ('CHAT.ANONYMOUS' | translate));
+    @let preview = replyPreview(msg);
+    @let imgUrl = msg.isImage ? imageDataUrl(msg.id) : null;
+
     @if (i === firstUnreadIndex()) {
     <li class="unread-divider" role="separator" [attr.aria-label]="'CHAT.NEW_MESSAGES' | translate">
         <span>{{ 'CHAT.NEW_MESSAGES' | translate }}</span>
     </li>
     }
+
     <li class="message" role="article"
-        [class.message--mine]="msg.senderName === (prefs.senderName() || ('CHAT.ANONYMOUS' | translate))"
-        [attr.aria-label]="msg.senderName + ': ' + msg.text">
-        <div class="message__bubble">
-            <p class="message__text">{{ msg.text }}</p>
-            <div class="message__meta">
-                <span class="message__sender">{{ msg.senderName }}</span>
-                <span class="message__time">{{ msg.createdAt | date:'HH:mm' }}</span>
-                @if (msg.senderName === (prefs.senderName() || ('CHAT.ANONYMOUS' | translate))) {
-                <button class="message__delete" (click)="deleteMessage(msg.id)"
-                    [attr.aria-label]="'CHAT.DELETE_MESSAGE_ARIA' | translate">×</button>
+        [class.message--mine]="mine"
+        [class.message--highlight]="highlightedId() === msg.id"
+        [attr.data-message-id]="msg.id"
+        [attr.aria-label]="msg.senderName + ': ' + (msg.isImage ? ('CHAT.IMAGE' | translate) : msg.text)"
+        (touchstart)="onTouchStart($event, msg)" (touchmove)="onTouchMove($event, msg)"
+        (touchend)="onTouchEnd(msg)" (touchcancel)="onTouchEnd(msg)">
+
+        <div class="message__swipe-hint" aria-hidden="true" [style.opacity]="swipeOffset(msg.id) / swipeTriggerDistance">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 14 4 9 9 4"/>
+                <path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+            </svg>
+        </div>
+
+        <div class="message__row" [style.transform]="swipeOffset(msg.id) ? 'translateX(' + swipeOffset(msg.id) + 'px)' : null">
+
+            <div class="message__bubble">
+
+                @if (msg.replyToMessageId) {
+                <button type="button" class="message__quote" [class.message__quote--unavailable]="!preview"
+                    [disabled]="!preview" (click)="scrollToMessage(msg.replyToMessageId)">
+                    @if (preview) {
+                    <span class="message__quote-sender">{{ preview.senderName }}</span>
+                    @if (preview.isImage) {
+                    <span class="message__quote-text message__quote-text--image">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <circle cx="8.5" cy="8.5" r="1.5"/>
+                            <path d="M21 15l-5-5L5 21"/>
+                        </svg>
+                        {{ 'CHAT.IMAGE' | translate }}
+                    </span>
+                    } @else {
+                    <span class="message__quote-text">{{ preview.text }}</span>
+                    }
+                    } @else {
+                    <span class="message__quote-text message__quote-text--unavailable">{{ 'CHAT.ORIGINAL_UNAVAILABLE' | translate }}</span>
+                    }
+                </button>
+                }
+
+                @if (msg.isImage) {
+                @if (imgUrl) {
+                <img class="message__image" [src]="imgUrl" [attr.alt]="'CHAT.IMAGE_ALT' | translate" />
+                } @else {
+                <div class="message__image-placeholder">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <path d="M21 15l-5-5L5 21"/>
+                    </svg>
+                    <span>{{ 'CHAT.IMAGE_UNAVAILABLE' | translate }}</span>
+                </div>
+                }
+                } @else {
+                <p class="message__text">{{ msg.text }}</p>
+                }
+
+                <div class="message__meta">
+                    <span class="message__sender">{{ msg.senderName }}</span>
+                    <span class="message__time">{{ msg.createdAt | date:'HH:mm' }}</span>
+                    @if (mine && showReadReceiptCheckmark) {
+                    @let read = isReadByOthers(msg);
+                    <span class="message__status" [class.message__status--read]="read"
+                        [attr.aria-label]="(read ? 'CHAT.READ_ARIA' : 'CHAT.SENT_ARIA') | translate">
+                        @if (read) {
+                        <svg xmlns="http://www.w3.org/2000/svg" width="19" height="15" viewBox="0 0 28 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="18 6 9 15 4 10"/>
+                            <polyline points="24 6 13 17"/>
+                        </svg>
+                        } @else {
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        }
+                    </span>
+                    }
+                </div>
+            </div>
+
+            <div class="message__actions">
+                <button type="button" class="message__actions-btn" (click)="toggleMenu(msg.id, $event)"
+                    [attr.aria-label]="'CHAT.MESSAGE_ACTIONS_ARIA' | translate" aria-haspopup="menu"
+                    [attr.aria-expanded]="openMenuId() === msg.id">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="1"/>
+                        <circle cx="12" cy="5" r="1"/>
+                        <circle cx="12" cy="19" r="1"/>
+                    </svg>
+                </button>
+
+                @if (openMenuId() === msg.id) {
+                <div class="message__menu" role="menu" [class.message__menu--mine]="mine" (click)="$event.stopPropagation()">
+                    <button type="button" role="menuitem" class="message__menu-item" (click)="startReply(msg)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="9 14 4 9 9 4"/>
+                            <path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+                        </svg>
+                        {{ 'CHAT.REPLY' | translate }}
+                    </button>
+                    @if (!msg.isImage) {
+                    <button type="button" role="menuitem" class="message__menu-item" (click)="copyMessage(msg)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        {{ 'CHAT.COPY' | translate }}
+                    </button>
+                    }
+                    @if (mine) {
+                    <button type="button" role="menuitem" class="message__menu-item message__menu-item--danger" (click)="deleteMessage(msg.id)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            <line x1="10" y1="11" x2="10" y2="17"/>
+                            <line x1="14" y1="11" x2="14" y2="17"/>
+                        </svg>
+                        {{ 'COMMON.DELETE' | translate }}
+                    </button>
+                    }
+                </div>
                 }
             </div>
+
         </div>
     </li>
     }
 
 </ul>
 
+@if (replyingTo()) {
+<div class="reply-bar">
+    <svg class="reply-bar__icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="9 14 4 9 9 4"/>
+        <path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+    </svg>
+    <div class="reply-bar__content">
+        <span class="reply-bar__sender">{{ replyingTo()!.senderName }}</span>
+        @if (replyingTo()!.isImage) {
+        <span class="reply-bar__text">{{ 'CHAT.IMAGE' | translate }}</span>
+        } @else {
+        <span class="reply-bar__text">{{ replyingTo()!.text }}</span>
+        }
+    </div>
+    <button type="button" class="reply-bar__cancel" (click)="cancelReply()" [attr.aria-label]="'CHAT.CANCEL_REPLY_ARIA' | translate">×</button>
+</div>
+}
+
 <div class="compose" role="form" [attr.aria-label]="'CHAT.MESSAGE_PLACEHOLDER' | translate">
-    <!-- <div class="compose__name-row">
-        <span class="compose__name-label" [attr.aria-label]="('CHAT.SEND_AS_ARIA' | translate:{name: prefs.senderName() || ('CHAT.ANONYMOUS' | translate)})">
-            {{ prefs.senderName() || ('CHAT.ANONYMOUS' | translate) }}
-        </span>
-    </div> -->
     <div class="compose__row">
-        <input class="compose__input" type="text" [attr.placeholder]="'CHAT.MESSAGE_PLACEHOLDER' | translate"
+        <input #fileInput type="file" accept="image/*" class="visually-hidden" tabindex="-1"
+            (change)="onFileSelected($event)" />
+        <button type="button" class="compose__attach" (click)="pickImage()" [disabled]="sendingImage()"
+            [attr.aria-label]="'CHAT.SEND_IMAGE_ARIA' | translate" [attr.aria-busy]="sendingImage()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <path d="M21 15l-5-5L5 21"/>
+            </svg>
+        </button>
+        <input #composeInput class="compose__input" type="text" [attr.placeholder]="'CHAT.MESSAGE_PLACEHOLDER' | translate"
             [ngModel]="newMessageText()" (ngModelChange)="newMessageText.set($event)" (keydown.enter)="sendMessage()"
             maxlength="2000" [attr.aria-label]="'CHAT.MESSAGE_PLACEHOLDER' | translate" />
         <button class="compose__send" (click)="sendMessage()" [disabled]="!newMessageText().trim() || sendingMessage()"

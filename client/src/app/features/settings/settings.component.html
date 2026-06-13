@@ -13,7 +13,6 @@
     <main class="content">
         <div class="content__inner">
 
-        <!-- Full-width: display name -->
         <section class="section" aria-labelledby="name-heading">
             <div class="section__desc">
                 <h2 class="section__title" id="name-heading">{{ 'CHAT.NAME_DIALOG_TITLE' | translate }}</h2>
@@ -38,7 +37,6 @@
             </div>
         </section>
 
-        <!-- Two-column grid -->
         <div class="settings-grid">
 
         <div class="settings-col">
@@ -72,7 +70,7 @@
                 <p class="section__hint">{{ 'SETTINGS.SECURITY.HINT' | translate }}</p>
             </div>
             <div class="section__body">
-                @if (!webAuthn.isSupported) {
+                @if (!webAuthn.isSupported()) {
                 <p class="security-status security-status--warn" role="status">
                     {{ 'SETTINGS.SECURITY.UNSUPPORTED' | translate }}
                 </p>
@@ -149,7 +147,6 @@
             <div class="sync-actions">
                 <button class="btn btn--primary btn--sm btn--icon" (click)="startSyncReceive()"
                     [disabled]="!webAuthn.isEnabled()">
-                    <!-- download / import icon -->
                     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -160,7 +157,6 @@
                 </button>
                 <button class="btn btn--primary btn--sm btn--icon" (click)="startSyncSend()"
                     [disabled]="!webAuthn.isEnabled() || store.knownLists().length === 0">
-                    <!-- upload / export icon -->
                     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -185,10 +181,10 @@
             <p class="sync-status sync-status--err" role="alert">{{ 'SETTINGS.SYNC_ERROR' | translate }}</p>
             }
 
-            </div><!-- /.section__body -->
+            </div>
         </section>
 
-        </div><!-- /.settings-col -->
+        </div>
 
         <div class="settings-col">
 
@@ -234,14 +230,13 @@
             </div>
         </section>
 
-        </div><!-- /.settings-col (right) -->
+        </div>
 
-        </div><!-- /.settings-grid -->
+        </div>
 
-        </div><!-- /.content__inner -->
+        </div>
     </main>
 
-<!-- ── Sync Machine dialog ── -->
 @if (syncStep() !== 'idle' && syncStep() !== 'receive-done' && syncStep() !== 'send-done' && syncStep() !== 'send-qr-done' && syncStep() !== 'error') {
 <div class="dialog-backdrop" (click)="resetSync()" role="presentation">
     <div class="dialog dialog--qr" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"

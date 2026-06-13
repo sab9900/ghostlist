@@ -48,8 +48,6 @@ export class SettingsComponent {
     protected readonly nameSaved = signal(false);
 
     constructor() {
-        // Sync pendingName once prefs.initialize() populates the sender name.
-        // Only overwrites if the user hasn't started typing yet.
         effect(() => {
             const name = this.prefs.senderName();
             if (name && !this.pendingName()) this.pendingName.set(name);
@@ -80,15 +78,13 @@ export class SettingsComponent {
         this.router.navigate(['/']);
     }
 
-    // ── Biometric lock ────────────────────────────────────────────────────────
-
     protected readonly autoLockOptions = AUTO_LOCK_OPTIONS;
 
     protected readonly biometricWorking = signal(false);
     protected readonly biometricError = signal<'unsupported' | 'failed' | null>(null);
 
     async enableBiometricLock(): Promise<void> {
-        if (!this.webAuthn.isSupported) {
+        if (!this.webAuthn.isSupported()) {
             this.biometricError.set('unsupported');
             return;
         }
@@ -120,9 +116,6 @@ export class SettingsComponent {
         }
     }
 
-    // ── Sync Machine ─────────────────────────────────────────────────────────
-
-    /** Biometric authentication gate for sync. Sync is only reachable when WebAuthn is enabled. */
     private async confirmSyncAuth(): Promise<boolean> {
         try {
             return await this.webAuthn.authenticate();
@@ -131,12 +124,6 @@ export class SettingsComponent {
         }
     }
 
-    /** Sync state machine:
-     *  idle → receive-qr → receive-done
-     *  idle → send-choose → send-scan → send-done
-     *                     → send-qr   → send-qr-done
-     *  any → error
-     */
     protected readonly syncStep = signal<
         'idle' | 'receive-qr' | 'receive-done' |
         'send-choose' | 'send-scan' | 'send-done' |
@@ -149,8 +136,6 @@ export class SettingsComponent {
     private syncPollTimer: ReturnType<typeof setInterval> | null = null;
     private syncSessionId: string | null = null;
     private syncPayload: SyncQrPayload | null = null;
-
-    // ── Receive flow (receiver-initiated) ────────────────────────────────────
 
     async startSyncReceive(): Promise<void> {
         if (!await this.confirmSyncAuth()) return;
@@ -175,7 +160,7 @@ export class SettingsComponent {
         const url = `${origin}/sync/${this.syncPayload.sessionId}#${this.crypto.toUrlSafeB64(this.syncPayload.publicKey)}`;
         try {
             await navigator.clipboard.writeText(url);
-        } catch { /* clipboard blocked — ignore */ }
+        } catch { }
         this.syncLinkCopied.set(true);
         setTimeout(() => this.syncLinkCopied.set(false), 2000);
     }
@@ -187,19 +172,15 @@ export class SettingsComponent {
                 this.stopSyncPoll();
                 this.syncImportedCount.set(count);
                 this.syncStep.set('receive-done');
-            } catch { /* 404 = not yet */ }
+            } catch { }
         }, 2000);
     }
-
-    // ── Send flow — choose method ─────────────────────────────────────────────
 
     async startSyncSend(): Promise<void> {
         if (!await this.confirmSyncAuth()) return;
         this.resetSync();
         this.syncStep.set('send-choose');
     }
-
-    // ── Send flow — scan receiver's QR (receiver-initiated, existing) ─────────
 
     startSyncSendScan(): void {
         this.syncStep.set('send-scan');
@@ -215,8 +196,6 @@ export class SettingsComponent {
             this.syncStep.set('error');
         }
     }
-
-    // ── Send flow — show QR for receiver to scan (sender-initiated, new) ──────
 
     startSyncSendQr(): void {
         this.resetSync();
@@ -237,11 +216,9 @@ export class SettingsComponent {
                 await this.store.pollAndPushSyncBundle(sessionId);
                 this.stopSyncPoll();
                 this.syncStep.set('send-qr-done');
-            } catch { /* 404 = receiver hasn't scanned yet */ }
+            } catch { }
         }, 2000);
     }
-
-    // ── Shared ────────────────────────────────────────────────────────────────
 
     private stopSyncPoll(): void {
         if (this.syncPollTimer !== null) {

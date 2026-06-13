@@ -46,7 +46,7 @@ export class SyncReceiveComponent implements OnInit {
                 this.stopPoll();
                 this.importedCount.set(count);
                 this.state.set('done');
-            } catch { /* 404 = bundle not yet ready */ }
+            } catch { }
         }, 2000);
     }
 

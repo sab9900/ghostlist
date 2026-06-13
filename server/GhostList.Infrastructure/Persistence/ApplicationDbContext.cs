@@ -13,6 +13,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<GhostChatMessage> GhostChatMessages => Set<GhostChatMessage>();
     public DbSet<DeviceSubscription> DeviceSubscriptions => Set<DeviceSubscription>();
     public DbSet<GhostListMember> GhostListMembers => Set<GhostListMember>();
+    public DbSet<DailyUsageStat> DailyUsageStats => Set<DailyUsageStat>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -47,12 +48,16 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.InitializationVector).IsRequired();
             entity.Property(e => e.EncryptedSenderName).IsRequired();
             entity.Property(e => e.SenderNameInitializationVector).IsRequired();
+            entity.Property(e => e.ReplyToMessageId).IsRequired(false);
         });
 
         modelBuilder.Entity<DeviceSubscription>(entity =>
         {
-            entity.HasKey(e => new { e.DeviceToken, e.ListId });
+            entity.HasKey(e => new { e.DeviceId, e.ListId });
+            entity.Property(e => e.DeviceId).HasMaxLength(64).IsRequired();
             entity.Property(e => e.DeviceToken).HasMaxLength(512).IsRequired();
+            entity.Property(e => e.Platform).HasConversion<int>();
+            entity.HasIndex(e => e.DeviceToken);
             entity.HasOne<Domain.Entities.GhostList>()
                   .WithMany()
                   .HasForeignKey(s => s.ListId)
@@ -66,10 +71,18 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.DeviceId).HasMaxLength(64).IsRequired();
             entity.Property(e => e.EncryptedPayload).IsRequired();
             entity.Property(e => e.InitializationVector).IsRequired();
+            entity.Property(e => e.LastReadMessageAt).IsRequired(false);
+            entity.Property(e => e.LastReadItemAt).IsRequired(false);
             entity.HasOne<Domain.Entities.GhostList>()
                   .WithMany()
                   .HasForeignKey(m => m.GhostListId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DailyUsageStat>(entity =>
+        {
+            entity.HasKey(e => e.Date);
+            entity.Property(e => e.Date).HasColumnType("date");
         });
     }
 
@@ -90,4 +103,26 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         => base.SaveChangesAsync(cancellationToken);
+
+    public Task IncrementDailyUsageAsync(UsageMetric metric, CancellationToken cancellationToken)
+    {
+        var column = metric switch
+        {
+            UsageMetric.List => "ListsCreated",
+            UsageMetric.Item => "ItemsCreated",
+            UsageMetric.Message => "MessagesCreated",
+            UsageMetric.Member => "MembersCreated",
+            _ => throw new ArgumentOutOfRangeException(nameof(metric), metric, null)
+        };
+
+        return Database.ExecuteSqlRawAsync(
+            $"""
+            INSERT INTO "DailyUsageStats" ("Date", "ListsCreated", "ItemsCreated", "MessagesCreated", "MembersCreated")
+            VALUES (CURRENT_DATE, 0, 0, 0, 0)
+            ON CONFLICT ("Date") DO NOTHING;
+
+            UPDATE "DailyUsageStats" SET "{column}" = "{column}" + 1 WHERE "Date" = CURRENT_DATE;
+            """,
+            cancellationToken);
+    }
 }

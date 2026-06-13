@@ -40,6 +40,34 @@
     </div>
 </section>
 
+<section class="settings-section" aria-labelledby="notifications-heading">
+    <h3 class="settings-section__title" id="notifications-heading">{{ 'LIST_SETTINGS.NOTIFICATIONS_TITLE' | translate }}</h3>
+    <p class="settings-section__hint">{{ 'LIST_SETTINGS.NOTIFICATIONS_HINT' | translate }}</p>
+
+    <div class="toggle-row">
+        <div>
+            <p class="toggle-label" id="notify-message-label">{{ 'LIST_SETTINGS.NOTIFY_ON_MESSAGE' | translate }}</p>
+            <p class="toggle-hint">{{ 'LIST_SETTINGS.NOTIFY_ON_MESSAGE_HINT' | translate }}</p>
+        </div>
+        <label class="toggle-switch" aria-labelledby="notify-message-label">
+            <input type="checkbox" [ngModel]="notifyOnMessage()" (ngModelChange)="setNotifyOnMessage($event)" />
+            <span class="toggle-switch__track" aria-hidden="true"></span>
+        </label>
+    </div>
+
+    <div class="toggle-row">
+        <div>
+            <p class="toggle-label" id="notify-items-label">{{ 'LIST_SETTINGS.NOTIFY_ON_ITEMS_CHANGED' | translate }}</p>
+            <p class="toggle-hint">{{ 'LIST_SETTINGS.NOTIFY_ON_ITEMS_CHANGED_HINT' | translate }}</p>
+        </div>
+        <label class="toggle-switch" aria-labelledby="notify-items-label">
+            <input type="checkbox" [ngModel]="notifyOnItemsChanged()" (ngModelChange)="setNotifyOnItemsChanged($event)" />
+            <span class="toggle-switch__track" aria-hidden="true"></span>
+        </label>
+    </div>
+</section>
+
+@if (store.isCurrentListOwner()) {
 <section class="settings-section" aria-labelledby="share-heading">
     <h3 class="settings-section__title" id="share-heading">{{ 'LIST_SETTINGS.SHARE_TITLE' | translate }}</h3>
 
@@ -60,7 +88,6 @@
         </button>
         }
 
-
         @if (shareStep() === 'done') {
         <p class="share-status share-status--ok" role="status" aria-live="polite">
             {{ 'LIST_SETTINGS.QR_SENT' | translate }}
@@ -76,6 +103,7 @@
         }
     </div>
 </section>
+}
 
 <section class="settings-section" aria-labelledby="members-heading">
     <h3 class="settings-section__title" id="members-heading">{{ 'LIST_SETTINGS.MEMBERS_TITLE' | translate }}</h3>
@@ -131,7 +159,6 @@
     }
 </section>
 
-<!-- ── Share scan modal ── -->
 @if (shareStep() === 'scan') {
 <div class="dialog-backdrop" (click)="cancelShare()" role="presentation">
     <div class="dialog dialog--qr" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
@@ -152,7 +179,6 @@
     <h3 class="settings-section__title settings-section__title--danger" id="danger-heading">{{ 'LIST_SETTINGS.DANGER_TITLE' | translate }}</h3>
 
     @if (!store.isCurrentListOwner()) {
-    <!-- Non-owner: only option is to forget (remove locally) -->
     <div class="danger-row">
         <div>
             <p class="danger-label" id="forget-label">{{ 'LIST_SETTINGS.FORGET_LABEL' | translate }}</p>
@@ -164,7 +190,6 @@
     }
 
     @if (store.isCurrentListOwner()) {
-    <!-- Owner: only option is delete for everyone (there is no "forget" without deleting for all) -->
     <div class="danger-row">
         <div>
             <p class="danger-label" id="delete-label">{{ 'LIST_SETTINGS.DELETE_LABEL' | translate }}</p>

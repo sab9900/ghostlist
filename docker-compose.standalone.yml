@@ -26,6 +26,8 @@ services:
             ASPNETCORE_ENVIRONMENT: Production
             ASPNETCORE_URLS: http://+:8080
             ConnectionStrings__DefaultConnection: "Host=db;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+            Admin__Username: "${ADMIN_USERNAME}"
+            Admin__Password: "${ADMIN_PASSWORD}"
         depends_on:
             db:
                 condition: service_healthy
@@ -37,6 +39,16 @@ services:
             dockerfile: client/Dockerfile
         ports:
             - "80:80"
+        depends_on:
+            - server
+        restart: unless-stopped
+
+    admin-client:
+        build:
+            context: .
+            dockerfile: admin-client/Dockerfile
+        ports:
+            - "8081:80"
         depends_on:
             - server
         restart: unless-stopped

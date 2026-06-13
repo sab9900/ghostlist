@@ -8,12 +8,13 @@ export interface KnownList {
 
   addedAt: string;
 
-  /**
-   * Raw owner token — present only on the device that created the list (and devices it was synced to).
-   * The server stores only SHA-256(ownerToken); the raw value never leaves the client.
-   * Absence means this device joined as a member, not the creator.
-   */
   ownerToken?: string;
+
+  /** Push: notify this device on new chat messages in this list. Default (undefined) = true. */
+  notifyOnMessage?: boolean;
+
+  /** Push: notify this device when items in this list change (added/checked/removed). Default (undefined) = true. */
+  notifyOnItemsChanged?: boolean;
 }
 
 export interface ReceiveQrPayload {
@@ -49,15 +50,11 @@ export interface SyncQrPayload {
 
   type: 'sync';
 
-  /** Receiver's ECDH public key (base64). */
   publicKey: string;
 
   sessionId: string;
 }
 
-/** QR payload for sender-initiated sync (mirrors ExportQrPayload for individual lists).
- *  The QR contains NO crypto material — the receiver scans, generates a keypair,
- *  and posts its public key as a handshake. */
 export interface SyncSendQrPayload {
 
   type: 'sync-send';
@@ -65,10 +62,10 @@ export interface SyncSendQrPayload {
   sessionId: string;
 }
 
-/** Decrypted member record — built client-side after fetching + decrypting from server. */
 export interface ListMember {
   deviceId: string;
   displayName: string;
   joinedAt: string;
   isCurrentDevice: boolean;
+  lastReadMessageAt: string | null;
 }

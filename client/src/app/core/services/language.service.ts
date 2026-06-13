@@ -22,14 +22,13 @@ export class LanguageService {
 
     readonly currentLang = signal(this.detectLang());
 
-    /** Called once at app startup via provideAppInitializer. */
     async init(): Promise<void> {
         await firstValueFrom(this.translate.use(this.currentLang()));
     }
 
     async setLanguage(code: string): Promise<void> {
         this.currentLang.set(code);
-        try { localStorage.setItem(LANG_KEY, code); } catch { /* */ }
+        try { localStorage.setItem(LANG_KEY, code); } catch { }
         await firstValueFrom(this.translate.use(code));
     }
 
@@ -37,7 +36,7 @@ export class LanguageService {
         try {
             const stored = localStorage.getItem(LANG_KEY);
             if (stored) return stored;
-        } catch { /* */ }
+        } catch { }
         const browser = navigator.language.replace('-', '_');
         const codes = LanguageService.SUPPORTED.map(l => l.code);
         return (

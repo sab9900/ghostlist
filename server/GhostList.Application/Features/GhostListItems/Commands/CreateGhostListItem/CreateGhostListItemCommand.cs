@@ -11,7 +11,7 @@ public record CreateGhostListItemCommand(
     Guid GhostListId,
     string EncryptedPayload,
     string InitializationVector,
-    string? SenderDeviceToken = null) : IRequest<Guid>;
+    string? SenderDeviceId = null) : IRequest<Guid>;
 
 public class CreateGhostListItemCommandHandler : IRequestHandler<CreateGhostListItemCommand, Guid>
 {
@@ -44,6 +44,7 @@ public class CreateGhostListItemCommandHandler : IRequestHandler<CreateGhostList
         var newItem = ghostList.CreateListItem(request.EncryptedPayload, request.InitializationVector);
         _context.GhostListItems.Add(newItem);
         await _context.SaveChangesAsync(cancellationToken);
+        await _context.IncrementDailyUsageAsync(UsageMetric.Item, cancellationToken);
 
         await _notifier.NotifyItemCreated(newItem.GhostListId, new ItemCreatedNotification(
             newItem.Id,
@@ -53,8 +54,8 @@ public class CreateGhostListItemCommandHandler : IRequestHandler<CreateGhostList
             newItem.IsChecked,
             newItem.CreatedAt));
 
-        _ = _push.SendItemNotificationAsync(newItem.GhostListId, request.SenderDeviceToken, cancellationToken)
-                 .ContinueWith(t => { /* swallow — push is best-effort */ }, TaskContinuationOptions.OnlyOnFaulted);
+        _ = _push.SendNotificationAsync(newItem.GhostListId, PushNotificationType.ItemsChanged, request.SenderDeviceId, cancellationToken)
+                 .ContinueWith(t => { }, TaskContinuationOptions.OnlyOnFaulted);
 
         return newItem.Id;
     }

@@ -14,6 +14,7 @@ public record GhostChatMessageDto(
     string MessageInitializationVector,
     string EncryptedSenderName,
     string SenderNameInitializationVector,
+    Guid? ReplyToMessageId,
     DateTime CreatedAt);
 
 public class GetGhostChatMessagesByListIdQueryHandler(IApplicationDbContext context)
@@ -38,6 +39,7 @@ public class GetGhostChatMessagesByListIdQueryHandler(IApplicationDbContext cont
                 m.InitializationVector,
                 m.EncryptedSenderName,
                 m.SenderNameInitializationVector,
+                m.ReplyToMessageId,
                 m.CreatedAt))
             .ToListAsync(cancellationToken);
     }

@@ -19,6 +19,8 @@ public class ToggleGhostListItemCommandHandlerTests
         return notifier;
     }
 
+    private static IPushNotificationService MockPush() => Substitute.For<IPushNotificationService>();
+
     [Fact]
     public async Task Handle_UncheckedItem_SetsCheckedTrue()
     {
@@ -29,7 +31,7 @@ public class ToggleGhostListItemCommandHandlerTests
         context.GhostListItems.Add(item);
         await context.SaveChangesAsync();
 
-        var handler = new ToggleGhostListItemCommandHandler(context, MockNotifier());
+        var handler = new ToggleGhostListItemCommandHandler(context, MockNotifier(), MockPush());
         await handler.Handle(new ToggleGhostListItemCommand(item.Id), CancellationToken.None);
 
         var updated = await context.GhostListItems.FindAsync(item.Id);
@@ -48,7 +50,7 @@ public class ToggleGhostListItemCommandHandlerTests
         context.GhostListItems.Add(item);
         await context.SaveChangesAsync();
 
-        var handler = new ToggleGhostListItemCommandHandler(context, MockNotifier());
+        var handler = new ToggleGhostListItemCommandHandler(context, MockNotifier(), MockPush());
         await handler.Handle(new ToggleGhostListItemCommand(item.Id), CancellationToken.None);
 
         var updated = await context.GhostListItems.FindAsync(item.Id);
@@ -67,7 +69,7 @@ public class ToggleGhostListItemCommandHandlerTests
         await context.SaveChangesAsync();
 
         var notifier = MockNotifier();
-        var handler = new ToggleGhostListItemCommandHandler(context, notifier);
+        var handler = new ToggleGhostListItemCommandHandler(context, notifier, MockPush());
         await handler.Handle(new ToggleGhostListItemCommand(item.Id), CancellationToken.None);
 
         await notifier.Received(1).NotifyItemToggled(list.Id, Arg.Any<ItemToggledNotification>());
@@ -77,7 +79,7 @@ public class ToggleGhostListItemCommandHandlerTests
     public async Task Handle_NonExistentItem_ThrowsNotFoundException()
     {
         await using var context = DbContextFactory.Create();
-        var handler = new ToggleGhostListItemCommandHandler(context, MockNotifier());
+        var handler = new ToggleGhostListItemCommandHandler(context, MockNotifier(), MockPush());
 
         var act = () => handler.Handle(new ToggleGhostListItemCommand(Guid.NewGuid()), CancellationToken.None);
 

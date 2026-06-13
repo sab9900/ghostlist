@@ -20,7 +20,6 @@ namespace GhostList.Infrastructure.Migrations
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            // Intentionally a no-op — dropping is handled by AddOwnerTokenHash.Down.
         }
     }
 }

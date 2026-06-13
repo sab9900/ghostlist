@@ -1,0 +1,111 @@
+.dashboard {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 16px 48px;
+}
+
+.dashboard__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+
+    h1 {
+        margin: 0;
+        font-size: 20px;
+    }
+}
+
+.dashboard__logout {
+    padding: 8px 14px;
+    font-size: 13px;
+    color: var(--color-text);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+
+    &:hover {
+        border-color: var(--color-primary);
+    }
+}
+
+.dashboard__status {
+    color: var(--color-text-muted);
+
+    &--error {
+        color: var(--color-danger);
+    }
+}
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+}
+
+.stat-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 16px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+}
+
+.stat-card__label {
+    font-size: 13px;
+    color: var(--color-text-muted);
+}
+
+.stat-card__value {
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.stat-card__sub {
+    font-size: 12px;
+    color: var(--color-text-muted);
+}
+
+.charts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    gap: 16px;
+}
+
+.chart {
+    padding: 16px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+
+    h2 {
+        margin: 0 0 12px;
+        font-size: 14px;
+        color: var(--color-text-muted);
+        font-weight: 500;
+    }
+}
+
+.chart__bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 120px;
+}
+
+.chart__bar-wrap {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+}
+
+.chart__bar {
+    width: 100%;
+    min-height: 2px;
+    background: var(--color-primary);
+    border-radius: 2px 2px 0 0;
+}

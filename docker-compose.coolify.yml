@@ -5,10 +5,19 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: "${DB_CONNECTION_STRING}"
+      Admin__Username: "${ADMIN_USERNAME}"
+      Admin__Password: "${ADMIN_PASSWORD}"
+      Fcm__CredentialsJson: "${FCM_CREDENTIALS_JSON}"
     restart: unless-stopped
 
   client:
     image: ghcr.io/sab9900/ghostlist-client:latest
+    depends_on:
+      - server
+    restart: unless-stopped
+
+  admin-client:
+    image: ghcr.io/sab9900/ghostlist-admin-client:latest
     depends_on:
       - server
     restart: unless-stopped

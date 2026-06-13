@@ -1,3 +1,4 @@
+using GhostList.Application.Common.Exceptions;
 using GhostList.Application.Common.Interfaces;
 using GhostList.Domain.Entities;
 using MediatR;
@@ -14,10 +15,23 @@ public record UpsertListMemberCommand(
 public class UpsertListMemberCommandHandler(IApplicationDbContext context)
     : IRequestHandler<UpsertListMemberCommand>
 {
+    public const int MaxMembersPerList = 30;
+
     public async Task Handle(UpsertListMemberCommand request, CancellationToken cancellationToken)
     {
         var existing = await context.GhostListMembers
             .FirstOrDefaultAsync(m => m.GhostListId == request.ListId && m.DeviceId == request.DeviceId, cancellationToken);
+
+        var isNewMember = existing is null;
+
+        if (isNewMember)
+        {
+            var memberCount = await context.GhostListMembers
+                .CountAsync(m => m.GhostListId == request.ListId, cancellationToken);
+
+            if (memberCount >= MaxMembersPerList)
+                throw new ListFullException();
+        }
 
         if (existing is not null)
         {
@@ -39,5 +53,8 @@ public class UpsertListMemberCommandHandler(IApplicationDbContext context)
         }
 
         await context.SaveChangesAsync(cancellationToken);
+
+        if (isNewMember)
+            await context.IncrementDailyUsageAsync(UsageMetric.Member, cancellationToken);
     }
 }

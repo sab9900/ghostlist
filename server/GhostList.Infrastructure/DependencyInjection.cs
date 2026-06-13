@@ -17,10 +17,8 @@ public static class DependencyInjection
             options.UseNpgsql(connectionString, b => b.MigrationsAssembly("GhostList.Infrastructure")));
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
-        // APNs — optional: only active when all four config values are present
-        services.Configure<ApnsOptions>(configuration.GetSection("Apns"));
-        services.AddHttpClient("apns");
-        services.AddScoped<IPushNotificationService, ApnsNotificationService>();
+        services.Configure<FcmOptions>(configuration.GetSection("Fcm"));
+        services.AddScoped<IPushNotificationService, FcmNotificationService>();
 
         return services;
     }
@@ -31,7 +29,6 @@ public static class DependencyInjection
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await db.Database.MigrateAsync();
 
-        // Belt-and-suspenders: ensure OwnerTokenHash exists regardless of migration history state.
         await db.Database.ExecuteSqlRawAsync("""
             ALTER TABLE "GhostLists"
             ADD COLUMN IF NOT EXISTS "OwnerTokenHash" character varying(64);

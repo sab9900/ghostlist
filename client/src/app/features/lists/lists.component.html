@@ -9,7 +9,6 @@
             }
             <div class="menu-anchor">
                 <button class="header__action" (click)="toggleMenu()" [attr.aria-label]="'LISTS.MENU_SETTINGS' | translate" [attr.aria-expanded]="showMenu()">
-                    <!-- Hamburger icon -->
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <line x1="3" y1="6" x2="21" y2="6" />
@@ -22,7 +21,6 @@
                 <div class="menu-overlay" (click)="closeMenu()" aria-hidden="true"></div>
                 <nav class="menu" role="menu" [attr.aria-label]="'LISTS.MENU_SETTINGS' | translate">
                     <button class="menu-item" (click)="openImportFromMenu()" role="menuitem">
-                        <!-- Download / import icon -->
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -32,7 +30,6 @@
                         <span>{{ 'LISTS.MENU_IMPORT' | translate }}</span>
                     </button>
                     <button class="menu-item" (click)="openExportFromMenu()" role="menuitem">
-                        <!-- Upload / export icon -->
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -42,7 +39,6 @@
                         <span>{{ 'LISTS.MENU_EXPORT' | translate }}</span>
                     </button>
                     <button class="menu-item" (click)="goToSettingsFromMenu()" role="menuitem">
-                        <!-- Gear / settings icon -->
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <circle cx="12" cy="12" r="3" />
@@ -53,7 +49,6 @@
                     @if (showCoffeeLink) {
                     <a class="menu-item" href="https://buymeacoffee.com/sab.norica.informatics" target="_blank"
                         rel="noopener noreferrer" role="menuitem">
-                        <!-- Coffee icon -->
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M17 8h1a4 4 0 0 1 0 8h-1" />
@@ -66,7 +61,6 @@
                     </a>
                     }
                     <button class="menu-item" (click)="openAboutFromMenu()" role="menuitem">
-                        <!-- Info icon -->
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <circle cx="12" cy="12" r="10" />
@@ -101,6 +95,16 @@
                     <span class="card__name truncate">{{ list.name }}</span>
                     <span class="card__date">{{ list.addedAt | date:'d MMM yyyy' }}</span>
                 </div>
+                @if (isShared(list.id)) {
+                <div class="card__avatars" aria-hidden="true">
+                    @for (member of avatarMembers(list.id); track member.deviceId) {
+                    <app-avatar class="card__avatar" [name]="member.displayName" [size]="22" />
+                    }
+                    @if (extraMemberCount(list.id) > 0) {
+                    <span class="card__avatar-extra">+{{ extraMemberCount(list.id) }}</span>
+                    }
+                </div>
+                }
                 @if (unreadFor(list.id) > 0) {
                 <app-badge [count]="unreadFor(list.id)" aria-hidden="true" />
                 }
@@ -115,7 +119,6 @@
         <span aria-hidden="true">+</span>
     </button>
 
-    <!-- ── Create dialog ── -->
     @if (showCreateDialog()) {
     <div class="dialog-backdrop" (click)="closeCreateDialog()" role="presentation">
         <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
@@ -138,7 +141,6 @@
     </div>
     }
 
-    <!-- ── Import dialog ── -->
     @if (showImportDialog()) {
     <div class="dialog-backdrop" (click)="closeImportDialog()" role="presentation">
         <div class="dialog dialog--qr" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
@@ -165,9 +167,15 @@
                 <div class="dialog__qr-loading" role="status" aria-live="polite">{{ 'LISTS.GENERATING' | translate }}</div>
                 }
             </div>
+            @if (importErrorMsg()) {
+            <div class="dialog__status dialog__status--err" role="alert">
+                {{ importErrorMsg()! | translate }}
+            </div>
+            } @else {
             <p class="dialog__hint dialog__hint--sm" aria-live="polite">
                 {{ 'LISTS.IMPORT_SHOW_WAITING' | translate }}
             </p>
+            }
             }
 
             @if (importMode() === 'scan') {
@@ -187,7 +195,7 @@
 
             @if (scanStep() === 'error') {
             <div class="dialog__status dialog__status--err" role="alert">
-                {{ 'LISTS.IMPORT_SCAN_ERROR' | translate }}
+                {{ (importErrorMsg() ?? 'LISTS.IMPORT_SCAN_ERROR') | translate }}
             </div>
             <button class="btn btn--ghost btn--sm" (click)="retryScan()">{{ 'COMMON.TRY_AGAIN' | translate }}</button>
             }
@@ -200,7 +208,6 @@
     </div>
     }
 
-    <!-- ── Export dialog ── -->
     @if (showExportDialog()) {
     <div class="dialog-backdrop" (click)="closeExportDialog()" role="presentation">
         <div class="dialog dialog--qr" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"

@@ -12,4 +12,17 @@ public interface IGhostListNotifier
     Task NotifyTtlUpdated(Guid listId, int newTtl);
     Task NotifyListDeleted(Guid listId);
     Task NotifyMemberKicked(Guid listId, string deviceId);
+
+    /// <summary>
+    /// Relays an encrypted image to everyone else currently connected to the
+    /// list. Not persisted anywhere — clients that aren't connected at this
+    /// moment simply never receive it.
+    /// </summary>
+    Task NotifyImageShared(Guid listId, ImageRelayNotification notification);
+
+    /// <summary>
+    /// Broadcasts that a member's read receipt advanced, so other devices can
+    /// update "read" checkmarks on their own messages without polling.
+    /// </summary>
+    Task NotifyReadReceiptUpdated(Guid listId, ReadReceiptUpdatedNotification notification);
 }

@@ -23,7 +23,7 @@ public class KickListMemberCommandHandler(IApplicationDbContext context, IGhostL
         var member = await context.GhostListMembers
             .FirstOrDefaultAsync(m => m.GhostListId == request.ListId && m.DeviceId == request.DeviceId, cancellationToken);
 
-        if (member is null) return; // idempotent
+        if (member is null) return;
 
         context.GhostListMembers.Remove(member);
         await context.SaveChangesAsync(cancellationToken);

@@ -1,0 +1,18 @@
+@if (pwaInstall.canInstall()) {
+<div class="pwa-banner" role="status">
+    <span class="pwa-banner__text">{{ 'PWA.INSTALL_PROMPT' | translate }}</span>
+    <div class="pwa-banner__actions">
+        <button class="pwa-banner__btn pwa-banner__btn--install" (click)="install()">
+            {{ 'PWA.INSTALL' | translate }}
+        </button>
+        <button class="pwa-banner__btn pwa-banner__btn--dismiss" (click)="dismiss()"
+            aria-label="{{ 'COMMON.CLOSE' | translate }}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6 6 18" />
+                <path d="M6 6l12 12" />
+            </svg>
+        </button>
+    </div>
+</div>
+}

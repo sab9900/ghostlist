@@ -1,0 +1,86 @@
+<div class="dashboard">
+    <header class="dashboard__header">
+        <h1>Ghost List — Admin</h1>
+        <button class="dashboard__logout" (click)="logout()">Logout</button>
+    </header>
+
+    @if (loading()) {
+        <p class="dashboard__status">Loading…</p>
+    } @else if (error()) {
+        <p class="dashboard__status dashboard__status--error">{{ error() }}</p>
+    } @else if (stats(); as s) {
+        <section class="stat-grid">
+            <div class="stat-card">
+                <span class="stat-card__label">Lists</span>
+                <span class="stat-card__value">{{ s.current.lists }}</span>
+                <span class="stat-card__sub">{{ s.allTime.lists }} total created</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card__label">Items</span>
+                <span class="stat-card__value">{{ s.current.items }}</span>
+                <span class="stat-card__sub">{{ s.allTime.items }} total created</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card__label">Messages</span>
+                <span class="stat-card__value">{{ s.current.messages }}</span>
+                <span class="stat-card__sub">{{ s.allTime.messages }} total created</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card__label">Members</span>
+                <span class="stat-card__value">{{ s.current.members }}</span>
+                <span class="stat-card__sub">{{ s.allTime.members }} total joined</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card__label">Device subscriptions</span>
+                <span class="stat-card__value">{{ s.current.deviceSubscriptions }}</span>
+                <span class="stat-card__sub">currently active</span>
+            </div>
+        </section>
+
+        <section class="charts">
+            <div class="chart">
+                <h2>New lists per day (last 30 days)</h2>
+                <div class="chart__bars">
+                    @for (day of s.daily; track day.date) {
+                        <div class="chart__bar-wrap" [title]="formatDate(day.date) + ': ' + day.lists">
+                            <div class="chart__bar" [style.height.%]="barHeight(day, 'lists')"></div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="chart">
+                <h2>New items per day</h2>
+                <div class="chart__bars">
+                    @for (day of s.daily; track day.date) {
+                        <div class="chart__bar-wrap" [title]="formatDate(day.date) + ': ' + day.items">
+                            <div class="chart__bar" [style.height.%]="barHeight(day, 'items')"></div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="chart">
+                <h2>New chat messages per day</h2>
+                <div class="chart__bars">
+                    @for (day of s.daily; track day.date) {
+                        <div class="chart__bar-wrap" [title]="formatDate(day.date) + ': ' + day.messages">
+                            <div class="chart__bar" [style.height.%]="barHeight(day, 'messages')"></div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="chart">
+                <h2>New members per day</h2>
+                <div class="chart__bars">
+                    @for (day of s.daily; track day.date) {
+                        <div class="chart__bar-wrap" [title]="formatDate(day.date) + ': ' + day.members">
+                            <div class="chart__bar" [style.height.%]="barHeight(day, 'members')"></div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </section>
+    }
+</div>

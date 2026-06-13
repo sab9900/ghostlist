@@ -1,10 +1,9 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { GhostListItem } from '../../../core/models';
-import { HapticsService } from '../../../core/services/haptics.service';
-import { CryptoService } from '../../../core/services/crypto.service';
-import { SeenService } from '../../../core/services/seen.service';
 import { TranslatePipe } from '@ngx-translate/core';
+import { GhostListItem } from '../../../core/models';
+import { CryptoService } from '../../../core/services/crypto.service';
+import { HapticsService } from '../../../core/services/haptics.service';
 import { AppStore } from '../../../store/app.store';
 
 interface DecryptedItem {
@@ -13,6 +12,7 @@ interface DecryptedItem {
     isChecked: boolean;
     checkedAt: string | null;
     createdAt: string;
+    isNew: boolean;
 }
 
 @Component({
@@ -24,23 +24,26 @@ interface DecryptedItem {
 export class ItemsTabComponent {
     private readonly store = inject(AppStore);
     private readonly crypto = inject(CryptoService);
-    private readonly seen = inject(SeenService);
     private readonly haptics = inject(HapticsService);
 
     protected readonly newItemText = signal('');
     protected readonly addingItem = signal(false);
     protected readonly decryptedItems = signal<DecryptedItem[]>([]);
 
-    protected readonly activeItems = computed(() => this.decryptedItems().filter(i => !i.isChecked));
-    protected readonly checkedItems = computed(() => this.decryptedItems().filter(i => i.isChecked));
+    private readonly sortedItems = computed(() => {
+        const lastActivity = (item: DecryptedItem) => new Date(item.isChecked ? (item.checkedAt ?? item.createdAt) : item.createdAt).getTime();
+        return [...this.decryptedItems()].sort((a, b) => lastActivity(b) - lastActivity(a));
+    });
+
+    protected readonly activeItems = computed(() => this.sortedItems().filter(i => !i.isChecked));
+    protected readonly checkedItems = computed(() => this.sortedItems().filter(i => i.isChecked));
 
     constructor() {
 
         effect(() => {
             void this.store.items();
             void this.decryptItems().then(() => {
-                const id = this.store.currentListId();
-                if (id) this.seen.markItemsSeen(id);
+                void this.store.markItemsRead();
             });
         });
     }
@@ -48,6 +51,9 @@ export class ItemsTabComponent {
     private async decryptItems(): Promise<void> {
         const key = this.store.currentEncryptionKey();
         if (!key) return;
+        const listId = this.store.currentListId();
+        const divider = listId ? this.store.itemsReadDivider()[listId] : null;
+        const cutoff = divider ? new Date(divider).getTime() : 0;
         const items = await Promise.all(
             this.store.items().map(async (item: GhostListItem) => ({
                 id: item.id,
@@ -55,6 +61,7 @@ export class ItemsTabComponent {
                 isChecked: item.isChecked,
                 checkedAt: item.checkedAt,
                 createdAt: item.createdAt,
+                isNew: new Date(item.createdAt).getTime() > cutoff,
             })),
         );
         this.decryptedItems.set(items);

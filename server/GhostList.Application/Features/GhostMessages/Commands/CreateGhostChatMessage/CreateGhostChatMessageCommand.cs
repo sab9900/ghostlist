@@ -13,7 +13,8 @@ public record CreateGhostMessageCommand(
     string MessageInitializationVector,
     string EncryptedSenderName,
     string SenderNameInitializationVector,
-    string? SenderDeviceToken = null) : IRequest<Guid>;
+    Guid? ReplyToMessageId = null,
+    string? SenderDeviceId = null) : IRequest<Guid>;
 
 public class CreateGhostChatMessageCommandHandler : IRequestHandler<CreateGhostMessageCommand, Guid>
 {
@@ -47,10 +48,12 @@ public class CreateGhostChatMessageCommandHandler : IRequestHandler<CreateGhostM
             request.EncryptedMessage,
             request.MessageInitializationVector,
             request.EncryptedSenderName,
-            request.SenderNameInitializationVector);
+            request.SenderNameInitializationVector,
+            request.ReplyToMessageId);
 
         _context.GhostChatMessages.Add(newMessage);
         await _context.SaveChangesAsync(cancellationToken);
+        await _context.IncrementDailyUsageAsync(UsageMetric.Message, cancellationToken);
 
         await _notifier.NotifyMessageCreated(newMessage.GhostListId, new MessageCreatedNotification(
             newMessage.Id,
@@ -59,10 +62,11 @@ public class CreateGhostChatMessageCommandHandler : IRequestHandler<CreateGhostM
             newMessage.InitializationVector,
             newMessage.EncryptedSenderName,
             newMessage.SenderNameInitializationVector,
+            newMessage.ReplyToMessageId,
             newMessage.CreatedAt));
 
-        _ = _push.SendMessageNotificationAsync(newMessage.GhostListId, request.SenderDeviceToken, cancellationToken)
-                 .ContinueWith(t => { /* swallow — push is best-effort */ }, TaskContinuationOptions.OnlyOnFaulted);
+        _ = _push.SendNotificationAsync(newMessage.GhostListId, PushNotificationType.Message, request.SenderDeviceId, cancellationToken)
+                 .ContinueWith(t => { }, TaskContinuationOptions.OnlyOnFaulted);
 
         return newMessage.Id;
     }
