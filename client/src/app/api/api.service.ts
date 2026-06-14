@@ -184,6 +184,16 @@ export class ApiService {
         );
     }
 
+    putSyncBundleReply(sessionId: string, encryptedPayload: string, iv: string, senderPublicKey: string): Observable<void> {
+        return this.http.put<void>(`${this.BASE}/share/${sessionId}/sync-bundle-reply`, { encryptedPayload, iv, senderPublicKey });
+    }
+
+    getSyncBundleReply(sessionId: string): Observable<{ encryptedPayload: string; iv: string; senderPublicKey: string }> {
+        return this.http.get<{ encryptedPayload: string; iv: string; senderPublicKey: string }>(
+            `${this.BASE}/share/${sessionId}/sync-bundle-reply`,
+        );
+    }
+
     getBackendVersion(): Observable<{ version: string }> {
         return this.http.get<{ version: string }>(`${this.BASE}/version`);
     }

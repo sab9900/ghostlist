@@ -16,10 +16,12 @@ export class SyncComponent implements OnInit {
     private readonly crypto = inject(CryptoService);
     protected readonly store = inject(AppStore);
 
-    protected readonly state = signal<'confirm' | 'sending' | 'done' | 'error'>('confirm');
-    protected readonly errorKey = signal<'invalid' | 'no-lists' | 'failed'>('invalid');
+    protected readonly state = signal<'confirm' | 'sending' | 'waiting' | 'done' | 'error'>('confirm');
+    protected readonly errorKey = signal<'invalid' | 'failed'>('invalid');
+    protected readonly importedCount = signal(0);
     private sessionId = '';
     private receiverPublicKey = '';
+    private pollTimer: ReturnType<typeof setInterval> | null = null;
 
     ngOnInit(): void {
         const id = this.route.snapshot.paramMap.get('id') ?? '';
@@ -36,23 +38,38 @@ export class SyncComponent implements OnInit {
     }
 
     async sendLists(): Promise<void> {
-        if (this.store.knownLists().length === 0) {
-            this.errorKey.set('no-lists');
-            this.state.set('error');
-            return;
-        }
-
         this.state.set('sending');
         try {
-            await this.store.pushSyncBundle(this.sessionId, this.receiverPublicKey);
-            this.state.set('done');
+            await this.store.initSyncSendToReceiver(this.sessionId, this.receiverPublicKey);
+            this.state.set('waiting');
+            this.startPoll();
         } catch {
             this.errorKey.set('failed');
             this.state.set('error');
         }
     }
 
+    private startPoll(): void {
+        this.pollTimer = setInterval(async () => {
+            try {
+                const count = await this.store.claimSyncReply(this.sessionId);
+                if (count === null) return;
+                this.stopPoll();
+                this.importedCount.set(count);
+                this.state.set('done');
+            } catch { }
+        }, 2000);
+    }
+
+    private stopPoll(): void {
+        if (this.pollTimer !== null) {
+            clearInterval(this.pollTimer);
+            this.pollTimer = null;
+        }
+    }
+
     goHome(): void {
+        this.stopPoll();
         this.router.navigate(['/']);
     }
 }

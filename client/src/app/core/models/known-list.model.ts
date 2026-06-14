@@ -34,9 +34,17 @@ export interface SyncQrPayload {
     sessionId: string;
 }
 
-export interface SyncSendQrPayload {
-    type: 'sync-send';
-    sessionId: string;
+export interface SyncBundleListEntry {
+    id: string;
+    name: string;
+    encryptionKey: string;
+    ownerToken?: string;
+}
+
+export interface SyncBundlePayload {
+    lists: SyncBundleListEntry[];
+    senderName: string | null;
+    userId: string | null;
 }
 
 export interface ListMember {

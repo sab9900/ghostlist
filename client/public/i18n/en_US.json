@@ -215,9 +215,8 @@
     "SYNC_SEND": "Send to another device",
     "SYNC_RECEIVE_HINT": "On the other device: open the link or scan the QR code — lists are transferred automatically.",
     "SYNC_WAITING": "Waiting — will complete automatically…",
-    "SYNC_RECEIVE_DONE": "Done! {{count}} new list(s) imported.",
+    "SYNC_DONE": "Done! {{count}} list(s) merged. Both devices are now in sync.",
     "SYNC_SEND_HINT": "On the other device, go to Settings → Sync Machine → Receive and show the QR code.",
-    "SYNC_SEND_DONE": "Done! All lists have been sent.",
     "SYNC_ERROR": "Something went wrong. Please try again.",
     "SECURITY": {
       "TITLE": "Security",
@@ -256,10 +255,6 @@
     },
     "SYNC_COPY_LINK": "Copy link",
     "SYNC_LINK_COPIED": "Link copied!",
-    "SYNC_SEND_CHOOSE_HINT": "How do you want to connect?",
-    "SYNC_SHOW_QR": "Show QR code",
-    "SYNC_SCAN_QR": "Scan QR code",
-    "SYNC_SEND_QR_HINT": "On the other device: Settings → Sync Machine → Receive → scan QR code.",
     "SYNC_REQUIRES_BIOMETRIC": "Enable biometric lock (above) to use Sync Machine."
   },
   "SECURITY": {
@@ -304,27 +299,16 @@
     "FOOTER": "Made with care by"
   },
   "SYNC_SEND": {
-    "TITLE": "Send lists",
-    "CONFIRM_TITLE": "Transfer lists",
-    "CONFIRM_HINT": "{{count}} list(s) will be sent to the other device.",
-    "CONFIRM_BTN": "Send now",
-    "SENDING": "Sending…",
+    "TITLE": "Sync devices",
+    "CONFIRM_TITLE": "Sync devices",
+    "CONFIRM_HINT": "{{count}} list(s) on this device will be merged with the other device's lists.",
+    "CONFIRM_BTN": "Sync now",
+    "SENDING": "Syncing…",
     "DONE_TITLE": "Done!",
-    "DONE_HINT": "All lists transferred. The other device will import them automatically.",
+    "DONE_HINT": "{{count}} list(s) merged. Both devices are now in sync.",
     "ERROR_TITLE": "Error",
     "ERROR_INVALID": "Invalid sync link.",
-    "ERROR_NO_LISTS": "You have no lists to send.",
     "ERROR_FAILED": "Something went wrong. Please try again.",
-    "GO_HOME": "Go to home"
-  },
-  "SYNC_RECEIVE_PAGE": {
-    "TITLE": "Receive lists",
-    "CONNECTING": "Connecting…",
-    "WAITING": "Waiting for transfer…",
-    "DONE_TITLE": "Done!",
-    "DONE_HINT": "{{count}} new list(s) imported.",
-    "ERROR_TITLE": "Error",
-    "ERROR_HINT": "Something went wrong. Please try again.",
     "GO_HOME": "Go to home"
   },
   "PWA": {

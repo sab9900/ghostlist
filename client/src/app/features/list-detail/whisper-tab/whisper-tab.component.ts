@@ -1,7 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, effect, inject, signal, untracked } from '@angular/core';
+import { Component, DestroyRef, ElementRef, ViewChild, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { Capacitor } from '@capacitor/core';
+import { Keyboard } from '@capacitor/keyboard';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../../api/api.service';
@@ -36,6 +38,8 @@ const INVITE_COOLDOWN_MS = 60_000;
     styleUrl: './whisper-tab.component.scss',
 })
 export class WhisperTabComponent {
+    @ViewChild('whisperFeed') private whisperFeedRef?: ElementRef<HTMLDivElement>;
+
     protected readonly store = inject(AppStore);
     protected readonly prefs = inject(UserPreferencesService);
     protected readonly deviceId = inject(DeviceIdService);
@@ -70,6 +74,22 @@ export class WhisperTabComponent {
     protected readonly onCooldown = () => this.cooldownRemaining() > 0;
 
     constructor() {
+        if (Capacitor.isNativePlatform()) {
+            // Mirrors chat-tab's handling: pin the whisper feed to the bottom for the
+            // duration of the --keyboard-height CSS transition (200ms, see styles.scss)
+            // when the keyboard starts animating in. Besides keeping the latest
+            // whisper/compose bar in view, the repeated layout reads/writes this
+            // triggers also work around an Android WebView repaint glitch where the
+            // area freed up by the padding-bottom transition is left as a stale
+            // black region until something forces a reflow.
+            const listener = Keyboard.addListener('keyboardWillShow', () => {
+                this.scrollToBottomDuringTransition();
+            });
+            inject(DestroyRef).onDestroy(() => {
+                void listener.then(handle => handle.remove());
+            });
+        }
+
         let joinedListId: string | null = null;
 
         const leave = (listId: string | null) => {
@@ -144,9 +164,40 @@ export class WhisperTabComponent {
         } catch { }
     }
 
+    /**
+     * Pins the whisper feed to the bottom on every frame while the keyboard is
+     * animating in. As --keyboard-height transitions, the feed's clientHeight
+     * shrinks, so the "bottom" scroll offset keeps increasing; re-applying
+     * scrollTop = scrollHeight each frame tracks that smoothly instead of
+     * jumping once the animation has finished.
+     */
+    private scrollToBottomDuringTransition(): void {
+        const el = this.whisperFeedRef?.nativeElement;
+        if (!el) return;
+
+        const durationMs = 250; // matches padding-bottom transition + a small buffer
+        const start = performance.now();
+
+        const step = () => {
+            el.scrollTop = el.scrollHeight;
+            if (performance.now() - start < durationMs) {
+                requestAnimationFrame(step);
+            }
+        };
+        requestAnimationFrame(step);
+    }
+
+    private scrollToBottom(): void {
+        requestAnimationFrame(() => {
+            const el = this.whisperFeedRef?.nativeElement;
+            if (el) el.scrollTop = el.scrollHeight;
+        });
+    }
+
     private pushWhisper(text: string, senderName: string, mine: boolean): void {
         const id = crypto.randomUUID();
         this.whispers.update(list => [...list, { id, text, senderName, mine, fading: false }]);
+        this.scrollToBottom();
 
         const fadeTimer = setTimeout(() => {
             this.whispers.update(list => list.map(w => w.id === id ? { ...w, fading: true } : w));

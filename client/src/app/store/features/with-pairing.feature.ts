@@ -10,8 +10,8 @@ import {
     ListMember,
     ReceiveQrPayload,
     ShareDelivery,
+    SyncBundlePayload,
     SyncQrPayload,
-    SyncSendQrPayload,
 } from '../../core/models';
 import { CryptoService } from '../../core/services/crypto.service';
 import { DeviceIdService } from '../../core/services/device-id.service';
@@ -48,6 +48,63 @@ export function withPairing() {
             const pendingReceives = new Map<string, CryptoKey>();
             const pendingExportReceives = new Map<string, CryptoKey>();
             const pendingSyncReceives = new Map<string, CryptoKey>();
+            const pendingSyncReplyReceives = new Map<string, CryptoKey>();
+            const syncBundleClaimed = new Map<string, number>();
+
+            const buildSyncPayload = (): string => {
+                const lists = store.knownLists();
+                const payload: SyncBundlePayload = {
+                    lists: lists.map(l => ({ id: l.id, name: l.name, encryptionKey: l.encryptionKey, ownerToken: l.ownerToken })),
+                    // Carry the display name across so the other device shows up as "you"
+                    // (same name) instead of "Anonymous" when it registers as a list member.
+                    senderName: prefs.senderName() || null,
+                    // Carry our person-identity across so the other device "remains"
+                    // this same person — its items/messages are recognized as "mine" too.
+                    userId: userId.userId(),
+                };
+                return JSON.stringify(payload);
+            };
+
+            const mergeIncomingBundle = async (
+                parsed: SyncBundlePayload,
+                options: { adoptIdentity: boolean },
+            ): Promise<number> => {
+                if (options.adoptIdentity) {
+                    // Adopt the other device's display name so this device shows up as
+                    // "you" (same name) in member lists/chat, rather than "Anonymous".
+                    if (parsed.senderName && !prefs.senderName()) {
+                        prefs.setSenderName(parsed.senderName);
+                    }
+
+                    // Adopt the other device's userId — both devices now represent the
+                    // same person, so this device's items/messages are recognized as
+                    // "mine" everywhere too, and unread counts stay correct after sync.
+                    if (parsed.userId) {
+                        userId.setUserId(parsed.userId);
+                    }
+                }
+
+                let imported = 0;
+                for (const e of parsed.lists) {
+                    const already = store.knownLists().find(l => l.id === e.id);
+                    if (already) {
+                        if (e.ownerToken && !already.ownerToken) {
+                            await store._persistAndTrack({ ...already, ownerToken: e.ownerToken });
+                        }
+                        void store._registerAsMember(e.id, e.encryptionKey).catch(() => { });
+                        continue;
+                    }
+                    const entry: KnownList = { id: e.id, encryptionKey: e.encryptionKey, name: e.name, addedAt: new Date().toISOString(), ownerToken: e.ownerToken };
+                    await store._persistAndTrack(entry);
+                    await hub.connect();
+                    await hub.joinList(e.id);
+                    foreground.start();
+                    await push.subscribeToList(e.id);
+                    void store._registerAsMember(e.id, e.encryptionKey);
+                    imported++;
+                }
+                return imported;
+            };
 
             return {
                 generateKey(): Promise<string> {
@@ -204,85 +261,85 @@ export function withPairing() {
                     return { type: 'sync', publicKey: publicKeyB64, sessionId };
                 },
 
-                async pushSyncBundle(sessionId: string, receiverPublicKeyB64: string): Promise<void> {
-                    const lists = store.knownLists();
-                    const payload = JSON.stringify({
-                        lists: lists.map(l => ({ id: l.id, name: l.name, encryptionKey: l.encryptionKey, ownerToken: l.ownerToken })),
-                        // Carry the display name across so the receiving device shows up as "you"
-                        // (same name) instead of "Anonymous" when it registers as a list member.
-                        senderName: prefs.senderName() || null,
-                        // Carry our person-identity across so the receiving device "remains"
-                        // this same person — its items/messages are recognized as "mine" too.
-                        userId: userId.userId(),
-                    });
+                /**
+                 * Sender side (scanned the receiver's QR / opened its link): push our
+                 * own lists + identity to the receiver, encrypted to its public key,
+                 * then publish an ephemeral public key via the handshake slot so the
+                 * receiver can send its lists back to us.
+                 */
+                async initSyncSendToReceiver(sessionId: string, receiverPublicKeyB64: string): Promise<void> {
+                    const payload = buildSyncPayload();
                     const bundle = await crypto.wrapPayload(payload, receiverPublicKeyB64);
                     await firstValueFrom(api.putSyncBundle(sessionId, bundle.encryptedPayload, bundle.iv, bundle.senderPublicKey));
-                },
 
-                async claimSyncBundle(sessionId: string): Promise<number> {
-                    const privateKey = pendingSyncReceives.get(sessionId);
-                    if (!privateKey) throw new Error('No pending sync receive for this session.');
-                    const bundle = await firstValueFrom(api.getSyncBundle(sessionId));
-                    pendingSyncReceives.delete(sessionId);
-                    const plain = await crypto.unwrapPayload(bundle.encryptedPayload, bundle.iv, bundle.senderPublicKey, privateKey);
-                    const parsed = JSON.parse(plain) as
-                        | { lists: { id: string; name: string; encryptionKey: string; ownerToken?: string }[]; senderName?: string | null; userId?: string | null }
-                        | { id: string; name: string; encryptionKey: string; ownerToken?: string }[];
-
-                    // Older clients sent a bare array; newer ones send { lists, senderName, userId }.
-                    const entries = Array.isArray(parsed) ? parsed : parsed.lists;
-                    const syncedSenderName = Array.isArray(parsed) ? null : parsed.senderName;
-                    const syncedUserId = Array.isArray(parsed) ? null : parsed.userId;
-
-                    // Adopt the sending device's display name so this device shows up as "you"
-                    // (same name) in member lists/chat, rather than "Anonymous".
-                    if (syncedSenderName && !prefs.senderName()) {
-                        prefs.setSenderName(syncedSenderName);
-                    }
-
-                    // Adopt the sending device's userId — both devices now represent the
-                    // same person, so this device's items/messages are recognized as
-                    // "mine" everywhere too, and unread counts stay correct after sync.
-                    if (syncedUserId) {
-                        userId.setUserId(syncedUserId);
-                    }
-
-                    let imported = 0;
-                    for (const e of entries) {
-                        const already = store.knownLists().find(l => l.id === e.id);
-                        if (already) {
-                            if (e.ownerToken && !already.ownerToken) {
-                                await store._persistAndTrack({ ...already, ownerToken: e.ownerToken });
-                            }
-                            void store._registerAsMember(e.id, e.encryptionKey).catch(() => { });
-                            continue;
-                        }
-                        const entry: KnownList = { id: e.id, encryptionKey: e.encryptionKey, name: e.name, addedAt: new Date().toISOString(), ownerToken: e.ownerToken };
-                        await store._persistAndTrack(entry);
-                        await hub.connect();
-                        await hub.joinList(e.id);
-                        foreground.start();
-                        await push.subscribeToList(e.id);
-                        void store._registerAsMember(e.id, e.encryptionKey);
-                        imported++;
-                    }
-                    return imported;
-                },
-
-                initSyncSend(): SyncSendQrPayload {
-                    const sessionId = self.crypto.randomUUID();
-                    return { type: 'sync-send', sessionId };
-                },
-
-                async respondToSyncSend(sessionId: string): Promise<void> {
                     const { publicKeyB64, privateKey } = await crypto.generateEcdhKeypair();
-                    pendingSyncReceives.set(sessionId, privateKey);
+                    pendingSyncReplyReceives.set(sessionId, privateKey);
                     await firstValueFrom(api.postHandshake(sessionId, publicKeyB64));
                 },
 
-                async pollAndPushSyncBundle(sessionId: string): Promise<void> {
-                    const handshake = await firstValueFrom(api.pollHandshake(sessionId));
-                    await this.pushSyncBundle(sessionId, handshake.receiverPublicKey);
+                /**
+                 * Sender side: poll for the receiver's reply bundle (its lists +
+                 * identity, encrypted to the ephemeral key from initSyncSendToReceiver)
+                 * and merge it in. Returns null while not yet available (keep polling),
+                 * or the number of newly-imported lists once done. We keep our own
+                 * identity — the receiver already adopted it.
+                 */
+                async claimSyncReply(sessionId: string): Promise<number | null> {
+                    const privateKey = pendingSyncReplyReceives.get(sessionId);
+                    if (!privateKey) throw new Error('No pending sync reply for this session.');
+
+                    let bundle;
+                    try {
+                        bundle = await firstValueFrom(api.getSyncBundleReply(sessionId));
+                    } catch {
+                        return null;
+                    }
+                    pendingSyncReplyReceives.delete(sessionId);
+
+                    const plain = await crypto.unwrapPayload(bundle.encryptedPayload, bundle.iv, bundle.senderPublicKey, privateKey);
+                    const parsed = JSON.parse(plain) as SyncBundlePayload;
+                    return mergeIncomingBundle(parsed, { adoptIdentity: false });
+                },
+
+                /**
+                 * Receiver side (generated the QR/link): claim the sender's bundle,
+                 * merge its lists in and adopt its identity (userId/senderName), then
+                 * send our own (now-merged) lists back so the sender ends up with the
+                 * same set of lists too. Returns null while not yet complete (keep
+                 * polling), or the number of newly-imported lists once both steps are
+                 * done.
+                 */
+                async claimSyncBundle(sessionId: string): Promise<number | null> {
+                    const privateKey = pendingSyncReceives.get(sessionId);
+                    if (!privateKey) throw new Error('No pending sync receive for this session.');
+
+                    if (!syncBundleClaimed.has(sessionId)) {
+                        let bundle;
+                        try {
+                            bundle = await firstValueFrom(api.getSyncBundle(sessionId));
+                        } catch {
+                            return null;
+                        }
+                        const plain = await crypto.unwrapPayload(bundle.encryptedPayload, bundle.iv, bundle.senderPublicKey, privateKey);
+                        const parsed = JSON.parse(plain) as SyncBundlePayload;
+                        const imported = await mergeIncomingBundle(parsed, { adoptIdentity: true });
+                        syncBundleClaimed.set(sessionId, imported);
+                    }
+
+                    let handshake;
+                    try {
+                        handshake = await firstValueFrom(api.pollHandshake(sessionId));
+                    } catch {
+                        return null;
+                    }
+                    const payload = buildSyncPayload();
+                    const reply = await crypto.wrapPayload(payload, handshake.receiverPublicKey);
+                    await firstValueFrom(api.putSyncBundleReply(sessionId, reply.encryptedPayload, reply.iv, reply.senderPublicKey));
+
+                    pendingSyncReceives.delete(sessionId);
+                    const imported = syncBundleClaimed.get(sessionId) ?? 0;
+                    syncBundleClaimed.delete(sessionId);
+                    return imported;
                 },
             };
         }),

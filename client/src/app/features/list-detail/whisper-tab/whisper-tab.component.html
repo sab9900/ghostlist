@@ -58,7 +58,7 @@
     }
 </div>
 
-<div class="whisper-feed" role="log" aria-live="polite" aria-relevant="additions">
+<div class="whisper-feed" #whisperFeed role="log" aria-live="polite" aria-relevant="additions">
     @if (whispers().length === 0) {
     <p class="whisper-feed__hint">{{ 'WHISPER.HINT' | translate }}</p>
     }

@@ -213,9 +213,8 @@
     "SYNC_SEND": "Enviar a otro dispositivo",
     "SYNC_RECEIVE_HINT": "En el otro dispositivo: abre el enlace o escanea el código QR — las listas se transfieren automáticamente.",
     "SYNC_WAITING": "Esperando — se completará automáticamente…",
-    "SYNC_RECEIVE_DONE": "¡Listo! {{count}} lista(s) importada(s).",
+    "SYNC_DONE": "¡Listo! {{count}} lista(s) fusionada(s). Ambos dispositivos están ahora sincronizados.",
     "SYNC_SEND_HINT": "En el otro dispositivo: Configuración → Máquina de Sincronización → Recibir y mostrar el código QR.",
-    "SYNC_SEND_DONE": "¡Listo! Todas las listas han sido enviadas.",
     "SYNC_ERROR": "Algo salió mal. Por favor, inténtalo de nuevo.",
     "SECURITY": {
       "TITLE": "Seguridad",
@@ -254,10 +253,6 @@
     },
     "SYNC_COPY_LINK": "Copiar enlace",
     "SYNC_LINK_COPIED": "¡Enlace copiado!",
-    "SYNC_SEND_CHOOSE_HINT": "¿Cómo quieres conectar?",
-    "SYNC_SHOW_QR": "Mostrar código QR",
-    "SYNC_SCAN_QR": "Escanear código QR",
-    "SYNC_SEND_QR_HINT": "En el otro dispositivo: Ajustes → Máquina Sync → Recibir → escanear código QR.",
     "SYNC_REQUIRES_BIOMETRIC": "Activa el bloqueo biométrico (arriba) para usar la Máquina Sync."
   },
   "SECURITY": {
@@ -302,27 +297,16 @@
     "FOOTER": "Hecho con cariño por"
   },
   "SYNC_SEND": {
-    "TITLE": "Enviar listas",
-    "CONFIRM_TITLE": "Transferir listas",
-    "CONFIRM_HINT": "{{count}} lista(s) se enviarán al otro dispositivo.",
-    "CONFIRM_BTN": "Enviar ahora",
-    "SENDING": "Enviando…",
+    "TITLE": "Sincronizar dispositivos",
+    "CONFIRM_TITLE": "Sincronizar dispositivos",
+    "CONFIRM_HINT": "{{count}} lista(s) de este dispositivo se fusionarán con las del otro dispositivo.",
+    "CONFIRM_BTN": "Sincronizar ahora",
+    "SENDING": "Sincronizando…",
     "DONE_TITLE": "¡Listo!",
-    "DONE_HINT": "Todas las listas transferidas. El otro dispositivo las importará automáticamente.",
+    "DONE_HINT": "{{count}} lista(s) fusionada(s). Ambos dispositivos están ahora sincronizados.",
     "ERROR_TITLE": "Error",
     "ERROR_INVALID": "Enlace de sincronización inválido.",
-    "ERROR_NO_LISTS": "No tienes listas para enviar.",
     "ERROR_FAILED": "Algo salió mal. Por favor, inténtalo de nuevo.",
-    "GO_HOME": "Ir al inicio"
-  },
-  "SYNC_RECEIVE_PAGE": {
-    "TITLE": "Recibir listas",
-    "CONNECTING": "Conectando…",
-    "WAITING": "Esperando transferencia…",
-    "DONE_TITLE": "¡Listo!",
-    "DONE_HINT": "{{count}} lista(s) nueva(s) importada(s).",
-    "ERROR_TITLE": "Error",
-    "ERROR_HINT": "Algo salió mal. Por favor, inténtalo de nuevo.",
     "GO_HOME": "Ir al inicio"
   },
   "PWA": {

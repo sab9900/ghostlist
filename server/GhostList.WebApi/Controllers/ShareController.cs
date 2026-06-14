@@ -67,4 +67,22 @@ public class ShareController(IMemoryCache cache) : ControllerBase
         cache.Remove($"sync:{sessionId}");
         return Ok(dto);
     }
+
+    [HttpPut("{sessionId}/sync-bundle-reply")]
+    public IActionResult PutSyncBundleReply(string sessionId, [FromBody] SyncBundleDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(sessionId)) return BadRequest();
+        cache.Set($"syncr:{sessionId}", dto, CacheOptions);
+        return NoContent();
+    }
+
+    [HttpGet("{sessionId}/sync-bundle-reply")]
+    public ActionResult<SyncBundleDto> GetSyncBundleReply(string sessionId)
+    {
+        if (!cache.TryGetValue<SyncBundleDto>($"syncr:{sessionId}", out var dto) || dto is null)
+            return NotFound();
+
+        cache.Remove($"syncr:{sessionId}");
+        return Ok(dto);
+    }
 }

@@ -95,10 +95,31 @@ export class HubService implements OnDestroy {
         );
     }
 
+    /**
+     * Tracks an in-flight `connection.start()` call so concurrent callers
+     * (e.g. app startup's `onInit` rejoining known lists at the same time as
+     * a fresh `JoinComponent`/`joinList()` call) await the *same* connect
+     * attempt instead of one of them returning early while the connection is
+     * still `Connecting`. Without this, the early-returning caller would go
+     * on to call `joinList()` against a not-yet-`Connected` connection, that
+     * `JoinListRoom` invoke would throw, and — if list data was cached — the
+     * error got swallowed, leaving the socket never actually joined to the
+     * list's room until the user left and re-entered the list.
+     */
+    private connectPromise: Promise<void> | null = null;
+
     async connect(): Promise<void> {
-        if (this.connection.state !== signalR.HubConnectionState.Disconnected) return;
-        await this.connection.start();
-        this.connectionState.set(signalR.HubConnectionState.Connected);
+        if (this.connection.state === signalR.HubConnectionState.Connected) return;
+
+        if (this.connection.state === signalR.HubConnectionState.Disconnected && !this.connectPromise) {
+            this.connectPromise = this.connection.start()
+                .then(() => this.connectionState.set(signalR.HubConnectionState.Connected))
+                .finally(() => {
+                    this.connectPromise = null;
+                });
+        }
+
+        if (this.connectPromise) await this.connectPromise;
     }
 
     async disconnect(): Promise<void> {

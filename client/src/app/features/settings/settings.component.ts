@@ -261,8 +261,7 @@ export class SettingsComponent {
 
     protected readonly syncStep = signal<
         'idle' | 'receive-qr' | 'receive-done' |
-        'send-choose' | 'send-scan' | 'send-done' |
-        'send-qr' | 'send-qr-done' |
+        'send-scan' | 'send-waiting' | 'send-done' |
         'error'
     >('idle');
     protected readonly syncQrData = signal<string | null>(null);
@@ -304,6 +303,7 @@ export class SettingsComponent {
         this.syncPollTimer = setInterval(async () => {
             try {
                 const count = await this.store.claimSyncBundle(sessionId);
+                if (count === null) return;
                 this.stopSyncPoll();
                 this.syncImportedCount.set(count);
                 this.syncStep.set('receive-done');
@@ -314,10 +314,6 @@ export class SettingsComponent {
     async startSyncSend(): Promise<void> {
         if (!await this.confirmSyncAuth()) return;
         this.resetSync();
-        this.syncStep.set('send-choose');
-    }
-
-    startSyncSendScan(): void {
         this.syncStep.set('send-scan');
     }
 
@@ -325,32 +321,23 @@ export class SettingsComponent {
         try {
             const payload = JSON.parse(raw) as SyncQrPayload;
             if (payload.type !== 'sync') throw new Error('Not a sync QR.');
-            await this.store.pushSyncBundle(payload.sessionId, payload.publicKey);
-            this.syncStep.set('send-done');
-        } catch {
-            this.syncStep.set('error');
-        }
-    }
-
-    startSyncSendQr(): void {
-        this.resetSync();
-        try {
-            const payload = this.store.initSyncSend();
+            await this.store.initSyncSendToReceiver(payload.sessionId, payload.publicKey);
             this.syncSessionId = payload.sessionId;
-            this.syncQrData.set(JSON.stringify(payload));
-            this.syncStep.set('send-qr');
-            this.startSendQrPoll(payload.sessionId);
+            this.syncStep.set('send-waiting');
+            this.startSendReplyPoll(payload.sessionId);
         } catch {
             this.syncStep.set('error');
         }
     }
 
-    private startSendQrPoll(sessionId: string): void {
+    private startSendReplyPoll(sessionId: string): void {
         this.syncPollTimer = setInterval(async () => {
             try {
-                await this.store.pollAndPushSyncBundle(sessionId);
+                const count = await this.store.claimSyncReply(sessionId);
+                if (count === null) return;
                 this.stopSyncPoll();
-                this.syncStep.set('send-qr-done');
+                this.syncImportedCount.set(count);
+                this.syncStep.set('send-done');
             } catch { }
         }, 2000);
     }

@@ -14,15 +14,14 @@
             <p class="card__hint">{{ 'SYNC_SEND.CONFIRM_HINT' | translate: { count: store.knownLists().length } }}</p>
             <div class="actions">
                 <button class="btn btn--ghost" (click)="goHome()">{{ 'COMMON.CANCEL' | translate }}</button>
-                <button class="btn btn--primary" (click)="sendLists()"
-                    [disabled]="store.knownLists().length === 0">
+                <button class="btn btn--primary" (click)="sendLists()">
                     {{ 'SYNC_SEND.CONFIRM_BTN' | translate }}
                 </button>
             </div>
         </div>
         }
 
-        @if (state() === 'sending') {
+        @if (state() === 'sending' || state() === 'waiting') {
         <div class="card card--loading" role="status" aria-live="polite" [attr.aria-label]="'SYNC_SEND.SENDING' | translate">
             <div class="spinner" aria-hidden="true"></div>
             <p class="card__hint">{{ 'SYNC_SEND.SENDING' | translate }}</p>
@@ -33,7 +32,7 @@
         <div class="card" role="status" aria-live="polite" aria-labelledby="done-heading">
             <span class="card__icon" aria-hidden="true">✓</span>
             <h2 class="card__title" id="done-heading">{{ 'SYNC_SEND.DONE_TITLE' | translate }}</h2>
-            <p class="card__hint">{{ 'SYNC_SEND.DONE_HINT' | translate }}</p>
+            <p class="card__hint">{{ 'SYNC_SEND.DONE_HINT' | translate: { count: importedCount() } }}</p>
             <div class="actions">
                 <button class="btn btn--primary" (click)="goHome()">{{ 'SYNC_SEND.GO_HOME' | translate }}</button>
             </div>
@@ -46,7 +45,6 @@
             <h2 class="card__title" id="error-heading">{{ 'SYNC_SEND.ERROR_TITLE' | translate }}</h2>
             <p class="card__hint">
                 @if (errorKey() === 'invalid') { {{ 'SYNC_SEND.ERROR_INVALID' | translate }} }
-                @if (errorKey() === 'no-lists') { {{ 'SYNC_SEND.ERROR_NO_LISTS' | translate }} }
                 @if (errorKey() === 'failed') { {{ 'SYNC_SEND.ERROR_FAILED' | translate }} }
             </p>
             <div class="actions">

@@ -213,16 +213,11 @@
     "SYNC_SEND": "Invia a un altro dispositivo",
     "SYNC_RECEIVE_HINT": "Sull'altro dispositivo: apri il link o scansiona il codice QR — le liste vengono trasferite automaticamente.",
     "SYNC_WAITING": "In attesa — si completerà automaticamente…",
-    "SYNC_RECEIVE_DONE": "Fatto! {{count}} lista/e importata/e.",
+    "SYNC_DONE": "Fatto! {{count}} lista/e unita/e. Entrambi i dispositivi sono ora sincronizzati.",
     "SYNC_SEND_HINT": "Sull'altro dispositivo: Impostazioni → Macchina di Sincronizzazione → Ricevi e mostra il codice QR.",
-    "SYNC_SEND_DONE": "Fatto! Tutte le liste sono state inviate.",
     "SYNC_ERROR": "Qualcosa è andato storto. Riprova.",
     "SYNC_COPY_LINK": "Copia link",
     "SYNC_LINK_COPIED": "Link copiato!",
-    "SYNC_SEND_CHOOSE_HINT": "Come vuoi connetterti?",
-    "SYNC_SHOW_QR": "Mostra codice QR",
-    "SYNC_SCAN_QR": "Scansiona codice QR",
-    "SYNC_SEND_QR_HINT": "Sull'altro dispositivo: Impostazioni → Sync Machine → Ricevi → scansiona il codice QR.",
     "SYNC_REQUIRES_BIOMETRIC": "Attiva il blocco biometrico (sopra) per usare la Sync Machine.",
     "SECURITY": {
       "MASTER_PASSWORD": {
@@ -278,27 +273,16 @@
     "FOOTER": "Realizzato con cura da"
   },
   "SYNC_SEND": {
-    "TITLE": "Invia liste",
-    "CONFIRM_TITLE": "Trasferisci liste",
-    "CONFIRM_HINT": "{{count}} lista/e verrà/verranno inviata/e all'altro dispositivo.",
-    "CONFIRM_BTN": "Invia ora",
-    "SENDING": "Invio in corso…",
+    "TITLE": "Sincronizza dispositivi",
+    "CONFIRM_TITLE": "Sincronizza dispositivi",
+    "CONFIRM_HINT": "{{count}} lista/e su questo dispositivo verranno unite con quelle dell'altro dispositivo.",
+    "CONFIRM_BTN": "Sincronizza ora",
+    "SENDING": "Sincronizzazione in corso…",
     "DONE_TITLE": "Fatto!",
-    "DONE_HINT": "Tutte le liste trasferite. L'altro dispositivo le importerà automaticamente.",
+    "DONE_HINT": "{{count}} lista/e unita/e. Entrambi i dispositivi sono ora sincronizzati.",
     "ERROR_TITLE": "Errore",
     "ERROR_INVALID": "Link di sincronizzazione non valido.",
-    "ERROR_NO_LISTS": "Non hai liste da inviare.",
     "ERROR_FAILED": "Qualcosa è andato storto. Riprova.",
-    "GO_HOME": "Vai alla home"
-  },
-  "SYNC_RECEIVE_PAGE": {
-    "TITLE": "Ricevi liste",
-    "CONNECTING": "Connessione in corso…",
-    "WAITING": "In attesa del trasferimento…",
-    "DONE_TITLE": "Fatto!",
-    "DONE_HINT": "{{count}} nuova/e lista/e importata/e.",
-    "ERROR_TITLE": "Errore",
-    "ERROR_HINT": "Qualcosa è andato storto. Riprova.",
     "GO_HOME": "Vai alla home"
   },
   "PWA": {

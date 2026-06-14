@@ -217,9 +217,8 @@
     "SYNC_COPY_LINK": "Link kopieren",
     "SYNC_LINK_COPIED": "Link kopiert!",
     "SYNC_WAITING": "Warte — wird automatisch abgeschlossen…",
-    "SYNC_RECEIVE_DONE": "Fertig! {{count}} neue Liste(n) importiert.",
+    "SYNC_DONE": "Fertig! {{count}} Liste(n) zusammengeführt. Beide Geräte sind jetzt synchron.",
     "SYNC_SEND_HINT": "Auf dem anderen Gerät: Einstellungen → Sync-Maschine → Empfangen und den QR-Code zeigen.",
-    "SYNC_SEND_DONE": "Fertig! Alle Listen wurden gesendet.",
     "SYNC_ERROR": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
     "SECURITY": {
       "TITLE": "Sicherheit",
@@ -256,10 +255,6 @@
         "ERROR_CURRENT_INVALID": "Das aktuelle Passwort ist falsch."
       }
     },
-    "SYNC_SEND_CHOOSE_HINT": "Wie soll die Verbindung hergestellt werden?",
-    "SYNC_SHOW_QR": "QR-Code zeigen",
-    "SYNC_SCAN_QR": "QR-Code scannen",
-    "SYNC_SEND_QR_HINT": "Auf dem anderen Gerät: Einstellungen → Sync-Maschine → Empfangen → QR-Code scannen.",
     "SYNC_REQUIRES_BIOMETRIC": "Aktiviere die biometrische Sperre (oben), um die Sync-Maschine zu verwenden."
   },
   "SECURITY": {
@@ -304,27 +299,16 @@
     "FOOTER": "Mit Sorgfalt entwickelt von"
   },
   "SYNC_SEND": {
-    "TITLE": "Listen senden",
-    "CONFIRM_TITLE": "Listen übertragen",
-    "CONFIRM_HINT": "{{count}} Liste(n) werden an das andere Gerät gesendet.",
-    "CONFIRM_BTN": "Jetzt senden",
-    "SENDING": "Wird gesendet…",
+    "TITLE": "Geräte synchronisieren",
+    "CONFIRM_TITLE": "Geräte synchronisieren",
+    "CONFIRM_HINT": "{{count}} Liste(n) auf diesem Gerät werden mit den Listen des anderen Geräts zusammengeführt.",
+    "CONFIRM_BTN": "Jetzt synchronisieren",
+    "SENDING": "Wird synchronisiert…",
     "DONE_TITLE": "Fertig!",
-    "DONE_HINT": "Alle Listen wurden übertragen. Das andere Gerät importiert sie automatisch.",
+    "DONE_HINT": "{{count}} Liste(n) zusammengeführt. Beide Geräte sind jetzt synchron.",
     "ERROR_TITLE": "Fehler",
     "ERROR_INVALID": "Ungültiger Sync-Link.",
-    "ERROR_NO_LISTS": "Du hast keine Listen zum Senden.",
     "ERROR_FAILED": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
-    "GO_HOME": "Zur Startseite"
-  },
-  "SYNC_RECEIVE_PAGE": {
-    "TITLE": "Listen empfangen",
-    "CONNECTING": "Verbindung wird hergestellt…",
-    "WAITING": "Warte auf Übertragung…",
-    "DONE_TITLE": "Fertig!",
-    "DONE_HINT": "{{count}} neue Liste(n) importiert.",
-    "ERROR_TITLE": "Fehler",
-    "ERROR_HINT": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
     "GO_HOME": "Zur Startseite"
   },
   "PWA": {
