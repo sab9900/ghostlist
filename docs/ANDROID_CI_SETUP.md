@@ -98,6 +98,7 @@ Repo → **Settings → Secrets and variables → Actions → New repository sec
 |---|---|
 | `ANDROID_KEYSTORE_BASE64` | Base64-kodierter Inhalt von `client/android/app/ghostlist-release.keystore` |
 | `ANDROID_KEYSTORE_PASSWORD` | `Bindestrich1!` (Store- und Key-Passwort sind identisch, Alias ist fix `ghostlist`) |
+| `CI_API_TOKEN` | Beliebiges starkes Zufalls-Token, siehe Abschnitt "Release-Benachrichtigung" unten |
 
 Base64 erzeugen (lokal auf deinem Mac, dann den Inhalt in die Zwischenablage
 kopieren):
@@ -105,6 +106,33 @@ kopieren):
 ```bash
 base64 -i client/android/app/ghostlist-release.keystore | pbcopy
 ```
+
+## 3a. Release-Benachrichtigung (Info Center)
+
+Nach dem Deploy ruft der Workflow `POST /api/ci/android-release` auf dem
+Backend auf. Das legt automatisch eine Android-only "Release Notes"-Nachricht
+im Info Center an, die App-Nutzern auf Android beim nächsten Start angezeigt
+wird (iOS/Web-Nutzer sehen sie nicht).
+
+Dieser Endpoint ist über einen eigenen Shared-Secret-Header geschützt
+(`X-Ci-Token`), unabhängig vom Admin-Login - der Runner bekommt also nur
+Zugriff auf genau diese eine, risikoarme Aktion.
+
+1. Zufalls-Token erzeugen, z.B.:
+   ```bash
+   openssl rand -hex 32
+   ```
+2. Als Repo-Secret `CI_API_TOKEN` hinterlegen (Wert = das Token von oben).
+3. Auf dem Server als Backend-Umgebungsvariable setzen (in Coolify bei der
+   `ghost-list-api`-Anwendung):
+   ```
+   Ci__Token=<gleiches Token wie CI_API_TOKEN>
+   ```
+4. Backend-Anwendung neu deployen/restarten, damit die Variable greift.
+
+Ohne `Ci__Token` auf dem Server antwortet `/api/ci/*` mit `503` - der
+Workflow-Schritt schlägt dann sichtbar fehl, ist aber harmlos (APK wurde schon
+deployed).
 
 ## 4. Sicherheitshinweis
 

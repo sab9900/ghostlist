@@ -20,6 +20,16 @@
         </label>
 
         <label class="composer__field">
+            <span>Target</span>
+            <select [ngModel]="targetPlatform()" (ngModelChange)="targetPlatform.set($event)">
+                <option [ngValue]="null">All platforms</option>
+                <option [ngValue]="DevicePlatform.Android">Android only</option>
+                <option [ngValue]="DevicePlatform.Ios">iOS only</option>
+                <option [ngValue]="DevicePlatform.Web">Web only</option>
+            </select>
+        </label>
+
+        <label class="composer__field">
             <span>Title</span>
             <input
                 type="text"
@@ -67,6 +77,9 @@
                     <li class="history__item">
                         <div class="history__item-main">
                             <span class="history__badge" [class]="'history__badge--' + message.type">{{ message.type }}</span>
+                            @if (message.targetPlatform) {
+                                <span class="history__badge history__badge--target">{{ message.targetPlatform }} only</span>
+                            }
                             <span class="history__item-title">{{ message.title }}</span>
                             <span class="history__item-date">{{ formatDate(message.createdAt) }}</span>
                         </div>

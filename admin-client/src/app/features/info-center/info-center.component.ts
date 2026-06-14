@@ -2,7 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { InfoMessagesService } from '../../core/services/info-messages.service';
-import { InfoMessage, InfoMessageType } from '../../core/models/info-message.model';
+import { DevicePlatform, InfoMessage, InfoMessageType } from '../../core/models/info-message.model';
 
 @Component({
     selector: 'app-info-center',
@@ -14,6 +14,7 @@ export class InfoCenterComponent implements OnInit {
     private readonly infoMessages = inject(InfoMessagesService);
 
     protected readonly InfoMessageType = InfoMessageType;
+    protected readonly DevicePlatform = DevicePlatform;
 
     protected readonly messages = signal<InfoMessage[]>([]);
     protected readonly loading = signal(true);
@@ -22,6 +23,8 @@ export class InfoCenterComponent implements OnInit {
     protected readonly type = signal<InfoMessageType>(InfoMessageType.Info);
     protected readonly title = signal('');
     protected readonly body = signal('');
+    /** null = all platforms */
+    protected readonly targetPlatform = signal<DevicePlatform | null>(null);
     protected readonly sending = signal(false);
     protected readonly sendError = signal<string | null>(null);
 
@@ -51,12 +54,13 @@ export class InfoCenterComponent implements OnInit {
         this.sending.set(true);
         this.sendError.set(null);
 
-        this.infoMessages.create({ type: this.type(), title, body }).subscribe({
+        this.infoMessages.create({ type: this.type(), title, body, targetPlatform: this.targetPlatform() }).subscribe({
             next: () => {
                 this.sending.set(false);
                 this.title.set('');
                 this.body.set('');
                 this.type.set(InfoMessageType.Info);
+                this.targetPlatform.set(null);
                 this.load();
             },
             error: () => {

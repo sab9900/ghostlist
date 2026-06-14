@@ -13,6 +13,8 @@ export interface ItemToggledEvent {
     itemId: string;
     isChecked: boolean;
     checkedAt: string | null;
+    checkedByDeviceId: string | null;
+    checkedByUserId: string | null;
 }
 
 export interface MessageCreatedEvent {

@@ -18,6 +18,9 @@
         @if (item.isNew) {
         <span class="item__new-dot" aria-hidden="true"></span>
         }
+        @if (item.creatorName) {
+        <span class="item__meta" aria-hidden="true">{{ item.creatorName }}</span>
+        }
         <button class="item__delete" (click)="$event.stopPropagation(); deleteItem(item.id)"
             [attr.aria-label]="('ITEMS.DELETE_ARIA' | translate:{text: item.text})" tabindex="-1">×</button>
     </li>
@@ -38,6 +41,9 @@
         <span class="item__text item__text--checked">{{ item.text }}</span>
         @if (item.isNew) {
         <span class="item__new-dot" aria-hidden="true"></span>
+        }
+        @if (item.checkedByName) {
+        <span class="item__meta" aria-hidden="true">{{ item.checkedByName }}</span>
         }
         <button class="item__delete" (click)="$event.stopPropagation(); deleteItem(item.id)"
             [attr.aria-label]="('ITEMS.DELETE_ARIA' | translate:{text: item.text})" tabindex="-1">×</button>

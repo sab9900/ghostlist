@@ -31,7 +31,8 @@ public class GhostItemsController(IMediator mediator) : ControllerBase
     public async Task<ActionResult> Toggle(Guid id)
     {
         var deviceId = Request.Headers["X-Device-Id"].FirstOrDefault();
-        await mediator.Send(new ToggleGhostListItemCommand(id, deviceId));
+        var userId = Request.Headers["X-User-Id"].FirstOrDefault();
+        await mediator.Send(new ToggleGhostListItemCommand(id, deviceId, userId));
         return NoContent();
     }
 

@@ -16,5 +16,9 @@ public class CreateInfoMessageCommandValidator : AbstractValidator<CreateInfoMes
         RuleFor(x => x.Body)
             .NotEmpty()
             .MaximumLength(4000);
+
+        RuleFor(x => x.TargetPlatform)
+            .IsInEnum()
+            .When(x => x.TargetPlatform.HasValue);
     }
 }

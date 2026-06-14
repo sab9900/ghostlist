@@ -70,6 +70,7 @@ else
 app.UseAuthorization();
 
 app.UseMiddleware<AdminAuthMiddleware>();
+app.UseMiddleware<CiAuthMiddleware>();
 
 app.MapControllers();
 app.MapHub<GhostListHub>("/hubs/ghostlist");

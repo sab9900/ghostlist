@@ -28,6 +28,21 @@ public class GhostListItem
     /// </summary>
     public string? SenderUserId { get; private set; }
 
+    /// <summary>
+    /// Id of the device that last checked/unchecked this item. Mirrors
+    /// <see cref="SenderDeviceId"/> but for the toggle action. Cleared
+    /// (set to null) when the item is unchecked again.
+    /// </summary>
+    public string? CheckedByDeviceId { get; private set; }
+
+    /// <summary>
+    /// Stable "person" identity of whoever last checked this item, distinct
+    /// from <see cref="CheckedByDeviceId"/> (per-installation). Mirrors
+    /// <see cref="SenderUserId"/> but for the toggle action. Cleared
+    /// (set to null) when the item is unchecked again.
+    /// </summary>
+    public string? CheckedByUserId { get; private set; }
+
     private GhostListItem() { }
 
     public static GhostListItem Create(Guid ghostListId, string encryptedPayload, string initializationVector, string? senderDeviceId = null, string? senderUserId = null)
@@ -45,9 +60,11 @@ public class GhostListItem
         };
     }
 
-    public void ToggleChecked()
+    public void ToggleChecked(string? checkedByDeviceId = null, string? checkedByUserId = null)
     {
         IsChecked = !IsChecked;
         CheckedAt = IsChecked ? DateTime.UtcNow : (DateTime?)null;
+        CheckedByDeviceId = IsChecked ? checkedByDeviceId : null;
+        CheckedByUserId = IsChecked ? checkedByUserId : null;
     }
 }

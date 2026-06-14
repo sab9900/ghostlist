@@ -47,6 +47,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.InitializationVector).IsRequired();
             entity.Property(e => e.SenderDeviceId).HasMaxLength(64);
             entity.Property(e => e.SenderUserId).HasMaxLength(64);
+            entity.Property(e => e.CheckedByDeviceId).HasMaxLength(64);
+            entity.Property(e => e.CheckedByUserId).HasMaxLength(64);
         });
 
         modelBuilder.Entity<GhostChatMessage>(entity =>
@@ -113,6 +115,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.Type).HasConversion<int>();
             entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
             entity.Property(e => e.Body).IsRequired().HasMaxLength(4000);
+            entity.Property(e => e.TargetPlatform).HasConversion<int?>();
             entity.HasIndex(e => e.CreatedAt);
         });
 

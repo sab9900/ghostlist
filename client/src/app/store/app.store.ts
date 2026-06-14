@@ -402,6 +402,8 @@ export const AppStore = signalStore(
                     createdAt: new Date().toISOString(),
                     senderDeviceId: deviceId.deviceId,
                     senderUserId: userId.userId(),
+                    checkedByDeviceId: null,
+                    checkedByUserId: null,
                 };
                 patchState(store, { items: [...store.items(), optimisticItem] });
                 void persistCurrentList();
@@ -433,7 +435,13 @@ export const AppStore = signalStore(
                 patchState(store, {
                     items: prev.map(i =>
                         i.id === itemId
-                            ? { ...i, isChecked: !i.isChecked, checkedAt: !i.isChecked ? new Date().toISOString() : null }
+                            ? {
+                                ...i,
+                                isChecked: !i.isChecked,
+                                checkedAt: !i.isChecked ? new Date().toISOString() : null,
+                                checkedByDeviceId: !i.isChecked ? deviceId.deviceId : null,
+                                checkedByUserId: !i.isChecked ? userId.userId() : null,
+                            }
                             : i,
                     ),
                 });
@@ -879,6 +887,8 @@ export const AppStore = signalStore(
                         createdAt: event.createdAt,
                         senderDeviceId: event.senderDeviceId,
                         senderUserId: event.senderUserId,
+                        checkedByDeviceId: null,
+                        checkedByUserId: null,
                     } satisfies GhostListItem;
                     patchState(store, { items: [...store.items(), newItem] });
                     void store._persistCurrentList();
@@ -889,7 +899,13 @@ export const AppStore = signalStore(
                     patchState(store, {
                         items: store.items().map((i) =>
                             i.id === event.itemId
-                                ? { ...i, isChecked: event.isChecked, checkedAt: event.checkedAt }
+                                ? {
+                                    ...i,
+                                    isChecked: event.isChecked,
+                                    checkedAt: event.checkedAt,
+                                    checkedByDeviceId: event.checkedByDeviceId,
+                                    checkedByUserId: event.checkedByUserId,
+                                }
                                 : i,
                         ),
                     });

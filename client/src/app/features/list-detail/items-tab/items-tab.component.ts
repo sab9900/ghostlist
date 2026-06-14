@@ -1,8 +1,11 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { GhostListItem } from '../../../core/models';
+import { GhostListItem, ListMember } from '../../../core/models';
 import { CryptoService } from '../../../core/services/crypto.service';
+import { DeviceIdService } from '../../../core/services/device-id.service';
+import { UserIdService } from '../../../core/services/user-id.service';
+import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 import { HapticsService } from '../../../core/services/haptics.service';
 import { AppStore } from '../../../store/app.store';
 import { ViewportDwellDirective } from '../../../core/directives/viewport-dwell.directive';
@@ -14,6 +17,8 @@ interface DecryptedItem {
     checkedAt: string | null;
     createdAt: string;
     isNew: boolean;
+    creatorName: string | null;
+    checkedByName: string | null;
 }
 
 @Component({
@@ -26,10 +31,14 @@ export class ItemsTabComponent {
     private readonly store = inject(AppStore);
     private readonly crypto = inject(CryptoService);
     private readonly haptics = inject(HapticsService);
+    private readonly deviceId = inject(DeviceIdService);
+    private readonly userId = inject(UserIdService);
+    private readonly prefs = inject(UserPreferencesService);
 
     protected readonly newItemText = signal('');
     protected readonly addingItem = signal(false);
     protected readonly decryptedItems = signal<DecryptedItem[]>([]);
+    private readonly members = signal<ListMember[]>([]);
 
     private readonly sortedItems = computed(() => {
         const createdAt = (item: DecryptedItem) => new Date(item.createdAt).getTime();
@@ -42,9 +51,52 @@ export class ItemsTabComponent {
     constructor() {
 
         effect(() => {
+            const id = this.store.currentListId();
+            untracked(() => this.loadMembers(id));
+        });
+
+        effect(() => {
             void this.store.items();
+            void this.members();
             void this.decryptItems();
         });
+    }
+
+    private async loadMembers(listId: string | null): Promise<void> {
+        this.members.set([]);
+        if (!listId) return;
+        const known = this.store.knownLists().find(l => l.id === listId);
+        if (!known) return;
+        try {
+            const members = await this.store.fetchMembersForList(known.id, known.encryptionKey);
+            this.members.set(members);
+        } catch { }
+    }
+
+    /**
+     * Whether an item/check action originated from this person, based on the
+     * stable `senderUserId` (preferred) or `senderDeviceId` (legacy fallback).
+     * Returns null if neither identifier is present.
+     */
+    private isMineBySenderIds(senderUserId: string | null, senderDeviceId: string | null): boolean | null {
+        if (senderUserId !== null) return senderUserId === this.userId.userId();
+        if (senderDeviceId !== null) return senderDeviceId === this.deviceId.deviceId;
+        return null;
+    }
+
+    /** Resolves a display name for a sender/checker identified by userId/deviceId, or null if unknown. */
+    private resolveName(userId: string | null, deviceId: string | null): string | null {
+        if (userId === null && deviceId === null) return null;
+
+        if (this.isMineBySenderIds(userId, deviceId)) {
+            return this.prefs.senderName() || 'Anonymous';
+        }
+
+        const member = this.members().find(m =>
+            (userId !== null && m.userId === userId) ||
+            (deviceId !== null && m.deviceId === deviceId),
+        );
+        return member?.displayName || 'Anonymous';
     }
 
     private async decryptItems(): Promise<void> {
@@ -60,6 +112,8 @@ export class ItemsTabComponent {
                 checkedAt: item.checkedAt,
                 createdAt: item.createdAt,
                 isNew: unread.has(item.id),
+                creatorName: this.resolveName(item.senderUserId, item.senderDeviceId),
+                checkedByName: item.isChecked ? this.resolveName(item.checkedByUserId, item.checkedByDeviceId) : null,
             })),
         );
         this.decryptedItems.set(items);

@@ -16,7 +16,9 @@ public record GhostListItemDto(
     DateTime? CheckedAt,
     DateTime CreatedAt,
     string? SenderDeviceId,
-    string? SenderUserId);
+    string? SenderUserId,
+    string? CheckedByDeviceId,
+    string? CheckedByUserId);
 
 public class GetGhostListItemsByListIdQueryHandler(IApplicationDbContext context)
     : IRequestHandler<GetGhostListItemsByListIdQuery, List<GhostListItemDto>>
@@ -42,7 +44,9 @@ public class GetGhostListItemsByListIdQueryHandler(IApplicationDbContext context
                 i.CheckedAt,
                 i.CreatedAt,
                 i.SenderDeviceId,
-                i.SenderUserId))
+                i.SenderUserId,
+                i.CheckedByDeviceId,
+                i.CheckedByUserId))
             .ToListAsync(cancellationToken);
     }
 }

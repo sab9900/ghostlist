@@ -87,7 +87,7 @@ export class ApiService {
 
     toggleItem(id: string): Observable<void> {
         return this.http.put<void>(`${this.BASE}/ghostitems/${id}/toggle`, null,
-            { headers: this.deviceIdHeaders() });
+            { headers: { ...this.deviceIdHeaders(), ...this.userIdHeaders() } });
     }
 
     deleteItem(id: string): Observable<void> {
@@ -199,7 +199,11 @@ export class ApiService {
     }
 
     getLatestInfoMessage(): Observable<InfoMessage | null> {
-        return this.http.get<InfoMessage | null>(`${this.BASE}/info/latest`);
+        // Capacitor.getPlatform() returns 'ios' | 'android' | 'web', which ASP.NET Core's
+        // enum model binder accepts case-insensitively against DevicePlatform.
+        return this.http.get<InfoMessage | null>(`${this.BASE}/info/latest`, {
+            params: { platform: Capacitor.getPlatform() },
+        });
     }
 
     getCharonDrops(listId: string): Observable<CharonDropDto[]> {

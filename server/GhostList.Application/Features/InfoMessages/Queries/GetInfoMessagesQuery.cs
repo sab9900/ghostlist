@@ -14,7 +14,7 @@ public class GetInfoMessagesQueryHandler(IApplicationDbContext context)
     {
         return await context.InfoMessages
             .OrderByDescending(m => m.CreatedAt)
-            .Select(m => new InfoMessageDto(m.Id, m.Type, m.Title, m.Body, m.CreatedAt))
+            .Select(m => new InfoMessageDto(m.Id, m.Type, m.Title, m.Body, m.TargetPlatform, m.CreatedAt))
             .ToListAsync(cancellationToken);
     }
 }

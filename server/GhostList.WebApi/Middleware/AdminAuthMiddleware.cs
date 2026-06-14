@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using System.Text;
 
 namespace GhostList.WebApi.Middleware;
@@ -32,8 +31,8 @@ public class AdminAuthMiddleware(RequestDelegate next, IConfiguration configurat
         }
 
         if (TryGetBasicAuthCredentials(context.Request, out var username, out var password)
-            && FixedTimeEquals(username, expectedUsername)
-            && FixedTimeEquals(password, expectedPassword))
+            && SecretComparer.FixedTimeEquals(username, expectedUsername)
+            && SecretComparer.FixedTimeEquals(password, expectedPassword))
         {
             await next(context);
             return;
@@ -68,20 +67,5 @@ public class AdminAuthMiddleware(RequestDelegate next, IConfiguration configurat
         {
             return false;
         }
-    }
-
-    /// <summary>Constant-time string comparison to avoid leaking credential length/content via timing.</summary>
-    private static bool FixedTimeEquals(string a, string b)
-    {
-        var aBytes = Encoding.UTF8.GetBytes(a);
-        var bBytes = Encoding.UTF8.GetBytes(b);
-
-        if (aBytes.Length != bBytes.Length)
-        {
-            CryptographicOperations.FixedTimeEquals(aBytes, aBytes);
-            return false;
-        }
-
-        return CryptographicOperations.FixedTimeEquals(aBytes, bBytes);
     }
 }

@@ -13,7 +13,9 @@ public record ItemCreatedNotification(
 public record ItemToggledNotification(
     Guid ItemId,
     bool IsChecked,
-    DateTime? CheckedAt);
+    DateTime? CheckedAt,
+    string? CheckedByDeviceId,
+    string? CheckedByUserId);
 
 public record MessageCreatedNotification(
     Guid Id,

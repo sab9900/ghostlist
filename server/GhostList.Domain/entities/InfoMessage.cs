@@ -12,11 +12,18 @@ public class InfoMessage
     public InfoMessageType Type { get; private set; }
     public string Title { get; private set; } = null!;
     public string Body { get; private set; } = null!;
+
+    /// <summary>
+    /// If set, the message is only shown on clients running this platform
+    /// (e.g. an Android release announcement). Null means "all platforms".
+    /// </summary>
+    public DevicePlatform? TargetPlatform { get; private set; }
+
     public DateTime CreatedAt { get; private set; }
 
     private InfoMessage() { }
 
-    public static InfoMessage Create(InfoMessageType type, string title, string body)
+    public static InfoMessage Create(InfoMessageType type, string title, string body, DevicePlatform? targetPlatform = null)
     {
         return new InfoMessage
         {
@@ -24,6 +31,7 @@ public class InfoMessage
             Type = type,
             Title = title,
             Body = body,
+            TargetPlatform = targetPlatform,
             CreatedAt = DateTime.UtcNow,
         };
     }

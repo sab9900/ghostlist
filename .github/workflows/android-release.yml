@@ -60,6 +60,13 @@ jobs:
           sudo /usr/local/bin/deploy-ghostlist-apk.sh \
             "$(pwd)/client/android/app/build/outputs/apk/release/app-release.apk"
 
+      - name: Notify users about the new Android release
+        run: |
+          curl -fsS -X POST "https://app.ghost-list.com/api/ci/android-release" \
+            -H "X-Ci-Token: ${{ secrets.CI_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"version\":\"$(cat VERSION)\"}"
+
       - name: Clean up signing material
         if: always()
         working-directory: client/android/app
