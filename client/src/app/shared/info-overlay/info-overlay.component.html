@@ -34,8 +34,8 @@
         </div>
 
         <span class="info-overlay__badge">{{ typeLabelKey() | translate }}</span>
-        <h2 class="info-overlay__title" id="info-overlay-title">{{ msg.title }}</h2>
-        <p class="info-overlay__body">{{ msg.body }}</p>
+        <h2 class="info-overlay__title" id="info-overlay-title">{{ title() }}</h2>
+        <p class="info-overlay__body">{{ body() }}</p>
 
         <button class="btn btn--primary info-overlay__action" (click)="dismiss()">
             {{ 'INFO_CENTER.DISMISS' | translate }}

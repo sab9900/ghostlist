@@ -3,10 +3,12 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { InfoMessagesService } from '../../core/services/info-messages.service';
 import { DevicePlatform, InfoMessage, InfoMessageType } from '../../core/models/info-message.model';
+import { buildMultiLangTemplate, isJsonObject, resolveLocalizedText } from '../../core/utils/localized-text';
+import { JsonEditorComponent } from '../../shared/json-editor/json-editor.component';
 
 @Component({
     selector: 'app-info-center',
-    imports: [FormsModule, RouterLink],
+    imports: [FormsModule, RouterLink, JsonEditorComponent],
     templateUrl: './info-center.component.html',
     styleUrl: './info-center.component.scss',
 })
@@ -28,8 +30,28 @@ export class InfoCenterComponent implements OnInit {
     protected readonly sending = signal(false);
     protected readonly sendError = signal<string | null>(null);
 
+    /** When enabled, Title/Body are edited as JSON maps of language code -> text. */
+    protected readonly multiLang = signal(false);
+
     ngOnInit(): void {
         this.load();
+    }
+
+    /** Toggles between plain-text and multi-language (JSON) editing for Title/Body. */
+    toggleMultiLang(): void {
+        if (this.multiLang()) {
+            // Switching back to plain text: collapse the JSON to its resolved (German/English) text.
+            this.title.set(resolveLocalizedText(this.title()));
+            this.body.set(resolveLocalizedText(this.body()));
+            this.multiLang.set(false);
+            return;
+        }
+
+        // Switching to multi-language: wrap existing plain text into a JSON template,
+        // unless it's already a JSON object.
+        this.title.set(isJsonObject(this.title()) ? this.title() : buildMultiLangTemplate('de_DE', this.title().trim()));
+        this.body.set(isJsonObject(this.body()) ? this.body() : buildMultiLangTemplate('de_DE', this.body().trim()));
+        this.multiLang.set(true);
     }
 
     private load(): void {
@@ -51,6 +73,11 @@ export class InfoCenterComponent implements OnInit {
         const body = this.body().trim();
         if (!title || !body) return;
 
+        if (this.multiLang() && (!isJsonObject(title) || !isJsonObject(body))) {
+            this.sendError.set('Title and Message must be valid JSON objects in multi-language mode.');
+            return;
+        }
+
         this.sending.set(true);
         this.sendError.set(null);
 
@@ -61,6 +88,7 @@ export class InfoCenterComponent implements OnInit {
                 this.body.set('');
                 this.type.set(InfoMessageType.Info);
                 this.targetPlatform.set(null);
+                this.multiLang.set(false);
                 this.load();
             },
             error: () => {
@@ -79,5 +107,10 @@ export class InfoCenterComponent implements OnInit {
 
     formatDate(date: string): string {
         return new Date(date).toLocaleString();
+    }
+
+    /** Resolves multi-language title/body (e.g. from the CI release notification) for display. */
+    resolveText(value: string): string {
+        return resolveLocalizedText(value);
     }
 }

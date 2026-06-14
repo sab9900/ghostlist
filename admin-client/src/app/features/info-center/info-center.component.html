@@ -29,25 +29,54 @@
             </select>
         </label>
 
-        <label class="composer__field">
-            <span>Title</span>
+        <label class="composer__field composer__field--checkbox">
             <input
-                type="text"
-                maxlength="200"
-                [ngModel]="title()"
-                (ngModelChange)="title.set($event)"
+                type="checkbox"
+                [ngModel]="multiLang()"
+                (ngModelChange)="toggleMultiLang()"
             >
+            <span>Multi-language (JSON)</span>
         </label>
 
-        <label class="composer__field">
-            <span>Message</span>
-            <textarea
-                rows="4"
-                maxlength="4000"
-                [ngModel]="body()"
-                (ngModelChange)="body.set($event)"
-            ></textarea>
-        </label>
+        @if (multiLang()) {
+            <label class="composer__field">
+                <span>Title (JSON)</span>
+                <app-json-editor
+                    height="140px"
+                    [value]="title()"
+                    (valueChange)="title.set($event)"
+                ></app-json-editor>
+            </label>
+
+            <label class="composer__field">
+                <span>Message (JSON)</span>
+                <app-json-editor
+                    height="260px"
+                    [value]="body()"
+                    (valueChange)="body.set($event)"
+                ></app-json-editor>
+            </label>
+        } @else {
+            <label class="composer__field">
+                <span>Title</span>
+                <input
+                    type="text"
+                    maxlength="200"
+                    [ngModel]="title()"
+                    (ngModelChange)="title.set($event)"
+                >
+            </label>
+
+            <label class="composer__field">
+                <span>Message</span>
+                <textarea
+                    rows="4"
+                    maxlength="4000"
+                    [ngModel]="body()"
+                    (ngModelChange)="body.set($event)"
+                ></textarea>
+            </label>
+        }
 
         @if (sendError()) {
             <p class="composer__error">{{ sendError() }}</p>
@@ -84,8 +113,8 @@
                             </div>
                             <span class="history__item-date">{{ formatDate(message.createdAt) }}</span>
                         </div>
-                        <p class="history__item-title">{{ message.title }}</p>
-                        <p class="history__item-body">{{ message.body }}</p>
+                        <p class="history__item-title">{{ resolveText(message.title) }}</p>
+                        <p class="history__item-body">{{ resolveText(message.body) }}</p>
                         <button class="history__delete" (click)="delete(message.id)">Delete</button>
                     </li>
                 }
