@@ -1,6 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
+import { firstValueFrom } from 'rxjs';
 
 export interface Language {
     code: string;
@@ -14,7 +14,7 @@ export class LanguageService {
     private readonly translate = inject(TranslateService);
 
     static readonly SUPPORTED: Language[] = [
-        { code: 'en_US', label: 'English (US)' },
+        { code: 'en_US', label: 'English' },
         { code: 'de_DE', label: 'Deutsch' },
         { code: 'it_IT', label: 'Italiano' },
         { code: 'es_ES', label: 'Español' },

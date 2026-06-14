@@ -21,12 +21,10 @@ export interface ReadReceiptRequest {
     lastReadItemAt?: string | null;
 }
 
-/** Body for the granular per-message/per-item "mark as read" endpoints. */
 export interface MarkReadRequest {
     ids: string[];
 }
 
-/** Mirrors GhostList.Domain.Entities.DevicePlatform (serialized as a string). */
 export type DevicePlatformDto = 'Ios' | 'Android' | 'Web';
 
 export interface SubscribeRequest {
@@ -36,7 +34,6 @@ export interface SubscribeRequest {
     notifyOnItemsChanged?: boolean;
 }
 
-/** Body for creating a new Charon "burn after read" drop. */
 export interface CreateCharonDropRequest {
     ghostListId: string;
     encryptedContent: string;

@@ -19,16 +19,12 @@ public class PresenceTracker : IPresenceTracker
 
     private readonly object _lock = new();
 
-    // connectionId -> (deviceId, set of listIds the connection has joined)
     private readonly ConcurrentDictionary<string, ConnectionInfo> _connections = new();
 
-    // listId -> deviceId -> number of connections (for that device) currently in the room
     private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, int>> _roomPresence = new();
 
-    // deviceId -> whether the app is currently reported as foregrounded
     private readonly ConcurrentDictionary<string, bool> _foreground = new();
 
-    // deviceId -> number of live connections (across all rooms)
     private readonly ConcurrentDictionary<string, int> _deviceConnectionCounts = new();
 
     public void JoinList(string connectionId, string listId, string deviceId)

@@ -14,13 +14,8 @@ import { Directive, ElementRef, EventEmitter, HostListener, Input, OnDestroy, Ou
 })
 export class SwipeBackDirective implements OnDestroy {
 
-    /** Set to true to disable the gesture (e.g. while a drawer/modal is open). */
     @Input('appSwipeBackDisabled') disabled = false;
-
-    /** How close to the left edge a touch must start to count as a back-swipe. */
     @Input() swipeBackEdge = 32;
-
-    /** Horizontal distance (px) required to trigger `swipeBack`. */
     @Input() swipeBackThreshold = 80;
 
     @Output() swipeBack = new EventEmitter<void>();

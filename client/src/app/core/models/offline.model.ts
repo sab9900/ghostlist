@@ -2,7 +2,6 @@ import { GhostChatMessage } from './ghost-chat-message.model';
 import { GhostListItem } from './ghost-list-item.model';
 import { CreateGhostListItemRequest, CreateGhostMessageRequest } from './requests.model';
 
-/** Snapshot of a list's content, persisted locally so it can be viewed offline. */
 export interface CachedList {
     id: string;
     ttl: number;
