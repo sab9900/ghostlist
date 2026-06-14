@@ -37,4 +37,10 @@ public class GhostListNotifier(IHubContext<GhostListHub> hubContext) : IGhostLis
 
     public Task NotifyReadReceiptUpdated(Guid listId, ReadReceiptUpdatedNotification notification) =>
         hubContext.Clients.Group(listId.ToString()).SendAsync("ReadReceiptUpdated", notification);
+
+    public Task NotifyCharonDropCreated(Guid listId, CharonDropCreatedNotification notification) =>
+        hubContext.Clients.Group(listId.ToString()).SendAsync("CharonDropCreated", notification);
+
+    public Task NotifyCharonDropDeleted(Guid listId, Guid dropId) =>
+        hubContext.Clients.Group(listId.ToString()).SendAsync("CharonDropDeleted", dropId);
 }

@@ -67,6 +67,26 @@
     </div>
 </section>
 
+<section class="settings-section" aria-labelledby="privacy-heading">
+    <h3 class="settings-section__title" id="privacy-heading">{{ 'LIST_SETTINGS.PRIVACY_TITLE' | translate }}</h3>
+    <p class="settings-section__hint">{{ 'LIST_SETTINGS.PRIVACY_HINT' | translate }}</p>
+
+    <div class="toggle-row">
+        <div>
+            <p class="toggle-label" id="sensitive-label">{{ 'LIST_SETTINGS.SENSITIVE' | translate }}</p>
+            <p class="toggle-hint">{{ 'LIST_SETTINGS.SENSITIVE_HINT' | translate }}</p>
+        </div>
+        <label class="toggle-switch" aria-labelledby="sensitive-label">
+            <input type="checkbox" [ngModel]="isSensitive()" (ngModelChange)="setSensitive($event)" />
+            <span class="toggle-switch__track" aria-hidden="true"></span>
+        </label>
+    </div>
+
+    @if (!masterPassword.hasPassword()) {
+    <p class="toggle-hint">{{ 'LIST_SETTINGS.SENSITIVE_NO_PASSWORD' | translate }}</p>
+    }
+</section>
+
 @if (store.isCurrentListOwner()) {
 <section class="settings-section" aria-labelledby="share-heading">
     <h3 class="settings-section__title" id="share-heading">{{ 'LIST_SETTINGS.SHARE_TITLE' | translate }}</h3>

@@ -7,16 +7,19 @@ import { environment } from '../../../environments/environment';
 import { SyncQrPayload } from '../../core/models';
 import { CryptoService } from '../../core/services/crypto.service';
 import { LanguageService } from '../../core/services/language.service';
+import { MasterPasswordService } from '../../core/services/master-password.service';
+import { SensitiveListsService } from '../../core/services/sensitive-lists.service';
 import { Theme, ThemeAccent, ThemeService } from '../../core/services/theme.service';
 import { UserPreferencesService } from '../../core/services/user-preferences.service';
 import { AUTO_LOCK_OPTIONS, WebAuthnService } from '../../core/services/webauthn.service';
 import { AppStore } from '../../store/app.store';
 import { QrCodeComponent } from '../../shared/qr-code/qr-code.component';
 import { QrScannerComponent } from '../../shared/qr-scanner/qr-scanner.component';
+import { SwipeBackDirective } from '../../core/directives/swipe-back.directive';
 
 @Component({
     selector: 'app-settings',
-    imports: [TranslatePipe, FormsModule, QrCodeComponent, QrScannerComponent],
+    imports: [TranslatePipe, FormsModule, QrCodeComponent, QrScannerComponent, SwipeBackDirective],
     templateUrl: './settings.component.html',
     styleUrl: './settings.component.scss',
 })
@@ -26,6 +29,8 @@ export class SettingsComponent {
     protected readonly prefs = inject(UserPreferencesService);
     protected readonly store = inject(AppStore);
     protected readonly webAuthn = inject(WebAuthnService);
+    protected readonly masterPassword = inject(MasterPasswordService);
+    private readonly sensitiveLists = inject(SensitiveListsService);
     private readonly router = inject(Router);
     private readonly crypto = inject(CryptoService);
 
@@ -114,6 +119,130 @@ export class SettingsComponent {
         } finally {
             this.biometricWorking.set(false);
         }
+    }
+
+    // --- Master password (gates sensitive lists) ---
+
+    protected static readonly MP_MIN_LENGTH = 4;
+
+    protected readonly mpMode = signal<'view' | 'set' | 'change' | 'remove'>('view');
+    protected readonly mpCurrentPassword = signal('');
+    protected readonly mpNewPassword = signal('');
+    protected readonly mpConfirmPassword = signal('');
+    protected readonly mpError = signal<string | null>(null);
+    protected readonly mpWorking = signal(false);
+    protected readonly mpSaved = signal(false);
+
+    startSetMasterPassword(): void {
+        this.resetMpFields();
+        this.mpMode.set('set');
+    }
+
+    startChangeMasterPassword(): void {
+        this.resetMpFields();
+        this.mpMode.set('change');
+    }
+
+    startRemoveMasterPassword(): void {
+        this.resetMpFields();
+        this.mpMode.set('remove');
+    }
+
+    cancelMasterPassword(): void {
+        this.resetMpFields();
+        this.mpMode.set('view');
+    }
+
+    private resetMpFields(): void {
+        this.mpCurrentPassword.set('');
+        this.mpNewPassword.set('');
+        this.mpConfirmPassword.set('');
+        this.mpError.set(null);
+    }
+
+    async submitSetMasterPassword(): Promise<void> {
+        if (this.mpWorking()) return;
+        const next = this.mpNewPassword();
+        const confirm = this.mpConfirmPassword();
+        if (next.length < SettingsComponent.MP_MIN_LENGTH) {
+            this.mpError.set('SETTINGS.SECURITY.MASTER_PASSWORD.ERROR_TOO_SHORT');
+            return;
+        }
+        if (next !== confirm) {
+            this.mpError.set('SETTINGS.SECURITY.MASTER_PASSWORD.ERROR_MISMATCH');
+            return;
+        }
+        this.mpWorking.set(true);
+        this.mpError.set(null);
+        try {
+            await this.masterPassword.setPassword(next);
+            this.resetMpFields();
+            this.mpMode.set('view');
+            this.flashMpSaved();
+        } finally {
+            this.mpWorking.set(false);
+        }
+    }
+
+    async submitChangeMasterPassword(): Promise<void> {
+        if (this.mpWorking()) return;
+        const current = this.mpCurrentPassword();
+        const next = this.mpNewPassword();
+        const confirm = this.mpConfirmPassword();
+        if (next.length < SettingsComponent.MP_MIN_LENGTH) {
+            this.mpError.set('SETTINGS.SECURITY.MASTER_PASSWORD.ERROR_TOO_SHORT');
+            return;
+        }
+        if (next !== confirm) {
+            this.mpError.set('SETTINGS.SECURITY.MASTER_PASSWORD.ERROR_MISMATCH');
+            return;
+        }
+        this.mpWorking.set(true);
+        this.mpError.set(null);
+        try {
+            const ok = await this.masterPassword.verifyPassword(current);
+            if (!ok) {
+                this.mpError.set('SETTINGS.SECURITY.MASTER_PASSWORD.ERROR_CURRENT_INVALID');
+                return;
+            }
+            await this.masterPassword.setPassword(next);
+            this.resetMpFields();
+            this.mpMode.set('view');
+            this.flashMpSaved();
+        } finally {
+            this.mpWorking.set(false);
+        }
+    }
+
+    async submitRemoveMasterPassword(): Promise<void> {
+        if (this.mpWorking()) return;
+        const current = this.mpCurrentPassword();
+        this.mpWorking.set(true);
+        this.mpError.set(null);
+        try {
+            const ok = await this.masterPassword.verifyPassword(current);
+            if (!ok) {
+                this.mpError.set('SETTINGS.SECURITY.MASTER_PASSWORD.ERROR_CURRENT_INVALID');
+                return;
+            }
+            await this.masterPassword.removePassword();
+            this.sensitiveLists.hide();
+            // Unmark all sensitive lists on this device — without a master
+            // password there would be no way to reveal them again.
+            for (const list of this.store.knownLists()) {
+                if (list.isSensitive) await this.store.setListSensitive(list.id, false);
+            }
+            this.resetMpFields();
+            this.mpMode.set('view');
+            this.flashMpSaved();
+        } finally {
+            this.mpWorking.set(false);
+        }
+    }
+
+    private flashMpSaved(): void {
+        this.mpSaved.set(true);
+        setTimeout(() => this.mpSaved.set(false), 2000);
     }
 
     private async confirmSyncAuth(): Promise<boolean> {

@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../api/api.service';
 import { HubService } from '../api/hub.service';
 import {
+    CharonDropDto,
     CreateGhostListItemRequest,
     CreateGhostMessageRequest,
     DeleteAfterDuration,
@@ -38,6 +39,9 @@ interface AppState {
 
     messages: GhostChatMessage[];
 
+    /** Pending "burn after read" drops (Charon tab) not yet viewed by this device. */
+    charonDrops: CharonDropDto[];
+
     imageDataUrls: Record<string, string>;
 
     listsLoaded: boolean;
@@ -56,6 +60,7 @@ const initialState: AppState = {
     currentList: null,
     items: [],
     messages: [],
+    charonDrops: [],
     imageDataUrls: {},
     listsLoaded: false,
     pendingOpsCount: 0,
@@ -236,6 +241,7 @@ export const AppStore = signalStore(
                         : null,
                     items: cached?.items ?? [],
                     messages: cached?.messages ?? [],
+                    charonDrops: [],
                     error: null,
                     loading: !cached,
                 });
@@ -250,6 +256,13 @@ export const AppStore = signalStore(
                     setError(e instanceof Error ? e.message : 'Failed to open list');
                     throw e;
                 }
+
+                try {
+                    const drops = await firstValueFrom(api.getCharonDrops(id));
+                    if (store.currentListId() === id) {
+                        patchState(store, { charonDrops: drops });
+                    }
+                } catch { }
 
                 try {
                     const list = await firstValueFrom(api.getList(id));
@@ -284,6 +297,7 @@ export const AppStore = signalStore(
                     currentList: null,
                     items: [],
                     messages: [],
+                    charonDrops: [],
                     error: null,
                 });
 
@@ -313,6 +327,7 @@ export const AppStore = signalStore(
                             currentList: null,
                             items: [],
                             messages: [],
+                            charonDrops: [],
                         });
                     }
                     patchState(store, patch);
@@ -349,6 +364,7 @@ export const AppStore = signalStore(
                         currentList: null,
                         items: [],
                         messages: [],
+                        charonDrops: [],
                     });
                 }
                 patchState(store, patch);
@@ -608,6 +624,50 @@ export const AppStore = signalStore(
                     // Not found/expired, offline, or decryption failed — leave
                     // the placeholder as-is.
                 }
+            },
+
+            /**
+             * Sends a "burn after read" drop (Charon tab). Pure passthrough of
+             * already-encrypted content/metadata — the caller is responsible for
+             * encryption. Other members receive it via the `CharonDropCreated`
+             * SignalR broadcast, including this device.
+             */
+            async sendCharonDrop(
+                encryptedContent: string,
+                contentInitializationVector: string,
+                encryptedMetadata: string,
+                metadataInitializationVector: string,
+            ): Promise<void> {
+                const listId = store.currentListId();
+                if (!listId) return;
+
+                await firstValueFrom(api.createCharonDrop({
+                    ghostListId: listId,
+                    encryptedContent,
+                    contentInitializationVector,
+                    encryptedMetadata,
+                    metadataInitializationVector,
+                }));
+            },
+
+            /**
+             * Marks a Charon drop as viewed by this device and removes it from the
+             * local queue. Once every other member has viewed it, the server burns
+             * (permanently deletes) the drop and broadcasts `CharonDropDeleted`.
+             */
+            async viewCharonDrop(dropId: string): Promise<void> {
+                patchState(store, { charonDrops: store.charonDrops().filter(d => d.id !== dropId) });
+                try {
+                    await firstValueFrom(api.markCharonDropViewed(dropId));
+                } catch { }
+            },
+
+            /** Recalls (deletes) a Charon drop before it's been viewed by everyone — e.g. sent by mistake. */
+            async recallCharonDrop(dropId: string): Promise<void> {
+                patchState(store, { charonDrops: store.charonDrops().filter(d => d.id !== dropId) });
+                try {
+                    await firstValueFrom(api.deleteCharonDrop(dropId));
+                } catch { }
             },
 
             /** Replays queued offline mutations against the API. Safe to call repeatedly. */
@@ -915,6 +975,31 @@ export const AppStore = signalStore(
                     patchState(store, {
                         othersLastReadMessageAt: { ...store.othersLastReadMessageAt(), [event.ghostListId]: event.lastReadMessageAt },
                     });
+                });
+
+                hub.charonDropCreated$.subscribe((event) => {
+                    if (event.ghostListId !== store.currentListId()) return;
+                    if (store.charonDrops().some((d) => d.id === event.id)) return;
+
+                    const newDrop = {
+                        id: event.id,
+                        ghostListId: event.ghostListId,
+                        encryptedContent: event.encryptedContent,
+                        contentInitializationVector: event.contentInitializationVector,
+                        encryptedMetadata: event.encryptedMetadata,
+                        metadataInitializationVector: event.metadataInitializationVector,
+                        createdAt: event.createdAt,
+                        senderDeviceId: event.senderDeviceId,
+                        senderUserId: event.senderUserId,
+                    } satisfies CharonDropDto;
+                    patchState(store, { charonDrops: [...store.charonDrops(), newDrop] });
+                    if (!isOwnSender(event.senderUserId, event.senderDeviceId)) {
+                        haptics.itemAdded();
+                    }
+                });
+
+                hub.charonDropDeleted$.subscribe((dropId) => {
+                    patchState(store, { charonDrops: store.charonDrops().filter((d) => d.id !== dropId) });
                 });
 
                 hub.ttlUpdated$.subscribe((newTtl) => {

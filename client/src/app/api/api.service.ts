@@ -2,6 +2,8 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
+    CharonDropDto,
+    CreateCharonDropRequest,
     CreateGhostListItemRequest,
     CreateGhostMessageRequest,
     GhostChatMessage,
@@ -188,5 +190,30 @@ export class ApiService {
 
     getLatestInfoMessage(): Observable<InfoMessage | null> {
         return this.http.get<InfoMessage | null>(`${this.BASE}/info/latest`);
+    }
+
+    getCharonDrops(listId: string): Observable<CharonDropDto[]> {
+        return this.http.get<CharonDropDto[]>(`${this.BASE}/charon/${listId}`,
+            { headers: this.deviceIdHeaders() });
+    }
+
+    createCharonDrop(request: CreateCharonDropRequest): Observable<string> {
+        return this.http.post<string>(`${this.BASE}/charon`, request,
+            { headers: { ...this.deviceTokenHeaders(), ...this.deviceIdHeaders(), ...this.userIdHeaders() } });
+    }
+
+    markCharonDropViewed(dropId: string): Observable<void> {
+        return this.http.post<void>(`${this.BASE}/charon/${dropId}/view`, null,
+            { headers: this.deviceIdHeaders() });
+    }
+
+    deleteCharonDrop(dropId: string): Observable<void> {
+        return this.http.delete<void>(`${this.BASE}/charon/${dropId}`);
+    }
+
+    /** Sends a "come watch now" Whisper invite push to other list members (all, or a specific subset). */
+    sendWhisperInvite(listId: string, targetDeviceIds?: string[]): Observable<void> {
+        return this.http.post<void>(`${this.BASE}/whisper/${listId}/invite`, { targetDeviceIds: targetDeviceIds ?? null },
+            { headers: this.deviceIdHeaders() });
     }
 }

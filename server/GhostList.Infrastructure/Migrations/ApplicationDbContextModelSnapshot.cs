@@ -21,6 +21,66 @@ namespace GhostList.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("GhostList.Domain.Entities.CharonDrop", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ContentInitializationVector")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EncryptedContent")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("EncryptedMetadata")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("GhostListId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MetadataInitializationVector")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SenderDeviceId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("SenderUserId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GhostListId");
+
+                    b.ToTable("CharonDrops");
+                });
+
+            modelBuilder.Entity("GhostList.Domain.Entities.CharonViewReceipt", b =>
+                {
+                    b.Property<Guid>("DropId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DeviceId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset>("ViewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("DropId", "DeviceId");
+
+                    b.ToTable("CharonViewReceipts");
+                });
+
             modelBuilder.Entity("GhostList.Domain.Entities.DailyUsageStat", b =>
                 {
                     b.Property<DateOnly>("Date")
@@ -236,6 +296,24 @@ namespace GhostList.Infrastructure.Migrations
                     b.HasKey("MessageId", "DeviceId");
 
                     b.ToTable("MessageReadReceipts");
+                });
+
+            modelBuilder.Entity("GhostList.Domain.Entities.CharonDrop", b =>
+                {
+                    b.HasOne("GhostList.Domain.Entities.GhostList", null)
+                        .WithMany()
+                        .HasForeignKey("GhostListId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GhostList.Domain.Entities.CharonViewReceipt", b =>
+                {
+                    b.HasOne("GhostList.Domain.Entities.CharonDrop", null)
+                        .WithMany()
+                        .HasForeignKey("DropId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("GhostList.Domain.Entities.GhostChatMessage", b =>

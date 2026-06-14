@@ -22,6 +22,7 @@ public class FcmOptions
 public class FcmNotificationService(
     IServiceScopeFactory scopeFactory,
     IPresenceTracker presence,
+    IWhisperPresenceTracker whisperPresence,
     IOptions<FcmOptions> opts,
     ILogger<FcmNotificationService> logger) : IPushNotificationService
 {
@@ -29,7 +30,7 @@ public class FcmNotificationService(
     private static readonly object InitLock = new();
     private static FirebaseApp? _app;
 
-    public async Task SendNotificationAsync(Guid listId, PushNotificationType type, string? senderDeviceId, CancellationToken ct)
+    public async Task SendNotificationAsync(Guid listId, PushNotificationType type, string? senderDeviceId, CancellationToken ct, IReadOnlyCollection<string>? targetDeviceIds = null)
     {
         var app = GetOrCreateApp();
         if (app is null) return;
@@ -49,23 +50,47 @@ public class FcmNotificationService(
         if (!string.IsNullOrEmpty(senderDeviceId))
             query = query.Where(s => s.DeviceId != senderDeviceId);
 
-        query = type == PushNotificationType.Message
-            ? query.Where(s => s.NotifyOnMessage)
-            : query.Where(s => s.NotifyOnItemsChanged);
+        if (type == PushNotificationType.WhisperInvite)
+        {
+            // Whisper invites are an explicit, one-off action — they always
+            // reach their recipients regardless of the per-list notification
+            // preferences. If specific recipients were requested, narrow to
+            // those; otherwise every other list member is a candidate.
+            if (targetDeviceIds is { Count: > 0 })
+                query = query.Where(s => targetDeviceIds.Contains(s.DeviceId));
+        }
+        else
+        {
+            query = type == PushNotificationType.Message
+                ? query.Where(s => s.NotifyOnMessage)
+                : query.Where(s => s.NotifyOnItemsChanged);
+        }
 
         var subscriptions = await query.ToListAsync(ct);
+        logger.LogInformation(
+            "Push {Type} for list {ListId}: {Count} subscription(s) match (sender={SenderDeviceId})",
+            type, listId, subscriptions.Count, senderDeviceId);
         if (subscriptions.Count == 0) return;
+
+        var alreadyWatching = type == PushNotificationType.WhisperInvite
+            ? whisperPresence.GetRoster(listId.ToString()).Select(e => e.DeviceId).ToHashSet()
+            : [];
 
         var targets = subscriptions
             .Where(s => !presence.ShouldSuppress(listId.ToString(), s.DeviceId))
+            .Where(s => !alreadyWatching.Contains(s.DeviceId))
             .ToList();
 
+        logger.LogInformation(
+            "Push {Type} for list {ListId}: {TargetCount}/{SubCount} target(s) after presence suppression",
+            type, listId, targets.Count, subscriptions.Count);
         if (targets.Count == 0) return;
 
         var (title, body) = type switch
         {
             PushNotificationType.Message => ("GhostList", "Neue Nachricht in einer deiner Listen"),
             PushNotificationType.ItemsChanged => ("GhostList", "Eine deiner Listen wurde aktualisiert"),
+            PushNotificationType.WhisperInvite => ("GhostList", "👀 Jemand schaut sich gerade eine deiner Listen an"),
             _ => ("GhostList", "Update"),
         };
 
@@ -91,15 +116,25 @@ public class FcmNotificationService(
             for (var i = 0; i < response.Responses.Count; i++)
             {
                 var result = response.Responses[i];
-                if (result.IsSuccess) continue;
+                if (result.IsSuccess)
+                {
+                    logger.LogInformation(
+                        "FCM send succeeded for device {DeviceId} (platform={Platform}), messageId={MessageId}",
+                        batch[i].DeviceId, batch[i].Platform, result.MessageId);
+                    continue;
+                }
 
                 if (IsStaleToken(result.Exception))
+                {
                     staleTokens.Add(batch[i].DeviceToken);
+                    logger.LogWarning(
+                        "FCM send failed for device {DeviceId} (platform={Platform}): stale token, removing. {Error}",
+                        batch[i].DeviceId, batch[i].Platform, result.Exception?.Message);
+                }
                 else
                     logger.LogWarning(
-                        "FCM send failed for device {DeviceId}: {Error}",
-                        batch[i].DeviceId,
-                        result.Exception?.Message);
+                        "FCM send failed for device {DeviceId} (platform={Platform}): {Error}",
+                        batch[i].DeviceId, batch[i].Platform, result.Exception?.Message);
             }
         }
 
@@ -122,7 +157,13 @@ public class FcmNotificationService(
         var data = new Dictionary<string, string>
         {
             ["listId"] = listId.ToString(),
-            ["type"] = type == PushNotificationType.Message ? "message" : "items_changed",
+            ["type"] = type switch
+            {
+                PushNotificationType.Message => "message",
+                PushNotificationType.ItemsChanged => "items_changed",
+                PushNotificationType.WhisperInvite => "whisper_invite",
+                _ => "update",
+            },
         };
 
         var message = new Message

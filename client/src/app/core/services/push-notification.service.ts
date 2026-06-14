@@ -20,8 +20,41 @@ export class PushNotificationService {
     private firebaseApp: FirebaseApp | null = null;
     private messaging: Messaging | null = null;
 
+    /** Resolves once a push token has been obtained (native registration callback or web getToken). */
+    private tokenReady: Promise<void>;
+    private resolveTokenReady!: () => void;
+
+    constructor() {
+        this.tokenReady = new Promise<void>((resolve) => {
+            this.resolveTokenReady = resolve;
+        });
+    }
+
+    private setToken(token: string): void {
+        this.tokenService.token.set(token);
+        this.resolveTokenReady();
+    }
+
+    /**
+     * Returns the current push token, waiting briefly for an in-flight
+     * registration to complete if none is available yet. This avoids
+     * silently dropping subscription/preference updates that happen right
+     * after app start, before the async registration callback has fired.
+     */
+    private async waitForToken(timeoutMs = 8000): Promise<string | null> {
+        const existing = this.tokenService.token();
+        if (existing) return existing;
+
+        await Promise.race([
+            this.tokenReady,
+            new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
+        ]);
+
+        return this.tokenService.token();
+    }
+
     async initialize(listIds: string[]): Promise<void> {
-        if (this.platform === 'ios') {
+        if (this.platform === 'ios' || this.platform === 'android') {
             await this.initializeNative(listIds);
         } else if (this.platform === 'web') {
             await this.initializeWeb(listIds);
@@ -35,7 +68,7 @@ export class PushNotificationService {
         await PushNotifications.register();
 
         PushNotifications.addListener('registration', async ({ value: token }) => {
-            this.tokenService.token.set(token);
+            this.setToken(token);
             for (const id of listIds) {
                 await this.subscribeToList(id);
             }
@@ -52,7 +85,7 @@ export class PushNotificationService {
             const listId = action.notification.data?.listId as string | undefined;
             const type = action.notification.data?.type as string | undefined;
             if (listId) {
-                this.router.navigate(['/list', listId, type === 'message' ? 'chat' : 'items']);
+                this.router.navigate(['/list', listId, this.routeForType(type)]);
             }
         });
     }
@@ -90,7 +123,7 @@ export class PushNotificationService {
             });
             if (!token) return;
 
-            this.tokenService.token.set(token);
+            this.setToken(token);
             for (const id of listIds) {
                 await this.subscribeToList(id);
             }
@@ -99,7 +132,7 @@ export class PushNotificationService {
                 const listId = payload.data?.['listId'];
                 const type = payload.data?.['type'];
                 if (listId) {
-                    this.router.navigate(['/list', listId, type === 'message' ? 'chat' : 'items']);
+                    this.router.navigate(['/list', listId, this.routeForType(type)]);
                 }
             });
         } catch (err) {
@@ -108,7 +141,7 @@ export class PushNotificationService {
     }
 
     async subscribeToList(listId: string): Promise<void> {
-        const token = this.tokenService.token();
+        const token = await this.waitForToken();
         const platform = this.platformDto();
         if (!platform || !token) return;
         await firstValueFrom(this.api.subscribeToList(listId, { deviceToken: token, platform })).catch(() => {});
@@ -116,7 +149,7 @@ export class PushNotificationService {
 
     /** Re-registers this device for a list with explicit notification preferences (per-list, per-device opt-out). */
     async updatePreferences(listId: string, notifyOnMessage: boolean, notifyOnItemsChanged: boolean): Promise<void> {
-        const token = this.tokenService.token();
+        const token = await this.waitForToken();
         const platform = this.platformDto();
         if (!platform || !token) return;
         await firstValueFrom(
@@ -125,9 +158,21 @@ export class PushNotificationService {
     }
 
     async unsubscribeFromList(listId: string): Promise<void> {
-        const token = this.tokenService.token();
+        const token = await this.waitForToken();
         if (!this.platformDto() || !token) return;
         await firstValueFrom(this.api.unsubscribeFromList(listId)).catch(() => {});
+    }
+
+    /** Maps a notification's `data.type` to the list-detail tab it should open. */
+    private routeForType(type: string | undefined): string {
+        switch (type) {
+            case 'message':
+                return 'chat';
+            case 'whisper_invite':
+                return 'whisper';
+            default:
+                return 'items';
+        }
     }
 
     private platformDto(): DevicePlatformDto | null {

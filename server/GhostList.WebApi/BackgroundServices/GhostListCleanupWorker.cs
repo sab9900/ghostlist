@@ -1,3 +1,4 @@
+using GhostList.Application.Features.Charon.Commands.DeleteExpiredCharonDrops;
 using GhostList.Application.Features.GhostLists.Commands.DeleteExpiredListItems;
 using GhostList.Application.Features.GhostLists.Commands.DeleteStaleLists;
 using GhostList.Application.Features.GhostMessages.Commands.DeleteExpiredImageBlobs;
@@ -31,6 +32,10 @@ public class GhostListCleanupWorker(IServiceScopeFactory scopeFactory, ILogger<G
                 var expiredImages = await mediator.Send(new DeleteExpiredImageBlobsCommand(), stoppingToken);
                 if (expiredImages > 0)
                     logger.LogInformation("Cleanup: {Count} expired image blob(s) deleted.", expiredImages);
+
+                var expiredDrops = await mediator.Send(new DeleteExpiredCharonDropsCommand(), stoppingToken);
+                if (expiredDrops > 0)
+                    logger.LogInformation("Cleanup: {Count} expired Charon drop(s) deleted.", expiredDrops);
 
                 if (DateTime.UtcNow - _lastMemberlessCheck >= MemberlessCheckInterval)
                 {

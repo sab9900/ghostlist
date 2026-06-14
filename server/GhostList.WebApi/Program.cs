@@ -46,6 +46,7 @@ builder.Services.AddSignalR(options =>
 });
 builder.Services.AddScoped<IGhostListNotifier, GhostListNotifier>();
 builder.Services.AddSingleton<IPresenceTracker, PresenceTracker>();
+builder.Services.AddSingleton<IWhisperPresenceTracker, WhisperPresenceTracker>();
 builder.Services.AddHostedService<GhostListCleanupWorker>();
 
 var app = builder.Build();

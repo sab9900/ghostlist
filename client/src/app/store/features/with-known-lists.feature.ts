@@ -84,6 +84,17 @@ export function withKnownLists() {
                     await push.updatePreferences(listId, notifyOnMessage, notifyOnItemsChanged);
                 },
 
+                /** Marks (or unmarks) a list as sensitive on this device. Sensitive lists are hidden by default. */
+                async setListSensitive(listId: string, isSensitive: boolean): Promise<void> {
+                    const known = store.knownLists().find(l => l.id === listId);
+                    if (!known) return;
+                    const updated: KnownList = { ...known, isSensitive };
+                    await storage.upsert(updated);
+                    patchState(store, {
+                        knownLists: store.knownLists().map(l => l.id === listId ? updated : l),
+                    });
+                },
+
                 async _registerAsMember(listId: string, encryptionKey: string): Promise<void> {
                     if (registeredThisSession.has(listId)) return;
                     registeredThisSession.add(listId);

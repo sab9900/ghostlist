@@ -1,3 +1,4 @@
+export * from './charon-drop.model';
 export * from './delete-after-duration.enum';
 export * from './errors.model';
 export * from './ghost-chat-message.model';

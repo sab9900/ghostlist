@@ -1,8 +1,9 @@
 # Push-Benachrichtigungen: Firebase-Setup & Verifikation
 
 Dieser Leitfaden deckt die verbleibenden **manuellen Schritte** ab, die nur im
-Firebase-Konsolen-UI bzw. lokal mit Xcode/.NET ausgeführt werden können. Die
-gesamte Code-Integration (Server, Web-Client, iOS-Client) ist bereits erledigt.
+Firebase-Konsolen-UI bzw. lokal mit Xcode/Android Studio/.NET ausgeführt werden
+können. Die gesamte Code-Integration (Server, Web-Client, iOS-Client,
+Android-Client) ist bereits erledigt.
 
 Firebase-Projekt: **ghostlist-ff00f**
 
@@ -79,7 +80,69 @@ einem Distribution-Profil auf `production` gesetzt werden. Für lokale
 Debug-Builds bitte `development` belassen, sonst funktionieren Push-Tests mit
 dem Entwicklungs-APNs-Zertifikat nicht mehr.
 
-## 7. Verifikation (Task #10)
+## 7. Android: App in Firebase registrieren + google-services.json
+
+1. Firebase Console → Projektübersicht → **App hinzufügen** → Android.
+2. Android-Paketname exakt: `com.norica_informatics.ghostlist` (Unterstrich,
+   siehe `client/android/app/build.gradle` → `applicationId` bzw.
+   `client/capacitor.config.ts` → `appId`). **Achtung:** weicht bewusst von
+   der iOS-Bundle-ID `com.norica-informatics.ghostlist` (Bindestrich) ab –
+   Android-Package-Namen dürfen keine Bindestriche enthalten.
+3. App-Spitzname optional, SHA-1 kann zunächst leer bleiben (nur für
+   Dynamic Links/App Links nötig).
+4. **google-services.json herunterladen**.
+5. Datei nach `client/android/app/google-services.json` kopieren
+   (gleiches Verzeichnis wie `build.gradle` der App).
+
+> `client/android/app/build.gradle` wendet das `google-services`-Plugin nur
+> an, wenn diese Datei vorhanden ist – ohne sie baut die App weiterhin normal,
+> aber ohne Push-Funktionalität.
+
+**Wichtig:** Diese Datei niemals committen (enthält projektspezifische, aber
+öffentlich lesbare Firebase-Keys – analog zu `GoogleService-Info.plist` gilt
+hier dieselbe Vorsicht wie bei allen Secrets/Config-Dateien außerhalb von Git).
+
+## 8. Android: Capacitor-Sync & Gradle
+
+Lokal (mit Android Studio / Android SDK):
+
+```bash
+cd client
+npm install
+npx cap sync android
+```
+
+`cap sync` registriert `@capacitor/push-notifications` in
+`android/capacitor.settings.gradle` und `android/app/capacitor.build.gradle`
+(diese Dateien wurden hier bereits manuell ergänzt, `cap sync` sollte sie
+unverändert lassen bzw. nur weitere fehlende Plugins nachziehen).
+
+**Aufräumen (einmalig, manuell):** `applicationId`/`namespace` wurden von
+`com.norica.ghostlist` auf `com.norica_informatics.ghostlist` umgestellt
+(`build.gradle`, `strings.xml`, `capacitor.config.json`, `MainActivity.java`
+nach `java/com/norica_informatics/ghostlist/` verschoben). Die alte Datei
+`android/app/src/main/java/com/norica/ghostlist/MainActivity.java` (samt
+leerem `com/norica`-Ordner) konnte aus diesem Sandbox-Filesystem nicht
+gelöscht werden – bitte lokal löschen, bevor ihr baut.
+
+Danach in Android Studio öffnen (`client/android`) und bauen, oder:
+
+```bash
+cd android
+./gradlew assembleDebug
+```
+
+### Was bereits enthalten ist
+
+- `AndroidManifest.xml`: Berechtigung `android.permission.POST_NOTIFICATIONS`
+  (Android 13+) sowie FCM-Default-Icon/-Farbe (`ic_stat_notification` /
+  `notification_color`).
+- `push-notification.service.ts`: `initialize()` registriert jetzt auch auf
+  Android über `@capacitor/push-notifications` (gleicher Code-Pfad wie iOS).
+- Server (`FcmNotificationService`) sendet bereits `AndroidConfig`-Payloads –
+  keine weiteren Server-Änderungen nötig.
+
+## 9. Verifikation (Task #10)
 
 Folgendes bitte lokal ausführen, da das Sandbox-Environment kein .NET SDK /
 keinen iOS-Toolchain hat:
@@ -112,8 +175,21 @@ In Xcode bauen (⌘B). Erwartete Warnung/Fehler nur, falls
 `GoogleService-Info.plist` noch fehlt (siehe Schritt 3) – die App startet
 trotzdem, Push bleibt dann inaktiv.
 
+**Android:**
+```bash
+cd client
+npx cap sync android
+cd android
+./gradlew assembleDebug
+```
+Erwartete Warnung/Fehler nur, falls `google-services.json` noch fehlt
+(siehe Schritt 7) – die App baut trotzdem, Push bleibt dann inaktiv. Beim
+ersten Start auf einem Gerät mit Android 13+ fragt die App per
+`PushNotifications.requestPermissions()` die Benachrichtigungs-Berechtigung ab.
+
 **End-to-End-Test (nach allen Schritten):**
-1. App auf echtem Gerät (Push funktioniert nicht im Simulator) bzw. im Browser
+1. App auf echtem Gerät (Push funktioniert auf Android-Emulatoren mit
+   Google-Play-Image i. d. R., bei iOS nicht im Simulator) bzw. im Browser
    öffnen, Benachrichtigungs-Berechtigung erteilen.
 2. Liste öffnen → in den Listen-Einstellungen prüfen, dass die neue Sektion
    "Benachrichtigungen" mit den beiden Schaltern (Chat-Nachrichten /

@@ -22,6 +22,16 @@ export const routes: Routes = [
                     import('./features/list-detail/chat-tab/chat-tab.component').then((m) => m.ChatTabComponent),
             },
             {
+                path: 'whisper',
+                loadComponent: () =>
+                    import('./features/list-detail/whisper-tab/whisper-tab.component').then((m) => m.WhisperTabComponent),
+            },
+            {
+                path: 'charon',
+                loadComponent: () =>
+                    import('./features/list-detail/charon-tab/charon-tab.component').then((m) => m.CharonTabComponent),
+            },
+            {
                 path: 'settings',
                 loadComponent: () =>
                     import('./features/list-detail/settings-tab/settings-tab.component').then((m) => m.SettingsTabComponent),

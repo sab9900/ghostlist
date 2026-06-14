@@ -47,3 +47,25 @@ public record ReadReceiptUpdatedNotification(
     Guid GhostListId,
     string DeviceId,
     DateTimeOffset? LastReadMessageAt);
+
+/// <summary>
+/// A new "burn after read" drop was created (Charon tab). Broadcast to every
+/// member of the list so it shows up as a sealed drop in their queue.
+/// </summary>
+public record CharonDropCreatedNotification(
+    Guid Id,
+    Guid GhostListId,
+    string EncryptedContent,
+    string ContentInitializationVector,
+    string EncryptedMetadata,
+    string MetadataInitializationVector,
+    DateTime CreatedAt,
+    string? SenderDeviceId,
+    string? SenderUserId);
+
+/// <summary>
+/// A Charon drop was permanently removed — either because every other member
+/// has now viewed (burned) it, the sender recalled it, or it expired unread.
+/// Clients should drop it from their queue if still present.
+/// </summary>
+public record CharonDropDeletedNotification(Guid Id, Guid GhostListId);

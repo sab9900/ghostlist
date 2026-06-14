@@ -14,6 +14,12 @@
     background: var(--color-bg);
     padding-top: var(--safe-top);
     overflow: hidden;
+    transform: translateX(calc(var(--swipe-progress, 0) * 24px));
+    opacity: calc(1 - var(--swipe-progress, 0) * 0.35);
+
+    &.is-swiping-back {
+        transition: none;
+    }
 
     &--desktop {
         padding-top: 0;
@@ -150,6 +156,76 @@
     }
 }
 
+.chat-view-toggle {
+    flex-shrink: 0;
+    display: flex;
+    gap: var(--space-1);
+    padding: var(--space-2);
+    border-bottom: 1px solid var(--color-border);
+
+    &__btn {
+        flex: 1;
+        background: none;
+        border: none;
+        border-radius: var(--radius-sm);
+        padding: var(--space-2) var(--space-3);
+        font-size: var(--text-sm);
+        font-weight: var(--weight-medium);
+        font-family: var(--font-sans);
+        color: var(--color-text-muted);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-2);
+        transition:
+            color var(--duration-fast) var(--ease-out),
+            background var(--duration-fast) var(--ease-out);
+
+        &--active {
+            color: var(--color-primary);
+            background: var(--color-surface-2);
+        }
+
+        &:hover:not(&--active) {
+            color: var(--color-text);
+        }
+    }
+}
+
+.solo-hint {
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    text-align: center;
+    padding: var(--space-4);
+
+    &__text {
+        color: var(--color-text-subtle);
+        font-size: var(--text-sm);
+        max-width: 32ch;
+    }
+
+    &__btn {
+        background: var(--color-primary-dim);
+        border: none;
+        border-radius: var(--radius-full);
+        padding: var(--space-2) var(--space-4);
+        color: var(--color-primary);
+        font-size: var(--text-sm);
+        font-weight: var(--weight-medium);
+        font-family: var(--font-sans);
+        cursor: pointer;
+        transition: background var(--duration-fast) var(--ease-out);
+
+        &:hover {
+            background: var(--color-primary-dim-hover, var(--color-primary-dim));
+        }
+    }
+}
+
 .pane-resizer {
     width: 4px;
     flex-shrink: 0;
@@ -189,7 +265,7 @@
 }
 
 .settings-drawer {
-    position: absolute;
+    position: fixed;
     top: 0;
     right: 0;
     bottom: 0;
@@ -202,9 +278,17 @@
     z-index: 51;
     box-shadow: -8px 0 32px rgba(0, 0, 0, 0.25);
     animation: drawerIn var(--duration-normal) var(--ease-out) both;
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
 
     &--closing {
         animation: drawerOut var(--duration-normal) var(--ease-out) both;
+    }
+
+    @media (min-width: 900px) {
+        position: absolute;
+        padding-top: 0;
+        padding-bottom: 0;
     }
 
     &__header {

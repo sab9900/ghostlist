@@ -10,9 +10,11 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { InfoCenterService } from './core/services/info-center.service';
 import { LayoutService } from './core/services/layout.service';
+import { SensitiveListsService } from './core/services/sensitive-lists.service';
 import { UserPreferencesService } from './core/services/user-preferences.service';
 import { WebAuthnService } from './core/services/webauthn.service';
 import { ListsComponent } from './features/lists/lists.component';
+import { ImageViewerComponent } from './shared/image-viewer/image-viewer.component';
 import { InfoOverlayComponent } from './shared/info-overlay/info-overlay.component';
 import { OfflineBannerComponent } from './shared/offline-banner/offline-banner.component';
 import { PwaInstallBannerComponent } from './shared/pwa-install-banner/pwa-install-banner.component';
@@ -35,7 +37,7 @@ function loadSidebarWidth(): number {
 
 @Component({
     selector: 'app-root',
-    imports: [RouterOutlet, ListsComponent, TranslatePipe, FormsModule, PwaInstallBannerComponent, OfflineBannerComponent, InfoOverlayComponent],
+    imports: [RouterOutlet, ListsComponent, TranslatePipe, FormsModule, PwaInstallBannerComponent, OfflineBannerComponent, InfoOverlayComponent, ImageViewerComponent],
     templateUrl: './app.html',
     styleUrl: './app.scss',
 })
@@ -44,6 +46,7 @@ export class App {
     protected readonly webAuthn = inject(WebAuthnService);
     protected readonly infoCenter = inject(InfoCenterService);
     protected readonly prefs = inject(UserPreferencesService);
+    private readonly sensitiveLists = inject(SensitiveListsService);
     private readonly router = inject(Router);
 
     protected readonly locked    = signal(false);
@@ -109,6 +112,7 @@ export class App {
     }
 
     engageLock(): void {
+        this.sensitiveLists.hide();
         if (this.locked()) return;
         this.locked.set(true);
         void this.triggerBiometric();

@@ -35,3 +35,12 @@ export interface SubscribeRequest {
     notifyOnMessage?: boolean;
     notifyOnItemsChanged?: boolean;
 }
+
+/** Body for creating a new Charon "burn after read" drop. */
+export interface CreateCharonDropRequest {
+    ghostListId: string;
+    encryptedContent: string;
+    contentInitializationVector: string;
+    encryptedMetadata: string;
+    metadataInitializationVector: string;
+}

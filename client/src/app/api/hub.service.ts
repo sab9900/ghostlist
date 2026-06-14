@@ -4,11 +4,14 @@ import { Subject } from 'rxjs';
 import { Capacitor } from '@capacitor/core';
 import { environment } from '../../environments/environment';
 import {
+    CharonDropCreatedEvent,
     ImageSharedEvent,
     ItemCreatedEvent,
     ItemToggledEvent,
     MessageCreatedEvent,
     ReadReceiptUpdatedEvent,
+    WhisperPresenceEntry,
+    WhisperReceivedEvent,
 } from '../core/models';
 import { DeviceIdService } from '../core/services/device-id.service';
 
@@ -30,6 +33,10 @@ export class HubService implements OnDestroy {
     private readonly _memberKicked$ = new Subject<{ listId: string; deviceId: string }>();
     private readonly _imageShared$ = new Subject<ImageSharedEvent>();
     private readonly _readReceiptUpdated$ = new Subject<ReadReceiptUpdatedEvent>();
+    private readonly _whisperReceived$ = new Subject<WhisperReceivedEvent>();
+    private readonly _whisperPresenceChanged$ = new Subject<{ listId: string; roster: WhisperPresenceEntry[] }>();
+    private readonly _charonDropCreated$ = new Subject<CharonDropCreatedEvent>();
+    private readonly _charonDropDeleted$ = new Subject<string>();
     private readonly _reconnected$ = new Subject<void>();
 
     readonly itemCreated$ = this._itemCreated$.asObservable();
@@ -42,6 +49,10 @@ export class HubService implements OnDestroy {
     readonly memberKicked$ = this._memberKicked$.asObservable();
     readonly imageShared$ = this._imageShared$.asObservable();
     readonly readReceiptUpdated$ = this._readReceiptUpdated$.asObservable();
+    readonly whisperReceived$ = this._whisperReceived$.asObservable();
+    readonly whisperPresenceChanged$ = this._whisperPresenceChanged$.asObservable();
+    readonly charonDropCreated$ = this._charonDropCreated$.asObservable();
+    readonly charonDropDeleted$ = this._charonDropDeleted$.asObservable();
 
     readonly reconnected$ = this._reconnected$.asObservable();
 
@@ -61,6 +72,12 @@ export class HubService implements OnDestroy {
         this.connection.on('MemberKicked', (listId: string, deviceId: string) => this._memberKicked$.next({ listId, deviceId }));
         this.connection.on('ImageShared', (e: ImageSharedEvent) => this._imageShared$.next(e));
         this.connection.on('ReadReceiptUpdated', (e: ReadReceiptUpdatedEvent) => this._readReceiptUpdated$.next(e));
+        this.connection.on('WhisperReceived', (e: WhisperReceivedEvent) => this._whisperReceived$.next(e));
+        this.connection.on('WhisperPresenceChanged', (listId: string, roster: WhisperPresenceEntry[]) =>
+            this._whisperPresenceChanged$.next({ listId, roster }),
+        );
+        this.connection.on('CharonDropCreated', (e: CharonDropCreatedEvent) => this._charonDropCreated$.next(e));
+        this.connection.on('CharonDropDeleted', (id: string) => this._charonDropDeleted$.next(id));
 
         this.connection.onreconnecting(() =>
             this.connectionState.set(signalR.HubConnectionState.Reconnecting),
@@ -101,6 +118,21 @@ export class HubService implements OnDestroy {
 
     async relayImage(listId: string, messageId: string, encryptedImage: string, imageInitializationVector: string): Promise<void> {
         await this.connection.invoke('RelayImage', listId, messageId, encryptedImage, imageInitializationVector);
+    }
+
+    /** Joins the ephemeral Whisper room for a list, reporting a plaintext display name for the live presence roster. */
+    async joinWhisperRoom(listId: string, displayName: string): Promise<void> {
+        await this.connection.invoke('JoinWhisperRoom', listId, this.deviceId.deviceId, displayName);
+    }
+
+    async leaveWhisperRoom(listId: string): Promise<void> {
+        if (this.connection.state !== signalR.HubConnectionState.Connected) return;
+        await this.connection.invoke('LeaveWhisperRoom', listId);
+    }
+
+    /** Sends a live, never-persisted "whisper" to everyone else currently viewing the Whisper tab. */
+    async sendWhisper(listId: string, ciphertext: string, iv: string, senderCiphertext: string, senderIv: string): Promise<void> {
+        await this.connection.invoke('SendWhisper', listId, ciphertext, iv, senderCiphertext, senderIv);
     }
 
     ngOnDestroy(): void {

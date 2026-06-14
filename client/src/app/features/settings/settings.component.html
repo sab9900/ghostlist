@@ -1,4 +1,4 @@
-<div class="screen" role="main">
+<div class="screen" role="main" appSwipeBack (swipeBack)="goBack()">
 
     <header class="header" role="banner">
         <button class="header__back" (click)="goBack()" [attr.aria-label]="'LIST_DETAIL.BACK_ARIA' | translate">
@@ -128,6 +128,108 @@
                     </div>
                 </div>
                 }
+            </div>
+        </section>
+
+        <section class="section" aria-labelledby="master-password-heading">
+            <div class="section__desc">
+                <h2 class="section__title" id="master-password-heading">{{ 'SETTINGS.SECURITY.MASTER_PASSWORD.TITLE' | translate }}</h2>
+                <p class="section__hint">{{ 'SETTINGS.SECURITY.MASTER_PASSWORD.HINT' | translate }}</p>
+            </div>
+            <div class="section__body">
+
+                @if (mpMode() === 'view') {
+                    @if (masterPassword.hasPassword()) {
+                    <div class="security-row">
+                        <span class="security-badge">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                            </svg>
+                            {{ 'SETTINGS.SECURITY.MASTER_PASSWORD.ENABLED' | translate }}
+                        </span>
+                        <button class="btn btn--ghost btn--sm" (click)="startChangeMasterPassword()">
+                            {{ 'SETTINGS.SECURITY.MASTER_PASSWORD.CHANGE_BTN' | translate }}
+                        </button>
+                        <button class="btn btn--ghost btn--sm btn--danger" (click)="startRemoveMasterPassword()">
+                            {{ 'SETTINGS.SECURITY.MASTER_PASSWORD.REMOVE_BTN' | translate }}
+                        </button>
+                    </div>
+                    } @else {
+                    <button class="btn btn--primary btn--sm" (click)="startSetMasterPassword()">
+                        {{ 'SETTINGS.SECURITY.MASTER_PASSWORD.SET_BTN' | translate }}
+                    </button>
+                    }
+
+                    @if (mpSaved()) {
+                    <p class="security-status security-status--ok" role="status">{{ 'SETTINGS.SECURITY.MASTER_PASSWORD.SAVED' | translate }}</p>
+                    }
+                }
+
+                @if (mpMode() === 'set' || mpMode() === 'change') {
+                <div class="section__sub master-password-form">
+                    @if (mpMode() === 'change') {
+                    <input class="settings-input" type="password" autocomplete="off"
+                        [attr.placeholder]="'SETTINGS.SECURITY.MASTER_PASSWORD.CURRENT_PLACEHOLDER' | translate"
+                        [ngModel]="mpCurrentPassword()" (ngModelChange)="mpCurrentPassword.set($event)"
+                        [attr.aria-label]="'SETTINGS.SECURITY.MASTER_PASSWORD.CURRENT_PLACEHOLDER' | translate" />
+                    }
+                    <input class="settings-input" type="password" autocomplete="off"
+                        [attr.placeholder]="'SETTINGS.SECURITY.MASTER_PASSWORD.NEW_PLACEHOLDER' | translate"
+                        [ngModel]="mpNewPassword()" (ngModelChange)="mpNewPassword.set($event)"
+                        [attr.aria-label]="'SETTINGS.SECURITY.MASTER_PASSWORD.NEW_PLACEHOLDER' | translate" />
+                    <input class="settings-input" type="password" autocomplete="off"
+                        [attr.placeholder]="'SETTINGS.SECURITY.MASTER_PASSWORD.CONFIRM_PLACEHOLDER' | translate"
+                        [ngModel]="mpConfirmPassword()" (ngModelChange)="mpConfirmPassword.set($event)"
+                        (keydown.enter)="mpMode() === 'set' ? submitSetMasterPassword() : submitChangeMasterPassword()"
+                        [attr.aria-label]="'SETTINGS.SECURITY.MASTER_PASSWORD.CONFIRM_PLACEHOLDER' | translate" />
+
+                    @if (mpError()) {
+                    <p class="security-status security-status--err" role="alert">{{ mpError()! | translate }}</p>
+                    }
+
+                    <div class="dialog__actions">
+                        <button class="btn btn--ghost" (click)="cancelMasterPassword()" [disabled]="mpWorking()">
+                            {{ 'COMMON.CANCEL' | translate }}
+                        </button>
+                        @if (mpMode() === 'set') {
+                        <button class="btn btn--primary" (click)="submitSetMasterPassword()" [disabled]="mpWorking()" [attr.aria-busy]="mpWorking()">
+                            {{ 'COMMON.SAVE' | translate }}
+                        </button>
+                        } @else {
+                        <button class="btn btn--primary" (click)="submitChangeMasterPassword()" [disabled]="mpWorking()" [attr.aria-busy]="mpWorking()">
+                            {{ 'COMMON.SAVE' | translate }}
+                        </button>
+                        }
+                    </div>
+                </div>
+                }
+
+                @if (mpMode() === 'remove') {
+                <div class="section__sub master-password-form">
+                    <p class="section__hint">{{ 'SETTINGS.SECURITY.MASTER_PASSWORD.REMOVE_HINT' | translate }}</p>
+                    <input class="settings-input" type="password" autocomplete="off"
+                        [attr.placeholder]="'SETTINGS.SECURITY.MASTER_PASSWORD.CURRENT_PLACEHOLDER' | translate"
+                        [ngModel]="mpCurrentPassword()" (ngModelChange)="mpCurrentPassword.set($event)"
+                        (keydown.enter)="submitRemoveMasterPassword()"
+                        [attr.aria-label]="'SETTINGS.SECURITY.MASTER_PASSWORD.CURRENT_PLACEHOLDER' | translate" />
+
+                    @if (mpError()) {
+                    <p class="security-status security-status--err" role="alert">{{ mpError()! | translate }}</p>
+                    }
+
+                    <div class="dialog__actions">
+                        <button class="btn btn--ghost" (click)="cancelMasterPassword()" [disabled]="mpWorking()">
+                            {{ 'COMMON.CANCEL' | translate }}
+                        </button>
+                        <button class="btn btn--ghost btn--danger" (click)="submitRemoveMasterPassword()" [disabled]="mpWorking()" [attr.aria-busy]="mpWorking()">
+                            {{ 'SETTINGS.SECURITY.MASTER_PASSWORD.REMOVE_BTN' | translate }}
+                        </button>
+                    </div>
+                </div>
+                }
+
             </div>
         </section>
 

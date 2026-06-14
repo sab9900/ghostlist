@@ -37,7 +37,13 @@
     "EXPORT_DONE": "✓ Lista esportata — l'altro dispositivo la aprirà automaticamente.",
     "EXPORT_ERROR": "Esportazione fallita. Riprova.",
     "ERROR_LIST_FULL": "Questa lista ha raggiunto il limite di 30 membri e non può accettare nuovi dispositivi.",
-    "GENERATING": "Generazione…"
+    "GENERATING": "Generazione…",
+    "REVEAL_TITLE": "Mostra liste sensibili",
+    "REVEAL_HINT": "Inserisci la tua password principale per mostrare le liste sensibili su questo dispositivo.",
+    "REVEAL_PLACEHOLDER": "Password principale",
+    "REVEAL_ERROR": "Password errata o autenticazione non riuscita.",
+    "REVEAL_BTN": "Mostra",
+    "REVEAL_CHECKING": "Verifica…"
   },
   "ITEMS": {
     "ADD_PLACEHOLDER": "Aggiungi elemento…",
@@ -49,7 +55,6 @@
   },
   "CHAT": {
     "NO_MESSAGES": "Nessun messaggio ancora.",
-    "NEW_MESSAGES": "Nuovi messaggi",
     "ANONYMOUS": "Anonimo",
     "EDIT_NAME": "Modifica nome",
     "MESSAGE_PLACEHOLDER": "Messaggio…",
@@ -68,7 +73,8 @@
     "IMAGE_UNAVAILABLE": "Immagine non più disponibile",
     "SEND_IMAGE_ARIA": "Invia immagine",
     "SENT_ARIA": "Inviato",
-    "READ_ARIA": "Letto"
+    "READ_ARIA": "Letto",
+    "FILE_TOO_LARGE": "L'immagine è troppo grande."
   },
   "LIST_DETAIL": {
     "BACK_ARIA": "Torna alle liste",
@@ -76,9 +82,46 @@
     "RESIZE_ARIA": "Ridimensiona pannelli",
     "TAB_ITEMS": "Elementi",
     "TAB_CHAT": "Chat",
+    "TAB_WHISPER": "Lethe",
+    "TAB_CHARON": "Charon",
     "TAB_SETTINGS": "Impostazioni",
+    "CHAT_VIEW_TOGGLE_ARIA": "Passa tra chat, Lethe e Charon",
+    "SOLO_HINT": "Chat, Lethe e Charon si sbloccano quando qualcun altro si unisce a questa lista.",
     "DRAWER_TITLE": "Impostazioni",
     "DRAWER_CLOSE_ARIA": "Chiudi impostazioni"
+  },
+  "WHISPER": {
+    "PRESENCE_ARIA": "Chi sta guardando",
+    "PRESENCE_EMPTY": "Al momento non c'è nessun altro che guarda",
+    "PRESENCE_LABEL": "In ascolto:",
+    "HINT": "I messaggi qui non vengono mai salvati: appaiono brevemente su tutti i dispositivi connessi e poi scompaiono.",
+    "PLACEHOLDER": "Wisp…",
+    "INVITE_BTN": "Invita",
+    "INVITE_ALL": "Invita tutti",
+    "INVITE_PICK_HINT": "Oppure invita persone specifiche:",
+    "INVITE_SELECTED": "Invita {{count}} persona/e",
+    "INVITE_SENT": "✓ Invito inviato"
+  },
+  "CHARON": {
+    "HINT": "Invia una foto o un file che scomparirà non appena tutti l'avranno aperto.",
+    "SEALED": "Invio sigillato",
+    "FROM": "Da {{name}}",
+    "FROM_YOU": "Inviato da te",
+    "REVEAL": "Apri",
+    "REVEAL_ARIA": "Apri questo invio (verrà distrutto dopo la visualizzazione)",
+    "REVEAL_CONFIRM": "Può essere aperto solo una volta. Dopo l'apertura sarà perso per sempre. Aprire ora?",
+    "RECALL": "Richiama",
+    "RECALL_ARIA": "Elimina questo invio prima che venga aperto",
+    "RECALL_CONFIRM": "Eliminare questo invio per tutti prima che venga aperto?",
+    "BURNED_NOTICE": "Distrutto — non può essere riaperto.",
+    "DISMISS": "Ignora",
+    "DOWNLOAD": "Scarica",
+    "ATTACH": "Invia un file autodistruttivo",
+    "ATTACH_ARIA": "Invia un file autodistruttivo",
+    "SENDING": "Invio in corso…",
+    "FILE_TOO_LARGE": "Il file è troppo grande (max 8 MB).",
+    "FILE_TYPE_NOT_ALLOWED": "Questo tipo di file non è supportato.",
+    "IMAGE_ALT": "Immagine condivisa"
   },
   "LIST_SETTINGS": {
     "LIST_NAME_TITLE": "Nome lista",
@@ -91,6 +134,11 @@
     "NOTIFY_ON_MESSAGE_HINT": "Notifica quando qualcuno invia un messaggio nella chat di questa lista.",
     "NOTIFY_ON_ITEMS_CHANGED": "Modifiche alla lista",
     "NOTIFY_ON_ITEMS_CHANGED_HINT": "Notifica quando elementi vengono aggiunti, completati o rimossi.",
+    "PRIVACY_TITLE": "Privacy",
+    "PRIVACY_HINT": "Controlla come questa lista viene mostrata su questo dispositivo.",
+    "SENSITIVE": "Lista sensibile",
+    "SENSITIVE_HINT": "Questa lista è nascosta per impostazione predefinita. Per mostrarla, tocca il logo del fantasma tre volte e inserisci la tua password principale.",
+    "SENSITIVE_NO_PASSWORD": "Imposta prima una password principale nelle impostazioni generali per contrassegnare le liste come sensibili.",
     "SHARE_TITLE": "Condividi questa lista",
     "SHARE_LINK_HINT": "Copia un link e invialo tramite qualsiasi canale.",
     "COPY_LINK": "Copia link di condivisione",
@@ -172,7 +220,25 @@
     "SYNC_SHOW_QR": "Mostra codice QR",
     "SYNC_SCAN_QR": "Scansiona codice QR",
     "SYNC_SEND_QR_HINT": "Sull'altro dispositivo: Impostazioni → Sync Machine → Ricevi → scansiona il codice QR.",
-    "SYNC_REQUIRES_BIOMETRIC": "Attiva il blocco biometrico (sopra) per usare la Sync Machine."
+    "SYNC_REQUIRES_BIOMETRIC": "Attiva il blocco biometrico (sopra) per usare la Sync Machine.",
+    "SECURITY": {
+      "MASTER_PASSWORD": {
+        "TITLE": "Password principale",
+        "HINT": "Protegge le liste contrassegnate come sensibili. Necessaria per mostrarle dopo aver toccato il logo del fantasma tre volte.",
+        "SET_BTN": "Imposta password principale",
+        "ENABLED": "Impostata",
+        "CHANGE_BTN": "Cambia",
+        "REMOVE_BTN": "Rimuovi",
+        "SAVED": "✓ Salvato",
+        "CURRENT_PLACEHOLDER": "Password principale attuale",
+        "NEW_PLACEHOLDER": "Nuova password principale",
+        "CONFIRM_PLACEHOLDER": "Conferma password principale",
+        "REMOVE_HINT": "Rimuovendola, tutte le liste contrassegnate come sensibili su questo dispositivo torneranno visibili normalmente.",
+        "ERROR_TOO_SHORT": "La password deve contenere almeno 4 caratteri.",
+        "ERROR_MISMATCH": "Le password non coincidono.",
+        "ERROR_CURRENT_INVALID": "La password attuale non è corretta."
+      }
+    }
   },
   "INFO_CENTER": {
     "TYPE_INFO": "Info",
@@ -196,6 +262,14 @@
     "FEATURE_REALTIME_DESC": "Le modifiche appaiono istantaneamente su ogni dispositivo connesso tramite SignalR — il tutto ancora crittografato end-to-end.",
     "FEATURE_ZERO_LABEL": "Server a conoscenza zero",
     "FEATURE_ZERO_DESC": "Nessun account, nessun tracciamento, nessuna pubblicità. Il server non può leggere i tuoi dati. Le tue chiavi non lasciano mai il tuo dispositivo.",
+    "FEATURE_LETHE_LABEL": "Lethe: messaggi effimeri",
+    "FEATURE_LETHE_DESC": "Brevi messaggi wisp appaiono in diretta su tutti i dispositivi e svaniscono senza essere salvati, con un indicatore di chi sta osservando.",
+    "FEATURE_CHARON_LABEL": "Charon: file autodistruttivi",
+    "FEATURE_CHARON_DESC": "Condividi foto e file fino a 8 MB che si bruciano automaticamente dopo l'apertura o che puoi richiamare prima che vengano visti.",
+    "FEATURE_PUSH_LABEL": "Notifiche push",
+    "FEATURE_PUSH_DESC": "Ricevi notifiche per lista su nuovi messaggi in chat o modifiche agli elementi.",
+    "FEATURE_HIDDEN_LABEL": "Liste nascoste",
+    "FEATURE_HIDDEN_DESC": "Contrassegna le liste come sensibili per tenerle nascoste: visibili solo dopo tre tocchi sul logo e la password master.",
     "BUILT_TITLE": "Realizzato con",
     "BUILT_TEXT": "Angular 22 · .NET 10 · PostgreSQL · SignalR · Web Crypto API · Capacitor",
     "FOOTER": "Realizzato con cura da"

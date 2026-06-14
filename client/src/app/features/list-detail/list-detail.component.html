@@ -24,7 +24,40 @@
         </div>
 
         <section class="desktop-pane desktop-pane--chat" [attr.aria-label]="'LIST_DETAIL.TAB_CHAT' | translate">
+            @if (isMultiMember()) {
+            <div class="chat-view-toggle" role="tablist" [attr.aria-label]="'LIST_DETAIL.CHAT_VIEW_TOGGLE_ARIA' | translate">
+                <button class="chat-view-toggle__btn" [class.chat-view-toggle__btn--active]="desktopChatView() === 'chat'"
+                    role="tab" [attr.aria-selected]="desktopChatView() === 'chat'" (click)="desktopChatView.set('chat')">
+                    {{ 'LIST_DETAIL.TAB_CHAT' | translate }}
+                    @if (unreadMessages() > 0 && desktopChatView() !== 'chat') {
+                    <app-badge [count]="unreadMessages()" aria-hidden="true" />
+                    }
+                </button>
+                <button class="chat-view-toggle__btn" [class.chat-view-toggle__btn--active]="desktopChatView() === 'whisper'"
+                    role="tab" [attr.aria-selected]="desktopChatView() === 'whisper'" (click)="desktopChatView.set('whisper')">
+                    {{ 'LIST_DETAIL.TAB_WHISPER' | translate }}
+                </button>
+                <button class="chat-view-toggle__btn" [class.chat-view-toggle__btn--active]="desktopChatView() === 'charon'"
+                    role="tab" [attr.aria-selected]="desktopChatView() === 'charon'" (click)="desktopChatView.set('charon')">
+                    {{ 'LIST_DETAIL.TAB_CHARON' | translate }}
+                    @if (pendingCharonDrops() > 0 && desktopChatView() !== 'charon') {
+                    <app-badge [count]="pendingCharonDrops()" aria-hidden="true" />
+                    }
+                </button>
+            </div>
+            @if (desktopChatView() === 'chat') {
             <app-chat-tab />
+            } @else if (desktopChatView() === 'whisper') {
+            <app-whisper-tab />
+            } @else {
+            <app-charon-tab />
+            }
+            } @else {
+            <div class="solo-hint">
+                <p class="solo-hint__text">{{ 'LIST_DETAIL.SOLO_HINT' | translate }}</p>
+                <button class="solo-hint__btn" (click)="settingsOpen.set(true)">{{ 'LIST_SETTINGS.SHARE_TITLE' | translate }}</button>
+            </div>
+            }
         </section>
 
     </div>
@@ -48,11 +81,18 @@
 
 } @else {
 
-<div class="screen">
+<div class="screen" appSwipeBack [appSwipeBackDisabled]="settingsOpen()" (swipeBack)="goBack()">
 
     <header class="header" role="banner">
         <button class="header__back" (click)="goBack()" [attr.aria-label]="'LIST_DETAIL.BACK_ARIA' | translate">‹</button>
         <h1 class="header__title truncate">{{ listName() }}</h1>
+        <button class="header__settings-btn" (click)="settingsOpen.set(true)" [attr.aria-label]="'LIST_DETAIL.SETTINGS_ARIA' | translate"
+            aria-haspopup="dialog">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+        </button>
     </header>
 
     <nav class="tabs" role="tablist" [attr.aria-label]="'LIST_DETAIL.TAB_ITEMS' | translate">
@@ -64,6 +104,7 @@
             <app-badge [count]="unreadItems()" aria-hidden="true" />
             }
         </button>
+        @if (isMultiMember()) {
         <button class="tabs__tab" [class.tabs__tab--active]="activeTab() === 'chat'" role="tab"
             [attr.aria-selected]="activeTab() === 'chat'" id="tab-chat" [attr.aria-controls]="'panel-chat'"
             (click)="setTab('chat')">
@@ -72,17 +113,41 @@
             <app-badge [count]="unreadMessages()" aria-hidden="true" />
             }
         </button>
-        <button class="tabs__tab" [class.tabs__tab--active]="activeTab() === 'settings'" role="tab"
-            [attr.aria-selected]="activeTab() === 'settings'" id="tab-settings" [attr.aria-controls]="'panel-settings'"
-            (click)="setTab('settings')">
-            {{ 'LIST_DETAIL.TAB_SETTINGS' | translate }}
+        <button class="tabs__tab" [class.tabs__tab--active]="activeTab() === 'whisper'" role="tab"
+            [attr.aria-selected]="activeTab() === 'whisper'" id="tab-whisper" [attr.aria-controls]="'panel-whisper'"
+            (click)="setTab('whisper')">
+            {{ 'LIST_DETAIL.TAB_WHISPER' | translate }}
         </button>
+        <button class="tabs__tab" [class.tabs__tab--active]="activeTab() === 'charon'" role="tab"
+            [attr.aria-selected]="activeTab() === 'charon'" id="tab-charon" [attr.aria-controls]="'panel-charon'"
+            (click)="setTab('charon')">
+            {{ 'LIST_DETAIL.TAB_CHARON' | translate }}
+            @if (pendingCharonDrops() > 0 && activeTab() !== 'charon') {
+            <app-badge [count]="pendingCharonDrops()" aria-hidden="true" />
+            }
+        </button>
+        }
     </nav>
 
-    <div class="tab-pane" [class.tab-pane--scroll]="activeTab() === 'settings'" role="tabpanel"
+    <div class="tab-pane" role="tabpanel"
         [id]="'panel-' + activeTab()" [attr.aria-labelledby]="'tab-' + activeTab()">
         <router-outlet />
     </div>
+
+    @if (settingsOpen()) {
+    <div class="drawer-backdrop" [class.drawer-backdrop--closing]="drawerClosing()" (click)="closeDrawer()"
+        role="presentation" aria-hidden="true"></div>
+    <aside class="settings-drawer" [class.settings-drawer--closing]="drawerClosing()" role="dialog" aria-modal="true"
+        [attr.aria-label]="'LIST_DETAIL.DRAWER_TITLE' | translate">
+        <div class="settings-drawer__header">
+            <span class="settings-drawer__title">{{ 'LIST_DETAIL.DRAWER_TITLE' | translate }}</span>
+            <button class="settings-drawer__close" (click)="closeDrawer()" [attr.aria-label]="'LIST_DETAIL.DRAWER_CLOSE_ARIA' | translate">×</button>
+        </div>
+        <div class="settings-drawer__body">
+            <app-settings-tab />
+        </div>
+    </aside>
+    }
 
 </div>
 

@@ -6,6 +6,9 @@ import { Router } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
 import { ExportQrPayload, ListFullError, ListMember, ReceiveQrPayload } from '../../core/models';
 import { HapticsService } from '../../core/services/haptics.service';
+import { MasterPasswordService } from '../../core/services/master-password.service';
+import { SensitiveListsService } from '../../core/services/sensitive-lists.service';
+import { WebAuthnService } from '../../core/services/webauthn.service';
 import { AvatarComponent } from '../../shared/avatar/avatar.component';
 import { BadgeComponent } from '../../shared/badge/badge.component';
 import { QrCodeComponent } from '../../shared/qr-code/qr-code.component';
@@ -25,6 +28,9 @@ export class ListsComponent implements OnDestroy {
     protected readonly store = inject(AppStore);
     private readonly router = inject(Router);
     private readonly haptics = inject(HapticsService);
+    protected readonly sensitiveLists = inject(SensitiveListsService);
+    private readonly masterPassword = inject(MasterPasswordService);
+    private readonly webAuthn = inject(WebAuthnService);
 
     private readonly memberLists = signal<Record<string, ListMember[]>>({});
     private readonly memberFetchAttempted = new Set<string>();
@@ -78,11 +84,91 @@ export class ListsComponent implements OnDestroy {
     goToSettingsFromMenu(): void { this.closeMenu(); this.router.navigate(['/settings']); }
     openAboutFromMenu(): void { this.closeMenu(); this.router.navigate(['/about']); }
 
-    protected readonly lists = computed(() =>
-        [...this.store.knownLists()].sort((a, b) => a.name.localeCompare(b.name)),
+    protected readonly hasSensitiveLists = computed(() =>
+        this.store.knownLists().some(l => l.isSensitive),
     );
+
+    protected readonly lists = computed(() => {
+        const all = this.store.knownLists();
+        const visible = this.sensitiveLists.revealed() ? all : all.filter(l => !l.isSensitive);
+        return [...visible].sort((a, b) => a.name.localeCompare(b.name));
+    });
     protected readonly totalUnread = computed(() => this.store.totalUnread() + this.store.totalUnreadItems());
     protected readonly activeListId = computed(() => this.store.currentListId());
+
+    // --- Sensitive lists reveal (triple-click ghost logo) ---
+
+    private logoClickCount = 0;
+    private logoClickTimer: ReturnType<typeof setTimeout> | null = null;
+
+    protected readonly showRevealDialog = signal(false);
+    protected readonly revealPassword = signal('');
+    protected readonly revealError = signal(false);
+    protected readonly revealing = signal(false);
+
+    onLogoClick(): void {
+        this.logoClickCount++;
+        if (this.logoClickTimer) clearTimeout(this.logoClickTimer);
+
+        if (this.logoClickCount >= 3) {
+            this.logoClickCount = 0;
+            this.logoClickTimer = null;
+            this.onTripleClickLogo();
+            return;
+        }
+
+        this.logoClickTimer = setTimeout(() => { this.logoClickCount = 0; }, 600);
+    }
+
+    private onTripleClickLogo(): void {
+        if (this.sensitiveLists.revealed()) {
+            this.sensitiveLists.hide();
+            return;
+        }
+        if (!this.hasSensitiveLists()) return;
+        this.openRevealDialog();
+    }
+
+    openRevealDialog(): void {
+        this.revealPassword.set('');
+        this.revealError.set(false);
+        this.revealing.set(false);
+        this.showRevealDialog.set(true);
+    }
+
+    closeRevealDialog(): void {
+        this.showRevealDialog.set(false);
+        this.revealPassword.set('');
+    }
+
+    async submitReveal(): Promise<void> {
+        if (this.revealing()) return;
+        const password = this.revealPassword();
+        if (!password) return;
+
+        this.revealing.set(true);
+        this.revealError.set(false);
+        try {
+            const passwordOk = await this.masterPassword.verifyPassword(password);
+            if (!passwordOk) {
+                this.revealError.set(true);
+                return;
+            }
+
+            if (this.webAuthn.isEnabled()) {
+                const bioOk = await this.webAuthn.authenticate();
+                if (!bioOk) {
+                    this.revealError.set(true);
+                    return;
+                }
+            }
+
+            this.sensitiveLists.reveal();
+            this.closeRevealDialog();
+        } finally {
+            this.revealing.set(false);
+        }
+    }
 
     protected readonly showCreateDialog = signal(false);
     protected readonly newListName = signal('');
@@ -114,6 +200,7 @@ export class ListsComponent implements OnDestroy {
         this.stopImportPolling();
         this.stopExportClaimPolling();
         this.stopExportHandshakePolling();
+        if (this.logoClickTimer) clearTimeout(this.logoClickTimer);
     }
 
     async openList(id: string): Promise<void> {

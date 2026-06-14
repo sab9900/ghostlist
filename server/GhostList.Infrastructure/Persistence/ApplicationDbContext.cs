@@ -18,6 +18,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<InfoMessage> InfoMessages => Set<InfoMessage>();
     public DbSet<MessageReadReceipt> MessageReadReceipts => Set<MessageReadReceipt>();
     public DbSet<ItemReadReceipt> ItemReadReceipts => Set<ItemReadReceipt>();
+    public DbSet<CharonDrop> CharonDrops => Set<CharonDrop>();
+    public DbSet<CharonViewReceipt> CharonViewReceipts => Set<CharonViewReceipt>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -133,6 +135,32 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                   .HasForeignKey(e => e.ItemId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
+
+        modelBuilder.Entity<CharonDrop>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EncryptedContent).IsRequired();
+            entity.Property(e => e.ContentInitializationVector).IsRequired();
+            entity.Property(e => e.EncryptedMetadata).IsRequired();
+            entity.Property(e => e.MetadataInitializationVector).IsRequired();
+            entity.Property(e => e.SenderDeviceId).HasMaxLength(64);
+            entity.Property(e => e.SenderUserId).HasMaxLength(64);
+            entity.HasIndex(e => e.GhostListId);
+            entity.HasOne<Domain.Entities.GhostList>()
+                  .WithMany()
+                  .HasForeignKey(e => e.GhostListId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CharonViewReceipt>(entity =>
+        {
+            entity.HasKey(e => new { e.DropId, e.DeviceId });
+            entity.Property(e => e.DeviceId).HasMaxLength(64).IsRequired();
+            entity.HasOne<CharonDrop>()
+                  .WithMany()
+                  .HasForeignKey(e => e.DropId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
     }
 
     public async Task<IReadOnlyList<DeletedItemInfo>> DeleteExpiredCheckedItemsAsync(CancellationToken cancellationToken)
@@ -174,6 +202,37 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             WHERE "CreatedAt" <= NOW() - {maxAge}
             """,
             cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<DeletedItemInfo>> DeleteExpiredCharonDropsAsync(TimeSpan maxAge, CancellationToken cancellationToken)
+    {
+        if (!Database.IsRelational())
+        {
+            // In-memory provider (used by tests) doesn't support raw SQL.
+            var cutoff = DateTime.UtcNow - maxAge;
+            var expired = await CharonDrops
+                .Where(d => d.CreatedAt <= cutoff)
+                .ToListAsync(cancellationToken);
+            if (expired.Count == 0) return [];
+
+            var receipts = await CharonViewReceipts
+                .Where(r => expired.Select(d => d.Id).Contains(r.DropId))
+                .ToListAsync(cancellationToken);
+            CharonViewReceipts.RemoveRange(receipts);
+            CharonDrops.RemoveRange(expired);
+            await SaveChangesAsync(cancellationToken);
+
+            return expired.Select(d => new DeletedItemInfo(d.Id, d.GhostListId)).ToList();
+        }
+
+        return await Database.SqlQueryRaw<DeletedItemInfo>(
+            """
+            DELETE FROM "CharonDrops"
+            WHERE "CreatedAt" <= NOW() - INTERVAL '1 second' * {0}
+            RETURNING "Id" AS "ItemId", "GhostListId" AS "ListId"
+            """,
+            maxAge.TotalSeconds)
+            .ToListAsync(cancellationToken);
     }
 
     public async Task IncrementDailyUsageAsync(UsageMetric metric, CancellationToken cancellationToken)

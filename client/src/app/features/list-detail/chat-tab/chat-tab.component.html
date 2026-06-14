@@ -5,7 +5,7 @@
     <li class="empty-hint" role="status">{{ 'CHAT.NO_MESSAGES' | translate }}</li>
     }
 
-    @for (msg of decryptedMessages(); track msg.id; let i = $index) {
+    @for (msg of decryptedMessages(); track msg.id) {
     @let mineById = isMineBySenderIds(msg.senderUserId, msg.senderDeviceId);
     @let mine = mineById !== null
         ? mineById
@@ -13,15 +13,10 @@
     @let preview = replyPreview(msg);
     @let imgUrl = msg.isImage ? imageDataUrl(msg.id) : null;
 
-    @if (i === firstUnreadIndex()) {
-    <li class="unread-divider" role="separator" [attr.aria-label]="'CHAT.NEW_MESSAGES' | translate">
-        <span>{{ 'CHAT.NEW_MESSAGES' | translate }}</span>
-    </li>
-    }
-
     <li class="message" role="article"
         [class.message--mine]="mine"
         [class.message--highlight]="highlightedId() === msg.id"
+        [class.message--unread]="isUnread(msg.id)"
         [attr.data-message-id]="msg.id"
         [attr.aria-label]="msg.senderName + ': ' + (msg.isImage ? ('CHAT.IMAGE' | translate) : msg.text)"
         (touchstart)="onTouchStart($event, msg)" (touchmove)="onTouchMove($event, msg)"
@@ -36,6 +31,10 @@
         </div>
 
         <div class="message__row" [style.transform]="swipeOffset(msg.id) ? 'translateX(' + swipeOffset(msg.id) + 'px)' : null">
+
+            @if (!mine) {
+            <app-avatar class="message__avatar" [name]="msg.senderName" [size]="28" />
+            }
 
             <div class="message__bubble">
 
@@ -64,7 +63,9 @@
 
                 @if (msg.isImage) {
                 @if (imgUrl) {
-                <img class="message__image" [src]="imgUrl" [attr.alt]="'CHAT.IMAGE_ALT' | translate" />
+                @let imgAlt = 'CHAT.IMAGE_ALT' | translate;
+                <img class="message__image" [src]="imgUrl" [attr.alt]="imgAlt" role="button" tabindex="0"
+                    [attr.aria-label]="imgAlt" (click)="openImage(imgUrl, imgAlt)" (keydown.enter)="openImage(imgUrl, imgAlt)" />
                 } @else {
                 <div class="message__image-placeholder">
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -82,6 +83,9 @@
                 <div class="message__meta">
                     <span class="message__sender">{{ msg.senderName }}</span>
                     <span class="message__time">{{ msg.createdAt | date:'HH:mm' }}</span>
+                    @if (isUnread(msg.id)) {
+                    <span class="message__unread-dot" aria-hidden="true"></span>
+                    }
                     @if (mine && showReadReceiptCheckmark) {
                     @let read = isReadByOthers(msg);
                     <span class="message__status" [class.message__status--read]="read"
@@ -167,6 +171,10 @@
     </div>
     <button type="button" class="reply-bar__cancel" (click)="cancelReply()" [attr.aria-label]="'CHAT.CANCEL_REPLY_ARIA' | translate">×</button>
 </div>
+}
+
+@if (fileTooLarge()) {
+<p class="upload-error" role="alert">{{ 'CHAT.FILE_TOO_LARGE' | translate }}</p>
 }
 
 <div class="compose" role="form" [attr.aria-label]="'CHAT.MESSAGE_PLACEHOLDER' | translate">

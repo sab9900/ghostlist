@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
 import { DeleteAfterDuration, ListMember, TTL_LABELS, TTL_VALUE_TO_ENUM } from '../../../core/models';
 import { CryptoService } from '../../../core/services/crypto.service';
+import { MasterPasswordService } from '../../../core/services/master-password.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 import { QrScannerComponent } from '../../../shared/qr-scanner/qr-scanner.component';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -21,6 +22,7 @@ import { environment } from '../../../../environments/environment';
 export class SettingsTabComponent {
     protected readonly store = inject(AppStore);
     protected readonly prefs = inject(UserPreferencesService);
+    protected readonly masterPassword = inject(MasterPasswordService);
     private readonly router = inject(Router);
     private readonly crypto = inject(CryptoService);
     private readonly translate = inject(TranslateService);
@@ -49,6 +51,7 @@ export class SettingsTabComponent {
 
     protected readonly notifyOnMessage = signal(true);
     protected readonly notifyOnItemsChanged = signal(false);
+    protected readonly isSensitive = signal(false);
 
     constructor() {
         effect(() => {
@@ -78,6 +81,7 @@ export class SettingsTabComponent {
             this.listName.set(known.name);
             this.notifyOnMessage.set(known.notifyOnMessage ?? true);
             this.notifyOnItemsChanged.set(known.notifyOnItemsChanged ?? false);
+            this.isSensitive.set(known.isSensitive ?? false);
             void this.loadMembers(known.id, known.encryptionKey);
         }
     }
@@ -193,6 +197,22 @@ export class SettingsTabComponent {
         if (!id) return;
         this.notifyOnItemsChanged.set(value);
         await this.store.updateNotificationPreferences(id, this.notifyOnMessage(), value);
+    }
+
+    async setSensitive(value: boolean): Promise<void> {
+        const id = this.store.currentListId();
+        if (!id) return;
+
+        // No master password set yet — send the user to set one up before
+        // a list can be marked sensitive (sensitive lists would otherwise
+        // be unrecoverable: there's no master password to reveal them with).
+        if (value && !this.masterPassword.hasPassword()) {
+            await this.router.navigate(['/settings']);
+            return;
+        }
+
+        this.isSensitive.set(value);
+        await this.store.setListSensitive(id, value);
     }
 
     async kickMember(targetDeviceId: string): Promise<void> {

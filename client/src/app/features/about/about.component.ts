@@ -3,10 +3,11 @@ import { Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ApiService } from '../../api/api.service';
 import { APP_VERSION } from '../../version';
+import { SwipeBackDirective } from '../../core/directives/swipe-back.directive';
 
 @Component({
     selector: 'app-about',
-    imports: [TranslatePipe],
+    imports: [TranslatePipe, SwipeBackDirective],
     templateUrl: './about.component.html',
     styleUrl: './about.component.scss',
 })

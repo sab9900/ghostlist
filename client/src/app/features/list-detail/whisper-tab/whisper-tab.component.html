@@ -1,0 +1,81 @@
+<div class="invite-bar">
+    <button class="invite-bar__btn" (click)="toggleInvitePicker()" [disabled]="onCooldown()"
+        [attr.aria-expanded]="showInvitePicker()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+            <circle cx="12" cy="12" r="3" />
+        </svg>
+        <span>{{ 'WHISPER.INVITE_BTN' | translate }}</span>
+        @if (onCooldown()) {
+        <span class="invite-bar__cooldown">{{ cooldownRemaining() }}s</span>
+        }
+    </button>
+    @if (inviteSent()) {
+    <span class="invite-bar__sent">{{ 'WHISPER.INVITE_SENT' | translate }}</span>
+    }
+
+    @if (showInvitePicker()) {
+    <div class="invite-picker">
+        <button class="invite-picker__option" (click)="inviteAll()" [disabled]="onCooldown() || invitingAll()">
+            {{ 'WHISPER.INVITE_ALL' | translate }}
+        </button>
+
+        @if (inviteableMembers().length > 0) {
+        <div class="invite-picker__divider">{{ 'WHISPER.INVITE_PICK_HINT' | translate }}</div>
+        <ul class="invite-picker__list">
+            @for (m of inviteableMembers(); track m.deviceId) {
+            <li class="invite-picker__item">
+                <label>
+                    <input type="checkbox" [checked]="selectedDeviceIds().has(m.deviceId)"
+                        (change)="toggleMemberSelection(m.deviceId)" />
+                    <span>{{ m.displayName }}</span>
+                </label>
+            </li>
+            }
+        </ul>
+        <button class="invite-picker__option" (click)="inviteSelected()"
+            [disabled]="selectedDeviceIds().size === 0 || onCooldown() || invitingSelected()">
+            {{ 'WHISPER.INVITE_SELECTED' | translate: { count: selectedDeviceIds().size } }}
+        </button>
+        }
+    </div>
+    }
+</div>
+
+<div class="presence" role="status" [attr.aria-label]="'WHISPER.PRESENCE_ARIA' | translate">
+    @if (othersPresence().length === 0) {
+    <span class="presence__empty">{{ 'WHISPER.PRESENCE_EMPTY' | translate }}</span>
+    } @else {
+    <span class="presence__label">{{ 'WHISPER.PRESENCE_LABEL' | translate }}</span>
+    <ul class="presence__list">
+        @for (p of othersPresence(); track p.deviceId) {
+        <li class="presence__item">
+            <span class="presence__avatar" aria-hidden="true">{{ initials(p.displayName) }}</span>
+            <span class="presence__name">{{ p.displayName }}</span>
+        </li>
+        }
+    </ul>
+    }
+</div>
+
+<div class="whisper-feed" role="log" aria-live="polite" aria-relevant="additions">
+    @if (whispers().length === 0) {
+    <p class="whisper-feed__hint">{{ 'WHISPER.HINT' | translate }}</p>
+    }
+    @for (w of whispers(); track w.id) {
+    <div class="whisper" [class.whisper--mine]="w.mine" [class.whisper--fading]="w.fading">
+        <span class="whisper__sender">{{ w.senderName }}</span>
+        <p class="whisper__text">{{ w.text }}</p>
+    </div>
+    }
+</div>
+
+<div class="compose" role="form" [attr.aria-label]="'WHISPER.PLACEHOLDER' | translate">
+    <div class="compose__row">
+        <input #composeInput class="compose__input" type="text" [attr.placeholder]="'WHISPER.PLACEHOLDER' | translate"
+            [ngModel]="messageText()" (ngModelChange)="messageText.set($event)" (keydown.enter)="sendWhisper()"
+            maxlength="500" [attr.aria-label]="'WHISPER.PLACEHOLDER' | translate" />
+        <button class="compose__send" (click)="sendWhisper()" [disabled]="!messageText().trim() || sending()"
+            [attr.aria-label]="'WHISPER.PLACEHOLDER' | translate" [attr.aria-busy]="sending()">›</button>
+    </div>
+</div>

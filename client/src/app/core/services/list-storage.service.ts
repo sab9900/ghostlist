@@ -154,4 +154,38 @@ export class ListStorageService {
             tx.onerror = () => reject(tx.error);
         });
     }
+
+    // --- Generic per-device preferences store (raw, unencrypted) ---
+
+    async getPref<T>(key: string): Promise<T | undefined> {
+        const db = await this.getDb();
+        return new Promise((resolve, reject) => {
+            const req = db.transaction(PREFS_STORE, 'readonly').objectStore(PREFS_STORE).get(key);
+            req.onsuccess = () => {
+                const result = req.result as { key: string; value: T } | undefined;
+                resolve(result?.value);
+            };
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    async setPref<T>(key: string, value: T): Promise<void> {
+        const db = await this.getDb();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(PREFS_STORE, 'readwrite');
+            tx.objectStore(PREFS_STORE).put({ key, value });
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    }
+
+    async deletePref(key: string): Promise<void> {
+        const db = await this.getDb();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(PREFS_STORE, 'readwrite');
+            tx.objectStore(PREFS_STORE).delete(key);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    }
 }

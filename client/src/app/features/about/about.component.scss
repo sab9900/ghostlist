@@ -11,6 +11,12 @@
     height: 100%;
     background: var(--color-bg);
     padding-top: var(--safe-top);
+    transform: translateX(calc(var(--swipe-progress, 0) * 24px));
+    opacity: calc(1 - var(--swipe-progress, 0) * 0.35);
+
+    &.is-swiping-back {
+        transition: none;
+    }
 
     @media (min-width: 900px) {
         padding-top: 0;

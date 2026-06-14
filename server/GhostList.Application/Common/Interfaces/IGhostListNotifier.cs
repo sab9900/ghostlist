@@ -25,4 +25,16 @@ public interface IGhostListNotifier
     /// update "read" checkmarks on their own messages without polling.
     /// </summary>
     Task NotifyReadReceiptUpdated(Guid listId, ReadReceiptUpdatedNotification notification);
+
+    /// <summary>
+    /// Broadcasts a newly created "burn after read" Charon drop to everyone
+    /// in the list, so it appears as a sealed drop in their queue.
+    /// </summary>
+    Task NotifyCharonDropCreated(Guid listId, CharonDropCreatedNotification notification);
+
+    /// <summary>
+    /// Broadcasts that a Charon drop was removed (fully burned, recalled, or expired),
+    /// so other devices remove it from their queue.
+    /// </summary>
+    Task NotifyCharonDropDeleted(Guid listId, Guid dropId);
 }

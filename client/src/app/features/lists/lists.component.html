@@ -1,7 +1,7 @@
 <div class="screen" role="main">
 
     <header class="header" role="banner">
-        <img class="header__logo" src="/ghost-header.svg" [attr.alt]="'Ghost List'" />
+        <img class="header__logo" src="/ghost-header.svg" [attr.alt]="'Ghost List'" (click)="onLogoClick()" />
         <h1 class="header__title">Ghost List</h1>
         <div class="header__actions">
             @if (totalUnread() > 0) {
@@ -203,6 +203,29 @@
 
             <div class="dialog__actions">
                 <button class="btn btn--ghost" (click)="closeImportDialog()">{{ 'COMMON.CANCEL' | translate }}</button>
+            </div>
+        </div>
+    </div>
+    }
+
+    @if (showRevealDialog()) {
+    <div class="dialog-backdrop" (click)="closeRevealDialog()" role="presentation">
+        <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+            aria-labelledby="reveal-dialog-title" aria-describedby="reveal-dialog-hint">
+            <h2 class="dialog__title" id="reveal-dialog-title">{{ 'LISTS.REVEAL_TITLE' | translate }}</h2>
+            <p class="dialog__hint" id="reveal-dialog-hint">{{ 'LISTS.REVEAL_HINT' | translate }}</p>
+            <input class="dialog__input" type="password" [attr.placeholder]="'LISTS.REVEAL_PLACEHOLDER' | translate"
+                [ngModel]="revealPassword()" (ngModelChange)="revealPassword.set($event)" (keydown.enter)="submitReveal()"
+                autofocus [attr.aria-label]="'LISTS.REVEAL_PLACEHOLDER' | translate" aria-required="true" />
+            @if (revealError()) {
+            <p class="dialog__error" role="alert">{{ 'LISTS.REVEAL_ERROR' | translate }}</p>
+            }
+            <div class="dialog__actions">
+                <button class="btn btn--ghost" (click)="closeRevealDialog()" [disabled]="revealing()">{{ 'COMMON.CANCEL' | translate }}</button>
+                <button class="btn btn--primary" (click)="submitReveal()" [disabled]="!revealPassword() || revealing()"
+                    [attr.aria-busy]="revealing()">
+                    {{ revealing() ? ('LISTS.REVEAL_CHECKING' | translate) : ('LISTS.REVEAL_BTN' | translate) }}
+                </button>
             </div>
         </div>
     </div>

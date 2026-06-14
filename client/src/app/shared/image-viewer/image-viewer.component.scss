@@ -1,0 +1,42 @@
+.image-viewer {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+    padding-top: calc(var(--space-4) + var(--safe-top, 0px));
+    padding-bottom: calc(var(--space-4) + var(--safe-bottom, 0px));
+    z-index: 2000;
+    cursor: zoom-out;
+
+    &__image {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        border-radius: var(--radius-md);
+        cursor: default;
+    }
+
+    &__close {
+        position: absolute;
+        top: calc(var(--space-3) + var(--safe-top, 0px));
+        right: var(--space-3);
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-full);
+        border: none;
+        background: rgba(0, 0, 0, 0.4);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background var(--duration-fast) var(--ease-out);
+
+        &:hover {
+            background: rgba(0, 0, 0, 0.6);
+        }
+    }
+}
