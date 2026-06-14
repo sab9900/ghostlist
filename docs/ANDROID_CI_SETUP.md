@@ -66,13 +66,29 @@ sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
    als "Idle" auftauchen (Label `self-hosted` ist Standard, passt zu
    `runs-on: self-hosted` im Workflow).
 
-### Berechtigungen prüfen
+### Berechtigungen für den Deploy-Schritt
 
-Der Runner läuft als User `sab`. Dieser User braucht Schreibrechte auf
-`/data/coolify/applications/ghost-list-android/` (dort liegt schon
-`ghostlist.apk`, du hattest sie vorher per `sudo mv` dort abgelegt – ggf.
-`sudo chown sab:sab /data/coolify/applications/ghost-list-android` setzen,
-sonst schlägt der `cp`-Schritt im Workflow mit "Permission denied" fehl).
+`/data/coolify` selbst ist `drwx------` (root:coolify) – der Runner-User
+`sab` kann da grundsätzlich nicht hineinschreiben, egal welche Rechte der
+`ghost-list-android`-Unterordner hat. Statt `/data/coolify` zu öffnen, gibt
+es ein schmales root-Skript per `sudo`, das nur genau diese eine Kopieraktion
+erlaubt:
+
+```bash
+sudo tee /usr/local/bin/deploy-ghostlist-apk.sh > /dev/null <<'EOF'
+#!/bin/bash
+set -euo pipefail
+cp "$1" /data/coolify/applications/ghost-list-android/ghostlist.apk
+EOF
+sudo chmod 755 /usr/local/bin/deploy-ghostlist-apk.sh
+
+echo "sab ALL=(root) NOPASSWD: /usr/local/bin/deploy-ghostlist-apk.sh" | sudo tee /etc/sudoers.d/ghostlist-android-deploy
+sudo chmod 440 /etc/sudoers.d/ghostlist-android-deploy
+sudo visudo -c
+```
+
+Der Workflow ruft dann `sudo /usr/local/bin/deploy-ghostlist-apk.sh <pfad-zur-apk>`
+auf.
 
 ## 3. GitHub Secrets anlegen
 

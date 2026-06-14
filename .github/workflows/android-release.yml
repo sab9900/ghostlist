@@ -57,8 +57,8 @@ jobs:
 
       - name: Deploy APK to landing page volume
         run: |
-          cp client/android/app/build/outputs/apk/release/app-release.apk \
-            /data/coolify/applications/ghost-list-android/ghostlist.apk
+          sudo /usr/local/bin/deploy-ghostlist-apk.sh \
+            "$(pwd)/client/android/app/build/outputs/apk/release/app-release.apk"
 
       - name: Clean up signing material
         if: always()
