@@ -1,7 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
-import { Capacitor } from '@capacitor/core';
 import { ApiService } from '../../api/api.service';
 import { APP_VERSION } from '../../version';
 import { SwipeBackDirective } from '../../core/directives/swipe-back.directive';
@@ -18,9 +17,6 @@ export class AboutComponent implements OnInit {
 
     readonly frontendVersion = APP_VERSION;
     readonly backendVersion = signal<string | null>(null);
-
-    /** Show the "download the Android app" link only in the mobile browser (not inside the native app itself). */
-    readonly isAndroidWeb = !Capacitor.isNativePlatform() && /android/i.test(navigator.userAgent);
 
     ngOnInit(): void {
         this.api.getBackendVersion().subscribe({

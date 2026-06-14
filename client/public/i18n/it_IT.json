@@ -275,9 +275,6 @@
     "FEATURE_HIDDEN_DESC": "Contrassegna le liste come sensibili per tenerle nascoste: visibili solo dopo tre tocchi sul logo e la password master.",
     "BUILT_TITLE": "Realizzato con",
     "BUILT_TEXT": "Angular 22 · .NET 10 · PostgreSQL · SignalR · Web Crypto API · Capacitor",
-    "ANDROID_TITLE": "App per Android",
-    "ANDROID_TEXT": "Scarica Ghost List come app per Android — per l'esperienza nativa completa, incluse le notifiche push.",
-    "ANDROID_BUTTON": "Scarica APK",
     "FOOTER": "Realizzato con cura da"
   },
   "SYNC_SEND": {
