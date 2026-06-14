@@ -14,6 +14,13 @@ public interface IGhostListNotifier
     Task NotifyMemberKicked(Guid listId, string deviceId);
 
     /// <summary>
+    /// Broadcasts that a new device/member has joined the list, so other
+    /// connected clients can refresh their member list live (e.g. to reveal
+    /// the Chat/Whisper/Charon tabs once a list stops being solo).
+    /// </summary>
+    Task NotifyMemberJoined(Guid listId, string deviceId);
+
+    /// <summary>
     /// Relays an encrypted image to everyone else currently connected to the
     /// list. Not persisted anywhere — clients that aren't connected at this
     /// moment simply never receive it.

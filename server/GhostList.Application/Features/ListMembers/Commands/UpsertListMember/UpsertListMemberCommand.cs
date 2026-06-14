@@ -13,7 +13,7 @@ public record UpsertListMemberCommand(
     string InitializationVector,
     string? UserId = null) : IRequest;
 
-public class UpsertListMemberCommandHandler(IApplicationDbContext context)
+public class UpsertListMemberCommandHandler(IApplicationDbContext context, IGhostListNotifier notifier)
     : IRequestHandler<UpsertListMemberCommand>
 {
     public const int MaxMembersPerList = 30;
@@ -58,6 +58,9 @@ public class UpsertListMemberCommandHandler(IApplicationDbContext context)
         await context.SaveChangesAsync(cancellationToken);
 
         if (isNewMember)
+        {
             await context.IncrementDailyUsageAsync(UsageMetric.Member, cancellationToken);
+            await notifier.NotifyMemberJoined(request.ListId, request.DeviceId);
+        }
     }
 }

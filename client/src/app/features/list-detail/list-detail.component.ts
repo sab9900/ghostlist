@@ -147,11 +147,7 @@ export class ListDetailComponent implements OnDestroy {
                 this.members.set([]);
                 return;
             }
-            void this.store.fetchMembersForList(id, key)
-                .then(members => {
-                    if (this.store.currentListId() === id) this.members.set(members);
-                })
-                .catch(() => { });
+            this.refreshMembers();
         });
 
         // A member leaving/being kicked can turn a shared list back into a
@@ -159,16 +155,14 @@ export class ListDetailComponent implements OnDestroy {
         this.hub.memberKicked$.pipe(
             takeUntilDestroyed(),
             filter(({ listId }) => listId === this.store.currentListId()),
-        ).subscribe(() => {
-            const id = this.store.currentListId();
-            const key = this.store.currentEncryptionKey();
-            if (!id || !key) return;
-            void this.store.fetchMembersForList(id, key)
-                .then(members => {
-                    if (this.store.currentListId() === id) this.members.set(members);
-                })
-                .catch(() => { });
-        });
+        ).subscribe(() => this.refreshMembers());
+
+        // A new device joining the list can turn a solo list into a shared
+        // one — refresh live so Chat/Lethe/Charon appear without a reload.
+        this.hub.memberJoined$.pipe(
+            takeUntilDestroyed(),
+            filter(({ listId }) => listId === this.store.currentListId()),
+        ).subscribe(() => this.refreshMembers());
 
         // On mobile/tablet, items/chat are routed child views. If we land on
         // the bare /list/:id (no tab segment), default into the items tab.
@@ -197,6 +191,19 @@ export class ListDetailComponent implements OnDestroy {
                 void this.router.navigate(['/list', id, 'items'], { replaceUrl: true });
             }
         });
+    }
+
+    // Re-fetches the member list for the currently active list and updates
+    // `members` if it's still the active list once the request resolves.
+    private refreshMembers(): void {
+        const id = this.store.currentListId();
+        const key = this.store.currentEncryptionKey();
+        if (!id || !key) return;
+        void this.store.fetchMembersForList(id, key)
+            .then(members => {
+                if (this.store.currentListId() === id) this.members.set(members);
+            })
+            .catch(() => { });
     }
 
     async ngOnDestroy(): Promise<void> {

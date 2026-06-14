@@ -9,7 +9,7 @@ namespace GhostList.WebApi.BackgroundServices;
 public class GhostListCleanupWorker(IServiceScopeFactory scopeFactory, ILogger<GhostListCleanupWorker> logger)
     : BackgroundService
 {
-    private static readonly TimeSpan TickInterval          = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan TickInterval = TimeSpan.FromMinutes(1);
     private static readonly TimeSpan MemberlessCheckInterval = TimeSpan.FromHours(1);
 
     private DateTime _lastMemberlessCheck = DateTime.MinValue;

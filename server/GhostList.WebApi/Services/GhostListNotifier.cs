@@ -31,6 +31,9 @@ public class GhostListNotifier(IHubContext<GhostListHub> hubContext) : IGhostLis
     public Task NotifyMemberKicked(Guid listId, string deviceId) =>
         hubContext.Clients.Group(listId.ToString()).SendAsync("MemberKicked", listId, deviceId);
 
+    public Task NotifyMemberJoined(Guid listId, string deviceId) =>
+        hubContext.Clients.Group(listId.ToString()).SendAsync("MemberJoined", listId, deviceId);
+
     public Task NotifyImageShared(Guid listId, ImageRelayNotification notification) =>
         hubContext.Clients.GroupExcept(listId.ToString(), notification.SenderConnectionId)
             .SendAsync("ImageShared", notification);

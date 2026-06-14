@@ -31,6 +31,7 @@ export class HubService implements OnDestroy {
     private readonly _ttlUpdated$ = new Subject<number>();
     private readonly _listDeleted$ = new Subject<string>();
     private readonly _memberKicked$ = new Subject<{ listId: string; deviceId: string }>();
+    private readonly _memberJoined$ = new Subject<{ listId: string; deviceId: string }>();
     private readonly _imageShared$ = new Subject<ImageSharedEvent>();
     private readonly _readReceiptUpdated$ = new Subject<ReadReceiptUpdatedEvent>();
     private readonly _whisperReceived$ = new Subject<WhisperReceivedEvent>();
@@ -47,6 +48,7 @@ export class HubService implements OnDestroy {
     readonly ttlUpdated$ = this._ttlUpdated$.asObservable();
     readonly listDeleted$ = this._listDeleted$.asObservable();
     readonly memberKicked$ = this._memberKicked$.asObservable();
+    readonly memberJoined$ = this._memberJoined$.asObservable();
     readonly imageShared$ = this._imageShared$.asObservable();
     readonly readReceiptUpdated$ = this._readReceiptUpdated$.asObservable();
     readonly whisperReceived$ = this._whisperReceived$.asObservable();
@@ -70,6 +72,7 @@ export class HubService implements OnDestroy {
         this.connection.on('TtlUpdated', (ttl: number) => this._ttlUpdated$.next(ttl));
         this.connection.on('ListDeleted', (id: string) => this._listDeleted$.next(id));
         this.connection.on('MemberKicked', (listId: string, deviceId: string) => this._memberKicked$.next({ listId, deviceId }));
+        this.connection.on('MemberJoined', (listId: string, deviceId: string) => this._memberJoined$.next({ listId, deviceId }));
         this.connection.on('ImageShared', (e: ImageSharedEvent) => this._imageShared$.next(e));
         this.connection.on('ReadReceiptUpdated', (e: ReadReceiptUpdatedEvent) => this._readReceiptUpdated$.next(e));
         this.connection.on('WhisperReceived', (e: WhisperReceivedEvent) => this._whisperReceived$.next(e));
