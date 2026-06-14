@@ -147,18 +147,29 @@
 .history__item-main {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 10px;
+}
+
+.history__item-badges {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     flex-wrap: wrap;
+    min-width: 0;
 }
 
 .history__item-title {
+    margin: 0;
     font-weight: 600;
+    word-break: break-word;
 }
 
 .history__item-date {
-    margin-left: auto;
+    flex-shrink: 0;
     font-size: 12px;
     color: var(--color-text-muted);
+    white-space: nowrap;
 }
 
 .history__item-body {

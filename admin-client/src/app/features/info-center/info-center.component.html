@@ -76,13 +76,15 @@
                 @for (message of messages(); track message.id) {
                     <li class="history__item">
                         <div class="history__item-main">
-                            <span class="history__badge" [class]="'history__badge--' + message.type">{{ message.type }}</span>
-                            @if (message.targetPlatform) {
-                                <span class="history__badge history__badge--target">{{ message.targetPlatform }} only</span>
-                            }
-                            <span class="history__item-title">{{ message.title }}</span>
+                            <div class="history__item-badges">
+                                <span class="history__badge" [class]="'history__badge--' + message.type">{{ message.type }}</span>
+                                @if (message.targetPlatform) {
+                                    <span class="history__badge history__badge--target">{{ message.targetPlatform }} only</span>
+                                }
+                            </div>
                             <span class="history__item-date">{{ formatDate(message.createdAt) }}</span>
                         </div>
+                        <p class="history__item-title">{{ message.title }}</p>
                         <p class="history__item-body">{{ message.body }}</p>
                         <button class="history__delete" (click)="delete(message.id)">Delete</button>
                     </li>
