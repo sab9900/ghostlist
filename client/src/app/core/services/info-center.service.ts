@@ -1,6 +1,8 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { ApiService } from '../../api/api.service';
 import { InfoMessage } from '../models';
+import { APP_VERSION } from '../../version';
+import { compareVersions } from '../utils/version-compare';
 
 const LS_LAST_SEEN_KEY = 'gl_info_last_seen_id';
 
@@ -21,6 +23,12 @@ export class InfoCenterService {
         this.api.getLatestInfoMessage().subscribe({
             next: (message) => {
                 if (!message || message.id === this.getLastSeenId()) return;
+
+                if (message.version && compareVersions(APP_VERSION, message.version) >= 0) {
+                    this.markSeen(message.id);
+                    return;
+                }
+
                 this.unreadMessage.set(message);
             },
             error: () => { /* offline or no backend reachable — ignore, try again next launch */ },
@@ -32,11 +40,14 @@ export class InfoCenterService {
         const message = this.unreadMessage();
         if (!message) return;
 
-        try {
-            localStorage.setItem(LS_LAST_SEEN_KEY, message.id);
-        } catch { }
-
+        this.markSeen(message.id);
         this.unreadMessage.set(null);
+    }
+
+    private markSeen(id: string): void {
+        try {
+            localStorage.setItem(LS_LAST_SEEN_KEY, id);
+        } catch { }
     }
 
     private getLastSeenId(): string | null {

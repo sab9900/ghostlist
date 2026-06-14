@@ -32,6 +32,7 @@ export interface SubscribeRequest {
     platform: DevicePlatformDto;
     notifyOnMessage?: boolean;
     notifyOnItemsChanged?: boolean;
+    locale?: string;
 }
 
 export interface CreateCharonDropRequest {

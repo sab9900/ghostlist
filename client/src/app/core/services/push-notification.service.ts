@@ -9,6 +9,7 @@ import { environment } from '../../../environments/environment';
 import { ApiService } from '../../api/api.service';
 import { DevicePlatformDto } from '../models';
 import { DeviceTokenService } from './device-token.service';
+import { LanguageService } from './language.service';
 
 @Injectable({ providedIn: 'root' })
 export class PushNotificationService {
@@ -16,6 +17,7 @@ export class PushNotificationService {
     private readonly tokenService = inject(DeviceTokenService);
     private readonly api = inject(ApiService);
     private readonly router = inject(Router);
+    private readonly languageService = inject(LanguageService);
 
     private firebaseApp: FirebaseApp | null = null;
     private messaging: Messaging | null = null;
@@ -144,7 +146,8 @@ export class PushNotificationService {
         const token = await this.waitForToken();
         const platform = this.platformDto();
         if (!platform || !token) return;
-        await firstValueFrom(this.api.subscribeToList(listId, { deviceToken: token, platform })).catch(() => {});
+        const locale = this.languageService.currentLang();
+        await firstValueFrom(this.api.subscribeToList(listId, { deviceToken: token, platform, locale })).catch(() => {});
     }
 
     /** Re-registers this device for a list with explicit notification preferences (per-list, per-device opt-out). */
@@ -152,8 +155,9 @@ export class PushNotificationService {
         const token = await this.waitForToken();
         const platform = this.platformDto();
         if (!platform || !token) return;
+        const locale = this.languageService.currentLang();
         await firstValueFrom(
-            this.api.subscribeToList(listId, { deviceToken: token, platform, notifyOnMessage, notifyOnItemsChanged }),
+            this.api.subscribeToList(listId, { deviceToken: token, platform, notifyOnMessage, notifyOnItemsChanged, locale }),
         ).catch(() => {});
     }
 

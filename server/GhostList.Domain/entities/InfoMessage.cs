@@ -19,11 +19,19 @@ public class InfoMessage
     /// </summary>
     public DevicePlatform? TargetPlatform { get; private set; }
 
+    /// <summary>
+    /// If set (e.g. for an automated release announcement), clients whose own
+    /// app version is already &gt;= this value have nothing to update to and
+    /// should not show the message. Null means "always show" (subject to the
+    /// usual last-seen dismissal).
+    /// </summary>
+    public string? Version { get; private set; }
+
     public DateTime CreatedAt { get; private set; }
 
     private InfoMessage() { }
 
-    public static InfoMessage Create(InfoMessageType type, string title, string body, DevicePlatform? targetPlatform = null)
+    public static InfoMessage Create(InfoMessageType type, string title, string body, DevicePlatform? targetPlatform = null, string? version = null)
     {
         return new InfoMessage
         {
@@ -32,6 +40,7 @@ public class InfoMessage
             Title = title,
             Body = body,
             TargetPlatform = targetPlatform,
+            Version = version,
             CreatedAt = DateTime.UtcNow,
         };
     }

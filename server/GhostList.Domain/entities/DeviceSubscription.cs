@@ -18,6 +18,14 @@ public class DeviceSubscription
     /// <summary>Whether this device wants a push when items in this list change (added/checked/removed).</summary>
     public bool NotifyOnItemsChanged { get; private set; }
 
+    /// <summary>
+    /// Client UI language at registration time (e.g. "en_US", "de_DE"), used to pick the
+    /// language of push notification text. Matches LanguageService.SUPPORTED on the client.
+    /// Null for older subscriptions registered before this field existed — treated as the
+    /// fallback language when sending.
+    /// </summary>
+    public string? Locale { get; private set; }
+
     public DateTime RegisteredAt { get; private set; }
 
     public DateTimeOffset UpdatedAt { get; private set; }
@@ -30,7 +38,8 @@ public class DeviceSubscription
         string deviceToken,
         DevicePlatform platform,
         bool notifyOnMessage = true,
-        bool notifyOnItemsChanged = false) => new()
+        bool notifyOnItemsChanged = false,
+        string? locale = null) => new()
     {
         DeviceId = deviceId,
         ListId = listId,
@@ -38,15 +47,17 @@ public class DeviceSubscription
         Platform = platform,
         NotifyOnMessage = notifyOnMessage,
         NotifyOnItemsChanged = notifyOnItemsChanged,
+        Locale = locale,
         RegisteredAt = DateTime.UtcNow,
         UpdatedAt = DateTimeOffset.UtcNow,
     };
 
-    /// <summary>Refresh the push token (e.g. after FCM token rotation) and platform.</summary>
-    public void UpdateToken(string deviceToken, DevicePlatform platform)
+    /// <summary>Refresh the push token (e.g. after FCM token rotation), platform, and locale.</summary>
+    public void UpdateToken(string deviceToken, DevicePlatform platform, string? locale = null)
     {
         DeviceToken = deviceToken;
         Platform = platform;
+        if (locale is not null) Locale = locale;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 

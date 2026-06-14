@@ -14,6 +14,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<DeviceSubscription> DeviceSubscriptions => Set<DeviceSubscription>();
     public DbSet<GhostListMember> GhostListMembers => Set<GhostListMember>();
     public DbSet<DailyUsageStat> DailyUsageStats => Set<DailyUsageStat>();
+    public DbSet<LocaleStat> LocaleStats => Set<LocaleStat>();
     public DbSet<GhostMessageImage> GhostMessageImages => Set<GhostMessageImage>();
     public DbSet<InfoMessage> InfoMessages => Set<InfoMessage>();
     public DbSet<MessageReadReceipt> MessageReadReceipts => Set<MessageReadReceipt>();
@@ -69,6 +70,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.DeviceId).HasMaxLength(64).IsRequired();
             entity.Property(e => e.DeviceToken).HasMaxLength(512).IsRequired();
             entity.Property(e => e.Platform).HasConversion<int>();
+            entity.Property(e => e.Locale).HasMaxLength(8);
             entity.HasIndex(e => e.DeviceToken);
             entity.HasOne<Domain.Entities.GhostList>()
                   .WithMany()
@@ -98,6 +100,14 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.Date).HasColumnType("date");
         });
 
+        modelBuilder.Entity<LocaleStat>(entity =>
+        {
+            entity.HasKey(e => new { e.Date, e.Language, e.Country });
+            entity.Property(e => e.Date).HasColumnType("date");
+            entity.Property(e => e.Language).HasMaxLength(8);
+            entity.Property(e => e.Country).HasMaxLength(2);
+        });
+
         modelBuilder.Entity<GhostMessageImage>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -116,6 +126,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
             entity.Property(e => e.Body).IsRequired().HasMaxLength(4000);
             entity.Property(e => e.TargetPlatform).HasConversion<int?>();
+            entity.Property(e => e.Version).HasMaxLength(32);
             entity.HasIndex(e => e.CreatedAt);
         });
 
@@ -280,6 +291,41 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             ON CONFLICT ("Date") DO NOTHING;
 
             UPDATE "DailyUsageStats" SET "{column}" = "{column}" + 1 WHERE "Date" = CURRENT_DATE;
+            """,
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// Bumps today's request counter for a given (language, country) pair in
+    /// <see cref="LocaleStat"/> by <paramref name="count"/>. Safe to call from
+    /// concurrent requests (upsert). Used by the periodic locale-stats flush.
+    /// </summary>
+    public async Task IncrementLocaleStatAsync(string language, string country, int count, CancellationToken cancellationToken)
+    {
+        if (count <= 0) return;
+
+        if (!Database.IsRelational())
+        {
+            // In-memory provider (used by tests) doesn't support raw SQL.
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var stat = await LocaleStats.FindAsync([today, language, country], cancellationToken);
+            if (stat is null)
+            {
+                stat = new LocaleStat { Date = today, Language = language, Country = country };
+                LocaleStats.Add(stat);
+            }
+
+            stat.RequestCount += count;
+            await SaveChangesAsync(cancellationToken);
+            return;
+        }
+
+        await Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            INSERT INTO "LocaleStats" ("Date", "Language", "Country", "RequestCount")
+            VALUES (CURRENT_DATE, {language}, {country}, {count})
+            ON CONFLICT ("Date", "Language", "Country")
+            DO UPDATE SET "RequestCount" = "LocaleStats"."RequestCount" + {count};
             """,
             cancellationToken);
     }

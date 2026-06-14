@@ -2,6 +2,7 @@ using System;
 using GhostList.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -10,9 +11,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GhostList.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260614200000_AddDeviceSubscriptionLocale")]
+    partial class AddDeviceSubscriptionLocale
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -294,27 +296,6 @@ namespace GhostList.Infrastructure.Migrations
                     b.HasKey("ItemId", "DeviceId");
 
                     b.ToTable("ItemReadReceipts");
-                });
-
-            modelBuilder.Entity("GhostList.Domain.Entities.LocaleStat", b =>
-                {
-                    b.Property<DateOnly>("Date")
-                        .HasColumnType("date");
-
-                    b.Property<string>("Language")
-                        .HasMaxLength(8)
-                        .HasColumnType("character varying(8)");
-
-                    b.Property<string>("Country")
-                        .HasMaxLength(2)
-                        .HasColumnType("character varying(2)");
-
-                    b.Property<int>("RequestCount")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Date", "Language", "Country");
-
-                    b.ToTable("LocaleStats");
                 });
 
             modelBuilder.Entity("GhostList.Domain.Entities.MessageReadReceipt", b =>

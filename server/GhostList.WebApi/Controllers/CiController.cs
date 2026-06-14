@@ -26,7 +26,9 @@ public class CiController(IMediator mediator) : ControllerBase
     /// Posts an Android-only "release notes" broadcast so users see that an update
     /// is available. Title/body are serialized as JSON objects mapping language code
     /// to text (see the client's <c>LanguageService</c> / <c>resolveLocalizedText</c>),
-    /// which falls back to <c>en_US</c> for unknown languages.
+    /// which falls back to <c>en_US</c> for unknown languages. The released version is
+    /// also stored on <see cref="InfoMessage.Version"/> so clients that are already on
+    /// (or ahead of) this version can suppress the "update available" overlay.
     /// </summary>
     [HttpPost("android-release")]
     public async Task<ActionResult<Guid>> AndroidRelease([FromBody] AndroidReleaseRequest request)
@@ -53,7 +55,8 @@ public class CiController(IMediator mediator) : ControllerBase
             InfoMessageType.ReleaseNotes,
             title,
             body,
-            DevicePlatform.Android));
+            DevicePlatform.Android,
+            version));
 
         return Ok(id);
     }

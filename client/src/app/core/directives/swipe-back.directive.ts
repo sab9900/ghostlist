@@ -71,9 +71,10 @@ export class SwipeBackDirective implements OnDestroy {
         if (!this.tracking) return;
 
         const progress = parseFloat(this.elementRef.nativeElement.style.getPropertyValue('--swipe-progress') || '0');
+        const wasHorizontal = this.axisLocked === 'x';
         this.reset();
 
-        if (this.axisLocked === 'x' && progress >= 1) {
+        if (wasHorizontal && progress >= 1) {
             this.swipeBack.emit();
         }
     }

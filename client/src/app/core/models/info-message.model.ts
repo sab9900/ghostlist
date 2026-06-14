@@ -20,5 +20,6 @@ export interface InfoMessage {
     body: string;
     /** If set, the server only returns this message to matching clients. */
     targetPlatform?: DevicePlatform | null;
+    version?: string | null;
     createdAt: string;
 }

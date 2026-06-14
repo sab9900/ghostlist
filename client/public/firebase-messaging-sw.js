@@ -1,18 +1,6 @@
-// Firebase Cloud Messaging service worker.
-// Handles push notifications while the GhostList web app is in the
-// background or closed. Runs separately from the Angular service worker
-// (ngsw-worker.js), which only handles app-shell caching.
-//
-// IMPORTANT: this file must be served from the site root (e.g.
-// https://app.ghost-list.com/firebase-messaging-sw.js) so its scope covers
-// the whole app. The Angular CLI copies everything under client/public/ to
-// the build output root, so no extra build config is needed.
-
 importScripts('https://www.gstatic.com/firebasejs/12.14.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/12.14.0/firebase-messaging-compat.js');
 
-// These values are public client identifiers (not secrets) and match
-// client/src/environments/environment*.ts.
 firebase.initializeApp({
     apiKey: 'AIzaSyBJHGBr6RsQrWZPWUaKekF79e3clqttT_k',
     authDomain: 'ghostlist-ff00f.firebaseapp.com',
@@ -24,19 +12,28 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// GhostList never sends decryptable content in push payloads (zero-knowledge),
-// so the notification body is always a generic, pre-defined text plus a
-// listId used only for in-app navigation on click.
+function routeForType(type) {
+    switch (type) {
+        case 'message':
+            return 'chat';
+        case 'whisper_invite':
+            return 'whisper';
+        default:
+            return 'items';
+    }
+}
+
 messaging.onBackgroundMessage((payload) => {
     const title = payload.notification?.title ?? 'GhostList';
     const body = payload.notification?.body ?? '';
     const listId = payload.data?.listId;
+    const type = payload.data?.type;
 
     self.registration.showNotification(title, {
         body,
         icon: '/web-app-manifest-192x192.png',
         badge: '/favicon-96x96.png',
-        data: { listId },
+        data: { listId, type },
     });
 });
 
@@ -44,7 +41,8 @@ self.addEventListener('notificationclick', (event) => {
     event.notification.close();
 
     const listId = event.notification.data?.listId;
-    const targetUrl = listId ? `/list/${listId}` : '/';
+    const type = event.notification.data?.type;
+    const targetUrl = listId ? `/list/${listId}/${routeForType(type)}` : '/';
 
     event.waitUntil(
         self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {

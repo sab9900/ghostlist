@@ -110,6 +110,9 @@
                                 @if (message.targetPlatform) {
                                     <span class="history__badge history__badge--target">{{ message.targetPlatform }} only</span>
                                 }
+                                @if (message.version) {
+                                    <span class="history__badge history__badge--target">v{{ message.version }}</span>
+                                }
                             </div>
                             <span class="history__item-date">{{ formatDate(message.createdAt) }}</span>
                         </div>

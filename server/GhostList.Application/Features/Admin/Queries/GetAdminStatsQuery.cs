@@ -27,11 +27,28 @@ public record AdminEngagementDto(
     int PlatformWeb,
     double MultiDeviceUserShare);
 
+/// <summary>Share of tracked requests whose Accept-Language maps to a given app language.</summary>
+public record AdminLanguageStatDto(string Language, long Count, double Share);
+
+/// <summary>Share of tracked requests whose Accept-Language region maps to a given country.</summary>
+public record AdminCountryStatDto(string Country, long Count, double Share);
+
+/// <summary>
+/// Rough "where are our users" signal derived from the Accept-Language header of
+/// incoming requests (see LocaleStat). No IPs or device/user ids involved — just
+/// aggregate counts, intended for i18n planning.
+/// </summary>
+public record AdminLocaleBreakdownDto(
+    List<AdminLanguageStatDto> Languages,
+    List<AdminCountryStatDto> Countries,
+    double UnknownCountryShare);
+
 public record AdminStatsDto(
     AdminCurrentCountsDto Current,
     AdminTotalCountsDto AllTime,
     List<AdminDailyStatDto> Daily,
-    AdminEngagementDto Engagement);
+    AdminEngagementDto Engagement,
+    AdminLocaleBreakdownDto LocaleBreakdown);
 
 public class GetAdminStatsQueryHandler(IApplicationDbContext context) : IRequestHandler<GetAdminStatsQuery, AdminStatsDto>
 {
@@ -74,8 +91,42 @@ public class GetAdminStatsQueryHandler(IApplicationDbContext context) : IRequest
         }
 
         var engagement = await ComputeEngagement(context, current, cancellationToken);
+        var localeBreakdown = await ComputeLocaleBreakdown(context, cancellationToken);
 
-        return new AdminStatsDto(current, allTime, daily, engagement);
+        return new AdminStatsDto(current, allTime, daily, engagement, localeBreakdown);
+    }
+
+    private static async Task<AdminLocaleBreakdownDto> ComputeLocaleBreakdown(
+        IApplicationDbContext context, CancellationToken cancellationToken)
+    {
+        var languageTotals = await context.LocaleStats
+            .GroupBy(l => l.Language)
+            .Select(g => new { Language = g.Key, Count = g.Sum(x => (long)x.RequestCount) })
+            .ToListAsync(cancellationToken);
+
+        var totalRequests = languageTotals.Sum(l => l.Count);
+
+        var languages = languageTotals
+            .Select(l => new AdminLanguageStatDto(l.Language, l.Count, totalRequests > 0 ? (double)l.Count / totalRequests : 0))
+            .OrderByDescending(l => l.Count)
+            .ToList();
+
+        var countryTotals = await context.LocaleStats
+            .Where(l => l.Country != "")
+            .GroupBy(l => l.Country)
+            .Select(g => new { Country = g.Key, Count = g.Sum(x => (long)x.RequestCount) })
+            .ToListAsync(cancellationToken);
+
+        var knownCountryRequests = countryTotals.Sum(c => c.Count);
+
+        var countries = countryTotals
+            .Select(c => new AdminCountryStatDto(c.Country, c.Count, knownCountryRequests > 0 ? (double)c.Count / knownCountryRequests : 0))
+            .OrderByDescending(c => c.Count)
+            .ToList();
+
+        var unknownCountryShare = totalRequests > 0 ? (double)(totalRequests - knownCountryRequests) / totalRequests : 0;
+
+        return new AdminLocaleBreakdownDto(languages, countries, unknownCountryShare);
     }
 
     private static async Task<AdminEngagementDto> ComputeEngagement(

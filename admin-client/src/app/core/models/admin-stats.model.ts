@@ -38,9 +38,35 @@ export interface AdminEngagement {
     multiDeviceUserShare: number;
 }
 
+/** Share of tracked requests whose Accept-Language maps to a given app language. */
+export interface AdminLanguageStat {
+    language: string;
+    count: number;
+    share: number;
+}
+
+/** Share of tracked requests whose Accept-Language region maps to a given country. */
+export interface AdminCountryStat {
+    country: string;
+    count: number;
+    share: number;
+}
+
+/**
+ * Rough "where are our users" signal derived from the Accept-Language header of
+ * incoming requests. No IPs or device/user ids involved — aggregate counts only,
+ * intended for i18n planning.
+ */
+export interface AdminLocaleBreakdown {
+    languages: AdminLanguageStat[];
+    countries: AdminCountryStat[];
+    unknownCountryShare: number;
+}
+
 export interface AdminStats {
     current: AdminCurrentCounts;
     allTime: AdminTotalCounts;
     daily: AdminDailyStat[];
     engagement: AdminEngagement;
+    localeBreakdown: AdminLocaleBreakdown;
 }

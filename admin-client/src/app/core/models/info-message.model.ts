@@ -18,6 +18,7 @@ export interface InfoMessage {
     body: string;
     /** If set, the message is only shown on this platform. Null/undefined = all platforms. */
     targetPlatform: DevicePlatform | null;
+    version?: string | null;
     createdAt: string;
 }
 

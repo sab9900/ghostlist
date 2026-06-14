@@ -15,6 +15,7 @@ public interface IApplicationDbContext
     DbSet<DeviceSubscription> DeviceSubscriptions { get; }
     DbSet<GhostListMember> GhostListMembers { get; }
     DbSet<DailyUsageStat> DailyUsageStats { get; }
+    DbSet<LocaleStat> LocaleStats { get; }
     DbSet<GhostMessageImage> GhostMessageImages { get; }
     DbSet<InfoMessage> InfoMessages { get; }
     DbSet<MessageReadReceipt> MessageReadReceipts { get; }
@@ -44,4 +45,11 @@ public interface IApplicationDbContext
     /// Safe to call from concurrent requests (upsert).
     /// </summary>
     Task IncrementDailyUsageAsync(UsageMetric metric, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Atomically bumps today's request counter for a (language, country) pair in
+    /// <see cref="LocaleStat"/> by <paramref name="count"/>. Safe to call from
+    /// concurrent requests (upsert).
+    /// </summary>
+    Task IncrementLocaleStatAsync(string language, string country, int count, CancellationToken cancellationToken);
 }

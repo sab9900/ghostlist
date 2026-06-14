@@ -20,7 +20,7 @@ public class GetLatestInfoMessageQueryHandler(IApplicationDbContext context)
         return await context.InfoMessages
             .Where(m => m.TargetPlatform == null || m.TargetPlatform == request.Platform)
             .OrderByDescending(m => m.CreatedAt)
-            .Select(m => new InfoMessageDto(m.Id, m.Type, m.Title, m.Body, m.TargetPlatform, m.CreatedAt))
+            .Select(m => new InfoMessageDto(m.Id, m.Type, m.Title, m.Body, m.TargetPlatform, m.Version, m.CreatedAt))
             .FirstOrDefaultAsync(cancellationToken);
     }
 }

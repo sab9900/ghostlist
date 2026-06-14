@@ -27,19 +27,85 @@ public class FcmNotificationService(
     ILogger<FcmNotificationService> logger) : IPushNotificationService
 {
     private const string AppName = "GhostList";
+
+    /// <summary>Public web app origin, used to build absolute deep links for web push (FcmOptions.Link).</summary>
+    private const string WebAppBaseUrl = "https://app.ghost-list.com";
+
     private static readonly object InitLock = new();
     private static FirebaseApp? _app;
+
+    /// <summary>Maps a notification type to the list-detail tab it should deep-link to. Keep in sync with
+    /// the client's PushNotificationService.routeForType.</summary>
+    private static string WebTabForType(PushNotificationType type) => type switch
+    {
+        PushNotificationType.Message => "chat",
+        PushNotificationType.WhisperInvite => "whisper",
+        _ => "items",
+    };
+
+    /// <summary>Locale used when a subscription has no recorded locale, or its locale isn't supported.
+    /// Matches LanguageService's fallback on the client.</summary>
+    private const string FallbackLocale = "en_US";
+
+    /// <summary>
+    /// Push notification title/body per locale and notification type. Keep the set of locales in
+    /// sync with LanguageService.SUPPORTED on the client (en_US, de_DE, it_IT, es_ES).
+    /// </summary>
+    private static readonly Dictionary<string, Dictionary<PushNotificationType, (string Title, string Body)>> Texts = new()
+    {
+        ["en_US"] = new()
+        {
+            [PushNotificationType.Message] = ("GhostList", "New message in one of your lists"),
+            [PushNotificationType.ItemsChanged] = ("GhostList", "One of your lists was updated"),
+            [PushNotificationType.WhisperInvite] = ("GhostList", "👻 Someone is inviting you to whisper in Lethe"),
+        },
+        ["de_DE"] = new()
+        {
+            [PushNotificationType.Message] = ("GhostList", "Neue Nachricht in einer deiner Listen"),
+            [PushNotificationType.ItemsChanged] = ("GhostList", "Eine deiner Listen wurde aktualisiert"),
+            [PushNotificationType.WhisperInvite] = ("GhostList", "👻 Jemand lädt dich ein, in Lethe zu flüstern"),
+        },
+        ["it_IT"] = new()
+        {
+            [PushNotificationType.Message] = ("GhostList", "Nuovo messaggio in una delle tue liste"),
+            [PushNotificationType.ItemsChanged] = ("GhostList", "Una delle tue liste è stata aggiornata"),
+            [PushNotificationType.WhisperInvite] = ("GhostList", "👻 Qualcuno ti invita a sussurrare in Lethe"),
+        },
+        ["es_ES"] = new()
+        {
+            [PushNotificationType.Message] = ("GhostList", "Nuevo mensaje en una de tus listas"),
+            [PushNotificationType.ItemsChanged] = ("GhostList", "Se ha actualizado una de tus listas"),
+            [PushNotificationType.WhisperInvite] = ("GhostList", "👻 Alguien te invita a susurrar en Lethe"),
+        },
+    };
+
+    /// <summary>Generic fallback text for notification types not covered by <see cref="Texts"/> (i.e. the
+    /// default "Update" case), per locale.</summary>
+    private static readonly Dictionary<string, string> DefaultBody = new()
+    {
+        ["en_US"] = "Update",
+        ["de_DE"] = "Update",
+        ["it_IT"] = "Aggiornamento",
+        ["es_ES"] = "Actualización",
+    };
+
+    /// <summary>Picks the notification title/body for the given type in the subscription's locale,
+    /// falling back to <see cref="FallbackLocale"/> if the locale is missing or unsupported.</summary>
+    private static (string Title, string Body) GetText(string? locale, PushNotificationType type)
+    {
+        var key = locale is not null && Texts.ContainsKey(locale) ? locale : FallbackLocale;
+        var byType = Texts[key];
+
+        return byType.TryGetValue(type, out var text)
+            ? text
+            : ("GhostList", DefaultBody.GetValueOrDefault(key, DefaultBody[FallbackLocale]));
+    }
 
     public async Task SendNotificationAsync(Guid listId, PushNotificationType type, string? senderDeviceId, CancellationToken ct, IReadOnlyCollection<string>? targetDeviceIds = null)
     {
         var app = GetOrCreateApp();
         if (app is null) return;
 
-        // This runs fire-and-forget alongside the request that triggered it, so it
-        // must NOT share the request-scoped DbContext (EF Core's DbContext is not
-        // safe for concurrent use). Create an independent scope/context, and don't
-        // tie the work to the request's CancellationToken since the request may
-        // complete (and cancel its token) before this finishes.
         using var scope = scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         ct = CancellationToken.None;
@@ -52,10 +118,6 @@ public class FcmNotificationService(
 
         if (type == PushNotificationType.WhisperInvite)
         {
-            // Whisper invites are an explicit, one-off action — they always
-            // reach their recipients regardless of the per-list notification
-            // preferences. If specific recipients were requested, narrow to
-            // those; otherwise every other list member is a candidate.
             if (targetDeviceIds is { Count: > 0 })
                 query = query.Where(s => targetDeviceIds.Contains(s.DeviceId));
         }
@@ -86,21 +148,12 @@ public class FcmNotificationService(
             type, listId, targets.Count, subscriptions.Count);
         if (targets.Count == 0) return;
 
-        var (title, body) = type switch
-        {
-            PushNotificationType.Message => ("GhostList", "Neue Nachricht in einer deiner Listen"),
-            PushNotificationType.ItemsChanged => ("GhostList", "Eine deiner Listen wurde aktualisiert"),
-            PushNotificationType.WhisperInvite => ("GhostList", "👀 Jemand schaut sich gerade eine deiner Listen an"),
-            _ => ("GhostList", "Update"),
-        };
-
         var messaging = FirebaseMessaging.GetMessaging(app);
         var staleTokens = new List<string>();
 
-        // SendEachAsync accepts at most 500 messages per call.
         foreach (var batch in targets.Chunk(500))
         {
-            var messages = batch.Select(s => BuildMessage(s, listId, type, title, body)).ToList();
+            var messages = batch.Select(s => BuildMessage(s, listId, type)).ToList();
 
             BatchResponse response;
             try
@@ -152,8 +205,10 @@ public class FcmNotificationService(
         }
     }
 
-    private static Message BuildMessage(DeviceSubscription sub, Guid listId, PushNotificationType type, string title, string body)
+    private static Message BuildMessage(DeviceSubscription sub, Guid listId, PushNotificationType type)
     {
+        var (title, body) = GetText(sub.Locale, type);
+
         var data = new Dictionary<string, string>
         {
             ["listId"] = listId.ToString(),
@@ -209,7 +264,7 @@ public class FcmNotificationService(
                     },
                     FcmOptions = new WebpushFcmOptions
                     {
-                        Link = "/",
+                        Link = $"{WebAppBaseUrl}/list/{listId}/{WebTabForType(type)}",
                     },
                 };
                 break;

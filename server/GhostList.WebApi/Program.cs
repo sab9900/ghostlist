@@ -48,13 +48,16 @@ builder.Services.AddSignalR(options =>
 builder.Services.AddScoped<IGhostListNotifier, GhostListNotifier>();
 builder.Services.AddSingleton<IPresenceTracker, PresenceTracker>();
 builder.Services.AddSingleton<IWhisperPresenceTracker, WhisperPresenceTracker>();
+builder.Services.AddSingleton<ILocaleStatsAggregator, LocaleStatsAggregator>();
 builder.Services.AddHostedService<GhostListCleanupWorker>();
+builder.Services.AddHostedService<LocaleStatsFlushWorker>();
 
 var app = builder.Build();
 
 await app.Services.MigrateDatabaseAsync();
 
 app.UseMiddleware<ExceptionHandlerMiddleware>();
+app.UseMiddleware<AcceptLanguageTrackingMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {

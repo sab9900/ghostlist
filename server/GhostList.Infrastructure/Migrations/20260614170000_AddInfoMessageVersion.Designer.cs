@@ -2,6 +2,7 @@ using System;
 using GhostList.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -10,9 +11,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GhostList.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260614170000_AddInfoMessageVersion")]
+    partial class AddInfoMessageVersion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -296,27 +298,6 @@ namespace GhostList.Infrastructure.Migrations
                     b.ToTable("ItemReadReceipts");
                 });
 
-            modelBuilder.Entity("GhostList.Domain.Entities.LocaleStat", b =>
-                {
-                    b.Property<DateOnly>("Date")
-                        .HasColumnType("date");
-
-                    b.Property<string>("Language")
-                        .HasMaxLength(8)
-                        .HasColumnType("character varying(8)");
-
-                    b.Property<string>("Country")
-                        .HasMaxLength(2)
-                        .HasColumnType("character varying(2)");
-
-                    b.Property<int>("RequestCount")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Date", "Language", "Country");
-
-                    b.ToTable("LocaleStats");
-                });
-
             modelBuilder.Entity("GhostList.Domain.Entities.MessageReadReceipt", b =>
                 {
                     b.Property<Guid>("MessageId")
@@ -392,10 +373,6 @@ namespace GhostList.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)");
-
-                    b.Property<string>("Locale")
-                        .HasMaxLength(8)
-                        .HasColumnType("character varying(8)");
 
                     b.Property<bool>("NotifyOnItemsChanged")
                         .HasColumnType("boolean");
