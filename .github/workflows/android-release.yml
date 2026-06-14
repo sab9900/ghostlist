@@ -28,6 +28,21 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if VERSION changed
+        id: version_check
+        run: |
+          BEFORE="${{ github.event.before }}"
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
+            BEFORE="HEAD~1"
+          fi
+          if git diff --name-only "$BEFORE" "${{ github.sha }}" -- VERSION | grep -q .; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Install dependencies
         working-directory: client
@@ -61,6 +76,7 @@ jobs:
             "$(pwd)/client/android/app/build/outputs/apk/release/app-release.apk"
 
       - name: Notify users about the new Android release
+        if: steps.version_check.outputs.changed == 'true'
         run: |
           curl -fsS -X POST "https://app.ghost-list.com/api/ci/android-release" \
             -H "X-Ci-Token: ${{ secrets.CI_API_TOKEN }}" \

@@ -114,6 +114,11 @@ Backend auf. Das legt automatisch eine Android-only "Release Notes"-Nachricht
 im Info Center an, die App-Nutzern auf Android beim nächsten Start angezeigt
 wird (iOS/Web-Nutzer sehen sie nicht).
 
+Die Benachrichtigung wird nur verschickt, wenn sich die Datei `VERSION` im
+jeweiligen Push tatsächlich geändert hat ("Check if VERSION changed"-Step).
+Reine UI-/Bugfix-Pushes ohne Versionsbump bauen die APK zwar neu, lösen aber
+keine Nutzer-Benachrichtigung aus.
+
 Dieser Endpoint ist über einen eigenen Shared-Secret-Header geschützt
 (`X-Ci-Token`), unabhängig vom Admin-Login - der Runner bekommt also nur
 Zugriff auf genau diese eine, risikoarme Aktion.
