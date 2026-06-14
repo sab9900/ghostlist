@@ -204,6 +204,9 @@
       "NOIR": "Noir"
     },
     "LANGUAGE_TITLE": "Lingua",
+    "HAPTICS_TITLE": "Feedback tattile",
+    "HAPTICS_ENABLE": "Attiva feedback tattile",
+    "HAPTICS_HINT": "Vibra al tocco e per azioni come aggiungere o spuntare elementi.",
     "SYNC_TITLE": "Macchina di Sincronizzazione",
     "SYNC_HINT": "Trasferisci tutte le tue liste su un altro dispositivo in una volta sola.",
     "SYNC_RECEIVE": "Ricevi da un altro dispositivo",

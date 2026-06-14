@@ -1,10 +1,15 @@
 import { inject, Injectable, signal } from '@angular/core';
+import { Capacitor } from '@capacitor/core';
 import { ListStorageService, PREFS_STORE } from './list-storage.service';
 
 const KEY_CRYPTO_KEY  = 'prefs-crypto-key';
 const KEY_SENDER_NAME = 'sender-name';
 const LS_KEY          = 'gl_sender_name';
 const LS_ONBOARDED_KEY = 'gl_name_onboarded';
+const LS_HAPTICS_KEY  = 'gl_haptics_enabled';
+
+/** iOS ships with haptics on by default; Android and web ship with it off. */
+const DEFAULT_HAPTICS_ENABLED = Capacitor.getPlatform() === 'ios';
 
 interface EncryptedEntry { key: string; ciphertext: string; iv: string; }
 
@@ -68,6 +73,19 @@ export class UserPreferencesService {
         localStorage.setItem(LS_KEY, trimmed);
         void this.saveToIdb(trimmed);
         if (trimmed) this.markOnboarded();
+    }
+
+    /** Whether haptic feedback (vibration on taps/actions) is enabled. */
+    readonly hapticsEnabled = signal<boolean>(
+        ((): boolean => {
+            const stored = localStorage.getItem(LS_HAPTICS_KEY);
+            return stored !== null ? stored === '1' : DEFAULT_HAPTICS_ENABLED;
+        })(),
+    );
+
+    setHapticsEnabled(enabled: boolean): void {
+        this.hapticsEnabled.set(enabled);
+        localStorage.setItem(LS_HAPTICS_KEY, enabled ? '1' : '0');
     }
 
     private async loadFromIdb(): Promise<void> {

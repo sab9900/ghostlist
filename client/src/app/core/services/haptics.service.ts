@@ -1,11 +1,15 @@
-import { Injectable } from '@angular/core';
-import { Capacitor } from '@capacitor/core';
+import { inject, Injectable } from '@angular/core';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { UserPreferencesService } from './user-preferences.service';
 
 @Injectable({ providedIn: 'root' })
 export class HapticsService {
 
-    private readonly enabled = Capacitor.getPlatform() === 'ios';
+    private readonly prefs = inject(UserPreferencesService);
+
+    private get enabled(): boolean {
+        return this.prefs.hapticsEnabled();
+    }
 
     listTap(): void {
         if (!this.enabled) return;

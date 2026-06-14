@@ -206,6 +206,9 @@
       "NOIR": "Noir"
     },
     "LANGUAGE_TITLE": "Sprache",
+    "HAPTICS_TITLE": "Haptik",
+    "HAPTICS_ENABLE": "Haptisches Feedback aktivieren",
+    "HAPTICS_HINT": "Vibration bei Tipps und Aktionen wie dem Hinzufügen oder Abhaken von Einträgen.",
     "SYNC_TITLE": "Sync-Maschine",
     "SYNC_HINT": "Alle Listen auf einmal auf ein anderes Gerät übertragen.",
     "SYNC_RECEIVE": "Von anderem Gerät empfangen",

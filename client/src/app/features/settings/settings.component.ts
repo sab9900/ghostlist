@@ -7,6 +7,7 @@ import { environment } from '../../../environments/environment';
 import { SyncQrPayload } from '../../core/models';
 import { CryptoService } from '../../core/services/crypto.service';
 import { LanguageService } from '../../core/services/language.service';
+import { LayoutService } from '../../core/services/layout.service';
 import { MasterPasswordService } from '../../core/services/master-password.service';
 import { SensitiveListsService } from '../../core/services/sensitive-lists.service';
 import { Theme, ThemeAccent, ThemeService } from '../../core/services/theme.service';
@@ -27,6 +28,7 @@ export class SettingsComponent {
     protected readonly themeService = inject(ThemeService);
     protected readonly langService = inject(LanguageService);
     protected readonly prefs = inject(UserPreferencesService);
+    protected readonly layout = inject(LayoutService);
     protected readonly store = inject(AppStore);
     protected readonly webAuthn = inject(WebAuthnService);
     protected readonly masterPassword = inject(MasterPasswordService);
@@ -69,6 +71,10 @@ export class SettingsComponent {
 
     async setLanguage(code: string): Promise<void> {
         await this.langService.setLanguage(code);
+    }
+
+    setHapticsEnabled(enabled: boolean): void {
+        this.prefs.setHapticsEnabled(enabled);
     }
 
     saveName(): void {

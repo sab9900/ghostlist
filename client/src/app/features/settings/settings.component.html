@@ -290,6 +290,26 @@
 
         <div class="settings-col">
 
+        @if (!layout.isDesktop()) {
+        <section class="section" aria-labelledby="haptics-heading">
+            <div class="section__desc">
+                <h2 class="section__title" id="haptics-heading">{{ 'SETTINGS.HAPTICS_TITLE' | translate }}</h2>
+            </div>
+            <div class="section__body">
+                <div class="toggle-row">
+                    <div>
+                        <p class="toggle-label" id="haptics-enable-label">{{ 'SETTINGS.HAPTICS_ENABLE' | translate }}</p>
+                        <p class="toggle-hint">{{ 'SETTINGS.HAPTICS_HINT' | translate }}</p>
+                    </div>
+                    <label class="toggle-switch" aria-labelledby="haptics-enable-label">
+                        <input type="checkbox" [ngModel]="prefs.hapticsEnabled()" (ngModelChange)="setHapticsEnabled($event)" />
+                        <span class="toggle-switch__track" aria-hidden="true"></span>
+                    </label>
+                </div>
+            </div>
+        </section>
+        }
+
         <section class="section" aria-labelledby="lang-heading">
             <div class="section__desc">
                 <h2 class="section__title" id="lang-heading">{{ 'SETTINGS.LANGUAGE_TITLE' | translate }}</h2>

@@ -204,6 +204,9 @@
       "NOIR": "Noir"
     },
     "LANGUAGE_TITLE": "Idioma",
+    "HAPTICS_TITLE": "Vibración",
+    "HAPTICS_ENABLE": "Activar vibración háptica",
+    "HAPTICS_HINT": "Vibra al tocar y al realizar acciones como añadir o marcar elementos.",
     "SYNC_TITLE": "Máquina de Sincronización",
     "SYNC_HINT": "Transfiere todas tus listas a otro dispositivo de una sola vez.",
     "SYNC_RECEIVE": "Recibir de otro dispositivo",

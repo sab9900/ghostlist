@@ -206,6 +206,9 @@
       "NOIR": "Noir"
     },
     "LANGUAGE_TITLE": "Language",
+    "HAPTICS_TITLE": "Haptics",
+    "HAPTICS_ENABLE": "Enable haptics",
+    "HAPTICS_HINT": "Vibrate on taps and actions like adding or checking off items.",
     "SYNC_TITLE": "Sync Machine",
     "SYNC_HINT": "Transfer all your lists to another device in one go.",
     "SYNC_RECEIVE": "Receive from another device",
