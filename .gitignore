@@ -41,6 +41,9 @@ appsettings.*.json
 # ─── Landing page (own repo) ─────────────────────────────────────────────────
 /landing-page/
 
+# ─── Interne Setup-Docs (Infra-Details, nicht für das öffentliche Repo) ──────
+/docs/
+
 # ─── IDE / OS ─────────────────────────────────────────────────────────────────
 .idea/
 .vscode/*
