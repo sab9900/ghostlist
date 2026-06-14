@@ -1,0 +1,66 @@
+name: Android Release
+
+# Builds a signed release APK whenever client code on main changes and drops it
+# straight into the Coolify volume that the landing page serves under
+# /downloads/ghostlist.apk.
+#
+# Runs on a self-hosted runner on the production server, because the APK needs
+# to land in /data/coolify/applications/ghost-list-android/ directly - GitHub's
+# hosted runners can't reach that host (private IP).
+#
+# One-time setup: see docs/ANDROID_CI_SETUP.md
+#
+# Security note: this workflow only triggers on pushes to `main` (i.e. requires
+# repo write access). Do not add `pull_request` or `workflow_dispatch` triggers
+# to this file - that would let anyone who can open a PR run code on the
+# self-hosted runner.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "client/**"
+      - ".github/workflows/android-release.yml"
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy Android APK
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        working-directory: client
+        run: npm ci --legacy-peer-deps
+
+      - name: Build web app & sync Capacitor
+        working-directory: client
+        run: npm run build:cap
+
+      - name: Decode keystore
+        working-directory: client/android/app
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > ghostlist-release.keystore
+
+      - name: Write keystore.properties
+        working-directory: client/android/app
+        run: |
+          cat > keystore.properties <<EOF
+          storeFile=ghostlist-release.keystore
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyAlias=ghostlist
+          keyPassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          EOF
+
+      - name: Build release APK
+        working-directory: client/android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Deploy APK to landing page volume
+        run: |
+          cp client/android/app/build/outputs/apk/release/app-release.apk \
+            /data/coolify/applications/ghost-list-android/ghostlist.apk
+
+      - name: Clean up signing material
+        if: always()
+        working-directory: client/android/app
+        run: rm -f ghostlist-release.keystore keystore.properties
