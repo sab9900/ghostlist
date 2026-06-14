@@ -7,7 +7,7 @@
     "start": "ng serve",
     "prebuild": "node scripts/generate-version.js",
     "build": "ng build",
-    "build:cap": "ng build --configuration production && npx cap sync",
+    "build:cap": "node scripts/generate-version.js && ng build --configuration production && npx cap sync",
     "ios": "ng build --configuration production && npx cap sync ios && npx cap open ios",
     "android": "ng build --configuration production && npx cap sync android && npx cap open android",
     "cap:ios": "npx cap open ios",

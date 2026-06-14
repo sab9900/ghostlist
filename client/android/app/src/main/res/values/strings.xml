@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ghost List</string>
+    <string name="title_activity_main">Ghost List</string>
+    <string name="package_name">com.norica_informatics.ghostlist</string>
+    <string name="custom_url_scheme">com.norica_informatics.ghostlist</string>
+</resources>

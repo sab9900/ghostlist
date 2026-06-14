@@ -44,7 +44,10 @@ __screenshots__/
 
 # Capacitor native projects
 /ios
-/android
+
+# Android platform project is committed (build.gradle, signing config,
+# manifest, FCM resources, etc.). Build artifacts, local SDK paths and the
+# signing keystore are excluded via client/android/.gitignore instead.
 
 # System files
 .DS_Store

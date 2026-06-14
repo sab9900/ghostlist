@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "90820067104",
+    "project_id": "ghostlist-ff00f",
+    "storage_bucket": "ghostlist-ff00f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:90820067104:android:eeabcca64a55fc9c5be145",
+        "android_client_info": {
+          "package_name": "com.norica_informatics.ghostlist"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDEsfq3AH25slWTpfFsEAvt1Un-eAypFr8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

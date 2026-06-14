@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Accent used to tint the FCM status-bar notification icon (matches CSS color-primary). -->
+    <color name="notification_color">#7C6AF7</color>
+</resources>
