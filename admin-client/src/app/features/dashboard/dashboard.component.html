@@ -131,5 +131,88 @@
                 </div>
             </div>
         </section>
+
+        <section class="locale">
+            <div class="panel locale__languages">
+                <h2>App language (Accept-Language)</h2>
+                <div class="locale-bars">
+                    @for (lang of s.localeBreakdown.languages; track lang.language) {
+                        <div class="locale-bar">
+                            <span class="locale-bar__label">{{ languageName(lang.language) }}</span>
+                            <div class="locale-bar__track">
+                                <div class="locale-bar__fill" [style.width.%]="lang.share * 100"></div>
+                            </div>
+                            <span class="locale-bar__value">{{ pct(lang.share) }}</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="panel locale__map">
+                <h2>Where requests come from</h2>
+                <svg class="world-map" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <filter id="markerGlow" x="-100%" y="-100%" width="300%" height="300%">
+                            <feGaussianBlur stdDeviation="3" result="blur" />
+                            <feMerge>
+                                <feMergeNode in="blur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                    </defs>
+
+                    @for (x of mapGridCols(); track x) {
+                        <line class="world-map__grid" [attr.x1]="x" y1="0" [attr.x2]="x" y2="500" />
+                    }
+                    @for (y of mapGridRows(); track y) {
+                        <line class="world-map__grid" x1="0" [attr.y1]="y" x2="1000" [attr.y2]="y" />
+                    }
+
+                    <text class="world-map__label" x="60" y="130">N. AMERICA</text>
+                    <text class="world-map__label" x="200" y="380">S. AMERICA</text>
+                    <text class="world-map__label" x="470" y="110">EUROPE</text>
+                    <text class="world-map__label" x="490" y="320">AFRICA</text>
+                    <text class="world-map__label" x="700" y="170">ASIA</text>
+                    <text class="world-map__label" x="820" y="410">OCEANIA</text>
+
+                    @for (m of mapMarkers(); track m.country) {
+                        <circle
+                            class="world-map__marker"
+                            [attr.cx]="m.x"
+                            [attr.cy]="m.y"
+                            [attr.r]="m.radius"
+                            filter="url(#markerGlow)"
+                        >
+                            <title>{{ m.flag }} {{ m.name }}: {{ pct(m.share) }} ({{ m.count }} requests)</title>
+                        </circle>
+                    }
+                </svg>
+                <p class="locale__hint">
+                    Marker size = share of requests with a known country.
+                    @if (s.localeBreakdown.unknownCountryShare > 0) {
+                        {{ pct(s.localeBreakdown.unknownCountryShare) }} of requests didn't include a region.
+                    }
+                </p>
+            </div>
+
+            <div class="panel locale__countries">
+                <h2>Top countries</h2>
+                @if (topCountries().length > 0) {
+                    <div class="locale-bars">
+                        @for (c of topCountries(); track c.country) {
+                            <div class="locale-bar">
+                                <span class="locale-bar__label">{{ flag(c.country) }} {{ countryName(c.country) }}</span>
+                                <div class="locale-bar__track">
+                                    <div class="locale-bar__fill" [style.width.%]="c.share * 100"></div>
+                                </div>
+                                <span class="locale-bar__value">{{ pct(c.share) }}</span>
+                            </div>
+                        }
+                    </div>
+                } @else {
+                    <p class="locale__hint">No location data yet.</p>
+                }
+            </div>
+        </section>
     }
 </div>
