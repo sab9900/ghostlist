@@ -71,6 +71,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.DeviceToken).HasMaxLength(512).IsRequired();
             entity.Property(e => e.Platform).HasConversion<int>();
             entity.Property(e => e.Locale).HasMaxLength(8);
+            entity.Property(e => e.NotifyOnLethe).HasDefaultValue(true);
+            entity.Property(e => e.NotifyOnCharon).HasDefaultValue(true);
             entity.HasIndex(e => e.DeviceToken);
             entity.HasOne<Domain.Entities.GhostList>()
                   .WithMany()
