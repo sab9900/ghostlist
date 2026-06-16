@@ -1,62 +1,71 @@
 name: Android Release
 
-# Builds a signed release APK whenever client code on main changes and drops it
+# Builds a signed release APK after CI completes on main and drops it
 # straight into the Coolify volume that the landing page serves under
 # /downloads/ghostlist.apk.
+#
+# Triggered via workflow_run on "CI" so that this always runs AFTER the
+# version bump commit is pushed by the CI bot. This avoids the race condition
+# where a push trigger would fire before the version bump, causing the
+# "Notify users" step to always see VERSION as unchanged and get skipped.
 #
 # Runs on a self-hosted runner on the production server, because the APK needs
 # to land in /data/coolify/applications/ghost-list-android/ directly - GitHub's
 # hosted runners can't reach that host (private IP).
 #
 # One-time setup: see docs/ANDROID_CI_SETUP.md
-#
-# Security note: this workflow only triggers on pushes to `main` (i.e. requires
-# repo write access). Do not add `pull_request` or `workflow_dispatch` triggers
-# to this file - that would let anyone who can open a PR run code on the
-# self-hosted runner.
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [main]
-    paths:
-      - "client/**"
-      - ".github/workflows/android-release.yml"
 
 jobs:
   build-and-deploy:
     name: Build & Deploy Android APK
     runs-on: self-hosted
+    # Only run if CI succeeded and client code was actually part of the change.
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.actor.login != 'github-actions[bot]'
     steps:
       - uses: actions/checkout@v4
         with:
+          # Check out the latest main — by this point the version bump commit
+          # from CI has already been pushed, so VERSION is up to date.
+          ref: main
           fetch-depth: 0
 
-      - name: Check if VERSION changed
-        id: version_check
+      - name: Check if client code changed in this CI run
+        id: client_check
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          BEFORE="${{ github.event.before }}"
-          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
-            BEFORE="HEAD~1"
-          fi
-          if git diff --name-only "$BEFORE" "${{ github.sha }}" -- VERSION | grep -q .; then
+          BEFORE=$(git rev-parse "${HEAD_SHA}^")
+          if git diff --name-only "$BEFORE" "$HEAD_SHA" -- client/ | grep -q .; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Install dependencies
+        if: steps.client_check.outputs.changed == 'true'
         working-directory: client
         run: npm ci --legacy-peer-deps
 
       - name: Build web app & sync Capacitor
+        if: steps.client_check.outputs.changed == 'true'
         working-directory: client
         run: npm run build:cap
 
       - name: Decode keystore
+        if: steps.client_check.outputs.changed == 'true'
         working-directory: client/android/app
         run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > ghostlist-release.keystore
 
       - name: Write keystore.properties
+        if: steps.client_check.outputs.changed == 'true'
         working-directory: client/android/app
         run: |
           cat > keystore.properties <<EOF
@@ -67,16 +76,18 @@ jobs:
           EOF
 
       - name: Build release APK
+        if: steps.client_check.outputs.changed == 'true'
         working-directory: client/android
         run: ./gradlew assembleRelease --no-daemon
 
       - name: Deploy APK to landing page volume
+        if: steps.client_check.outputs.changed == 'true'
         run: |
           sudo /usr/local/bin/deploy-ghostlist-apk.sh \
             "$(pwd)/client/android/app/build/outputs/apk/release/app-release.apk"
 
       - name: Notify users about the new Android release
-        if: steps.version_check.outputs.changed == 'true'
+        if: steps.client_check.outputs.changed == 'true'
         run: |
           curl -fsS -X POST "https://app.ghost-list.com/api/ci/android-release" \
             -H "X-Ci-Token: ${{ secrets.CI_API_TOKEN }}" \
