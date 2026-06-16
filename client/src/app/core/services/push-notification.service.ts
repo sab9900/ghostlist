@@ -124,6 +124,8 @@ export class PushNotificationService {
         });
     }
 
+    private readonly WEB_TOKEN_STORAGE_KEY = 'ghost_fcm_token';
+
     private async initializeWeb(listIds: string[]): Promise<void> {
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
         if (!(await isSupported())) return;
@@ -154,6 +156,12 @@ export class PushNotificationService {
                 serviceWorkerRegistration: registration,
             });
             if (!token) return;
+
+            const previousToken = localStorage.getItem(this.WEB_TOKEN_STORAGE_KEY);
+            if (previousToken && previousToken !== token) {
+                console.info('[Push] FCM token rotated – re-subscribing with new token.');
+            }
+            localStorage.setItem(this.WEB_TOKEN_STORAGE_KEY, token);
 
             this.setToken(token);
             for (const id of listIds) {

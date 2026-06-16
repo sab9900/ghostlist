@@ -2,6 +2,7 @@ using GhostList.Application.Features.Charon.Commands.DeleteExpiredCharonDrops;
 using GhostList.Application.Features.GhostLists.Commands.DeleteExpiredListItems;
 using GhostList.Application.Features.GhostLists.Commands.DeleteStaleLists;
 using GhostList.Application.Features.GhostMessages.Commands.DeleteExpiredImageBlobs;
+using GhostList.Application.Features.Subscriptions.Commands.DeleteStaleDeviceSubscriptions;
 using MediatR;
 
 namespace GhostList.WebApi.BackgroundServices;
@@ -11,8 +12,10 @@ public class GhostListCleanupWorker(IServiceScopeFactory scopeFactory, ILogger<G
 {
     private static readonly TimeSpan TickInterval = TimeSpan.FromMinutes(1);
     private static readonly TimeSpan MemberlessCheckInterval = TimeSpan.FromHours(1);
+    private static readonly TimeSpan StaleTokenCheckInterval = TimeSpan.FromDays(1);
 
     private DateTime _lastMemberlessCheck = DateTime.MinValue;
+    private DateTime _lastStaleTokenCheck = DateTime.MinValue;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -43,6 +46,14 @@ public class GhostListCleanupWorker(IServiceScopeFactory scopeFactory, ILogger<G
                     var memberlessLists = await mediator.Send(new DeleteMemberlessListsCommand(), stoppingToken);
                     if (memberlessLists > 0)
                         logger.LogInformation("Cleanup: {Count} memberless list(s) deleted.", memberlessLists);
+                }
+
+                if (DateTime.UtcNow - _lastStaleTokenCheck >= StaleTokenCheckInterval)
+                {
+                    _lastStaleTokenCheck = DateTime.UtcNow;
+                    var staleTokens = await mediator.Send(new DeleteStaleDeviceSubscriptionsCommand(), stoppingToken);
+                    if (staleTokens > 0)
+                        logger.LogInformation("Cleanup: {Count} stale device subscription(s) deleted.", staleTokens);
                 }
             }
             catch (Exception ex) when (ex is not OperationCanceledException)

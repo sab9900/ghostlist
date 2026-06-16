@@ -269,11 +269,19 @@ public class FcmNotificationService(
                 message.Notification = new Notification { Title = title, Body = body };
                 message.Apns = new ApnsConfig
                 {
+                    Headers = new Dictionary<string, string>
+                    {
+                        // 10 = immediate delivery, 5 = power-saving (background)
+                        ["apns-priority"] = type is PushNotificationType.Message
+                            or PushNotificationType.WhisperInvite
+                            or PushNotificationType.CharonDrop ? "10" : "5",
+                        // required when showing a visible alert
+                        ["apns-push-type"] = "alert",
+                    },
                     Aps = new Aps
                     {
                         Sound = "default",
                         ContentAvailable = true,
-
                         Badge = badgeCount,
                     },
                 };
@@ -301,6 +309,13 @@ public class FcmNotificationService(
             case DevicePlatform.Web:
                 message.Webpush = new WebpushConfig
                 {
+                    Headers = new Dictionary<string, string>
+                    {
+                        // RFC 8030: high = deliver immediately, normal = best-effort
+                        ["Urgency"] = type is PushNotificationType.Message
+                            or PushNotificationType.WhisperInvite
+                            or PushNotificationType.CharonDrop ? "high" : "normal",
+                    },
                     Notification = new WebpushNotification
                     {
                         Title = title,
