@@ -35,7 +35,11 @@ export class KeyboardInsetService {
         if (vv) {
             const onViewportChange = () => {
                 const overlap = window.innerHeight - vv.height - vv.offsetTop;
-                this.viewportHeight = Math.max(0, Math.round(overlap));
+                // On iOS PWA, visualViewport.height is permanently smaller than
+                // window.innerHeight by the safe-area-inset-bottom (≈34px), even
+                // with no keyboard open.  Treat anything below 120px as viewport
+                // noise rather than a real software keyboard.
+                this.viewportHeight = overlap >= 120 ? Math.round(overlap) : 0;
                 this.recompute();
             };
             vv.addEventListener('resize', onViewportChange);

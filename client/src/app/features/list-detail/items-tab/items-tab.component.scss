@@ -393,26 +393,39 @@
     position: fixed;
     inset: 0;
     z-index: 200;
-    background: rgba(0, 0, 0, 0.45);
+    background: rgba(0, 0, 0, 0.55);
     display: flex;
-    align-items: center;
+    align-items: flex-end; // sheet from bottom on mobile
     justify-content: center;
-    padding: var(--space-4);
     animation: fade-in var(--duration-fast) var(--ease-out);
+
+    @media (min-height: 500px) {
+        align-items: center;
+        padding: var(--space-4);
+    }
 }
 
 .reminder-dialog {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-6);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: var(--space-5) var(--space-5) max(var(--space-6), env(safe-area-inset-bottom, 0px));
     width: 100%;
-    max-width: 340px;
+    // never overflow viewport on tiny screens
+    max-width: 480px;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.24);
+    box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.32);
     animation: slide-up var(--duration-fast) var(--ease-out);
+
+    @media (min-height: 500px) {
+        border-radius: var(--radius-lg);
+        padding: var(--space-6);
+        max-width: 360px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.24);
+    }
 
     &__title {
         font-size: var(--text-base);
@@ -439,26 +452,30 @@
     &__label {
         display: flex;
         flex-direction: column;
-        gap: var(--space-1);
+        gap: var(--space-2);
         font-size: var(--text-sm);
         color: var(--color-text-subtle);
     }
 
     &__input {
-        // color-scheme: dark tells the browser to render the native date/time
-        // picker with dark chrome — fixes the white calendar popup
         color-scheme: dark;
         background: var(--color-surface-2);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);
-        padding: var(--space-3) var(--space-4);
+        padding: var(--space-3) var(--space-3);
         color: var(--color-text);
-        font-size: var(--text-base);
+        // slightly smaller than base on mobile so the datetime widget fits
+        font-size: var(--text-sm);
         font-family: var(--font-sans);
         outline: none;
+        // critical: fill label width, never overflow
         width: 100%;
+        min-width: 0;
         box-sizing: border-box;
         transition: border-color var(--duration-fast) var(--ease-out);
+        // datetime-local inputs can clip their content — allow them to grow
+        -webkit-appearance: none;
+        appearance: none;
 
         &:focus {
             border-color: var(--color-primary);
@@ -467,19 +484,19 @@
 
     &__actions {
         display: flex;
-        justify-content: flex-end;
         gap: var(--space-3);
-        padding-top: var(--space-1);
+        padding-top: var(--space-2);
     }
 
     &__cancel {
+        flex: 1;
         background: none;
         border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);
         color: var(--color-text-subtle);
         font-size: var(--text-sm);
         font-family: var(--font-sans);
-        padding: var(--space-2) var(--space-4);
+        padding: var(--space-3) var(--space-4);
         cursor: pointer;
         transition: background var(--duration-fast) var(--ease-out);
 
@@ -489,6 +506,7 @@
     }
 
     &__save {
+        flex: 2;
         background: var(--color-primary);
         border: none;
         border-radius: var(--radius-sm);
@@ -496,9 +514,10 @@
         font-size: var(--text-sm);
         font-family: var(--font-sans);
         font-weight: var(--weight-semi);
-        padding: var(--space-2) var(--space-5);
+        padding: var(--space-3) var(--space-4);
         cursor: pointer;
         transition: background var(--duration-fast) var(--ease-out);
+        white-space: nowrap;
 
         &:hover:not(:disabled) {
             background: var(--color-primary-hover);

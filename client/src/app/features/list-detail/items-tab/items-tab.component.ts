@@ -83,14 +83,16 @@ export class ItemsTabComponent implements OnDestroy {
 
     // ── reminder dialog ───────────────────────────────────────────────────
     protected readonly reminderItem = signal<DecryptedItem | null>(null);
-    protected reminderDate = '';
-    protected reminderTime = '';
+    protected reminderDateTime = '';
     protected readonly savingReminder = signal(false);
     protected readonly reminderSaved = signal(false);
 
-    protected readonly reminderMinDate = computed(() => {
-        const d = new Date();
-        return d.toISOString().slice(0, 10);
+    /** Minimum value for the datetime-local input: now + 1 minute (local time, YYYY-MM-DDTHH:MM). */
+    protected readonly reminderMinDateTime = computed(() => {
+        const d = new Date(Date.now() + 60_000);
+        // toISOString gives UTC; we need local time in YYYY-MM-DDTHH:MM format
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     });
 
     // ── sorted lists ──────────────────────────────────────────────────────
@@ -395,10 +397,12 @@ export class ItemsTabComponent implements OnDestroy {
     // ── reminder dialog ───────────────────────────────────────────────────
     openReminder(item: DecryptedItem): void {
         this.openMenuId.set(null);
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        this.reminderDate = tomorrow.toISOString().slice(0, 10);
-        this.reminderTime = '09:00';
+        // Default: tomorrow 09:00 local time
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        d.setHours(9, 0, 0, 0);
+        const pad = (n: number) => String(n).padStart(2, '0');
+        this.reminderDateTime = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T09:00`;
         this.reminderSaved.set(false);
         this.reminderItem.set(item);
     }
@@ -410,9 +414,10 @@ export class ItemsTabComponent implements OnDestroy {
     async saveReminder(): Promise<void> {
         const item = this.reminderItem();
         const listId = this.store.currentListId();
-        if (!item || !listId || !this.reminderDate || !this.reminderTime) return;
+        if (!item || !listId || !this.reminderDateTime) return;
 
-        const remindAt = new Date(`${this.reminderDate}T${this.reminderTime}:00`).toISOString();
+        // datetime-local value is YYYY-MM-DDTHH:MM in local time → convert to UTC ISO
+        const remindAt = new Date(this.reminderDateTime).toISOString();
 
         this.savingReminder.set(true);
         try {

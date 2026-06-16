@@ -56,8 +56,7 @@
     "REMEMBER_ME": "Recuérdamelo",
     "CANCEL_REMINDER": "Cancelar recordatorio",
     "REMINDER_DIALOG_TITLE": "Establecer recordatorio",
-    "REMINDER_DATE_LABEL": "Fecha",
-    "REMINDER_TIME_LABEL": "Hora",
+    "REMINDER_DATETIME_LABEL": "Fecha y hora",
     "REMINDER_SAVE": "Establecer recordatorio",
     "REMINDER_SAVED": "✓ Recordatorio establecido",
     "SWIPE_DELETE_HINT": "Eliminar",
@@ -291,7 +290,8 @@
       "DENIED": "El navegador bloqueó el permiso. Permítelo en Ajustes de iOS → Safari → Sitios web → Notificaciones.",
       "GRANTED": "Activadas",
       "TITLE": "Notificaciones",
-      "HINT": "Las notificaciones deben activarse con un toque – iOS solo muestra el diálogo ante una acción directa del usuario."
+      "HINT": "Las notificaciones deben activarse con un toque – iOS solo muestra el diálogo ante una acción directa del usuario.",
+      "PENDING": "Registrando…"
     }
   },
   "SECURITY": {

@@ -98,12 +98,28 @@ export class AudioWaveformPlayerComponent implements OnDestroy {
         }
     }
 
-    protected togglePlayback(): void {
+    protected async togglePlayback(): Promise<void> {
         const el = this.audioElRef?.nativeElement;
         if (!el) return;
 
         if (el.paused) {
-            void el.play();
+            // HAVE_FUTURE_DATA (3) = enough buffered to play without stalling.
+            // With preload="auto" this is usually already satisfied, but on mobile
+            // the audio session may not be ready yet — wait for canplay if needed.
+            if (el.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) {
+                await new Promise<void>(resolve => {
+                    const onCanPlay = () => {
+                        el.removeEventListener('canplay', onCanPlay);
+                        resolve();
+                    };
+                    el.addEventListener('canplay', onCanPlay);
+                });
+            }
+            try {
+                await el.play();
+            } catch {
+                // Autoplay policy blocked or element was destroyed — no-op.
+            }
         } else {
             el.pause();
         }

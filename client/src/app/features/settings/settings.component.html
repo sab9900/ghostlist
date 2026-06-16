@@ -296,10 +296,13 @@
                     } @else {
                     <label class="toggle-switch" aria-labelledby="notif-toggle-label">
                         <input type="checkbox"
-                            [ngModel]="notificationsEnabled() && pushActive()"
+                            [ngModel]="notificationsEnabled()"
                             (ngModelChange)="toggleNotifications($event)" />
                         <span class="toggle-switch__track" aria-hidden="true"></span>
                     </label>
+                    }
+                    @if (notificationsEnabled() && !pushActive()) {
+                    <span class="toggle-hint">{{ 'SETTINGS.NOTIFICATIONS.PENDING' | translate }}</span>
                     }
                 </div>
                 }

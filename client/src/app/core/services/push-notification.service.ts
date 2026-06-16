@@ -140,13 +140,23 @@ export class PushNotificationService {
                 id: 'ghost_items',
                 name: 'Listen-Updates',
                 description: 'Änderungen an deinen Listen',
-                importance: 3, 
+                importance: 3,
                 vibration: false,
                 sound: 'default',
-                visibility: 1, 
+                visibility: 1,
+            });
+            await PushNotifications.createChannel({
+                id: 'ghost_reminders',
+                name: 'Erinnerungen',
+                description: 'Fälligkeitserinnerungen für Items',
+                importance: 5,
+                vibration: true,
+                sound: 'default',
+                visibility: 1,
             });
         }
 
+        await PushNotifications.removeAllListeners();
         await PushNotifications.register();
 
         PushNotifications.addListener('registration', async ({ value: token }) => {

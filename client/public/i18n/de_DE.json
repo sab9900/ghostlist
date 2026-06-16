@@ -56,8 +56,7 @@
     "REMEMBER_ME": "Erinnere mich",
     "CANCEL_REMINDER": "Erinnerung löschen",
     "REMINDER_DIALOG_TITLE": "Erinnerung setzen",
-    "REMINDER_DATE_LABEL": "Datum",
-    "REMINDER_TIME_LABEL": "Uhrzeit",
+    "REMINDER_DATETIME_LABEL": "Datum & Uhrzeit",
     "REMINDER_SAVE": "Erinnerung setzen",
     "REMINDER_SAVED": "✓ Erinnerung gesetzt",
     "SWIPE_DELETE_HINT": "Löschen",
@@ -293,7 +292,8 @@
       "DENIED": "Browser hat die Berechtigung blockiert. Bitte in den iOS-Einstellungen unter Safari → Websites → Benachrichtigungen erlauben.",
       "GRANTED": "Aktiviert",
       "TITLE": "Benachrichtigungen",
-      "HINT": "Benachrichtigungen müssen per Tap aktiviert werden – iOS erlaubt den Dialog nur bei einer direkten Nutzeraktion."
+      "HINT": "Benachrichtigungen müssen per Tap aktiviert werden – iOS erlaubt den Dialog nur bei einer direkten Nutzeraktion.",
+      "PENDING": "Registrierung läuft…"
     }
   },
   "SECURITY": {

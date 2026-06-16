@@ -99,8 +99,12 @@ export class SettingsComponent {
             try {
                 const listIds = this.store.knownLists().map(l => l.id);
                 await this.push.enablePush(listIds);
-                this.prefs.setNotificationsEnabled(true);
-                this.prefs.markNotifPrompted();
+                // Only persist the preference if permission was actually obtained
+                // (denied → webPushPermission flips to 'denied'; not-granted → pushActive stays false)
+                if (this.push.webPushPermission() !== 'denied') {
+                    this.prefs.setNotificationsEnabled(true);
+                    this.prefs.markNotifPrompted();
+                }
             } finally {
                 this.notifEnabling.set(false);
             }

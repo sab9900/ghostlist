@@ -56,8 +56,7 @@
     "REMEMBER_ME": "Remind me",
     "CANCEL_REMINDER": "Cancel reminder",
     "REMINDER_DIALOG_TITLE": "Set a reminder",
-    "REMINDER_DATE_LABEL": "Date",
-    "REMINDER_TIME_LABEL": "Time",
+    "REMINDER_DATETIME_LABEL": "Date & time",
     "REMINDER_SAVE": "Set reminder",
     "REMINDER_SAVED": "✓ Reminder set",
     "SWIPE_DELETE_HINT": "Delete",
@@ -293,7 +292,8 @@
       "DENIED": "Browser blocked the permission. Please allow it in iOS Settings → Safari → Websites → Notifications.",
       "GRANTED": "Enabled",
       "TITLE": "Notifications",
-      "HINT": "Notifications must be enabled with a tap – iOS only shows the permission dialog on a direct user action."
+      "HINT": "Notifications must be enabled with a tap – iOS only shows the permission dialog on a direct user action.",
+      "PENDING": "Registering…"
     }
   },
   "SECURITY": {

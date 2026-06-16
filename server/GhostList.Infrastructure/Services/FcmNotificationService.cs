@@ -128,7 +128,8 @@ public class FcmNotificationService(
             _ => query,
         };
 
-        if (type == PushNotificationType.WhisperInvite && targetDeviceIds is { Count: > 0 })
+        // Apply device filter whenever a target list is provided (reminders, whisper invites, etc.)
+        if (targetDeviceIds is { Count: > 0 })
             query = query.Where(s => targetDeviceIds.Contains(s.DeviceId));
 
         var subscriptions = await query.ToListAsync(ct);
@@ -330,7 +331,8 @@ public class FcmNotificationService(
                         // RFC 8030: high = deliver immediately, normal = best-effort
                         ["Urgency"] = type is PushNotificationType.Message
                             or PushNotificationType.WhisperInvite
-                            or PushNotificationType.CharonDrop ? "high" : "normal",
+                            or PushNotificationType.CharonDrop
+                            or PushNotificationType.ItemReminder ? "high" : "normal",
                     },
                     Notification = new WebpushNotification
                     {

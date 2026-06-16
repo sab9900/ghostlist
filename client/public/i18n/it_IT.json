@@ -56,8 +56,7 @@
     "REMEMBER_ME": "Ricordamelo",
     "CANCEL_REMINDER": "Annulla promemoria",
     "REMINDER_DIALOG_TITLE": "Imposta promemoria",
-    "REMINDER_DATE_LABEL": "Data",
-    "REMINDER_TIME_LABEL": "Orario",
+    "REMINDER_DATETIME_LABEL": "Data e ora",
     "REMINDER_SAVE": "Imposta promemoria",
     "REMINDER_SAVED": "✓ Promemoria impostato",
     "SWIPE_DELETE_HINT": "Elimina",
@@ -274,7 +273,8 @@
       "DENIED": "Il browser ha bloccato il permesso. Consentilo nelle Impostazioni iOS → Safari → Siti web → Notifiche.",
       "GRANTED": "Attivate",
       "TITLE": "Notifiche",
-      "HINT": "Le notifiche devono essere attivate con un tap – iOS mostra il dialogo solo in risposta a un'azione diretta."
+      "HINT": "Le notifiche devono essere attivate con un tap – iOS mostra il dialogo solo in risposta a un'azione diretta.",
+      "PENDING": "Registrazione in corso…"
     }
   },
   "INFO_CENTER": {

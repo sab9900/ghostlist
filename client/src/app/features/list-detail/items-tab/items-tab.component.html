@@ -182,12 +182,9 @@
 
         <div class="reminder-dialog__fields">
             <label class="reminder-dialog__label">
-                {{ 'ITEMS.REMINDER_DATE_LABEL' | translate }}
-                <input class="reminder-dialog__input" type="date" [(ngModel)]="reminderDate" [min]="reminderMinDate()" />
-            </label>
-            <label class="reminder-dialog__label">
-                {{ 'ITEMS.REMINDER_TIME_LABEL' | translate }}
-                <input class="reminder-dialog__input" type="time" [(ngModel)]="reminderTime" />
+                {{ 'ITEMS.REMINDER_DATETIME_LABEL' | translate }}
+                <input class="reminder-dialog__input" type="datetime-local"
+                    [(ngModel)]="reminderDateTime" [min]="reminderMinDateTime()" />
             </label>
         </div>
 
