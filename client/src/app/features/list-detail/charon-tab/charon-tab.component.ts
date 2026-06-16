@@ -78,6 +78,7 @@ export class CharonTabComponent implements OnDestroy {
     protected readonly recordingSeconds = signal(0);
     protected readonly recordingNotSupported = signal(false);
     protected readonly recordingPermissionDenied = signal(false);
+    protected readonly recordingDebugError = signal<string | null>(null);
 
     private mediaRecorder: MediaRecorder | null = null;
     private audioChunks: Blob[] = [];
@@ -285,8 +286,14 @@ export class CharonTabComponent implements OnDestroy {
 
     private async startRecording(): Promise<void> {
         if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+            const reason = !navigator.mediaDevices
+                ? 'mediaDevices undefined'
+                : !navigator.mediaDevices.getUserMedia
+                  ? 'getUserMedia undefined'
+                  : 'MediaRecorder undefined';
+            this.recordingDebugError.set(reason);
             this.recordingNotSupported.set(true);
-            setTimeout(() => this.recordingNotSupported.set(false), 4000);
+            setTimeout(() => { this.recordingNotSupported.set(false); this.recordingDebugError.set(null); }, 8000);
             return;
         }
 
@@ -298,8 +305,10 @@ export class CharonTabComponent implements OnDestroy {
                 this.recordingPermissionDenied.set(true);
                 setTimeout(() => this.recordingPermissionDenied.set(false), 5000);
             } else {
+                const errName = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+                this.recordingDebugError.set(errName);
                 this.recordingNotSupported.set(true);
-                setTimeout(() => this.recordingNotSupported.set(false), 4000);
+                setTimeout(() => { this.recordingNotSupported.set(false); this.recordingDebugError.set(null); }, 8000);
             }
             return;
         }

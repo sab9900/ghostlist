@@ -93,6 +93,9 @@
     }
     @if (recordingNotSupported()) {
     <p class="charon__error" role="alert">{{ 'CHARON.RECORD_NOT_SUPPORTED' | translate }}</p>
+    @if (recordingDebugError()) {
+    <p class="charon__error" role="alert" style="font-size:0.7em;opacity:0.7">DBG: {{ recordingDebugError() }}</p>
+    }
     }
     @if (recordingPermissionDenied()) {
     <p class="charon__error" role="alert">{{ 'CHARON.RECORD_PERMISSION_DENIED' | translate }}</p>
