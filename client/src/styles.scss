@@ -160,12 +160,6 @@ html[data-theme='dark'] {
 html,
 body {
     height: 100%;
-    // iOS PWA (standalone, viewport-fit=cover): `100%`/`100vh` can resolve to a
-    // taller "layout viewport" than what's actually visible, leaving a dead
-    // strip at the bottom of the screen below the app. `100dvh` (dynamic
-    // viewport height) tracks the real visible viewport instead. Kept as a
-    // second declaration so browsers without dvh support fall back to 100%.
-    height: 100dvh;
     overflow: hidden;
     overscroll-behavior: none;
     user-select: none;
@@ -222,6 +216,31 @@ app-root {
 
     &:hover {
         background: var(--color-text-subtle);
+    }
+}
+
+// iOS PWA does not support the web-manifest `orientation` field.
+// Block landscape at the CSS layer instead.
+@media screen and (orientation: landscape) and (max-width: 1024px) {
+    body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: var(--color-bg);
+        z-index: 9999;
+    }
+
+    body::after {
+        content: 'Bitte drehe dein Gerät';
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-sans);
+        font-size: var(--text-base);
+        color: var(--color-text-subtle);
+        z-index: 10000;
     }
 }
 
