@@ -197,6 +197,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.DeviceId).HasMaxLength(64).IsRequired();
             // ItemId is intentionally NOT a FK — the item may be deleted before the reminder fires
             entity.HasIndex(e => new { e.IsSent, e.RemindAt });
+            entity.HasIndex(e => new { e.IsAcknowledged, e.RemindAt });
             entity.HasOne<Domain.Entities.GhostList>()
                   .WithMany()
                   .HasForeignKey(e => e.GhostListId)
