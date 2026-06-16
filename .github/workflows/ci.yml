@@ -150,5 +150,6 @@ jobs:
                 admin-client/package.json \
                 "server/GhostList.WebApi/GhostList.WebApi.csproj"
           git commit -m "chore: bump version to ${{ steps.ver.outputs.new }}"
+          git pull --rebase origin main
           git push
 
