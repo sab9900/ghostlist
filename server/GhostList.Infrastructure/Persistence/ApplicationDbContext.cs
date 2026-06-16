@@ -333,6 +333,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             return;
         }
 
+        // column is derived from a closed enum switch with 4 hardcoded string literals — no injection risk.
+        // Column names cannot be SQL-parameterized, so ExecuteSqlAsync is not applicable here.
+#pragma warning disable EF1002
         await Database.ExecuteSqlRawAsync(
             $"""
             INSERT INTO "DailyUsageStats" ("Date", "ListsCreated", "ItemsCreated", "MessagesCreated", "MembersCreated")
@@ -342,6 +345,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             UPDATE "DailyUsageStats" SET "{column}" = "{column}" + 1 WHERE "Date" = CURRENT_DATE;
             """,
             cancellationToken);
+#pragma warning restore EF1002
     }
 
     public async Task IncrementLocaleStatAsync(string language, string country, int count, CancellationToken cancellationToken)

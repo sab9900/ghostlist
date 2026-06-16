@@ -391,10 +391,10 @@ public class FcmNotificationService(
         try
         {
             if (!string.IsNullOrWhiteSpace(o.CredentialsPath) && File.Exists(o.CredentialsPath))
-                return GoogleCredential.FromFile(o.CredentialsPath);
+                return CredentialFactory.FromFile<IGoogleCredential>(o.CredentialsPath).ToGoogleCredential();
 
             if (!string.IsNullOrWhiteSpace(o.CredentialsJson))
-                return GoogleCredential.FromJson(o.CredentialsJson);
+                return CredentialFactory.FromJson<IGoogleCredential>(o.CredentialsJson).ToGoogleCredential();
         }
         catch (Exception ex)
         {
