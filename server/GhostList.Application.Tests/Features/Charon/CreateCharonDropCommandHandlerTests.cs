@@ -19,6 +19,13 @@ public class CreateCharonDropCommandHandlerTests
         return notifier;
     }
 
+    private static IPushNotificationService MockPush()
+    {
+        var push = Substitute.For<IPushNotificationService>();
+        push.SendNotificationAsync(Arg.Any<Guid>(), Arg.Any<PushNotificationType>(), Arg.Any<string?>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        return push;
+    }
+
     [Fact]
     public async Task Handle_ValidRequest_CreatesDrop()
     {
@@ -27,7 +34,7 @@ public class CreateCharonDropCommandHandlerTests
         context.GhostLists.Add(list);
         await context.SaveChangesAsync();
 
-        var handler = new CreateCharonDropCommandHandler(context, MockNotifier());
+        var handler = new CreateCharonDropCommandHandler(context, MockNotifier(), MockPush());
         var dropId = await handler.Handle(new CreateCharonDropCommand(
             list.Id, "enc_content", "civ", "enc_meta", "miv", "device1", "user1"), CancellationToken.None);
 
@@ -49,7 +56,7 @@ public class CreateCharonDropCommandHandlerTests
         await context.SaveChangesAsync();
 
         var notifier = MockNotifier();
-        var handler = new CreateCharonDropCommandHandler(context, notifier);
+        var handler = new CreateCharonDropCommandHandler(context, notifier, MockPush());
         await handler.Handle(new CreateCharonDropCommand(
             list.Id, "enc_content", "civ", "enc_meta", "miv"), CancellationToken.None);
 
@@ -63,7 +70,7 @@ public class CreateCharonDropCommandHandlerTests
     public async Task Handle_NonExistentList_ThrowsNotFoundException()
     {
         await using var context = DbContextFactory.Create();
-        var handler = new CreateCharonDropCommandHandler(context, MockNotifier());
+        var handler = new CreateCharonDropCommandHandler(context, MockNotifier(), MockPush());
 
         var act = () => handler.Handle(new CreateCharonDropCommand(
             Guid.NewGuid(), "enc_content", "civ", "enc_meta", "miv"), CancellationToken.None);
@@ -85,7 +92,7 @@ public class CreateCharonDropCommandHandlerTests
 
         await context.SaveChangesAsync();
 
-        var handler = new CreateCharonDropCommandHandler(context, MockNotifier());
+        var handler = new CreateCharonDropCommandHandler(context, MockNotifier(), MockPush());
         var act = () => handler.Handle(new CreateCharonDropCommand(
             list.Id, "enc_content", "civ", "enc_meta", "miv"), CancellationToken.None);
 
