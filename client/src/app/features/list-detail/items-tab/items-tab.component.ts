@@ -12,6 +12,7 @@ import { AppStore } from '../../../store/app.store';
 import { ViewportDwellDirective } from '../../../core/directives/viewport-dwell.directive';
 import { ApiService } from '../../../api/api.service';
 import { HubService } from '../../../api/hub.service';
+import { DeviceTokenService } from '../../../core/services/device-token.service';
 import { SwipeClampPipe } from './swipe-clamp.pipe';
 
 interface DecryptedItem {
@@ -54,6 +55,9 @@ export class ItemsTabComponent implements OnDestroy {
     private readonly prefs = inject(UserPreferencesService);
     private readonly api = inject(ApiService);
     private readonly hub = inject(HubService);
+    private readonly deviceToken = inject(DeviceTokenService);
+
+    protected readonly hasPushToken = computed(() => this.deviceToken.token() !== null);
 
     protected readonly newItemText = signal('');
     protected readonly addingItem = signal(false);
