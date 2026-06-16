@@ -9,6 +9,7 @@ import { ImageViewerService } from '../../../core/services/image-viewer.service'
 import { UserIdService } from '../../../core/services/user-id.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 import { AppStore } from '../../../store/app.store';
+import { AudioWaveformPlayerComponent } from '../../../shared/audio-waveform-player/audio-waveform-player.component';
 
 interface CharonMeta {
     fileName: string;
@@ -51,7 +52,7 @@ function isAllowedFile(file: File): boolean {
 
 @Component({
     selector: 'app-charon-tab',
-    imports: [TranslatePipe],
+    imports: [TranslatePipe, AudioWaveformPlayerComponent],
     templateUrl: './charon-tab.component.html',
     styleUrl: './charon-tab.component.scss',
 })

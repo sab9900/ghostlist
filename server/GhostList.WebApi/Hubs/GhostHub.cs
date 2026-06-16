@@ -1,5 +1,6 @@
 using FluentValidation;
 using GhostList.Application.Common.Interfaces;
+using GhostList.Application.Features.GhostMessages.Commands.RelayEphemeralAudio;
 using GhostList.Application.Features.GhostMessages.Commands.RelayEphemeralImage;
 using MediatR;
 using Microsoft.AspNetCore.SignalR;
@@ -14,6 +15,7 @@ public class GhostListHub(IMediator mediator, IPresenceTracker presence, IWhispe
     public async Task JoinListRoom(string listId, string deviceId)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, listId);
+        await Groups.AddToGroupAsync(Context.ConnectionId, $"device-{deviceId}");
         presence.JoinList(Context.ConnectionId, listId, deviceId);
     }
 
@@ -75,6 +77,26 @@ public class GhostListHub(IMediator mediator, IPresenceTracker presence, IWhispe
         catch (ValidationException ex)
         {
             logger.LogWarning(ex, "Rejected image relay for list {ListId}", listGuid);
+        }
+    }
+
+    public async Task RelayAudio(string listId, string messageId, string encryptedAudio, string audioInitializationVector)
+    {
+        if (!Guid.TryParse(listId, out var listGuid) || !Guid.TryParse(messageId, out var messageGuid))
+            return;
+
+        try
+        {
+            await mediator.Send(new RelayEphemeralAudioCommand(
+                listGuid,
+                messageGuid,
+                encryptedAudio,
+                audioInitializationVector,
+                Context.ConnectionId));
+        }
+        catch (ValidationException ex)
+        {
+            logger.LogWarning(ex, "Rejected audio relay for list {ListId}", listGuid);
         }
     }
 

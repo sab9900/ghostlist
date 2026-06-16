@@ -55,4 +55,22 @@ export class HapticsService {
         setTimeout(() => Haptics.impact({ style: ImpactStyle.Medium }).catch(() => { }), 80);
         setTimeout(() => Haptics.impact({ style: ImpactStyle.Light }).catch(() => { }), 160);
     }
+
+    letheViewerJoined(): void {
+        if (!this.enabled) return;
+        Haptics.impact({ style: ImpactStyle.Light }).catch(() => { });
+        setTimeout(() => Haptics.impact({ style: ImpactStyle.Light }).catch(() => { }), 60);
+    }
+
+    letheViewerLeft(): void {
+        if (!this.enabled) return;
+        Haptics.impact({ style: ImpactStyle.Medium }).catch(() => { });
+    }
+
+    reminderFired(): void {
+        if (!this.enabled) return;
+        Haptics.impact({ style: ImpactStyle.Heavy }).catch(() => { });
+        setTimeout(() => Haptics.impact({ style: ImpactStyle.Medium }).catch(() => { }), 100);
+        setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }).catch(() => { }), 220);
+    }
 }

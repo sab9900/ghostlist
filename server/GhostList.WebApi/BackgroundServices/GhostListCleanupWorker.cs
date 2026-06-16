@@ -1,7 +1,9 @@
 using GhostList.Application.Features.Charon.Commands.DeleteExpiredCharonDrops;
 using GhostList.Application.Features.GhostLists.Commands.DeleteExpiredListItems;
 using GhostList.Application.Features.GhostLists.Commands.DeleteStaleLists;
+using GhostList.Application.Features.GhostMessages.Commands.DeleteExpiredAudioBlobs;
 using GhostList.Application.Features.GhostMessages.Commands.DeleteExpiredImageBlobs;
+using GhostList.Application.Features.ItemReminders.Commands.TriggerDueItemReminders;
 using GhostList.Application.Features.Subscriptions.Commands.DeleteStaleDeviceSubscriptions;
 using MediatR;
 
@@ -28,6 +30,10 @@ public class GhostListCleanupWorker(IServiceScopeFactory scopeFactory, ILogger<G
                 await using var scope = scopeFactory.CreateAsyncScope();
                 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
+                var firedReminders = await mediator.Send(new TriggerDueItemRemindersCommand(), stoppingToken);
+                if (firedReminders > 0)
+                    logger.LogInformation("Reminders: {Count} item reminder(s) sent.", firedReminders);
+
                 var expiredItems = await mediator.Send(new DeleteExpiredListItemsCommand(), stoppingToken);
                 if (expiredItems > 0)
                     logger.LogInformation("Cleanup: {Count} expired item(s) deleted.", expiredItems);
@@ -35,6 +41,10 @@ public class GhostListCleanupWorker(IServiceScopeFactory scopeFactory, ILogger<G
                 var expiredImages = await mediator.Send(new DeleteExpiredImageBlobsCommand(), stoppingToken);
                 if (expiredImages > 0)
                     logger.LogInformation("Cleanup: {Count} expired image blob(s) deleted.", expiredImages);
+
+                var expiredAudios = await mediator.Send(new DeleteExpiredAudioBlobsCommand(), stoppingToken);
+                if (expiredAudios > 0)
+                    logger.LogInformation("Cleanup: {Count} expired audio blob(s) deleted.", expiredAudios);
 
                 var expiredDrops = await mediator.Send(new DeleteExpiredCharonDropsCommand(), stoppingToken);
                 if (expiredDrops > 0)

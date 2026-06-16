@@ -53,3 +53,10 @@ public record CharonDropCreatedNotification(
     string? SenderUserId);
 
 public record CharonDropDeletedNotification(Guid Id, Guid GhostListId);
+
+public record AudioRelayNotification(
+    Guid MessageId,
+    Guid GhostListId,
+    string EncryptedAudio,
+    string AudioInitializationVector,
+    string SenderConnectionId);

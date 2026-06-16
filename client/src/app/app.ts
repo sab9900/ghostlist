@@ -11,6 +11,7 @@ import { BadgeService } from './core/services/badge.service';
 import { InfoCenterService } from './core/services/info-center.service';
 import { KeyboardInsetService } from './core/services/keyboard-inset.service';
 import { LayoutService } from './core/services/layout.service';
+import { PushNotificationService } from './core/services/push-notification.service';
 import { SensitiveListsService } from './core/services/sensitive-lists.service';
 import { UserPreferencesService } from './core/services/user-preferences.service';
 import { WebAuthnService } from './core/services/webauthn.service';
@@ -50,8 +51,11 @@ export class App {
     protected readonly webAuthn = inject(WebAuthnService);
     protected readonly infoCenter = inject(InfoCenterService);
     protected readonly prefs = inject(UserPreferencesService);
+    private readonly push = inject(PushNotificationService);
     private readonly sensitiveLists = inject(SensitiveListsService);
     private readonly router = inject(Router);
+
+    protected readonly isWebPlatform = Capacitor.getPlatform() === 'web';
 
     protected readonly locked    = signal(false);
     protected readonly unlocking = signal(false);
@@ -59,6 +63,17 @@ export class App {
 
     protected readonly showNameDialog = computed(() => this.prefs.hydrated() && !this.prefs.onboarded());
     protected readonly pendingName = signal('');
+
+    /**
+     * Show the notification onboarding dialog once, after the name dialog is dismissed,
+     * on all platforms, only when permission hasn't been decided yet.
+     */
+    protected readonly showNotifDialog = computed(() =>
+        this.prefs.onboarded() &&
+        !this.prefs.notifPrompted() &&
+        this.push.webPushPermission() === 'default',
+    );
+    protected readonly notifEnabling = signal(false);
 
     private backgroundedAt: number | null = null;
 
@@ -216,5 +231,22 @@ export class App {
     skipNameDialog(): void {
         this.prefs.markOnboarded();
         this.pendingName.set('');
+    }
+
+    async enableNotifications(): Promise<void> {
+        if (this.notifEnabling()) return;
+        this.notifEnabling.set(true);
+        try {
+            // lastListIds is cached in the service from the store's initialize() call
+            await this.push.enablePush(this.push.lastKnownListIds);
+            this.prefs.setNotificationsEnabled(true);
+        } finally {
+            this.notifEnabling.set(false);
+            this.prefs.markNotifPrompted();
+        }
+    }
+
+    dismissNotifDialog(): void {
+        this.prefs.markNotifPrompted();
     }
 }

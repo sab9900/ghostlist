@@ -22,4 +22,9 @@ public interface IGhostListNotifier
     Task NotifyCharonDropCreated(Guid listId, CharonDropCreatedNotification notification);
 
     Task NotifyCharonDropDeleted(Guid listId, Guid dropId);
+
+    Task NotifyAudioShared(Guid listId, AudioRelayNotification notification);
+
+    /// <summary>Sent only to the device that owns the reminder (via device-group).</summary>
+    Task NotifyReminderFired(Guid listId, Guid itemId, Guid reminderId, string deviceId);
 }

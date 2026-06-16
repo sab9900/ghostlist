@@ -51,7 +51,18 @@
     "DONE_SECTION": "Done ({{count}})",
     "MARK_DONE_ARIA": "Mark as done: {{text}}",
     "MARK_UNDONE_ARIA": "Mark as not done: {{text}}",
-    "DELETE_ARIA": "Delete: {{text}}"
+    "DELETE_ARIA": "Delete: {{text}}",
+    "ITEM_ACTIONS_ARIA": "Item actions",
+    "REMEMBER_ME": "Remind me",
+    "CANCEL_REMINDER": "Cancel reminder",
+    "REMINDER_DIALOG_TITLE": "Set a reminder",
+    "REMINDER_DATE_LABEL": "Date",
+    "REMINDER_TIME_LABEL": "Time",
+    "REMINDER_SAVE": "Set reminder",
+    "REMINDER_SAVED": "✓ Reminder set",
+    "SWIPE_DELETE_HINT": "Delete",
+    "REMINDER_BANNER_DISMISS": "OK",
+    "REMINDER_BANNER_GO": "Show"
   },
   "CHAT": {
     "NO_MESSAGES": "No messages yet.",
@@ -74,7 +85,15 @@
     "SEND_IMAGE_ARIA": "Send image",
     "SENT_ARIA": "Sent",
     "READ_ARIA": "Read",
-    "FILE_TOO_LARGE": "Image is too large."
+    "FILE_TOO_LARGE": "Image is too large.",
+    "VOICE_NOTE": "Voice note",
+    "RECORD_ARIA": "Record voice note",
+    "STOP_RECORD_ARIA": "Stop recording",
+    "RECORD_NOT_SUPPORTED": "Voice recording is not supported on this device.",
+    "SENDING_VOICE": "Sending voice note…",
+    "READ_PARTIAL_ARIA": "Read by at least one person",
+    "READ_ALL_ARIA": "Read by everyone",
+    "READ_BY": "Read by"
   },
   "LIST_DETAIL": {
     "BACK_ARIA": "Back to lists",
@@ -263,7 +282,19 @@
     },
     "SYNC_COPY_LINK": "Copy link",
     "SYNC_LINK_COPIED": "Link copied!",
-    "SYNC_REQUIRES_BIOMETRIC": "Enable biometric lock (above) to use Sync Machine."
+    "SYNC_REQUIRES_BIOMETRIC": "Enable biometric lock (above) to use Sync Machine.",
+    "NOTIFICATIONS": {
+      "ONBOARDING_TITLE": "Stay in the loop",
+      "ONBOARDING_BODY": "GhostList can notify you when someone writes in your lists, changes items, or invites you to Lethe. We won't send anything unnecessary.",
+      "ENABLE_BTN": "Enable notifications",
+      "LATER_BTN": "Maybe later",
+      "TOGGLE_LABEL": "Push notifications",
+      "TOGGLE_HINT": "Turn notifications on or off for this device without changing the browser permission.",
+      "DENIED": "Browser blocked the permission. Please allow it in iOS Settings → Safari → Websites → Notifications.",
+      "GRANTED": "Enabled",
+      "TITLE": "Notifications",
+      "HINT": "Notifications must be enabled with a tap – iOS only shows the permission dialog on a direct user action."
+    }
   },
   "SECURITY": {
     "LOCK_TITLE": "App locked",

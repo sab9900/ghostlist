@@ -9,44 +9,141 @@
 <ul class="item-list" role="list" [attr.aria-label]="'LIST_DETAIL.TAB_ITEMS' | translate" aria-live="polite" aria-relevant="additions removals">
 
     @for (item of activeItems(); track item.id) {
-    <li class="item" (click)="toggleItem(item.id)" (keydown.enter)="toggleItem(item.id)"
-        (keydown.space)="$event.preventDefault(); toggleItem(item.id)" tabindex="0" role="button"
-        [attr.aria-label]="('ITEMS.MARK_DONE_ARIA' | translate:{text: item.text})" aria-pressed="false"
+    @let swipeDx = swipeOffset(item.id);
+    @let activeReminder = reminderFor(item.id);
+    <li class="item"
+        [attr.data-item-id]="item.id"
+        [class.item--open]="openMenuId() === item.id"
+        [attr.aria-label]="('ITEMS.MARK_DONE_ARIA' | translate:{text: item.text})"
+        tabindex="0" role="button" aria-pressed="false"
+        (keydown.enter)="toggleItem(item.id)"
+        (keydown.space)="$event.preventDefault(); toggleItem(item.id)"
         [appViewportDwell]="item.isNew ? item.id : ''" (dwellRead)="onItemDwellRead($event)">
-        <span class="item__check" aria-hidden="true"></span>
-        <span class="item__text">{{ item.text }}</span>
-        @if (item.isNew) {
-        <span class="item__new-dot" aria-hidden="true"></span>
+
+        <div class="item__clip"
+            (click)="onItemClick(item.id, $event)"
+            (touchstart)="onTouchStart($event, item.id)" (touchmove)="onTouchMove($event, item.id)"
+            (touchend)="onTouchEnd(item.id)" (touchcancel)="onTouchEnd(item.id)">
+
+            <div class="item__swipe-delete" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+            </div>
+
+            <div class="item__row" [style.transform]="swipeDx ? 'translateX(' + swipeDx + 'px)' : null">
+                <span class="item__check" aria-hidden="true"></span>
+                <span class="item__text">{{ item.text }}</span>
+                @if (item.isNew) {
+                <span class="item__new-dot" aria-hidden="true"></span>
+                }
+                @if (activeReminder) {
+                <span class="item__reminder-badge" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    {{ formatReminderDate(activeReminder.remindAt) }}
+                </span>
+                }
+                @if (item.creatorName) {
+                <span class="item__meta" aria-hidden="true">{{ item.creatorName }}</span>
+                }
+                <button class="item__actions-btn" (click)="toggleMenu(item.id, $event)"
+                    [attr.aria-label]="'ITEMS.ITEM_ACTIONS_ARIA' | translate" aria-haspopup="menu"
+                    [attr.aria-expanded]="openMenuId() === item.id" tabindex="-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        @if (openMenuId() === item.id) {
+        <div class="item__menu" role="menu" (click)="$event.stopPropagation()">
+            @if (activeReminder) {
+            <button type="button" role="menuitem" class="item__menu-item item__menu-item--warning" (click)="cancelReminder(item.id)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+                {{ 'ITEMS.CANCEL_REMINDER' | translate }}
+            </button>
+            } @else {
+            <button type="button" role="menuitem" class="item__menu-item" (click)="openReminder(item)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+                {{ 'ITEMS.REMEMBER_ME' | translate }}
+            </button>
+            }
+            <button type="button" role="menuitem" class="item__menu-item item__menu-item--danger" (click)="deleteItem(item.id)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+                {{ 'COMMON.DELETE' | translate }}
+            </button>
+        </div>
         }
-        @if (item.creatorName) {
-        <span class="item__meta" aria-hidden="true">{{ item.creatorName }}</span>
-        }
-        <button class="item__delete" (click)="$event.stopPropagation(); deleteItem(item.id)"
-            [attr.aria-label]="('ITEMS.DELETE_ARIA' | translate:{text: item.text})" tabindex="-1">×</button>
     </li>
     }
 
     @if (checkedItems().length > 0) {
     <li class="section-label" role="separator">{{ 'ITEMS.DONE_SECTION' | translate:{count: checkedItems().length.toString()} }}</li>
     @for (item of checkedItems(); track item.id) {
-    <li class="item item--checked" (click)="toggleItem(item.id)" (keydown.enter)="toggleItem(item.id)"
-        (keydown.space)="$event.preventDefault(); toggleItem(item.id)" tabindex="0" role="button"
-        [attr.aria-label]="('ITEMS.MARK_UNDONE_ARIA' | translate:{text: item.text})" aria-pressed="true"
+    @let swipeDx = swipeOffset(item.id);
+    <li class="item item--checked"
+        [attr.data-item-id]="item.id"
+        [class.item--open]="openMenuId() === item.id"
+        [attr.aria-label]="('ITEMS.MARK_UNDONE_ARIA' | translate:{text: item.text})"
+        tabindex="0" role="button" aria-pressed="true"
+        (keydown.enter)="toggleItem(item.id)"
+        (keydown.space)="$event.preventDefault(); toggleItem(item.id)"
         [appViewportDwell]="item.isNew ? item.id : ''" (dwellRead)="onItemDwellRead($event)">
-        <span class="item__check item__check--checked" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"/>
-            </svg>
-        </span>
-        <span class="item__text item__text--checked">{{ item.text }}</span>
-        @if (item.isNew) {
-        <span class="item__new-dot" aria-hidden="true"></span>
+
+        <div class="item__clip"
+            (click)="onItemClick(item.id, $event)"
+            (touchstart)="onTouchStart($event, item.id)" (touchmove)="onTouchMove($event, item.id)"
+            (touchend)="onTouchEnd(item.id)" (touchcancel)="onTouchEnd(item.id)">
+
+            <div class="item__swipe-delete" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+            </div>
+
+            <div class="item__row" [style.transform]="swipeDx ? 'translateX(' + swipeDx + 'px)' : null">
+                <span class="item__check item__check--checked" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                </span>
+                <span class="item__text item__text--checked">{{ item.text }}</span>
+                @if (item.checkedByName) {
+                <span class="item__meta" aria-hidden="true">{{ item.checkedByName }}</span>
+                }
+                <button class="item__actions-btn" (click)="toggleMenu(item.id, $event)"
+                    [attr.aria-label]="'ITEMS.ITEM_ACTIONS_ARIA' | translate" aria-haspopup="menu"
+                    [attr.aria-expanded]="openMenuId() === item.id" tabindex="-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        @if (openMenuId() === item.id) {
+        <div class="item__menu" role="menu" (click)="$event.stopPropagation()">
+            <button type="button" role="menuitem" class="item__menu-item item__menu-item--danger" (click)="deleteItem(item.id)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+                {{ 'COMMON.DELETE' | translate }}
+            </button>
+        </div>
         }
-        @if (item.checkedByName) {
-        <span class="item__meta" aria-hidden="true">{{ item.checkedByName }}</span>
-        }
-        <button class="item__delete" (click)="$event.stopPropagation(); deleteItem(item.id)"
-            [attr.aria-label]="('ITEMS.DELETE_ARIA' | translate:{text: item.text})" tabindex="-1">×</button>
     </li>
     }
     }
@@ -56,3 +153,57 @@
     }
 
 </ul>
+
+<!-- Reminder fired banner -->
+@if (activeBanner(); as banner) {
+<div class="reminder-banner" role="alert" aria-live="assertive">
+    <span class="reminder-banner__icon" aria-hidden="true">⏰</span>
+    <span class="reminder-banner__text">{{ banner.itemText }}</span>
+    <div class="reminder-banner__actions">
+        <button class="reminder-banner__btn reminder-banner__btn--go" type="button"
+            (click)="dismissBanner(true)">
+            {{ 'ITEMS.REMINDER_BANNER_GO' | translate }}
+        </button>
+        <button class="reminder-banner__btn reminder-banner__btn--dismiss" type="button"
+            (click)="dismissBanner(false)">
+            {{ 'ITEMS.REMINDER_BANNER_DISMISS' | translate }}
+        </button>
+    </div>
+</div>
+}
+
+<!-- Reminder dialog -->
+@if (reminderItem()) {
+<div class="reminder-backdrop" (click)="closeReminder()" role="dialog" aria-modal="true"
+    [attr.aria-label]="'ITEMS.REMINDER_DIALOG_TITLE' | translate">
+    <div class="reminder-dialog" (click)="$event.stopPropagation()">
+        <h3 class="reminder-dialog__title">{{ 'ITEMS.REMINDER_DIALOG_TITLE' | translate }}</h3>
+        <p class="reminder-dialog__item-text">{{ reminderItem()!.text }}</p>
+
+        <div class="reminder-dialog__fields">
+            <label class="reminder-dialog__label">
+                {{ 'ITEMS.REMINDER_DATE_LABEL' | translate }}
+                <input class="reminder-dialog__input" type="date" [(ngModel)]="reminderDate" [min]="reminderMinDate()" />
+            </label>
+            <label class="reminder-dialog__label">
+                {{ 'ITEMS.REMINDER_TIME_LABEL' | translate }}
+                <input class="reminder-dialog__input" type="time" [(ngModel)]="reminderTime" />
+            </label>
+        </div>
+
+        <div class="reminder-dialog__actions">
+            <button class="reminder-dialog__cancel" type="button" (click)="closeReminder()">
+                {{ 'COMMON.CANCEL' | translate }}
+            </button>
+            <button class="reminder-dialog__save" type="button" (click)="saveReminder()"
+                [disabled]="savingReminder()">
+                @if (reminderSaved()) {
+                    {{ 'ITEMS.REMINDER_SAVED' | translate }}
+                } @else {
+                    {{ 'ITEMS.REMINDER_SAVE' | translate }}
+                }
+            </button>
+        </div>
+    </div>
+</div>
+}

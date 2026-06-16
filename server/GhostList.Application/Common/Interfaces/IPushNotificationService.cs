@@ -10,6 +10,8 @@ public enum PushNotificationType
     WhisperInvite,
 
     CharonDrop,
+
+    ItemReminder,
 }
 
 public interface IPushNotificationService

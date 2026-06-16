@@ -83,6 +83,7 @@ export class WhisperTabComponent {
         });
 
         let joinedListId: string | null = null;
+        let presenceInitialized = false;
 
         const leave = (listId: string | null) => {
             if (!listId) return;
@@ -101,6 +102,7 @@ export class WhisperTabComponent {
 
             leave(previous);
             joinedListId = id;
+            presenceInitialized = false;
             this.presence.set([]);
             this.whispers.set([]);
             this.members.set([]);
@@ -116,7 +118,15 @@ export class WhisperTabComponent {
 
         this.hub.whisperPresenceChanged$.pipe(takeUntilDestroyed()).subscribe(({ listId, roster }) => {
             if (listId !== this.store.currentListId()) return;
+            const myDeviceId = this.deviceId.deviceId;
+            const prevCount = this.presence().filter(p => p.deviceId !== myDeviceId).length;
+            const nextCount = roster.filter(p => p.deviceId !== myDeviceId).length;
             this.presence.set(roster);
+            if (presenceInitialized) {
+                if (nextCount > prevCount) this.haptics.letheViewerJoined();
+                else if (nextCount < prevCount) this.haptics.letheViewerLeft();
+            }
+            presenceInitialized = true;
         });
 
         this.hub.whisperReceived$.pipe(takeUntilDestroyed()).subscribe(e => {

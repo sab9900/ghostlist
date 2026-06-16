@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, effect, ElementRef, HostListener, inject, signal, ViewChild } from '@angular/core';
+import { Component, computed, effect, ElementRef, HostListener, inject, OnDestroy, signal, ViewChild } from '@angular/core';
 import { Capacitor } from '@capacitor/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -15,6 +15,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { AppStore } from '../../../store/app.store';
 import { ViewportDwellDirective } from '../../../core/directives/viewport-dwell.directive';
 import { AvatarComponent } from '../../../shared/avatar/avatar.component';
+import { AudioWaveformPlayerComponent } from '../../../shared/audio-waveform-player/audio-waveform-player.component';
 
 interface DecryptedMessage {
     id: string;
@@ -23,13 +24,14 @@ interface DecryptedMessage {
     createdAt: string;
     replyToMessageId: string | null;
     isImage: boolean;
+    isAudio: boolean;
     senderDeviceId: string | null;
     senderUserId: string | null;
 }
 
 const SWIPE_TRIGGER_DISTANCE = 56;
 const SWIPE_MAX_DISTANCE = 72;
-const SHOW_READ_RECEIPT_CHECKMARK = false;
+const SHOW_READ_RECEIPT_CHECKMARK = true;
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
@@ -37,11 +39,11 @@ const MAX_DATA_URL_LENGTH = 1_800_000;
 
 @Component({
     selector: 'app-chat-tab',
-    imports: [FormsModule, DatePipe, TranslatePipe, ViewportDwellDirective, AvatarComponent],
+    imports: [FormsModule, DatePipe, TranslatePipe, ViewportDwellDirective, AvatarComponent, AudioWaveformPlayerComponent],
     templateUrl: './chat-tab.component.html',
     styleUrl: './chat-tab.component.scss',
 })
-export class ChatTabComponent {
+export class ChatTabComponent implements OnDestroy {
     protected readonly store = inject(AppStore);
     private readonly crypto = inject(CryptoService);
     protected readonly prefs = inject(UserPreferencesService);
@@ -60,8 +62,16 @@ export class ChatTabComponent {
     protected readonly newMessageText = signal('');
     protected readonly sendingMessage = signal(false);
     protected readonly sendingImage = signal(false);
+    protected readonly sendingAudio = signal(false);
     protected readonly fileTooLarge = signal(false);
+    protected readonly recording = signal(false);
+    protected readonly recordingSeconds = signal(0);
+    protected readonly recordingNotSupported = signal(false);
     protected readonly decryptedMessages = signal<DecryptedMessage[]>([]);
+
+    private mediaRecorder: MediaRecorder | null = null;
+    private audioChunks: Blob[] = [];
+    private recordingTimer: ReturnType<typeof setInterval> | null = null;
 
     protected readonly replyingTo = signal<DecryptedMessage | null>(null);
     protected readonly openMenuId = signal<string | null>(null);
@@ -108,6 +118,12 @@ export class ChatTabComponent {
         const id = this.store.currentListId();
         if (!id) return null;
         return this.store.othersLastReadMessageAt()[id] ?? null;
+    });
+
+    private readonly otherMembers = computed(() => {
+        const id = this.store.currentListId();
+        if (!id) return [];
+        return (this.store.cachedMembers()[id] ?? []).filter(m => !m.isCurrentDevice);
     });
 
     constructor() {
@@ -180,9 +196,12 @@ export class ChatTabComponent {
                 const text = await this.crypto.decrypt(msg.encryptedMessage, msg.messageInitializationVector, key);
                 const senderName = await this.crypto.decrypt(msg.encryptedSenderName, msg.senderNameInitializationVector, key);
                 let isImage = false;
+                let isAudio = false;
                 if (text.length < 100) {
                     try {
-                        isImage = JSON.parse(text)?.type === 'image';
+                        const parsed = JSON.parse(text);
+                        isImage = parsed?.type === 'image';
+                        isAudio = parsed?.type === 'audio';
                     } catch { }
                 }
                 return {
@@ -192,6 +211,7 @@ export class ChatTabComponent {
                     createdAt: msg.createdAt,
                     replyToMessageId: msg.replyToMessageId,
                     isImage,
+                    isAudio,
                     senderDeviceId: msg.senderDeviceId,
                     senderUserId: msg.senderUserId,
                 } satisfies DecryptedMessage;
@@ -200,9 +220,13 @@ export class ChatTabComponent {
         this.decryptedMessages.set(messages);
 
         const imageDataUrls = this.store.imageDataUrls();
+        const audioDataUrls = this.store.audioDataUrls();
         for (const msg of messages) {
             if (msg.isImage && !imageDataUrls[msg.id]) {
                 void this.store.fetchAndCacheImage(msg.id);
+            }
+            if (msg.isAudio && !audioDataUrls[msg.id]) {
+                void this.store.fetchAndCacheAudio(msg.id);
             }
         }
 
@@ -214,18 +238,155 @@ export class ChatTabComponent {
         return this.messagesById().get(msg.replyToMessageId) ?? null;
     }
 
+    /** @deprecated use readReceiptState */
     protected isReadByOthers(msg: DecryptedMessage): boolean {
         const ts = this.othersLastRead();
         if (!ts) return false;
         return new Date(msg.createdAt).getTime() <= new Date(ts).getTime();
     }
 
+    /**
+     * 'sent'    – no other member has read this message yet
+     * 'partial' – at least one other member has read it
+     * 'all'     – every known other member has read it
+     */
+    protected readReceiptState(msg: DecryptedMessage): 'sent' | 'partial' | 'all' {
+        const others = this.otherMembers();
+        if (others.length === 0) return 'sent';
+        const msgTime = new Date(msg.createdAt).getTime();
+        const readCount = others.filter(
+            m => m.lastReadMessageAt && new Date(m.lastReadMessageAt).getTime() >= msgTime,
+        ).length;
+        if (readCount === 0) return 'sent';
+        if (readCount >= others.length) return 'all';
+        return 'partial';
+    }
+
+    /** Members (excluding self) who have read up to and including this message. */
+    protected readersForMessage(msg: DecryptedMessage): { displayName: string }[] {
+        const others = this.otherMembers();
+        const msgTime = new Date(msg.createdAt).getTime();
+        return others.filter(
+            m => m.lastReadMessageAt && new Date(m.lastReadMessageAt).getTime() >= msgTime,
+        );
+    }
+
     protected imageDataUrl(id: string): string | null {
         return this.store.imageDataUrls()[id] ?? null;
     }
 
+    protected audioDataUrl(id: string): string | null {
+        return this.store.audioDataUrls()[id] ?? null;
+    }
+
     protected openImage(src: string, alt: string): void {
         this.imageViewer.open(src, alt);
+    }
+
+    protected formatRecordingTime(seconds: number): string {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+
+    async toggleRecording(): Promise<void> {
+        if (this.recording()) {
+            this.haptics.messageSent();
+            await this.stopRecording();
+        } else {
+            await this.startRecording();
+        }
+    }
+
+    private async startRecording(): Promise<void> {
+        if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+            this.recordingNotSupported.set(true);
+            setTimeout(() => this.recordingNotSupported.set(false), 4000);
+            return;
+        }
+
+        let stream: MediaStream;
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch {
+            this.recordingNotSupported.set(true);
+            setTimeout(() => this.recordingNotSupported.set(false), 4000);
+            return;
+        }
+
+        const mimeType = ChatTabComponent.getBestAudioMimeType();
+        this.mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+        this.audioChunks = [];
+
+        this.mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) this.audioChunks.push(e.data);
+        };
+
+        this.mediaRecorder.onstop = () => {
+            stream.getTracks().forEach(t => t.stop());
+            const actualMime = this.mediaRecorder?.mimeType || mimeType || 'audio/webm';
+            void this.sendAudioMessage(actualMime);
+        };
+
+        this.mediaRecorder.start(100);
+        this.recording.set(true);
+        this.recordingSeconds.set(0);
+
+        this.recordingTimer = setInterval(() => {
+            const next = this.recordingSeconds() + 1;
+            this.recordingSeconds.set(next);
+            if (next >= 120) void this.stopRecording();
+        }, 1000);
+    }
+
+    private async stopRecording(): Promise<void> {
+        if (this.recordingTimer !== null) {
+            clearInterval(this.recordingTimer);
+            this.recordingTimer = null;
+        }
+        this.recording.set(false);
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+            this.mediaRecorder.stop();
+        }
+    }
+
+    private async sendAudioMessage(mimeType: string): Promise<void> {
+        const blob = new Blob(this.audioChunks, { type: mimeType });
+        this.audioChunks = [];
+
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = () => reject(reader.error ?? new Error('Could not read audio blob'));
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+        });
+
+        const sender = this.prefs.senderName() || 'Anonymous';
+        const replyId = this.replyingTo()?.id ?? null;
+
+        this.sendingAudio.set(true);
+        try {
+            this.haptics.messageSent();
+            await this.store.shareAudio(dataUrl, sender, replyId);
+            this.replyingTo.set(null);
+        } catch {
+        } finally {
+            this.sendingAudio.set(false);
+        }
+    }
+
+    private static getBestAudioMimeType(): string {
+        const candidates = [
+            'audio/webm;codecs=opus',
+            'audio/webm',
+            'audio/mp4',
+            'audio/ogg;codecs=opus',
+            'audio/ogg',
+        ];
+        for (const type of candidates) {
+            if (MediaRecorder.isTypeSupported(type)) return type;
+        }
+        return '';
     }
 
     protected swipeOffset(id: string): number {
@@ -411,6 +572,11 @@ export class ChatTabComponent {
             };
             reader.readAsDataURL(file);
         });
+    }
+
+    ngOnDestroy(): void {
+        if (this.recordingTimer !== null) clearInterval(this.recordingTimer);
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') this.mediaRecorder.stop();
     }
 
 }

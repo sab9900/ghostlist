@@ -56,6 +56,20 @@ export interface WhisperPresenceEntry {
     deviceId: string;
     displayName: string;
 }
+export interface AudioSharedEvent {
+    messageId: string;
+    ghostListId: string;
+    encryptedAudio: string;
+    audioInitializationVector: string;
+    senderConnectionId: string;
+}
+
+export interface ReminderFiredEvent {
+    listId: string;
+    itemId: string;
+    reminderId: string;
+}
+
 export interface CharonDropCreatedEvent {
     id: string;
     ghostListId: string;

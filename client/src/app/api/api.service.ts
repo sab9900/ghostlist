@@ -6,9 +6,12 @@ import {
     CreateCharonDropRequest,
     CreateGhostListItemRequest,
     CreateGhostMessageRequest,
+    CreateItemReminderRequest,
+    ItemReminderDto,
     GhostChatMessage,
     GhostList,
     GhostListItem,
+    GhostMessageAudioDto,
     GhostMessageImageDto,
     InfoMessage,
     ListMember,
@@ -122,6 +125,10 @@ export class ApiService {
         return this.http.get<GhostMessageImageDto>(`${this.BASE}/chat/${messageId}/image`);
     }
 
+    getMessageAudio(messageId: string): Observable<GhostMessageAudioDto> {
+        return this.http.get<GhostMessageAudioDto>(`${this.BASE}/chat/${messageId}/audio`);
+    }
+
     deliverShare(sessionId: string, delivery: ShareDelivery): Observable<void> {
         return this.http.put<void>(`${this.BASE}/share/${sessionId}`, delivery);
     }
@@ -226,6 +233,28 @@ export class ApiService {
 
     sendWhisperInvite(listId: string, targetDeviceIds?: string[]): Observable<void> {
         return this.http.post<void>(`${this.BASE}/whisper/${listId}/invite`, { targetDeviceIds: targetDeviceIds ?? null },
+            { headers: this.deviceIdHeaders() });
+    }
+
+    getItemReminders(ghostListId: string): Observable<ItemReminderDto[]> {
+        return this.http.get<ItemReminderDto[]>(`${this.BASE}/itemreminders`, {
+            params: { ghostListId },
+            headers: this.deviceIdHeaders(),
+        });
+    }
+
+    createItemReminder(request: CreateItemReminderRequest): Observable<string> {
+        return this.http.post<string>(`${this.BASE}/itemreminders`, request,
+            { headers: this.deviceIdHeaders() });
+    }
+
+    deleteItemReminder(reminderId: string): Observable<void> {
+        return this.http.delete<void>(`${this.BASE}/itemreminders/${reminderId}`,
+            { headers: this.deviceIdHeaders() });
+    }
+
+    acknowledgeItemReminder(reminderId: string): Observable<void> {
+        return this.http.put<void>(`${this.BASE}/itemreminders/${reminderId}/acknowledge`, null,
             { headers: this.deviceIdHeaders() });
     }
 }

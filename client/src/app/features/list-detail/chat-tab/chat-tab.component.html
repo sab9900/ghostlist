@@ -12,13 +12,14 @@
         : msg.senderName === (prefs.senderName() || ('CHAT.ANONYMOUS' | translate));
     @let preview = replyPreview(msg);
     @let imgUrl = msg.isImage ? imageDataUrl(msg.id) : null;
+    @let audUrl = msg.isAudio ? audioDataUrl(msg.id) : null;
 
     <li class="message" role="article"
         [class.message--mine]="mine"
         [class.message--highlight]="highlightedId() === msg.id"
         [class.message--unread]="isUnread(msg.id)"
         [attr.data-message-id]="msg.id"
-        [attr.aria-label]="msg.senderName + ': ' + (msg.isImage ? ('CHAT.IMAGE' | translate) : msg.text)"
+        [attr.aria-label]="msg.senderName + ': ' + (msg.isImage ? ('CHAT.IMAGE' | translate) : msg.isAudio ? ('CHAT.VOICE_NOTE' | translate) : msg.text)"
         (touchstart)="onTouchStart($event, msg)" (touchmove)="onTouchMove($event, msg)"
         (touchend)="onTouchEnd(msg)" (touchcancel)="onTouchEnd(msg)"
         [appViewportDwell]="isUnread(msg.id) ? msg.id : ''" (dwellRead)="onMessageDwellRead($event)">
@@ -52,6 +53,16 @@
                         </svg>
                         {{ 'CHAT.IMAGE' | translate }}
                     </span>
+                    } @else if (preview.isAudio) {
+                    <span class="message__quote-text message__quote-text--audio">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                            <line x1="12" y1="19" x2="12" y2="23"/>
+                            <line x1="8" y1="23" x2="16" y2="23"/>
+                        </svg>
+                        {{ 'CHAT.VOICE_NOTE' | translate }}
+                    </span>
                     } @else {
                     <span class="message__quote-text">{{ preview.text }}</span>
                     }
@@ -76,6 +87,20 @@
                     <span>{{ 'CHAT.IMAGE_UNAVAILABLE' | translate }}</span>
                 </div>
                 }
+                } @else if (msg.isAudio) {
+                @if (audUrl) {
+                <app-audio-waveform-player class="message__audio" [src]="audUrl" />
+                } @else {
+                <div class="message__audio-placeholder">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                        <line x1="12" y1="19" x2="12" y2="23"/>
+                        <line x1="8" y1="23" x2="16" y2="23"/>
+                    </svg>
+                    <span>{{ 'CHAT.VOICE_NOTE' | translate }}</span>
+                </div>
+                }
                 } @else {
                 <p class="message__text">{{ msg.text }}</p>
                 }
@@ -87,15 +112,24 @@
                     <span class="message__unread-dot" aria-hidden="true"></span>
                     }
                     @if (mine && showReadReceiptCheckmark) {
-                    @let read = isReadByOthers(msg);
-                    <span class="message__status" [class.message__status--read]="read"
-                        [attr.aria-label]="(read ? 'CHAT.READ_ARIA' : 'CHAT.SENT_ARIA') | translate">
-                        @if (read) {
+                    @let receiptState = readReceiptState(msg);
+                    <span class="message__status"
+                        [class.message__status--partial]="receiptState === 'partial'"
+                        [class.message__status--all]="receiptState === 'all'"
+                        [attr.aria-label]="(receiptState === 'all' ? 'CHAT.READ_ALL_ARIA' : receiptState === 'partial' ? 'CHAT.READ_PARTIAL_ARIA' : 'CHAT.SENT_ARIA') | translate">
+                        @if (receiptState === 'all') {
+                        <!-- 2 primary checks: read by all -->
                         <svg xmlns="http://www.w3.org/2000/svg" width="19" height="15" viewBox="0 0 28 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <polyline points="18 6 9 15 4 10"/>
                             <polyline points="24 6 13 17"/>
                         </svg>
+                        } @else if (receiptState === 'partial') {
+                        <!-- 1 primary check: read by at least one -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
                         } @else {
+                        <!-- 1 gray check: sent, not yet read -->
                         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <polyline points="20 6 9 17 4 12"/>
                         </svg>
@@ -125,7 +159,7 @@
                         </svg>
                         {{ 'CHAT.REPLY' | translate }}
                     </button>
-                    @if (!msg.isImage) {
+                    @if (!msg.isImage && !msg.isAudio) {
                     <button type="button" role="menuitem" class="message__menu-item" (click)="copyMessage(msg)">
                         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
@@ -144,6 +178,18 @@
                         </svg>
                         {{ 'COMMON.DELETE' | translate }}
                     </button>
+                    @let readers = readersForMessage(msg);
+                    @if (readers.length > 0) {
+                    <div class="message__menu-readers" role="group" [attr.aria-label]="'CHAT.READ_BY' | translate">
+                        <span class="message__menu-readers-label">{{ 'CHAT.READ_BY' | translate }}</span>
+                        @for (reader of readers; track reader.displayName) {
+                        <span class="message__menu-reader">
+                            <app-avatar [name]="reader.displayName" [size]="16" />
+                            {{ reader.displayName }}
+                        </span>
+                        }
+                    </div>
+                    }
                     }
                 </div>
                 }
@@ -165,6 +211,8 @@
         <span class="reply-bar__sender">{{ replyingTo()!.senderName }}</span>
         @if (replyingTo()!.isImage) {
         <span class="reply-bar__text">{{ 'CHAT.IMAGE' | translate }}</span>
+        } @else if (replyingTo()!.isAudio) {
+        <span class="reply-bar__text">{{ 'CHAT.VOICE_NOTE' | translate }}</span>
         } @else {
         <span class="reply-bar__text">{{ replyingTo()!.text }}</span>
         }
@@ -176,12 +224,33 @@
 @if (fileTooLarge()) {
 <p class="upload-error" role="alert">{{ 'CHAT.FILE_TOO_LARGE' | translate }}</p>
 }
+@if (recordingNotSupported()) {
+<p class="upload-error" role="alert">{{ 'CHAT.RECORD_NOT_SUPPORTED' | translate }}</p>
+}
+@if (sendingAudio()) {
+<p class="compose__sending-audio" role="status">{{ 'CHAT.SENDING_VOICE' | translate }}</p>
+}
 
 <div class="compose" role="form" [attr.aria-label]="'CHAT.MESSAGE_PLACEHOLDER' | translate">
+    @if (recording()) {
+    <div class="compose__recording-row">
+        <span class="compose__recording-dot" aria-hidden="true"></span>
+        <span class="compose__timer" role="timer" [attr.aria-label]="formatRecordingTime(recordingSeconds())">
+            {{ formatRecordingTime(recordingSeconds()) }}
+        </span>
+        <button type="button" class="compose__record compose__record--stop" (click)="toggleRecording()"
+            [attr.aria-label]="'CHAT.STOP_RECORD_ARIA' | translate" aria-pressed="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="3"/>
+            </svg>
+        </button>
+    </div>
+    } @else {
     <div class="compose__row">
         <input #fileInput type="file" accept="image/*" class="visually-hidden" tabindex="-1"
             (change)="onFileSelected($event)" />
-        <button type="button" class="compose__attach" (mousedown)="$event.preventDefault()" (click)="pickImage()" [disabled]="sendingImage()"
+        <button type="button" class="compose__attach" (mousedown)="$event.preventDefault()" (click)="pickImage()"
+            [disabled]="sendingImage() || sendingAudio()"
             [attr.aria-label]="'CHAT.SEND_IMAGE_ARIA' | translate" [attr.aria-busy]="sendingImage()">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
@@ -194,9 +263,23 @@
             [ngModel]="newMessageText()" (ngModelChange)="newMessageText.set($event)"
             (keydown)="onKeydown($event)" (input)="autoResize($event)"
             maxlength="2000" [attr.aria-label]="'CHAT.MESSAGE_PLACEHOLDER' | translate"></textarea>
+        @if (newMessageText().trim()) {
         <button class="compose__send" (mousedown)="$event.preventDefault()" (click)="sendMessage()"
-            [disabled]="!newMessageText().trim() || sendingMessage()"
+            [disabled]="sendingMessage()"
             [attr.aria-label]="'CHAT.MESSAGE_PLACEHOLDER' | translate" [attr.aria-busy]="sendingMessage()">›</button>
+        } @else {
+        <button type="button" class="compose__record" (mousedown)="$event.preventDefault()" (click)="toggleRecording()"
+            [disabled]="sendingAudio() || sendingMessage()"
+            [attr.aria-label]="'CHAT.RECORD_ARIA' | translate" aria-pressed="false">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+        </button>
+        }
     </div>
+    }
 </div>
 

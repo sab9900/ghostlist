@@ -51,7 +51,18 @@
     "DONE_SECTION": "Completati ({{count}})",
     "MARK_DONE_ARIA": "Segna come fatto: {{text}}",
     "MARK_UNDONE_ARIA": "Segna come non fatto: {{text}}",
-    "DELETE_ARIA": "Elimina: {{text}}"
+    "DELETE_ARIA": "Elimina: {{text}}",
+    "ITEM_ACTIONS_ARIA": "Azioni elemento",
+    "REMEMBER_ME": "Ricordamelo",
+    "CANCEL_REMINDER": "Annulla promemoria",
+    "REMINDER_DIALOG_TITLE": "Imposta promemoria",
+    "REMINDER_DATE_LABEL": "Data",
+    "REMINDER_TIME_LABEL": "Orario",
+    "REMINDER_SAVE": "Imposta promemoria",
+    "REMINDER_SAVED": "✓ Promemoria impostato",
+    "SWIPE_DELETE_HINT": "Elimina",
+    "REMINDER_BANNER_DISMISS": "OK",
+    "REMINDER_BANNER_GO": "Mostra"
   },
   "CHAT": {
     "NO_MESSAGES": "Nessun messaggio ancora.",
@@ -74,7 +85,15 @@
     "SEND_IMAGE_ARIA": "Invia immagine",
     "SENT_ARIA": "Inviato",
     "READ_ARIA": "Letto",
-    "FILE_TOO_LARGE": "L'immagine è troppo grande."
+    "FILE_TOO_LARGE": "L'immagine è troppo grande.",
+    "VOICE_NOTE": "Messaggio vocale",
+    "RECORD_ARIA": "Registra messaggio vocale",
+    "STOP_RECORD_ARIA": "Ferma registrazione",
+    "RECORD_NOT_SUPPORTED": "La registrazione vocale non è supportata su questo dispositivo.",
+    "SENDING_VOICE": "Invio messaggio vocale…",
+    "READ_PARTIAL_ARIA": "Letto da almeno una persona",
+    "READ_ALL_ARIA": "Letto da tutti",
+    "READ_BY": "Letto da"
   },
   "LIST_DETAIL": {
     "BACK_ARIA": "Torna alle liste",
@@ -244,6 +263,18 @@
         "ERROR_MISMATCH": "Le password non coincidono.",
         "ERROR_CURRENT_INVALID": "La password attuale non è corretta."
       }
+    },
+    "NOTIFICATIONS": {
+      "ONBOARDING_TITLE": "Resta aggiornato",
+      "ONBOARDING_BODY": "GhostList può avvisarti quando qualcuno scrive nelle tue liste, modifica elementi o ti invita a Lethe. Non invieremo nulla di superfluo.",
+      "ENABLE_BTN": "Attiva notifiche",
+      "LATER_BTN": "Più tardi",
+      "TOGGLE_LABEL": "Notifiche push",
+      "TOGGLE_HINT": "Attiva o disattiva le notifiche per questo dispositivo senza modificare il permesso del browser.",
+      "DENIED": "Il browser ha bloccato il permesso. Consentilo nelle Impostazioni iOS → Safari → Siti web → Notifiche.",
+      "GRANTED": "Attivate",
+      "TITLE": "Notifiche",
+      "HINT": "Le notifiche devono essere attivate con un tap – iOS mostra il dialogo solo in risposta a un'azione diretta."
     }
   },
   "INFO_CENTER": {

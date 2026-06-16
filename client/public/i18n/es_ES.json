@@ -51,7 +51,18 @@
     "DONE_SECTION": "Completados ({{count}})",
     "MARK_DONE_ARIA": "Marcar como hecho: {{text}}",
     "MARK_UNDONE_ARIA": "Marcar como no hecho: {{text}}",
-    "DELETE_ARIA": "Eliminar: {{text}}"
+    "DELETE_ARIA": "Eliminar: {{text}}",
+    "ITEM_ACTIONS_ARIA": "Acciones del elemento",
+    "REMEMBER_ME": "Recuérdamelo",
+    "CANCEL_REMINDER": "Cancelar recordatorio",
+    "REMINDER_DIALOG_TITLE": "Establecer recordatorio",
+    "REMINDER_DATE_LABEL": "Fecha",
+    "REMINDER_TIME_LABEL": "Hora",
+    "REMINDER_SAVE": "Establecer recordatorio",
+    "REMINDER_SAVED": "✓ Recordatorio establecido",
+    "SWIPE_DELETE_HINT": "Eliminar",
+    "REMINDER_BANNER_DISMISS": "OK",
+    "REMINDER_BANNER_GO": "Ver"
   },
   "CHAT": {
     "NO_MESSAGES": "Aún no hay mensajes.",
@@ -74,7 +85,15 @@
     "SEND_IMAGE_ARIA": "Enviar imagen",
     "SENT_ARIA": "Enviado",
     "READ_ARIA": "Leído",
-    "FILE_TOO_LARGE": "La imagen es demasiado grande."
+    "FILE_TOO_LARGE": "La imagen es demasiado grande.",
+    "VOICE_NOTE": "Nota de voz",
+    "RECORD_ARIA": "Grabar nota de voz",
+    "STOP_RECORD_ARIA": "Detener grabación",
+    "RECORD_NOT_SUPPORTED": "La grabación de voz no está disponible en este dispositivo.",
+    "SENDING_VOICE": "Enviando nota de voz…",
+    "READ_PARTIAL_ARIA": "Leído por al menos una persona",
+    "READ_ALL_ARIA": "Leído por todos",
+    "READ_BY": "Leído por"
   },
   "LIST_DETAIL": {
     "BACK_ARIA": "Volver a las listas",
@@ -261,7 +280,19 @@
     },
     "SYNC_COPY_LINK": "Copiar enlace",
     "SYNC_LINK_COPIED": "¡Enlace copiado!",
-    "SYNC_REQUIRES_BIOMETRIC": "Activa el bloqueo biométrico (arriba) para usar la Máquina Sync."
+    "SYNC_REQUIRES_BIOMETRIC": "Activa el bloqueo biométrico (arriba) para usar la Máquina Sync.",
+    "NOTIFICATIONS": {
+      "ONBOARDING_TITLE": "Mantente al tanto",
+      "ONBOARDING_BODY": "GhostList puede avisarte cuando alguien escribe en tus listas, cambia elementos o te invita a Lethe. No enviaremos nada innecesario.",
+      "ENABLE_BTN": "Activar notificaciones",
+      "LATER_BTN": "Quizás después",
+      "TOGGLE_LABEL": "Notificaciones push",
+      "TOGGLE_HINT": "Activa o desactiva las notificaciones para este dispositivo sin cambiar el permiso del navegador.",
+      "DENIED": "El navegador bloqueó el permiso. Permítelo en Ajustes de iOS → Safari → Sitios web → Notificaciones.",
+      "GRANTED": "Activadas",
+      "TITLE": "Notificaciones",
+      "HINT": "Las notificaciones deben activarse con un toque – iOS solo muestra el diálogo ante una acción directa del usuario."
+    }
   },
   "SECURITY": {
     "LOCK_TITLE": "App bloqueada",

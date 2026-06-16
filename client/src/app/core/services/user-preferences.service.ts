@@ -7,6 +7,8 @@ const KEY_SENDER_NAME = 'sender-name';
 const LS_KEY          = 'gl_sender_name';
 const LS_ONBOARDED_KEY = 'gl_name_onboarded';
 const LS_HAPTICS_KEY  = 'gl_haptics_enabled';
+const LS_NOTIF_ENABLED_KEY = 'gl_notif_enabled';
+const LS_NOTIF_PROMPTED_KEY = 'gl_notif_prompted';
 
 const DEFAULT_HAPTICS_ENABLED = Capacitor.getPlatform() === 'ios';
 
@@ -68,6 +70,26 @@ export class UserPreferencesService {
     setHapticsEnabled(enabled: boolean): void {
         this.hapticsEnabled.set(enabled);
         localStorage.setItem(LS_HAPTICS_KEY, enabled ? '1' : '0');
+    }
+
+    /** Whether the user has opted in to push notifications (soft toggle, independent of browser permission). */
+    readonly notificationsEnabled = signal<boolean>(
+        localStorage.getItem(LS_NOTIF_ENABLED_KEY) !== '0',
+    );
+
+    setNotificationsEnabled(enabled: boolean): void {
+        this.notificationsEnabled.set(enabled);
+        localStorage.setItem(LS_NOTIF_ENABLED_KEY, enabled ? '1' : '0');
+    }
+
+    /** Whether we've already shown the notification onboarding dialog once. */
+    readonly notifPrompted = signal<boolean>(
+        localStorage.getItem(LS_NOTIF_PROMPTED_KEY) === '1',
+    );
+
+    markNotifPrompted(): void {
+        this.notifPrompted.set(true);
+        localStorage.setItem(LS_NOTIF_PROMPTED_KEY, '1');
     }
 
     private async loadFromIdb(): Promise<void> {

@@ -1,0 +1,54 @@
+<div class="waveform-player" [class.waveform-player--playing]="playing()">
+
+    <audio #audioEl
+        [src]="src()"
+        preload="metadata"
+        (play)="onPlay()"
+        (pause)="onPause()"
+        (ended)="onEnded()"
+        (loadedmetadata)="onLoadedMetadata()"
+        (timeupdate)="onTimeUpdate()">
+    </audio>
+
+    <button
+        type="button"
+        class="waveform-player__play-btn"
+        (click)="togglePlayback()"
+        [attr.aria-label]="playing() ? 'Pause' : 'Play'">
+        @if (playing()) {
+            <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect x="6" y="5" width="4" height="14" rx="1"/>
+                <rect x="14" y="5" width="4" height="14" rx="1"/>
+            </svg>
+        } @else {
+            <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M8 5.14v14l11-7-11-7z"/>
+            </svg>
+        }
+    </button>
+
+    <div class="waveform-player__body">
+        <div
+            class="waveform-player__bars"
+            role="slider"
+            [attr.aria-valuenow]="Math.round(progress() * 100)"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-label="Audio progress"
+            (click)="scrub($event)"
+            (touchstart)="scrub($event)">
+            @for (bar of bars(); track $index) {
+                <span
+                    class="waveform-player__bar"
+                    [class.waveform-player__bar--played]="$index <= playheadBar()"
+                    [style.height.%]="bar.height * 100">
+                </span>
+            }
+        </div>
+
+        <div class="waveform-player__time">
+            <span class="waveform-player__current">{{ formattedCurrent() }}</span>
+            <span class="waveform-player__duration">{{ formattedDuration() }}</span>
+        </div>
+    </div>
+</div>

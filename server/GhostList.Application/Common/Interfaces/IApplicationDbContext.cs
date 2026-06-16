@@ -17,17 +17,21 @@ public interface IApplicationDbContext
     DbSet<DailyUsageStat> DailyUsageStats { get; }
     DbSet<LocaleStat> LocaleStats { get; }
     DbSet<GhostMessageImage> GhostMessageImages { get; }
+    DbSet<GhostMessageAudio> GhostMessageAudios { get; }
     DbSet<InfoMessage> InfoMessages { get; }
     DbSet<MessageReadReceipt> MessageReadReceipts { get; }
     DbSet<ItemReadReceipt> ItemReadReceipts { get; }
     DbSet<CharonDrop> CharonDrops { get; }
     DbSet<CharonViewReceipt> CharonViewReceipts { get; }
+    DbSet<ItemReminder> ItemReminders { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 
     Task<IReadOnlyList<DeletedItemInfo>> DeleteExpiredCheckedItemsAsync(CancellationToken cancellationToken);
 
     Task<int> DeleteExpiredImageBlobsAsync(TimeSpan maxAge, CancellationToken cancellationToken);
+
+    Task<int> DeleteExpiredAudioBlobsAsync(TimeSpan maxAge, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<DeletedItemInfo>> DeleteExpiredCharonDropsAsync(TimeSpan maxAge, CancellationToken cancellationToken);
 

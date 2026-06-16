@@ -13,6 +13,60 @@ env:
   ADMIN_CLIENT_IMAGE: ghcr.io/${{ github.repository_owner }}/ghostlist-admin-client
 
 jobs:
+  # Runs on every developer push to main.
+  # Bumps patch/minor/major based on the commit message prefix,
+  # then commits the result back. That bot-commit triggers the
+  # second CI run (actor == github-actions[bot]) which actually
+  # builds and publishes the Docker images with the new version.
+  bump-version:
+    name: Bump Version
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      github.actor != 'github-actions[bot]'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine new version
+        id: ver
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          IFS='.' read -r MAJ MIN PAT < VERSION
+          FIRST=$(echo "$COMMIT_MSG" | head -1)
+          if echo "$FIRST" | grep -iq "^Major:"; then
+            NEW="$((MAJ+1)).0.0"
+          elif echo "$FIRST" | grep -iq "^Minor:"; then
+            NEW="$MAJ.$((MIN+1)).0"
+          else
+            NEW="$MAJ.$MIN.$((PAT+1))"
+          fi
+          echo "new=$NEW" >> "$GITHUB_OUTPUT"
+          echo "Bumping $(cat VERSION) → $NEW"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Apply version bump
+        run: node scripts/sync-version.js ${{ steps.ver.outputs.new }}
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add VERSION \
+                client/package.json \
+                admin-client/package.json \
+                "server/GhostList.WebApi/GhostList.WebApi.csproj"
+          git commit -m "chore: bump version to ${{ steps.ver.outputs.new }}"
+          git push
+
   version-sync:
     name: Version Sync Check
     runs-on: ubuntu-latest
@@ -82,8 +136,11 @@ jobs:
   publish:
     name: Build & Push Images
     runs-on: ubuntu-latest
-    needs: [test-server, build-client, build-admin-client]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [version-sync, test-server, build-client, build-admin-client]
+    if: >
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'push' &&
+      github.actor == 'github-actions[bot]'
     permissions:
       contents: read
       packages: write

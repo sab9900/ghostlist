@@ -51,7 +51,18 @@
     "DONE_SECTION": "Erledigt ({{count}})",
     "MARK_DONE_ARIA": "Als erledigt markieren: {{text}}",
     "MARK_UNDONE_ARIA": "Als nicht erledigt markieren: {{text}}",
-    "DELETE_ARIA": "Löschen: {{text}}"
+    "DELETE_ARIA": "Löschen: {{text}}",
+    "ITEM_ACTIONS_ARIA": "Eintragsaktionen",
+    "REMEMBER_ME": "Erinnere mich",
+    "CANCEL_REMINDER": "Erinnerung löschen",
+    "REMINDER_DIALOG_TITLE": "Erinnerung setzen",
+    "REMINDER_DATE_LABEL": "Datum",
+    "REMINDER_TIME_LABEL": "Uhrzeit",
+    "REMINDER_SAVE": "Erinnerung setzen",
+    "REMINDER_SAVED": "✓ Erinnerung gesetzt",
+    "SWIPE_DELETE_HINT": "Löschen",
+    "REMINDER_BANNER_DISMISS": "OK",
+    "REMINDER_BANNER_GO": "Zeigen"
   },
   "CHAT": {
     "NO_MESSAGES": "Noch keine Nachrichten.",
@@ -74,7 +85,15 @@
     "SEND_IMAGE_ARIA": "Bild senden",
     "SENT_ARIA": "Gesendet",
     "READ_ARIA": "Gelesen",
-    "FILE_TOO_LARGE": "Bild ist zu groß."
+    "FILE_TOO_LARGE": "Bild ist zu groß.",
+    "VOICE_NOTE": "Sprachnachricht",
+    "RECORD_ARIA": "Sprachnachricht aufnehmen",
+    "STOP_RECORD_ARIA": "Aufnahme stoppen",
+    "RECORD_NOT_SUPPORTED": "Sprachaufnahme wird auf diesem Gerät nicht unterstützt.",
+    "SENDING_VOICE": "Sprachnachricht wird gesendet…",
+    "READ_PARTIAL_ARIA": "Von mindestens einer Person gelesen",
+    "READ_ALL_ARIA": "Von allen gelesen",
+    "READ_BY": "Gelesen von"
   },
   "LIST_DETAIL": {
     "BACK_ARIA": "Zurück zu den Listen",
@@ -263,7 +282,19 @@
         "ERROR_CURRENT_INVALID": "Das aktuelle Passwort ist falsch."
       }
     },
-    "SYNC_REQUIRES_BIOMETRIC": "Aktiviere die biometrische Sperre (oben), um die Sync-Maschine zu verwenden."
+    "SYNC_REQUIRES_BIOMETRIC": "Aktiviere die biometrische Sperre (oben), um die Sync-Maschine zu verwenden.",
+    "NOTIFICATIONS": {
+      "ONBOARDING_TITLE": "Bleib informiert",
+      "ONBOARDING_BODY": "GhostList kann dich benachrichtigen, wenn jemand in deinen Listen schreibt, Einträge ändert oder dich zu Lethe einlädt. Wir schicken nichts Unnötiges.",
+      "ENABLE_BTN": "Benachrichtigungen aktivieren",
+      "LATER_BTN": "Später",
+      "TOGGLE_LABEL": "Push-Benachrichtigungen",
+      "TOGGLE_HINT": "Benachrichtigungen für dieses Gerät ein- oder ausschalten, ohne die Browser-Berechtigung zu ändern.",
+      "DENIED": "Browser hat die Berechtigung blockiert. Bitte in den iOS-Einstellungen unter Safari → Websites → Benachrichtigungen erlauben.",
+      "GRANTED": "Aktiviert",
+      "TITLE": "Benachrichtigungen",
+      "HINT": "Benachrichtigungen müssen per Tap aktiviert werden – iOS erlaubt den Dialog nur bei einer direkten Nutzeraktion."
+    }
   },
   "SECURITY": {
     "LOCK_TITLE": "App gesperrt",

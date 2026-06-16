@@ -219,6 +219,30 @@ namespace GhostList.Infrastructure.Migrations
                     b.ToTable("GhostListItems");
                 });
 
+            modelBuilder.Entity("GhostList.Domain.Entities.GhostMessageAudio", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AudioInitializationVector")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EncryptedAudio")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("GhostListId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("GhostMessageAudios");
+                });
+
             modelBuilder.Entity("GhostList.Domain.Entities.GhostMessageImage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -296,6 +320,46 @@ namespace GhostList.Infrastructure.Migrations
                     b.ToTable("ItemReadReceipts");
                 });
 
+            modelBuilder.Entity("GhostList.Domain.Entities.ItemReminder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeviceId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("GhostListId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsAcknowledged")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsSent")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("RemindAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GhostListId");
+
+                    b.HasIndex("IsAcknowledged", "RemindAt");
+
+                    b.HasIndex("IsSent", "RemindAt");
+
+                    b.ToTable("ItemReminders");
+                });
+
             modelBuilder.Entity("GhostList.Domain.Entities.LocaleStat", b =>
                 {
                     b.Property<DateOnly>("Date")
@@ -370,11 +434,29 @@ namespace GhostList.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("GhostList.Domain.Entities.GhostMessageAudio", b =>
+                {
+                    b.HasOne("GhostList.Domain.Entities.GhostChatMessage", null)
+                        .WithOne()
+                        .HasForeignKey("GhostList.Domain.Entities.GhostMessageAudio", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("GhostList.Domain.Entities.GhostMessageImage", b =>
                 {
                     b.HasOne("GhostList.Domain.Entities.GhostChatMessage", null)
                         .WithOne()
                         .HasForeignKey("GhostList.Domain.Entities.GhostMessageImage", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GhostList.Domain.Entities.ItemReminder", b =>
+                {
+                    b.HasOne("GhostList.Domain.Entities.GhostList", null)
+                        .WithMany()
+                        .HasForeignKey("GhostListId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

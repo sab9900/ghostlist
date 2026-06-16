@@ -16,11 +16,13 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<DailyUsageStat> DailyUsageStats => Set<DailyUsageStat>();
     public DbSet<LocaleStat> LocaleStats => Set<LocaleStat>();
     public DbSet<GhostMessageImage> GhostMessageImages => Set<GhostMessageImage>();
+    public DbSet<GhostMessageAudio> GhostMessageAudios => Set<GhostMessageAudio>();
     public DbSet<InfoMessage> InfoMessages => Set<InfoMessage>();
     public DbSet<MessageReadReceipt> MessageReadReceipts => Set<MessageReadReceipt>();
     public DbSet<ItemReadReceipt> ItemReadReceipts => Set<ItemReadReceipt>();
     public DbSet<CharonDrop> CharonDrops => Set<CharonDrop>();
     public DbSet<CharonViewReceipt> CharonViewReceipts => Set<CharonViewReceipt>();
+    public DbSet<ItemReminder> ItemReminders => Set<ItemReminder>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -121,6 +123,17 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
+        modelBuilder.Entity<GhostMessageAudio>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EncryptedAudio).IsRequired();
+            entity.Property(e => e.AudioInitializationVector).IsRequired();
+            entity.HasOne<GhostChatMessage>()
+                  .WithOne()
+                  .HasForeignKey<GhostMessageAudio>(e => e.Id)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<InfoMessage>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -177,6 +190,18 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
                   .HasForeignKey(e => e.DropId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
+
+        modelBuilder.Entity<ItemReminder>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.DeviceId).HasMaxLength(64).IsRequired();
+            // ItemId is intentionally NOT a FK — the item may be deleted before the reminder fires
+            entity.HasIndex(e => new { e.IsSent, e.RemindAt });
+            entity.HasOne<Domain.Entities.GhostList>()
+                  .WithMany()
+                  .HasForeignKey(e => e.GhostListId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
     }
 
     public async Task<IReadOnlyList<DeletedItemInfo>> DeleteExpiredCheckedItemsAsync(CancellationToken cancellationToken)
@@ -215,6 +240,28 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         return await Database.ExecuteSqlInterpolatedAsync(
             $"""
             DELETE FROM "GhostMessageImages"
+            WHERE "CreatedAt" <= NOW() - {maxAge}
+            """,
+            cancellationToken);
+    }
+
+    public async Task<int> DeleteExpiredAudioBlobsAsync(TimeSpan maxAge, CancellationToken cancellationToken)
+    {
+        if (!Database.IsRelational())
+        {
+            var cutoff = DateTime.UtcNow - maxAge;
+            var expired = await GhostMessageAudios
+                .Where(a => a.CreatedAt <= cutoff)
+                .ToListAsync(cancellationToken);
+            if (expired.Count == 0) return 0;
+            GhostMessageAudios.RemoveRange(expired);
+            await SaveChangesAsync(cancellationToken);
+            return expired.Count;
+        }
+
+        return await Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            DELETE FROM "GhostMessageAudios"
             WHERE "CreatedAt" <= NOW() - {maxAge}
             """,
             cancellationToken);

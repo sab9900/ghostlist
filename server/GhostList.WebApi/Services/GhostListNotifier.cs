@@ -46,4 +46,12 @@ public class GhostListNotifier(IHubContext<GhostListHub> hubContext) : IGhostLis
 
     public Task NotifyCharonDropDeleted(Guid listId, Guid dropId) =>
         hubContext.Clients.Group(listId.ToString()).SendAsync("CharonDropDeleted", dropId);
+
+    public Task NotifyAudioShared(Guid listId, AudioRelayNotification notification) =>
+        hubContext.Clients.GroupExcept(listId.ToString(), notification.SenderConnectionId)
+            .SendAsync("AudioShared", notification);
+
+    public Task NotifyReminderFired(Guid listId, Guid itemId, Guid reminderId, string deviceId) =>
+        hubContext.Clients.Group($"device-{deviceId}")
+            .SendAsync("ReminderFired", new { listId, itemId, reminderId });
 }

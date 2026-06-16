@@ -16,6 +16,9 @@ interface ReadReceiptsState {
     unreadItemIds: Record<string, string[]>;
 
     othersLastReadMessageAt: Record<string, string | null>;
+
+    /** Decrypted member list per list ID, used for read receipt display. */
+    cachedMembers: Record<string, ListMember[]>;
 }
 
 const initialState: ReadReceiptsState = {
@@ -24,6 +27,7 @@ const initialState: ReadReceiptsState = {
     unreadMessageIds: {},
     unreadItemIds: {},
     othersLastReadMessageAt: {},
+    cachedMembers: {},
 };
 
 const FLUSH_DELAY_MS = 600;
@@ -142,8 +146,23 @@ export function withReadReceipts() {
                             if (m.isCurrentDevice || !m.lastReadMessageAt) continue;
                             if (!latest || m.lastReadMessageAt > latest) latest = m.lastReadMessageAt;
                         }
-                        patchState(store, { othersLastReadMessageAt: { ...store.othersLastReadMessageAt(), [id]: latest } });
+                        patchState(store, {
+                            othersLastReadMessageAt: { ...store.othersLastReadMessageAt(), [id]: latest },
+                            cachedMembers: { ...store.cachedMembers(), [id]: members },
+                        });
                     } catch { }
+                },
+
+                /** Called by the SignalR handler when another member updates their read receipt. */
+                _updateMemberReadAt(listId: string, memberDeviceId: string, readAt: string): void {
+                    const members = store.cachedMembers()[listId];
+                    if (!members) return;
+                    const updated = members.map(m =>
+                        m.deviceId === memberDeviceId
+                            ? { ...m, lastReadMessageAt: readAt }
+                            : m,
+                    );
+                    patchState(store, { cachedMembers: { ...store.cachedMembers(), [listId]: updated } });
                 },
 
                 async ensureUnreadSeeded(listId: string): Promise<void> {

@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
@@ -21,9 +21,23 @@ export class PushNotificationService {
 
     private firebaseApp: FirebaseApp | null = null;
     private messaging: Messaging | null = null;
+    /** List IDs from the most recent initialize() call – used when enablePush is called later (e.g. from onboarding dialog). */
+    lastKnownListIds: string[] = [];
 
     private tokenReady: Promise<void>;
     private resolveTokenReady!: () => void;
+
+    /**
+     * Current permission state.
+     * On web: reflects Notification.permission and is updated after each request.
+     * On native: starts as 'default' (unknown) and is updated after checkPermissions/requestPermissions.
+     */
+    readonly webPushPermission = signal<NotificationPermission>(
+        typeof Notification !== 'undefined' ? Notification.permission : 'default',
+    );
+
+    /** True once FCM/native push is fully active (token obtained and subscriptions registered). */
+    readonly pushActive = signal(false);
 
     constructor() {
         this.tokenReady = new Promise<void>((resolve) => {
@@ -49,6 +63,7 @@ export class PushNotificationService {
     }
 
     async initialize(listIds: string[]): Promise<void> {
+        this.lastKnownListIds = listIds;
         if (this.platform === 'ios' || this.platform === 'android') {
             await this.initializeNative(listIds);
         } else if (this.platform === 'web') {
@@ -56,10 +71,43 @@ export class PushNotificationService {
         }
     }
 
-    private async initializeNative(listIds: string[]): Promise<void> {
-        const { receive } = await PushNotifications.requestPermissions();
-        if (receive !== 'granted') return;
+    /**
+     * Unified entry point called from the onboarding dialog button (all platforms).
+     * Must be triggered by a direct user gesture.
+     */
+    async enablePush(listIds: string[]): Promise<void> {
+        this.lastKnownListIds = listIds;
+        if (this.platform === 'ios' || this.platform === 'android') {
+            await this.enableNativePush(listIds);
+        } else if (this.platform === 'web') {
+            await this.enableWebPush(listIds);
+        }
+    }
 
+    private async enableNativePush(listIds: string[]): Promise<void> {
+        const { receive: current } = await PushNotifications.checkPermissions();
+        if (current === 'granted') {
+            await this.setupNativePush(listIds);
+            return;
+        }
+        if (current === 'denied') {
+            this.webPushPermission.set('denied');
+            return;
+        }
+        const { receive } = await PushNotifications.requestPermissions();
+        this.webPushPermission.set(receive === 'granted' ? 'granted' : 'denied');
+        if (receive !== 'granted') return;
+        await this.setupNativePush(listIds);
+    }
+
+    private async initializeNative(listIds: string[]): Promise<void> {
+        const { receive } = await PushNotifications.checkPermissions();
+        this.webPushPermission.set(receive === 'granted' ? 'granted' : receive === 'denied' ? 'denied' : 'default');
+        if (receive !== 'granted') return;
+        await this.setupNativePush(listIds);
+    }
+
+    private async setupNativePush(listIds: string[]): Promise<void> {
         if (this.platform === 'android') {
             await PushNotifications.createChannel({
                 id: 'ghost_messages',
@@ -103,6 +151,8 @@ export class PushNotificationService {
 
         PushNotifications.addListener('registration', async ({ value: token }) => {
             this.setToken(token);
+            this.webPushPermission.set('granted');
+            this.pushActive.set(true);
             for (const id of listIds) {
                 await this.subscribeToList(id);
             }
@@ -126,36 +176,60 @@ export class PushNotificationService {
 
     private readonly WEB_TOKEN_STORAGE_KEY = 'ghost_fcm_token';
 
+    /**
+     * Called automatically on app start.
+     * Only proceeds if permission is already granted – never prompts.
+     * iOS Safari requires requestPermission() to be inside a direct user gesture;
+     * use enableWebPush() (triggered by a button tap) for the first-time flow.
+     */
     private async initializeWeb(listIds: string[]): Promise<void> {
-        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-        if (!(await isSupported())) return;
+        if (Notification.permission !== 'granted') return;
+        await this.setupWebFcm(listIds);
+    }
+
+    /**
+     * Must be called from a direct user-gesture handler (button click/tap).
+     * Requests permission if not yet granted, then initialises FCM.
+     * Returns whether push is now active.
+     */
+    async enableWebPush(listIds: string[]): Promise<boolean> {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+        if (!(await isSupported())) return false;
+
+        if (Notification.permission === 'default') {
+            const result = await Notification.requestPermission();
+            this.webPushPermission.set(result);
+            if (result !== 'granted') return false;
+        } else if (Notification.permission !== 'granted') {
+            return false;
+        }
+
+        return this.setupWebFcm(listIds);
+    }
+
+    private async setupWebFcm(listIds: string[]): Promise<boolean> {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+        if (!(await isSupported())) return false;
 
         const { vapidKey, ...firebaseConfig } = environment.firebase;
         if (!vapidKey) {
             console.warn('[Push] No VAPID key configured — web push disabled.');
-            return;
+            return false;
         }
-
-        if (Notification.permission === 'default') {
-            const permission = await Notification.requestPermission();
-            if (permission !== 'granted') return;
-        }
-        if (Notification.permission !== 'granted') return;
 
         try {
-
             const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
                 scope: '/firebase-cloud-messaging-push-scope',
             });
 
-            this.firebaseApp = initializeApp(firebaseConfig);
-            this.messaging = getMessaging(this.firebaseApp);
+            this.firebaseApp ??= initializeApp(firebaseConfig);
+            this.messaging ??= getMessaging(this.firebaseApp);
 
             const token = await getToken(this.messaging, {
                 vapidKey,
                 serviceWorkerRegistration: registration,
             });
-            if (!token) return;
+            if (!token) return false;
 
             const previousToken = localStorage.getItem(this.WEB_TOKEN_STORAGE_KEY);
             if (previousToken && previousToken !== token) {
@@ -164,6 +238,7 @@ export class PushNotificationService {
             localStorage.setItem(this.WEB_TOKEN_STORAGE_KEY, token);
 
             this.setToken(token);
+            this.pushActive.set(true);
             for (const id of listIds) {
                 await this.subscribeToList(id);
             }
@@ -175,8 +250,11 @@ export class PushNotificationService {
                     this.router.navigate(['/list', listId, this.routeForType(type)]);
                 }
             });
+
+            return true;
         } catch (err) {
             console.error('[Push] Web push initialization failed:', err);
+            return false;
         }
     }
 

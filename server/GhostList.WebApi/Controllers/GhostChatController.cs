@@ -1,6 +1,7 @@
 using GhostList.Application.Features.GhostMessages.Commands.CreateGhostChatMessage;
 using GhostList.Application.Features.GhostMessages.Commands.DeleteGhostChatMessage;
 using GhostList.Application.Features.GhostMessages.Queries.GetGhostChatMessagesByListId;
+using GhostList.Application.Features.GhostMessages.Queries.GetGhostMessageAudio;
 using GhostList.Application.Features.GhostMessages.Queries.GetGhostMessageImage;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -39,5 +40,12 @@ public class ChatController(IMediator mediator) : ControllerBase
     {
         var image = await mediator.Send(new GetGhostMessageImageQuery(messageId));
         return Ok(image);
+    }
+
+    [HttpGet("{messageId:guid}/audio")]
+    public async Task<ActionResult<GhostMessageAudioDto>> GetAudio(Guid messageId)
+    {
+        var audio = await mediator.Send(new GetGhostMessageAudioQuery(messageId));
+        return Ok(audio);
     }
 }

@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../api/api.service';
 import { HubService } from '../api/hub.service';
 import {
+    AudioSharedEvent,
     CharonDropDto,
     CreateGhostListItemRequest,
     CreateGhostMessageRequest,
@@ -43,6 +44,8 @@ interface AppState {
 
     imageDataUrls: Record<string, string>;
 
+    audioDataUrls: Record<string, string>;
+
     listsLoaded: boolean;
 
     pendingOpsCount: number;
@@ -60,11 +63,22 @@ const initialState: AppState = {
     messages: [],
     charonDrops: [],
     imageDataUrls: {},
+    audioDataUrls: {},
     listsLoaded: false,
     pendingOpsCount: 0,
     loading: false,
     error: null,
 };
+
+/** Converts a data URL to a Blob without requiring a full fetch round-trip. */
+class AudioBlobConverter {
+    static dataUrlToBlob(dataUrl: string): Blob {
+        const [header, b64] = dataUrl.split(',');
+        const mime = header.match(/:(.*?);/)?.[1] ?? 'audio/webm';
+        const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+        return new Blob([bytes], { type: mime });
+    }
+}
 
 function isNetworkError(e: unknown): boolean {
     return e instanceof HttpErrorResponse && e.status === 0;
@@ -152,6 +166,26 @@ export const AppStore = signalStore(
             patchState(store, { imageDataUrls: { ...store.imageDataUrls(), [messageId]: dataUrl } });
         }
 
+        const AUDIO_CACHE_LIMIT = 20;
+        const audioCacheOrder: string[] = [];
+
+        function cacheAudio(messageId: string, blobUrl: string): void {
+            const current = store.audioDataUrls();
+            if (!(messageId in current)) {
+                audioCacheOrder.push(messageId);
+                if (audioCacheOrder.length > AUDIO_CACHE_LIMIT) {
+                    const evict = audioCacheOrder.shift();
+                    if (evict && evict in store.audioDataUrls()) {
+                        URL.revokeObjectURL(store.audioDataUrls()[evict]);
+                        const rest = { ...store.audioDataUrls() };
+                        delete rest[evict];
+                        patchState(store, { audioDataUrls: rest });
+                    }
+                }
+            }
+            patchState(store, { audioDataUrls: { ...store.audioDataUrls(), [messageId]: blobUrl } });
+        }
+
         async function persistCurrentList(): Promise<void> {
             const id = store.currentListId();
             if (!id) return;
@@ -226,6 +260,7 @@ export const AppStore = signalStore(
                     items: cached?.items ?? [],
                     messages: cached?.messages ?? [],
                     charonDrops: [],
+                    audioDataUrls: {},
                     error: null,
                     loading: !cached,
                 });
@@ -280,6 +315,7 @@ export const AppStore = signalStore(
                     items: [],
                     messages: [],
                     charonDrops: [],
+                    audioDataUrls: {},
                     error: null,
                 });
 
@@ -597,6 +633,54 @@ export const AppStore = signalStore(
                 }
             },
 
+            async shareAudio(dataUrl: string, plainSenderName: string, replyToMessageId?: string | null): Promise<string> {
+                const listId = store.currentListId();
+                const key = store.currentEncryptionKey();
+                if (!listId || !key) throw new Error('No list is currently open.');
+
+                const placeholder = JSON.stringify({ type: 'audio' });
+                const [msg, sender, audio] = await Promise.all([
+                    crypto.encrypt(placeholder, key),
+                    crypto.encrypt(plainSenderName, key),
+                    crypto.encrypt(dataUrl, key),
+                ]);
+
+                const messageId = await firstValueFrom(
+                    api.createMessage({
+                        ghostListId: listId,
+                        encryptedMessage: msg.ciphertext,
+                        messageInitializationVector: msg.iv,
+                        encryptedSenderName: sender.ciphertext,
+                        senderNameInitializationVector: sender.iv,
+                        replyToMessageId: replyToMessageId ?? null,
+                    }),
+                );
+
+                // Convert data URL to blob URL for local playback.
+                const blob = AudioBlobConverter.dataUrlToBlob(dataUrl);
+                cacheAudio(messageId, URL.createObjectURL(blob));
+
+                try {
+                    await hub.relayAudio(listId, messageId, audio.ciphertext, audio.iv);
+                } catch { }
+
+                return messageId;
+            },
+
+            async fetchAndCacheAudio(messageId: string): Promise<void> {
+                if (store.audioDataUrls()[messageId]) return;
+
+                const key = store.currentEncryptionKey();
+                if (!key) return;
+
+                try {
+                    const dto = await firstValueFrom(api.getMessageAudio(messageId));
+                    const dataUrl = await crypto.decrypt(dto.encryptedAudio, dto.audioInitializationVector, key);
+                    const blob = AudioBlobConverter.dataUrlToBlob(dataUrl);
+                    cacheAudio(messageId, URL.createObjectURL(blob));
+                } catch { }
+            },
+
             async sendCharonDrop(
                 encryptedContent: string,
                 contentInitializationVector: string,
@@ -752,6 +836,7 @@ export const AppStore = signalStore(
             },
 
             _cacheImage: cacheImage,
+            _cacheAudio: cacheAudio,
             _persistCurrentList: persistCurrentList,
         };
     }),
@@ -933,13 +1018,25 @@ export const AppStore = signalStore(
                     } catch { }
                 });
 
+                hub.audioShared$.subscribe(async (event: AudioSharedEvent) => {
+                    const known = store.knownLists().find((l) => l.id === event.ghostListId);
+                    if (!known) return;
+                    try {
+                        const dataUrl = await crypto.decrypt(event.encryptedAudio, event.audioInitializationVector, known.encryptionKey);
+                        const blob = AudioBlobConverter.dataUrlToBlob(dataUrl);
+                        store._cacheAudio(event.messageId, URL.createObjectURL(blob));
+                    } catch { }
+                });
+
                 hub.readReceiptUpdated$.subscribe((event) => {
                     if (event.deviceId === deviceId.deviceId || !event.lastReadMessageAt) return;
                     const current = store.othersLastReadMessageAt()[event.ghostListId] ?? null;
-                    if (current && current >= event.lastReadMessageAt) return;
-                    patchState(store, {
-                        othersLastReadMessageAt: { ...store.othersLastReadMessageAt(), [event.ghostListId]: event.lastReadMessageAt },
-                    });
+                    if (!current || current < event.lastReadMessageAt) {
+                        patchState(store, {
+                            othersLastReadMessageAt: { ...store.othersLastReadMessageAt(), [event.ghostListId]: event.lastReadMessageAt },
+                        });
+                    }
+                    store._updateMemberReadAt(event.ghostListId, event.deviceId, event.lastReadMessageAt);
                 });
 
                 hub.charonDropCreated$.subscribe((event) => {

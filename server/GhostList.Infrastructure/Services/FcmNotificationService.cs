@@ -40,6 +40,14 @@ public class FcmNotificationService(
         _ => "items",
     };
 
+    private static readonly Dictionary<string, (string Title, string Body)> ReminderTexts = new()
+    {
+        ["en_US"] = ("GhostList", "⏰ Reminder — tap to view"),
+        ["de_DE"] = ("GhostList", "⏰ Erinnerung — tippen zum Anzeigen"),
+        ["it_IT"] = ("GhostList", "⏰ Promemoria — tocca per visualizzare"),
+        ["es_ES"] = ("GhostList", "⏰ Recordatorio — toca para ver"),
+    };
+
     private const string FallbackLocale = "en_US";
 
     private static readonly Dictionary<string, Dictionary<PushNotificationType, (string Title, string Body)>> Texts = new()
@@ -85,8 +93,11 @@ public class FcmNotificationService(
     private static (string Title, string Body) GetText(string? locale, PushNotificationType type)
     {
         var key = locale is not null && Texts.ContainsKey(locale) ? locale : FallbackLocale;
-        var byType = Texts[key];
 
+        if (type == PushNotificationType.ItemReminder)
+            return ReminderTexts.TryGetValue(key, out var rt) ? rt : ReminderTexts[FallbackLocale];
+
+        var byType = Texts[key];
         return byType.TryGetValue(type, out var text)
             ? text
             : ("GhostList", DefaultBody.GetValueOrDefault(key, DefaultBody[FallbackLocale]));
@@ -113,6 +124,7 @@ public class FcmNotificationService(
             PushNotificationType.ItemsChanged => query.Where(s => s.NotifyOnItemsChanged),
             PushNotificationType.WhisperInvite => query.Where(s => s.NotifyOnLethe),
             PushNotificationType.CharonDrop => query.Where(s => s.NotifyOnCharon),
+            PushNotificationType.ItemReminder => query, // user explicitly set this reminder — no preference filter
             _ => query,
         };
 
@@ -130,9 +142,10 @@ public class FcmNotificationService(
             : [];
 
         var targets = subscriptions
-            .Where(s => type is PushNotificationType.WhisperInvite or PushNotificationType.CharonDrop
+            .Where(s => type is PushNotificationType.WhisperInvite or PushNotificationType.CharonDrop or PushNotificationType.ItemReminder
 
-                ? !alreadyWatching.Contains(s.DeviceId)
+                // reminders always deliver — user explicitly scheduled them
+                ? type == PushNotificationType.ItemReminder || !alreadyWatching.Contains(s.DeviceId)
 
                 : !presence.ShouldSuppress(listId.ToString(), s.DeviceId))
             .ToList();
@@ -253,6 +266,7 @@ public class FcmNotificationService(
                 PushNotificationType.ItemsChanged => "items_changed",
                 PushNotificationType.WhisperInvite => "whisper_invite",
                 PushNotificationType.CharonDrop => "charon_drop",
+                PushNotificationType.ItemReminder => "item_reminder",
                 _ => "update",
             },
         };
@@ -274,7 +288,8 @@ public class FcmNotificationService(
                         // 10 = immediate delivery, 5 = power-saving (background)
                         ["apns-priority"] = type is PushNotificationType.Message
                             or PushNotificationType.WhisperInvite
-                            or PushNotificationType.CharonDrop ? "10" : "5",
+                            or PushNotificationType.CharonDrop
+                            or PushNotificationType.ItemReminder ? "10" : "5",
                         // required when showing a visible alert
                         ["apns-push-type"] = "alert",
                     },
@@ -300,6 +315,7 @@ public class FcmNotificationService(
                             PushNotificationType.WhisperInvite => "ghost_lethe",
                             PushNotificationType.CharonDrop => "ghost_charon",
                             PushNotificationType.Message => "ghost_messages",
+                            PushNotificationType.ItemReminder => "ghost_reminders",
                             _ => "ghost_items",
                         },
                     },

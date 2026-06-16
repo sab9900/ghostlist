@@ -4,12 +4,14 @@ import { Subject } from 'rxjs';
 import { Capacitor } from '@capacitor/core';
 import { environment } from '../../environments/environment';
 import {
+    AudioSharedEvent,
     CharonDropCreatedEvent,
     ImageSharedEvent,
     ItemCreatedEvent,
     ItemToggledEvent,
     MessageCreatedEvent,
     ReadReceiptUpdatedEvent,
+    ReminderFiredEvent,
     WhisperPresenceEntry,
     WhisperReceivedEvent,
 } from '../core/models';
@@ -38,6 +40,8 @@ export class HubService implements OnDestroy {
     private readonly _whisperPresenceChanged$ = new Subject<{ listId: string; roster: WhisperPresenceEntry[] }>();
     private readonly _charonDropCreated$ = new Subject<CharonDropCreatedEvent>();
     private readonly _charonDropDeleted$ = new Subject<string>();
+    private readonly _audioShared$ = new Subject<AudioSharedEvent>();
+    private readonly _reminderFired$ = new Subject<ReminderFiredEvent>();
     private readonly _reconnected$ = new Subject<void>();
 
     readonly itemCreated$ = this._itemCreated$.asObservable();
@@ -55,6 +59,8 @@ export class HubService implements OnDestroy {
     readonly whisperPresenceChanged$ = this._whisperPresenceChanged$.asObservable();
     readonly charonDropCreated$ = this._charonDropCreated$.asObservable();
     readonly charonDropDeleted$ = this._charonDropDeleted$.asObservable();
+    readonly audioShared$ = this._audioShared$.asObservable();
+    readonly reminderFired$ = this._reminderFired$.asObservable();
 
     readonly reconnected$ = this._reconnected$.asObservable();
 
@@ -81,6 +87,8 @@ export class HubService implements OnDestroy {
         );
         this.connection.on('CharonDropCreated', (e: CharonDropCreatedEvent) => this._charonDropCreated$.next(e));
         this.connection.on('CharonDropDeleted', (id: string) => this._charonDropDeleted$.next(id));
+        this.connection.on('AudioShared', (e: AudioSharedEvent) => this._audioShared$.next(e));
+        this.connection.on('ReminderFired', (e: ReminderFiredEvent) => this._reminderFired$.next(e));
 
         this.connection.onreconnecting(() =>
             this.connectionState.set(signalR.HubConnectionState.Reconnecting),
@@ -130,6 +138,10 @@ export class HubService implements OnDestroy {
 
     async relayImage(listId: string, messageId: string, encryptedImage: string, imageInitializationVector: string): Promise<void> {
         await this.connection.invoke('RelayImage', listId, messageId, encryptedImage, imageInitializationVector);
+    }
+
+    async relayAudio(listId: string, messageId: string, encryptedAudio: string, audioInitializationVector: string): Promise<void> {
+        await this.connection.invoke('RelayAudio', listId, messageId, encryptedAudio, audioInitializationVector);
     }
 
     async joinWhisperRoom(listId: string, displayName: string): Promise<void> {

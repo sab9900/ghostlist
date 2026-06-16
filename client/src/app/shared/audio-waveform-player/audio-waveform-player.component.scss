@@ -1,0 +1,99 @@
+:host {
+    display: block;
+    width: 100%;
+}
+
+.waveform-player {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    min-width: 180px;
+
+    &__play-btn {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: none;
+        background: var(--color-primary);
+        color: var(--color-on-primary, #fff);
+        cursor: pointer;
+        transition: opacity var(--duration-fast) var(--ease-out);
+
+        svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        &:active {
+            opacity: 0.75;
+        }
+
+        // Inverted colours when inside a sent (primary-bg) bubble
+        :host-context(.message--mine) & {
+            background: rgba(255, 255, 255, 0.25);
+            color: #fff;
+        }
+    }
+
+    &__body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    &__bars {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        height: 32px;
+        cursor: pointer;
+        touch-action: none;
+        user-select: none;
+    }
+
+    &__bar {
+        flex: 1;
+        min-height: 3px;
+        max-height: 100%;
+        border-radius: 2px;
+        background: var(--color-text-subtle);
+        opacity: 0.4;
+        transition: background var(--duration-fast) var(--ease-out),
+                    opacity var(--duration-fast) var(--ease-out);
+
+        &--played {
+            background: var(--color-primary);
+            opacity: 1;
+
+            :host-context(.message--mine) & {
+                background: #fff;
+                opacity: 0.9;
+            }
+        }
+
+        // Unplayed bars in sent bubbles
+        :host-context(.message--mine) & {
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0.5;
+        }
+    }
+
+    &__time {
+        display: flex;
+        justify-content: space-between;
+        font-size: var(--text-xs);
+        color: var(--color-text-subtle);
+        line-height: 1;
+
+        :host-context(.message--mine) & {
+            color: rgba(255, 255, 255, 0.7);
+        }
+    }
+}

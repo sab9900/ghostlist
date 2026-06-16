@@ -44,3 +44,15 @@ export interface CreateCharonDropRequest {
     encryptedMetadata: string;
     metadataInitializationVector: string;
 }
+
+export interface CreateItemReminderRequest {
+    ghostListId: string;
+    itemId: string;
+    remindAt: string; // ISO-8601 UTC
+}
+
+export interface ItemReminderDto {
+    id: string;
+    itemId: string;
+    remindAt: string; // ISO-8601 UTC
+}

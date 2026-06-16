@@ -276,6 +276,36 @@
 
         <div class="settings-col">
 
+        <section class="section" aria-labelledby="notif-heading">
+            <div class="section__desc">
+                <h2 class="section__title" id="notif-heading">{{ 'SETTINGS.NOTIFICATIONS.TITLE' | translate }}</h2>
+                <p class="section__hint">{{ 'SETTINGS.NOTIFICATIONS.TOGGLE_HINT' | translate }}</p>
+            </div>
+            <div class="section__body">
+                @if (webPushPermission() === 'denied') {
+                <p class="security-status security-status--err" role="alert">
+                    {{ 'SETTINGS.NOTIFICATIONS.DENIED' | translate }}
+                </p>
+                } @else {
+                <div class="toggle-row">
+                    <div>
+                        <p class="toggle-label" id="notif-toggle-label">{{ 'SETTINGS.NOTIFICATIONS.TOGGLE_LABEL' | translate }}</p>
+                    </div>
+                    @if (notifEnabling()) {
+                    <span class="toggle-hint">{{ 'SETTINGS.NOTIFICATIONS.ENABLING' | translate }}</span>
+                    } @else {
+                    <label class="toggle-switch" aria-labelledby="notif-toggle-label">
+                        <input type="checkbox"
+                            [ngModel]="notificationsEnabled() && pushActive()"
+                            (ngModelChange)="toggleNotifications($event)" />
+                        <span class="toggle-switch__track" aria-hidden="true"></span>
+                    </label>
+                    }
+                </div>
+                }
+            </div>
+        </section>
+
         @if (!layout.isDesktop()) {
         <section class="section" aria-labelledby="haptics-heading">
             <div class="section__desc">

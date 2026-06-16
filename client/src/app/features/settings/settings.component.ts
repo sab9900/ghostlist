@@ -1,4 +1,4 @@
-import { Component, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
@@ -11,6 +11,7 @@ import { LayoutService } from '../../core/services/layout.service';
 import { MasterPasswordService } from '../../core/services/master-password.service';
 import { SensitiveListsService } from '../../core/services/sensitive-lists.service';
 import { Theme, ThemeAccent, ThemeService } from '../../core/services/theme.service';
+import { PushNotificationService } from '../../core/services/push-notification.service';
 import { UserPreferencesService } from '../../core/services/user-preferences.service';
 import { AUTO_LOCK_OPTIONS, WebAuthnService } from '../../core/services/webauthn.service';
 import { AppStore } from '../../store/app.store';
@@ -32,9 +33,15 @@ export class SettingsComponent {
     protected readonly store = inject(AppStore);
     protected readonly webAuthn = inject(WebAuthnService);
     protected readonly masterPassword = inject(MasterPasswordService);
+    private readonly push = inject(PushNotificationService);
     private readonly sensitiveLists = inject(SensitiveListsService);
     private readonly router = inject(Router);
     private readonly crypto = inject(CryptoService);
+
+    protected readonly webPushPermission = this.push.webPushPermission;
+    protected readonly notificationsEnabled = this.prefs.notificationsEnabled;
+    protected readonly notifEnabling = signal(false);
+    protected readonly pushActive = this.push.pushActive;
 
     protected readonly themeOptions: { value: Theme; labelKey: string; descKey: string }[] = [
         { value: 'system', labelKey: 'SETTINGS.THEME.SYSTEM', descKey: 'SETTINGS.THEME.SYSTEM_DESC' },
@@ -83,6 +90,23 @@ export class SettingsComponent {
         this.prefs.setSenderName(name);
         this.nameSaved.set(true);
         setTimeout(() => this.nameSaved.set(false), 2000);
+    }
+
+    async toggleNotifications(enabled: boolean): Promise<void> {
+        if (enabled) {
+            if (this.notifEnabling()) return;
+            this.notifEnabling.set(true);
+            try {
+                const listIds = this.store.knownLists().map(l => l.id);
+                await this.push.enablePush(listIds);
+                this.prefs.setNotificationsEnabled(true);
+                this.prefs.markNotifPrompted();
+            } finally {
+                this.notifEnabling.set(false);
+            }
+        } else {
+            this.prefs.setNotificationsEnabled(false);
+        }
     }
 
     goBack(): void {

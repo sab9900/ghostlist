@@ -16,3 +16,9 @@ export interface GhostMessageImageDto {
     encryptedImage: string;
     imageInitializationVector: string;
 }
+
+export interface GhostMessageAudioDto {
+    messageId: string;
+    encryptedAudio: string;
+    audioInitializationVector: string;
+}
