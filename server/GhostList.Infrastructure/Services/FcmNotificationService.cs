@@ -143,11 +143,11 @@ public class FcmNotificationService(
             : [];
 
         var targets = subscriptions
-            .Where(s => type is PushNotificationType.WhisperInvite or PushNotificationType.CharonDrop or PushNotificationType.ItemReminder
-
-                // reminders always deliver — user explicitly scheduled them
-                ? type == PushNotificationType.ItemReminder || !alreadyWatching.Contains(s.DeviceId)
-
+            .Where(s => type is PushNotificationType.WhisperInvite or PushNotificationType.CharonDrop
+                // Whisper/Charon: bypass regular presence suppression, but exclude already-in-room devices
+                ? !alreadyWatching.Contains(s.DeviceId)
+                // Everything else (including ItemReminder): suppress push when device is connected/foreground —
+                // SignalR ReminderFired handles delivery in that case; push is only needed when offline.
                 : !presence.ShouldSuppress(listId.ToString(), s.DeviceId))
             .ToList();
 

@@ -157,8 +157,11 @@ export class PushNotificationService {
         }
 
         await PushNotifications.removeAllListeners();
-        await PushNotifications.register();
 
+        // Listeners MUST be registered before register() is called.
+        // On iOS the 'registration' event can fire synchronously from the
+        // cached APNs/FCM token during register() — adding listeners afterwards
+        // means the token is never received.
         PushNotifications.addListener('registration', async ({ value: token }) => {
             this.setToken(token);
             this.webPushPermission.set('granted');
@@ -182,6 +185,8 @@ export class PushNotificationService {
                 this.router.navigate(['/list', listId, this.routeForType(type)]);
             }
         });
+
+        await PushNotifications.register();
     }
 
     private readonly WEB_TOKEN_STORAGE_KEY = 'ghost_fcm_token';

@@ -397,12 +397,10 @@ export class ItemsTabComponent implements OnDestroy {
     // ── reminder dialog ───────────────────────────────────────────────────
     openReminder(item: DecryptedItem): void {
         this.openMenuId.set(null);
-        // Default: tomorrow 09:00 local time
-        const d = new Date();
-        d.setDate(d.getDate() + 1);
-        d.setHours(9, 0, 0, 0);
+        // Default: now (rounded up to the next minute)
+        const d = new Date(Math.ceil(Date.now() / 60_000) * 60_000);
         const pad = (n: number) => String(n).padStart(2, '0');
-        this.reminderDateTime = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T09:00`;
+        this.reminderDateTime = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
         this.reminderSaved.set(false);
         this.reminderItem.set(item);
     }
