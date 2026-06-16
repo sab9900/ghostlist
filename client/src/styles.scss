@@ -200,9 +200,14 @@ textarea,
 }
 
 app-root {
-    display: flex;
-    flex-direction: column;
+    /* Use --app-height (set by inline JS from window.innerHeight) instead of
+       height:100% or 100dvh. On iOS PWA, CSS viewport height excludes the
+       home-indicator safe-area and leaves a black strip; window.innerHeight
+       always returns the real physical screen height. Falls back to 100dvh
+       (and then 100%) for the rare case the script hasn't run yet. */
     height: 100%;
+    height: 100dvh;
+    height: var(--app-height, 100dvh);
     padding-bottom: var(--keyboard-height);
     transition: padding-bottom 200ms var(--ease-out);
 }

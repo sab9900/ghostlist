@@ -96,6 +96,7 @@ export class ListDetailComponent implements OnDestroy {
     protected readonly pendingCharonDrops = computed(() => this.store.charonDrops().length);
 
     private readonly members = signal<ListMember[]>([]);
+    private readonly membersLoaded = signal(false);
     protected readonly isMultiMember = computed(() => this.members().length > 1);
 
     constructor() {
@@ -137,6 +138,7 @@ export class ListDetailComponent implements OnDestroy {
             const key = this.store.currentEncryptionKey();
             if (!id || !key) {
                 this.members.set([]);
+                this.membersLoaded.set(false);
                 return;
             }
             this.refreshMembers();
@@ -170,7 +172,7 @@ export class ListDetailComponent implements OnDestroy {
                 void this.router.navigate(['/list', id, 'items'], { replaceUrl: true });
             }
 
-            if ((tab === 'chat' || tab === 'whisper' || tab === 'charon') && !this.isMultiMember()) {
+            if ((tab === 'chat' || tab === 'whisper' || tab === 'charon') && this.membersLoaded() && !this.isMultiMember()) {
                 void this.router.navigate(['/list', id, 'items'], { replaceUrl: true });
             }
         });
@@ -182,9 +184,16 @@ export class ListDetailComponent implements OnDestroy {
         if (!id || !key) return;
         void this.store.fetchMembersForList(id, key)
             .then(members => {
-                if (this.store.currentListId() === id) this.members.set(members);
+                if (this.store.currentListId() === id) {
+                    this.members.set(members);
+                    this.membersLoaded.set(true);
+                }
             })
-            .catch(() => { });
+            .catch(() => {
+                if (this.store.currentListId() === id) {
+                    this.membersLoaded.set(true);
+                }
+            });
     }
 
     async ngOnDestroy(): Promise<void> {

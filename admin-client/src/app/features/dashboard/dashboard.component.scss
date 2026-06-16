@@ -209,10 +209,13 @@
     border-radius: 8px;
 }
 
-.world-map__grid {
-    stroke: var(--color-border);
-    stroke-width: 1;
-    opacity: 0.5;
+.world-map__land {
+    fill: var(--color-text-muted);
+    fill-opacity: 0.12;
+    stroke: var(--color-text-muted);
+    stroke-width: 0.6;
+    stroke-opacity: 0.25;
+    stroke-linejoin: round;
 }
 
 .world-map__label {

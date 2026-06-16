@@ -24,6 +24,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Creepster&display=swap" rel="stylesheet">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+        // iOS PWA reports the wrong viewport height via CSS (excludes safe-area
+        // bottom), causing a black strip at the bottom. window.innerHeight is
+        // always the real physical screen height, so we expose it as a CSS
+        // variable and use it as the app shell height instead.
+        function updateAppHeight() {
+            document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
+        }
+        updateAppHeight();
+        window.addEventListener('resize', updateAppHeight);
+    </script>
 </head>
 
 <body>

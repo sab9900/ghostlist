@@ -4,7 +4,7 @@ import { AdminStatsService } from '../../core/services/admin-stats.service';
 import { AuthService } from '../../core/services/auth.service';
 import { AdminCountryStat, AdminStats } from '../../core/models/admin-stats.model';
 import { APP_VERSION } from '../../version';
-import { COUNTRY_COORDS, COUNTRY_NAMES, LANGUAGE_NAMES, countryFlag, projectToMap } from '../../core/data/world-map.data';
+import { COUNTRY_COORDS, COUNTRY_NAMES, LANGUAGE_NAMES, WORLD_MAP_PATHS, countryFlag, projectToMap } from '../../core/data/world-map.data';
 
 type DailyMetric = 'lists' | 'items' | 'messages' | 'members';
 
@@ -19,8 +19,7 @@ interface MapMarker {
     count: number;
 }
 
-const MAP_GRID_LINES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (i / 12) * 1000);
-const MAP_GRID_ROWS = [0, 1, 2, 3, 4, 5, 6].map((i) => (i / 6) * 500);
+const MAP_LAND_PATHS = WORLD_MAP_PATHS;
 
 @Component({
     selector: 'app-dashboard',
@@ -85,12 +84,8 @@ export class DashboardComponent implements OnInit {
         return (this.stats()?.localeBreakdown.countries ?? []).slice(0, 10);
     }
 
-    mapGridCols(): number[] {
-        return MAP_GRID_LINES;
-    }
-
-    mapGridRows(): number[] {
-        return MAP_GRID_ROWS;
+    mapLandPaths(): { name: string; d: string }[] {
+        return MAP_LAND_PATHS;
     }
 
     mapMarkers(): MapMarker[] {

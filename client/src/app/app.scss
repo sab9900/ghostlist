@@ -1,6 +1,8 @@
 :host {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    width: 100%;
     display: flex;
     flex-direction: column;
     background: var(--color-bg);
@@ -138,6 +140,8 @@
     align-items: center;
     justify-content: center;
     padding: var(--space-4);
+    padding-bottom: calc(var(--keyboard-height, 0px) + var(--space-4));
+    transition: padding-bottom 200ms var(--ease-out);
     z-index: 200;
 }
 

@@ -230,10 +230,16 @@ export const AppStore = signalStore(
                     const id = await firstValueFrom(api.createList(ownerTokenHash));
                     const entry: KnownList = { id, encryptionKey, name, addedAt: new Date().toISOString(), ownerToken };
                     await store._persistAndTrack(entry);
-                    await hub.connect();
-                    await hub.joinList(id);
-                    foreground.start();
-                    await push.subscribeToList(id);
+
+                    // Hub-Join und Push im Hintergrund — blockiert den Dialog nicht
+                    void (async () => {
+                        try {
+                            await hub.connect();
+                            await hub.joinList(id);
+                            foreground.start();
+                        } catch { }
+                    })();
+                    void push.subscribeToList(id).catch(() => { });
                     void store._registerAsMember(id, encryptionKey);
                     return id;
                 } catch (e: unknown) {

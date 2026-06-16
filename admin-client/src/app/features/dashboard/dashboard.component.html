@@ -161,19 +161,16 @@
                         </filter>
                     </defs>
 
-                    @for (x of mapGridCols(); track x) {
-                        <line class="world-map__grid" [attr.x1]="x" y1="0" [attr.x2]="x" y2="500" />
-                    }
-                    @for (y of mapGridRows(); track y) {
-                        <line class="world-map__grid" x1="0" [attr.y1]="y" x2="1000" [attr.y2]="y" />
+                    @for (region of mapLandPaths(); track region.name) {
+                        <path class="world-map__land" [attr.d]="region.d" />
                     }
 
-                    <text class="world-map__label" x="60" y="130">N. AMERICA</text>
-                    <text class="world-map__label" x="200" y="380">S. AMERICA</text>
-                    <text class="world-map__label" x="470" y="110">EUROPE</text>
-                    <text class="world-map__label" x="490" y="320">AFRICA</text>
-                    <text class="world-map__label" x="700" y="170">ASIA</text>
-                    <text class="world-map__label" x="820" y="410">OCEANIA</text>
+                    <text class="world-map__label" x="185" y="160">N. AMERICA</text>
+                    <text class="world-map__label" x="320" y="320">S. AMERICA</text>
+                    <text class="world-map__label" x="508" y="122">EUROPE</text>
+                    <text class="world-map__label" x="540" y="272">AFRICA</text>
+                    <text class="world-map__label" x="705" y="178">ASIA</text>
+                    <text class="world-map__label" x="862" y="338">OCEANIA</text>
 
                     @for (m of mapMarkers(); track m.country) {
                         <circle
