@@ -1,12 +1,12 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { filter, map, startWith } from 'rxjs';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { TranslatePipe } from '@ngx-translate/core';
-import { FormsModule } from '@angular/forms';
+import { filter, map, startWith } from 'rxjs';
 import { BadgeService } from './core/services/badge.service';
 import { InfoCenterService } from './core/services/info-center.service';
 import { KeyboardInsetService } from './core/services/keyboard-inset.service';
@@ -25,6 +25,7 @@ const SIDEBAR_WIDTH_KEY = 'gl_sidebar_width';
 const SIDEBAR_MIN = 280;
 const SIDEBAR_MAX = 520;
 const SIDEBAR_DEFAULT = 320;
+
 
 function loadSidebarWidth(): number {
     try {
@@ -57,7 +58,7 @@ export class App {
 
     protected readonly isWebPlatform = Capacitor.getPlatform() === 'web';
 
-    protected readonly locked    = signal(false);
+    protected readonly locked = signal(false);
     protected readonly unlocking = signal(false);
     protected readonly lockError = signal(false);
 
@@ -90,7 +91,7 @@ export class App {
         this.keyboardInset.start();
 
         if (Capacitor.isNativePlatform()) {
-            StatusBar.setStyle({ style: Style.Default }).catch(() => {});
+            StatusBar.setStyle({ style: Style.Default }).catch(() => { });
 
             CapacitorApp.addListener('appUrlOpen', ({ url }: { url: string }) => {
                 try {
