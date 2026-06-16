@@ -74,7 +74,7 @@ export class UserPreferencesService {
 
     /** Whether the user has opted in to push notifications (soft toggle, independent of browser permission). */
     readonly notificationsEnabled = signal<boolean>(
-        localStorage.getItem(LS_NOTIF_ENABLED_KEY) !== '0',
+        localStorage.getItem(LS_NOTIF_ENABLED_KEY) === '1',
     );
 
     setNotificationsEnabled(enabled: boolean): void {
