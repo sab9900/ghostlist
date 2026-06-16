@@ -73,18 +73,12 @@ export class ItemsTabComponent {
         } catch { }
     }
 
-    /**
-     * Whether an item/check action originated from this person, based on the
-     * stable `senderUserId` (preferred) or `senderDeviceId` (legacy fallback).
-     * Returns null if neither identifier is present.
-     */
     private isMineBySenderIds(senderUserId: string | null, senderDeviceId: string | null): boolean | null {
         if (senderUserId !== null) return senderUserId === this.userId.userId();
         if (senderDeviceId !== null) return senderDeviceId === this.deviceId.deviceId;
         return null;
     }
 
-    /** Resolves a display name for a sender/checker identified by userId/deviceId, or null if unknown. */
     private resolveName(userId: string | null, deviceId: string | null): string | null {
         if (userId === null && deviceId === null) return null;
 
@@ -119,7 +113,6 @@ export class ItemsTabComponent {
         this.decryptedItems.set(items);
     }
 
-    /** Called once an item has been visible long enough to count as "read". */
     onItemDwellRead(itemId: string): void {
         this.store.markItemRead(itemId);
     }

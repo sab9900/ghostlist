@@ -121,7 +121,11 @@
     "SENDING": "Sending…",
     "FILE_TOO_LARGE": "File is too large (max 8 MB).",
     "FILE_TYPE_NOT_ALLOWED": "This file type isn't supported.",
-    "IMAGE_ALT": "Shared image"
+    "IMAGE_ALT": "Shared image",
+    "RECORD_ARIA": "Record a self-destructing voice message",
+    "STOP_RECORD_ARIA": "Stop recording and send",
+    "RECORD_NOT_SUPPORTED": "Voice recording isn't supported in this browser.",
+    "AUDIO_FALLBACK": "Your browser does not support audio playback."
   },
   "LIST_SETTINGS": {
     "LIST_NAME_TITLE": "List name",
@@ -174,7 +178,11 @@
       "OneWeek": "1 week",
       "OneMonth": "1 month",
       "ThreeMonths": "3 months"
-    }
+    },
+    "NOTIFY_ON_LETHE": "Lethe invitations",
+    "NOTIFY_ON_LETHE_HINT": "Notify when someone invites you to whisper in Lethe.",
+    "NOTIFY_ON_CHARON": "Charon drops",
+    "NOTIFY_ON_CHARON_HINT": "Notify when a new Charon dead-drop is posted to this list."
   },
   "JOIN": {
     "TITLE": "Import list",
@@ -210,13 +218,13 @@
     "HAPTICS_ENABLE": "Enable haptics",
     "HAPTICS_HINT": "Vibrate on taps and actions like adding or checking off items.",
     "SYNC_TITLE": "Sync Machine",
-    "SYNC_HINT": "Transfer all your lists to another device in one go.",
-    "SYNC_RECEIVE": "Receive from another device",
-    "SYNC_SEND": "Send to another device",
-    "SYNC_RECEIVE_HINT": "On the other device: open the link or scan the QR code — lists are transferred automatically.",
+    "SYNC_HINT": "Merge all your lists with another device, in either direction.",
+    "SYNC_MACHINES": "Sync machines",
+    "SYNC_QR_HINT": "On the other device, tap \"Sync machines\" and scan this code — or scan its code instead.",
+    "SYNC_SCAN_INSTEAD": "Scan a code instead",
+    "SYNC_SCAN_HINT": "On the other device, tap \"Sync machines\" to show its code, then scan it here.",
     "SYNC_WAITING": "Waiting — will complete automatically…",
     "SYNC_DONE": "Done! {{count}} list(s) merged. Both devices are now in sync.",
-    "SYNC_SEND_HINT": "On the other device, go to Settings → Sync Machine → Receive and show the QR code.",
     "SYNC_ERROR": "Something went wrong. Please try again.",
     "SECURITY": {
       "TITLE": "Security",
@@ -268,6 +276,7 @@
     "TYPE_INFO": "Info",
     "TYPE_RELEASE_NOTES": "Release Notes",
     "TYPE_MAINTENANCE": "Maintenance",
+    "DOWNLOAD": "Download update",
     "DISMISS": "Got it"
   },
   "ABOUT": {

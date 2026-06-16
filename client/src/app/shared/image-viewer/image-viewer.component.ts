@@ -2,10 +2,6 @@ import { Component, HostListener, inject } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ImageViewerService } from '../../core/services/image-viewer.service';
 
-/**
- * Full-screen lightbox for viewing shared images (Chat, Charon) at full size.
- * Rendered once at the app root; opened/closed via `ImageViewerService`.
- */
 @Component({
     selector: 'app-image-viewer',
     imports: [TranslatePipe],

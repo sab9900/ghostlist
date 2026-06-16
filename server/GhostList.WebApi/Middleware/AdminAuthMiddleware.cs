@@ -2,12 +2,6 @@ using System.Text;
 
 namespace GhostList.WebApi.Middleware;
 
-/// <summary>
-/// Protects <c>/api/admin/*</c> with a fixed-credential HTTP Basic Auth check.
-/// Credentials are configured via <c>Admin:Username</c> / <c>Admin:Password</c>
-/// (e.g. the <c>Admin__Username</c> / <c>Admin__Password</c> environment variables).
-/// If no credentials are configured, the admin API is disabled entirely (503).
-/// </summary>
 public class AdminAuthMiddleware(RequestDelegate next, IConfiguration configuration)
 {
     private const string AdminPathPrefix = "/api/admin";

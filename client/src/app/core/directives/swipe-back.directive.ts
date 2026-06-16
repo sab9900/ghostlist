@@ -1,13 +1,5 @@
 import { Directive, ElementRef, EventEmitter, HostListener, Input, OnDestroy, Output, inject } from '@angular/core';
 
-/**
- * Detects an iOS-style "swipe from the left edge" gesture and emits
- * `swipeBack` once the user has dragged far enough to the right.
- *
- * While the gesture is in progress, the host element gets a live
- * `--swipe-progress` CSS variable (0..1) and an `is-swiping-back` class,
- * so the template can show a drag-following transition if desired.
- */
 @Directive({
     selector: '[appSwipeBack]',
     standalone: true,

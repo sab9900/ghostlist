@@ -4,10 +4,6 @@ import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
-/**
- * Attaches the stored Basic Auth header to outgoing requests and, on a 401
- * response, clears the stored credentials and redirects to the login page.
- */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
     const auth = inject(AuthService);
     const router = inject(Router);

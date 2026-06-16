@@ -11,7 +11,6 @@ export interface CachedList {
     cachedAt: string;
 }
 
-/** A mutation that couldn't reach the server and is queued for replay once back online. */
 export type PendingOperation =
     | {
         localId?: number;
@@ -26,7 +25,7 @@ export type PendingOperation =
         type: 'toggleItem';
         listId: string;
         itemId: string;
-        /** The checked state the user wants this item to end up in. */
+
         desiredChecked: boolean;
         createdAt: string;
     }

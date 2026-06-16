@@ -11,10 +11,8 @@ interface ReadReceiptsState {
 
     unreadItemCounts: Record<string, number>;
 
-    /** Ids of messages not yet seen by this device, per list. */
     unreadMessageIds: Record<string, string[]>;
 
-    /** Ids of items not yet seen by this device, per list. */
     unreadItemIds: Record<string, string[]>;
 
     othersLastReadMessageAt: Record<string, string | null>;
@@ -28,11 +26,6 @@ const initialState: ReadReceiptsState = {
     othersLastReadMessageAt: {},
 };
 
-/**
- * How long to wait after the first viewport-dwell "read" event before sending
- * the batched read-receipt request, so scrolling through several
- * messages/items at once results in one request instead of many.
- */
 const FLUSH_DELAY_MS = 600;
 
 export function withReadReceipts() {
@@ -93,7 +86,7 @@ export function withReadReceipts() {
             }
 
             return {
-                /** Registers a newly-arrived message id as unread for `listId` (no-op if already tracked). */
+
                 _addUnreadMessage(listId: string, messageId: string): void {
                     const ids = store.unreadMessageIds()[listId] ?? [];
                     if (ids.includes(messageId)) return;
@@ -103,7 +96,6 @@ export function withReadReceipts() {
                     });
                 },
 
-                /** Registers a newly-arrived item id as unread for `listId` (no-op if already tracked). */
                 _addUnreadItem(listId: string, itemId: string): void {
                     const ids = store.unreadItemIds()[listId] ?? [];
                     if (ids.includes(itemId)) return;
@@ -113,12 +105,6 @@ export function withReadReceipts() {
                     });
                 },
 
-                /**
-                 * Marks a single message as read once the user has actually had a
-                 * chance to see it (called by the viewport-dwell directive).
-                 * Updates local state immediately and batches the server-side
-                 * receipt with other recently-read messages.
-                 */
                 markMessageRead(messageId: string, listId?: string): void {
                     const id = listId ?? store.currentListId();
                     if (!id) return;
@@ -132,10 +118,6 @@ export function withReadReceipts() {
                     scheduleFlush(id, 'messages');
                 },
 
-                /**
-                 * Marks a single item as seen/read once the user has actually had a
-                 * chance to see it (called by the viewport-dwell directive).
-                 */
                 markItemRead(itemId: string, listId?: string): void {
                     const id = listId ?? store.currentListId();
                     if (!id) return;
@@ -164,13 +146,6 @@ export function withReadReceipts() {
                     } catch { }
                 },
 
-                /**
-                 * Fetches unread message/item ids for a single list and seeds local
-                 * state from them, unless this list has already been seeded (e.g.
-                 * by `seedUnreadSummaries()` at startup). Used when opening a list
-                 * that wasn't covered by the last summary pass — e.g. one just
-                 * created or joined during this session.
-                 */
                 async ensureUnreadSeeded(listId: string): Promise<void> {
                     if (store.unreadMessageIds()[listId] !== undefined) return;
                     try {
@@ -204,10 +179,7 @@ export function withReadReceipts() {
 
                     for (const r of results) {
                         if (!r) continue;
-                        // The currently-open list's read state is actively maintained
-                        // via dwell-tracking + live SignalR events and already
-                        // reflects what the server has. Overwriting it here would
-                        // resurrect ids the user already read, so leave it untouched.
+
                         if (r.id === currentListId) continue;
                         unreadCounts[r.id] = r.summary.unreadMessageCount;
                         unreadItemCounts[r.id] = r.summary.unreadItemCount;

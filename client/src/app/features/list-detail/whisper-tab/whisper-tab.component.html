@@ -72,10 +72,13 @@
 
 <div class="compose" role="form" [attr.aria-label]="'WHISPER.PLACEHOLDER' | translate">
     <div class="compose__row">
-        <input #composeInput class="compose__input" type="text" [attr.placeholder]="'WHISPER.PLACEHOLDER' | translate"
-            [ngModel]="messageText()" (ngModelChange)="messageText.set($event)" (keydown.enter)="sendWhisper()"
-            maxlength="500" [attr.aria-label]="'WHISPER.PLACEHOLDER' | translate" />
-        <button class="compose__send" (click)="sendWhisper()" [disabled]="!messageText().trim() || sending()"
+        <textarea #composeInput class="compose__input" rows="1"
+            [attr.placeholder]="'WHISPER.PLACEHOLDER' | translate"
+            [ngModel]="messageText()" (ngModelChange)="messageText.set($event)"
+            (keydown)="onKeydown($event)" (input)="autoResize($event)"
+            maxlength="500" [attr.aria-label]="'WHISPER.PLACEHOLDER' | translate"></textarea>
+        <button class="compose__send" (mousedown)="$event.preventDefault()" (click)="sendWhisper()"
+            [disabled]="!messageText().trim() || sending()"
             [attr.aria-label]="'WHISPER.PLACEHOLDER' | translate" [attr.aria-busy]="sending()">›</button>
     </div>
 </div>

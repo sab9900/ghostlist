@@ -55,34 +55,35 @@ export function withPairing() {
                 const lists = store.knownLists();
                 const payload: SyncBundlePayload = {
                     lists: lists.map(l => ({ id: l.id, name: l.name, encryptionKey: l.encryptionKey, ownerToken: l.ownerToken })),
-                    // Carry the display name across so the other device shows up as "you"
-                    // (same name) instead of "Anonymous" when it registers as a list member.
+
                     senderName: prefs.senderName() || null,
-                    // Carry our person-identity across so the other device "remains"
-                    // this same person — its items/messages are recognized as "mine" too.
+
                     userId: userId.userId(),
+                    userIdCreatedAt: userId.createdAt(),
                 };
                 return JSON.stringify(payload);
             };
 
-            const mergeIncomingBundle = async (
-                parsed: SyncBundlePayload,
-                options: { adoptIdentity: boolean },
-            ): Promise<number> => {
-                if (options.adoptIdentity) {
-                    // Adopt the other device's display name so this device shows up as
-                    // "you" (same name) in member lists/chat, rather than "Anonymous".
-                    if (parsed.senderName && !prefs.senderName()) {
-                        prefs.setSenderName(parsed.senderName);
-                    }
+            const reconcileIdentity = (parsed: SyncBundlePayload): void => {
+                if (!parsed.userId || parsed.userId === userId.userId()) return;
 
-                    // Adopt the other device's userId — both devices now represent the
-                    // same person, so this device's items/messages are recognized as
-                    // "mine" everywhere too, and unread counts stay correct after sync.
-                    if (parsed.userId) {
-                        userId.setUserId(parsed.userId);
-                    }
+                const localCreatedAt = userId.createdAt();
+                const remoteCreatedAt = parsed.userIdCreatedAt;
+                if (!remoteCreatedAt) return;
+
+                const remoteIsOlder = remoteCreatedAt < localCreatedAt
+                    || (remoteCreatedAt === localCreatedAt && parsed.userId < userId.userId());
+
+                if (!remoteIsOlder) return;
+
+                userId.setUserId(parsed.userId, remoteCreatedAt);
+                if (parsed.senderName && !prefs.senderName()) {
+                    prefs.setSenderName(parsed.senderName);
                 }
+            };
+
+            const mergeIncomingBundle = async (parsed: SyncBundlePayload): Promise<number> => {
+                reconcileIdentity(parsed);
 
                 let imported = 0;
                 for (const e of parsed.lists) {
@@ -261,12 +262,6 @@ export function withPairing() {
                     return { type: 'sync', publicKey: publicKeyB64, sessionId };
                 },
 
-                /**
-                 * Sender side (scanned the receiver's QR / opened its link): push our
-                 * own lists + identity to the receiver, encrypted to its public key,
-                 * then publish an ephemeral public key via the handshake slot so the
-                 * receiver can send its lists back to us.
-                 */
                 async initSyncSendToReceiver(sessionId: string, receiverPublicKeyB64: string): Promise<void> {
                     const payload = buildSyncPayload();
                     const bundle = await crypto.wrapPayload(payload, receiverPublicKeyB64);
@@ -277,13 +272,6 @@ export function withPairing() {
                     await firstValueFrom(api.postHandshake(sessionId, publicKeyB64));
                 },
 
-                /**
-                 * Sender side: poll for the receiver's reply bundle (its lists +
-                 * identity, encrypted to the ephemeral key from initSyncSendToReceiver)
-                 * and merge it in. Returns null while not yet available (keep polling),
-                 * or the number of newly-imported lists once done. We keep our own
-                 * identity — the receiver already adopted it.
-                 */
                 async claimSyncReply(sessionId: string): Promise<number | null> {
                     const privateKey = pendingSyncReplyReceives.get(sessionId);
                     if (!privateKey) throw new Error('No pending sync reply for this session.');
@@ -298,17 +286,9 @@ export function withPairing() {
 
                     const plain = await crypto.unwrapPayload(bundle.encryptedPayload, bundle.iv, bundle.senderPublicKey, privateKey);
                     const parsed = JSON.parse(plain) as SyncBundlePayload;
-                    return mergeIncomingBundle(parsed, { adoptIdentity: false });
+                    return mergeIncomingBundle(parsed);
                 },
 
-                /**
-                 * Receiver side (generated the QR/link): claim the sender's bundle,
-                 * merge its lists in and adopt its identity (userId/senderName), then
-                 * send our own (now-merged) lists back so the sender ends up with the
-                 * same set of lists too. Returns null while not yet complete (keep
-                 * polling), or the number of newly-imported lists once both steps are
-                 * done.
-                 */
                 async claimSyncBundle(sessionId: string): Promise<number | null> {
                     const privateKey = pendingSyncReceives.get(sessionId);
                     if (!privateKey) throw new Error('No pending sync receive for this session.');
@@ -322,7 +302,7 @@ export function withPairing() {
                         }
                         const plain = await crypto.unwrapPayload(bundle.encryptedPayload, bundle.iv, bundle.senderPublicKey, privateKey);
                         const parsed = JSON.parse(plain) as SyncBundlePayload;
-                        const imported = await mergeIncomingBundle(parsed, { adoptIdentity: true });
+                        const imported = await mergeIncomingBundle(parsed);
                         syncBundleClaimed.set(sessionId, imported);
                     }
 

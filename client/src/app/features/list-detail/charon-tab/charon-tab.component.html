@@ -13,6 +13,13 @@
                     <circle cx="8.5" cy="8.5" r="1.5"/>
                     <path d="M21 15l-5-5L5 21"/>
                 </svg>
+                } @else if (isAudioMime(meta(drop.id)?.mimeType)) {
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="8" y1="23" x2="16" y2="23"/>
+                </svg>
                 } @else {
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
@@ -47,11 +54,15 @@
         }
 
         @for (drop of revealedDrops(); track drop.id) {
-        <li class="charon-card charon-card--revealed">
+        <li class="charon-card charon-card--revealed" [class.charon-card--audio]="drop.isAudio">
             @if (drop.isImage) {
             @let imgAlt = 'CHARON.IMAGE_ALT' | translate;
             <img class="charon-card__preview" [src]="drop.dataUrl" [attr.alt]="imgAlt" role="button" tabindex="0"
                 [attr.aria-label]="imgAlt" (click)="openImage(drop.dataUrl, imgAlt)" (keydown.enter)="openImage(drop.dataUrl, imgAlt)" />
+            } @else if (drop.isAudio) {
+            <audio class="charon-card__audio" controls [src]="drop.dataUrl" preload="auto">
+                {{ 'CHARON.AUDIO_FALLBACK' | translate }}
+            </audio>
             } @else {
             <div class="charon-card__icon" aria-hidden="true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -82,18 +93,38 @@
     @if (fileTooLarge()) {
     <p class="charon__error" role="alert">{{ 'CHARON.FILE_TOO_LARGE' | translate }}</p>
     }
+    @if (recordingNotSupported()) {
+    <p class="charon__error" role="alert">{{ 'CHARON.RECORD_NOT_SUPPORTED' | translate }}</p>
+    }
 
     <div class="compose" role="form" [attr.aria-label]="'CHARON.ATTACH_ARIA' | translate">
         <input #fileInput type="file" class="visually-hidden" tabindex="-1"
             accept=".jpg,.jpeg,.png,.gif,.webp,.bmp,.svg,.heic,.heif,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.txt,.rtf,.csv,.mp3,.wav,.m4a,.ogg,.flac,.mp4,.mov,.webm,.avi,.zip"
             (change)="onFileSelected($event)" />
-        <button type="button" class="compose__attach" (click)="pickFile()" [disabled]="sending()"
+        <button type="button" class="compose__attach" (click)="pickFile()" [disabled]="sending() || recording()"
             [attr.aria-label]="'CHARON.ATTACH_ARIA' | translate" [attr.aria-busy]="sending()">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
             </svg>
         </button>
+        <button type="button" class="compose__record" [class.compose__record--active]="recording()"
+            (click)="toggleRecording()" [disabled]="sending()"
+            [attr.aria-label]="(recording() ? 'CHARON.STOP_RECORD_ARIA' : 'CHARON.RECORD_ARIA') | translate"
+            [attr.aria-pressed]="recording()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+        </button>
+        @if (recording()) {
+        <span class="compose__timer" role="timer" [attr.aria-label]="formatRecordingTime(recordingSeconds())">
+            {{ formatRecordingTime(recordingSeconds()) }}
+        </span>
+        } @else {
         <span class="compose__label">{{ 'CHARON.ATTACH' | translate }}</span>
+        }
         @if (sending()) {
         <span class="compose__status" role="status">{{ 'CHARON.SENDING' | translate }}</span>
         }

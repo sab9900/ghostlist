@@ -4,16 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GhostList.Application.Features.ListMembers.Queries;
 
-/// <summary>
-/// Computes which messages/items in a list this device has not yet seen,
-/// based on the granular per-message/per-item read receipts it has recorded
-/// (see <see cref="Commands.MarkMessagesRead.MarkMessagesReadCommand"/> /
-/// <see cref="Commands.MarkItemsRead.MarkItemsReadCommand"/>).
-///
-/// Returns both counts (for unread badges on lists that aren't open) and the
-/// exact unread ids (so an open list can highlight/divider exactly the
-/// right messages/items without re-deriving it from a single timestamp).
-/// </summary>
 public record GetGhostListUnreadSummaryQuery(Guid ListId, string DeviceId, string? UserId = null) : IRequest<UnreadSummaryDto>;
 
 public record UnreadSummaryDto(
@@ -34,9 +24,6 @@ public class GetGhostListUnreadSummaryQueryHandler(IApplicationDbContext context
             .Select(m => new { m.LastReadMessageAt, m.LastReadItemAt })
             .FirstOrDefaultAsync(cancellationToken);
 
-        // A message/item counts as "mine" (and is never unread) if it was sent
-        // from this same device, or — for senders who have synced their stable
-        // userId across devices — by this same person from any device.
         var candidateMessageIds = await context.GhostChatMessages
             .Where(m => m.GhostListId == request.ListId)
             .Where(m => !(

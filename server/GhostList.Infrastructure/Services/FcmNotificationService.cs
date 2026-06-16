@@ -12,10 +12,9 @@ namespace GhostList.Infrastructure.Services;
 
 public class FcmOptions
 {
-    /// <summary>Raw JSON contents of the Firebase service-account key file.</summary>
+
     public string? CredentialsJson { get; set; }
 
-    /// <summary>Path to a file containing the service-account JSON (alternative to <see cref="CredentialsJson"/>).</summary>
     public string? CredentialsPath { get; set; }
 }
 
@@ -28,29 +27,21 @@ public class FcmNotificationService(
 {
     private const string AppName = "GhostList";
 
-    /// <summary>Public web app origin, used to build absolute deep links for web push (FcmOptions.Link).</summary>
     private const string WebAppBaseUrl = "https://app.ghost-list.com";
 
     private static readonly object InitLock = new();
     private static FirebaseApp? _app;
 
-    /// <summary>Maps a notification type to the list-detail tab it should deep-link to. Keep in sync with
-    /// the client's PushNotificationService.routeForType.</summary>
     private static string WebTabForType(PushNotificationType type) => type switch
     {
         PushNotificationType.Message => "chat",
         PushNotificationType.WhisperInvite => "whisper",
+        PushNotificationType.CharonDrop => "charon",
         _ => "items",
     };
 
-    /// <summary>Locale used when a subscription has no recorded locale, or its locale isn't supported.
-    /// Matches LanguageService's fallback on the client.</summary>
     private const string FallbackLocale = "en_US";
 
-    /// <summary>
-    /// Push notification title/body per locale and notification type. Keep the set of locales in
-    /// sync with LanguageService.SUPPORTED on the client (en_US, de_DE, it_IT, es_ES).
-    /// </summary>
     private static readonly Dictionary<string, Dictionary<PushNotificationType, (string Title, string Body)>> Texts = new()
     {
         ["en_US"] = new()
@@ -58,29 +49,31 @@ public class FcmNotificationService(
             [PushNotificationType.Message] = ("GhostList", "New message in one of your lists"),
             [PushNotificationType.ItemsChanged] = ("GhostList", "One of your lists was updated"),
             [PushNotificationType.WhisperInvite] = ("GhostList", "👻 Someone is inviting you to whisper in Lethe"),
+            [PushNotificationType.CharonDrop] = ("GhostList", "📦 A new Charon drop is waiting for you"),
         },
         ["de_DE"] = new()
         {
             [PushNotificationType.Message] = ("GhostList", "Neue Nachricht in einer deiner Listen"),
             [PushNotificationType.ItemsChanged] = ("GhostList", "Eine deiner Listen wurde aktualisiert"),
             [PushNotificationType.WhisperInvite] = ("GhostList", "👻 Jemand lädt dich ein, in Lethe zu flüstern"),
+            [PushNotificationType.CharonDrop] = ("GhostList", "📦 Ein neuer Charon-Drop wartet auf dich"),
         },
         ["it_IT"] = new()
         {
             [PushNotificationType.Message] = ("GhostList", "Nuovo messaggio in una delle tue liste"),
             [PushNotificationType.ItemsChanged] = ("GhostList", "Una delle tue liste è stata aggiornata"),
             [PushNotificationType.WhisperInvite] = ("GhostList", "👻 Qualcuno ti invita a sussurrare in Lethe"),
+            [PushNotificationType.CharonDrop] = ("GhostList", "📦 Un nuovo drop di Charon ti aspetta"),
         },
         ["es_ES"] = new()
         {
             [PushNotificationType.Message] = ("GhostList", "Nuevo mensaje en una de tus listas"),
             [PushNotificationType.ItemsChanged] = ("GhostList", "Se ha actualizado una de tus listas"),
             [PushNotificationType.WhisperInvite] = ("GhostList", "👻 Alguien te invita a susurrar en Lethe"),
+            [PushNotificationType.CharonDrop] = ("GhostList", "📦 Un nuevo drop de Charon te espera"),
         },
     };
 
-    /// <summary>Generic fallback text for notification types not covered by <see cref="Texts"/> (i.e. the
-    /// default "Update" case), per locale.</summary>
     private static readonly Dictionary<string, string> DefaultBody = new()
     {
         ["en_US"] = "Update",
@@ -89,8 +82,6 @@ public class FcmNotificationService(
         ["es_ES"] = "Actualización",
     };
 
-    /// <summary>Picks the notification title/body for the given type in the subscription's locale,
-    /// falling back to <see cref="FallbackLocale"/> if the locale is missing or unsupported.</summary>
     private static (string Title, string Body) GetText(string? locale, PushNotificationType type)
     {
         var key = locale is not null && Texts.ContainsKey(locale) ? locale : FallbackLocale;
@@ -116,17 +107,17 @@ public class FcmNotificationService(
         if (!string.IsNullOrEmpty(senderDeviceId))
             query = query.Where(s => s.DeviceId != senderDeviceId);
 
-        if (type == PushNotificationType.WhisperInvite)
+        query = type switch
         {
-            if (targetDeviceIds is { Count: > 0 })
-                query = query.Where(s => targetDeviceIds.Contains(s.DeviceId));
-        }
-        else
-        {
-            query = type == PushNotificationType.Message
-                ? query.Where(s => s.NotifyOnMessage)
-                : query.Where(s => s.NotifyOnItemsChanged);
-        }
+            PushNotificationType.Message => query.Where(s => s.NotifyOnMessage),
+            PushNotificationType.ItemsChanged => query.Where(s => s.NotifyOnItemsChanged),
+            PushNotificationType.WhisperInvite => query.Where(s => s.NotifyOnLethe),
+            PushNotificationType.CharonDrop => query.Where(s => s.NotifyOnCharon),
+            _ => query,
+        };
+
+        if (type == PushNotificationType.WhisperInvite && targetDeviceIds is { Count: > 0 })
+            query = query.Where(s => targetDeviceIds.Contains(s.DeviceId));
 
         var subscriptions = await query.ToListAsync(ct);
         logger.LogInformation(
@@ -139,8 +130,11 @@ public class FcmNotificationService(
             : [];
 
         var targets = subscriptions
-            .Where(s => !presence.ShouldSuppress(listId.ToString(), s.DeviceId))
-            .Where(s => !alreadyWatching.Contains(s.DeviceId))
+            .Where(s => type is PushNotificationType.WhisperInvite or PushNotificationType.CharonDrop
+
+                ? !alreadyWatching.Contains(s.DeviceId)
+
+                : !presence.ShouldSuppress(listId.ToString(), s.DeviceId))
             .ToList();
 
         logger.LogInformation(
@@ -148,12 +142,21 @@ public class FcmNotificationService(
             type, listId, targets.Count, subscriptions.Count);
         if (targets.Count == 0) return;
 
+        var iosBadgeCounts = new Dictionary<string, int>();
+        foreach (var sub in targets.Where(s => s.Platform == DevicePlatform.Ios))
+        {
+            iosBadgeCounts[sub.DeviceId] = await GetTotalUnreadBadgeCountAsync(context, sub.DeviceId, ct);
+        }
+
         var messaging = FirebaseMessaging.GetMessaging(app);
         var staleTokens = new List<string>();
 
         foreach (var batch in targets.Chunk(500))
         {
-            var messages = batch.Select(s => BuildMessage(s, listId, type)).ToList();
+            var messages = batch
+                .Select(s => BuildMessage(s, listId, type,
+                    iosBadgeCounts.TryGetValue(s.DeviceId, out var c) ? c : (int?)null))
+                .ToList();
 
             BatchResponse response;
             try
@@ -205,7 +208,39 @@ public class FcmNotificationService(
         }
     }
 
-    private static Message BuildMessage(DeviceSubscription sub, Guid listId, PushNotificationType type)
+    private static async Task<int> GetTotalUnreadBadgeCountAsync(
+        IApplicationDbContext context, string deviceId, CancellationToken ct)
+    {
+        var subscribedListIds = await context.DeviceSubscriptions
+            .Where(s => s.DeviceId == deviceId)
+            .Select(s => s.ListId)
+            .ToListAsync(ct);
+
+        var readMessageIds = context.MessageReadReceipts
+            .Where(r => r.DeviceId == deviceId)
+            .Select(r => r.MessageId);
+
+        var readItemIds = context.ItemReadReceipts
+            .Where(r => r.DeviceId == deviceId)
+            .Select(r => r.ItemId);
+
+        var unreadMessages = await context.GhostChatMessages
+            .Where(m => subscribedListIds.Contains(m.GhostListId))
+            .Where(m => m.SenderDeviceId != deviceId)
+            .Where(m => !readMessageIds.Contains(m.Id))
+            .CountAsync(ct);
+
+        var unreadItems = await context.GhostListItems
+            .Where(i => subscribedListIds.Contains(i.GhostListId))
+            .Where(i => i.SenderDeviceId != deviceId)
+            .Where(i => !readItemIds.Contains(i.Id))
+            .CountAsync(ct);
+
+        return unreadMessages + unreadItems;
+    }
+
+    private static Message BuildMessage(DeviceSubscription sub, Guid listId, PushNotificationType type,
+        int? badgeCount = null)
     {
         var (title, body) = GetText(sub.Locale, type);
 
@@ -217,6 +252,7 @@ public class FcmNotificationService(
                 PushNotificationType.Message => "message",
                 PushNotificationType.ItemsChanged => "items_changed",
                 PushNotificationType.WhisperInvite => "whisper_invite",
+                PushNotificationType.CharonDrop => "charon_drop",
                 _ => "update",
             },
         };
@@ -237,6 +273,8 @@ public class FcmNotificationService(
                     {
                         Sound = "default",
                         ContentAvailable = true,
+
+                        Badge = badgeCount,
                     },
                 };
                 break;
@@ -248,7 +286,14 @@ public class FcmNotificationService(
                     Priority = Priority.High,
                     Notification = new AndroidNotification
                     {
-                        Sound = "default",
+
+                        ChannelId = type switch
+                        {
+                            PushNotificationType.WhisperInvite => "ghost_lethe",
+                            PushNotificationType.CharonDrop => "ghost_charon",
+                            PushNotificationType.Message => "ghost_messages",
+                            _ => "ghost_items",
+                        },
                     },
                 };
                 break;

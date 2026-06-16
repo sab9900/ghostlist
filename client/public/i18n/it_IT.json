@@ -121,7 +121,11 @@
     "SENDING": "Invio in corso…",
     "FILE_TOO_LARGE": "Il file è troppo grande (max 8 MB).",
     "FILE_TYPE_NOT_ALLOWED": "Questo tipo di file non è supportato.",
-    "IMAGE_ALT": "Immagine condivisa"
+    "IMAGE_ALT": "Immagine condivisa",
+    "RECORD_ARIA": "Registra un messaggio vocale autodistruttivo",
+    "STOP_RECORD_ARIA": "Interrompi la registrazione e invia",
+    "RECORD_NOT_SUPPORTED": "La registrazione vocale non è supportata in questo browser.",
+    "AUDIO_FALLBACK": "Il tuo browser non supporta la riproduzione audio."
   },
   "LIST_SETTINGS": {
     "LIST_NAME_TITLE": "Nome lista",
@@ -172,7 +176,11 @@
       "OneWeek": "1 settimana",
       "OneMonth": "1 mese",
       "ThreeMonths": "3 mesi"
-    }
+    },
+    "NOTIFY_ON_LETHE": "Inviti Lethe",
+    "NOTIFY_ON_LETHE_HINT": "Notifica quando qualcuno ti invita a sussurrare in Lethe.",
+    "NOTIFY_ON_CHARON": "Drop di Charon",
+    "NOTIFY_ON_CHARON_HINT": "Notifica quando viene pubblicato un nuovo drop di Charon in questa lista."
   },
   "JOIN": {
     "TITLE": "Importa lista",
@@ -208,13 +216,13 @@
     "HAPTICS_ENABLE": "Attiva feedback tattile",
     "HAPTICS_HINT": "Vibra al tocco e per azioni come aggiungere o spuntare elementi.",
     "SYNC_TITLE": "Macchina di Sincronizzazione",
-    "SYNC_HINT": "Trasferisci tutte le tue liste su un altro dispositivo in una volta sola.",
-    "SYNC_RECEIVE": "Ricevi da un altro dispositivo",
-    "SYNC_SEND": "Invia a un altro dispositivo",
-    "SYNC_RECEIVE_HINT": "Sull'altro dispositivo: apri il link o scansiona il codice QR — le liste vengono trasferite automaticamente.",
+    "SYNC_HINT": "Unisci le tue liste con un altro dispositivo, in entrambe le direzioni.",
+    "SYNC_MACHINES": "Sincronizza dispositivi",
+    "SYNC_QR_HINT": "Sull'altro dispositivo, tocca \"Sincronizza dispositivi\" e scansiona questo codice — oppure scansiona il suo.",
+    "SYNC_SCAN_INSTEAD": "Scansiona un codice",
+    "SYNC_SCAN_HINT": "Sull'altro dispositivo, tocca \"Sincronizza dispositivi\" per mostrare il suo codice, poi scansionalo qui.",
     "SYNC_WAITING": "In attesa — si completerà automaticamente…",
     "SYNC_DONE": "Fatto! {{count}} lista/e unita/e. Entrambi i dispositivi sono ora sincronizzati.",
-    "SYNC_SEND_HINT": "Sull'altro dispositivo: Impostazioni → Macchina di Sincronizzazione → Ricevi e mostra il codice QR.",
     "SYNC_ERROR": "Qualcosa è andato storto. Riprova.",
     "SYNC_COPY_LINK": "Copia link",
     "SYNC_LINK_COPIED": "Link copiato!",
@@ -242,6 +250,7 @@
     "TYPE_INFO": "Info",
     "TYPE_RELEASE_NOTES": "Novità",
     "TYPE_MAINTENANCE": "Manutenzione",
+    "DOWNLOAD": "Scarica aggiornamento",
     "DISMISS": "Capito"
   },
   "ABOUT": {

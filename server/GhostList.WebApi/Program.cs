@@ -25,7 +25,7 @@ builder.Services.AddCors(options =>
 
     options.AddPolicy("AppClient", policy =>
         policy
-            // capacitor://localhost = iOS, https://localhost = Android (Capacitor's default androidScheme)
+
             .WithOrigins("capacitor://localhost", "ionic://localhost", "https://localhost")
             .AllowAnyHeader()
             .AllowAnyMethod()

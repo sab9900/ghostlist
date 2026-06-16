@@ -247,29 +247,20 @@
             }
 
             <div class="sync-actions">
-                <button class="btn btn--primary btn--sm btn--icon" (click)="startSyncReceive()"
+                <button class="btn btn--primary btn--sm btn--icon" (click)="startSync()"
                     [disabled]="!webAuthn.isEnabled()">
                     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="7 10 12 15 17 10"/>
-                        <line x1="12" y1="15" x2="12" y2="3"/>
+                        <path d="M17 2.1l4 4-4 4"/>
+                        <path d="M3 12.2v-2a4 4 0 0 1 4-4h12.8"/>
+                        <path d="M7 21.9l-4-4 4-4"/>
+                        <path d="M21 11.8v2a4 4 0 0 1-4 4H4.2"/>
                     </svg>
-                    {{ 'SETTINGS.SYNC_RECEIVE' | translate }}
-                </button>
-                <button class="btn btn--primary btn--sm btn--icon" (click)="startSyncSend()"
-                    [disabled]="!webAuthn.isEnabled() || store.knownLists().length === 0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="17 8 12 3 7 8"/>
-                        <line x1="12" y1="3" x2="12" y2="15"/>
-                    </svg>
-                    {{ 'SETTINGS.SYNC_SEND' | translate }}
+                    {{ 'SETTINGS.SYNC_MACHINES' | translate }}
                 </button>
             </div>
 
-            @if (syncStep() === 'receive-done' || syncStep() === 'send-done') {
+            @if (syncStep() === 'done') {
             <p class="sync-status sync-status--ok" role="status" aria-live="polite">
                 {{ 'SETTINGS.SYNC_DONE' | translate: { count: syncImportedCount() } }}
             </p>
@@ -354,14 +345,15 @@
         </div>
     </main>
 
-@if (syncStep() !== 'idle' && syncStep() !== 'receive-done' && syncStep() !== 'send-done' && syncStep() !== 'error') {
+@if (syncStep() === 'qr' || syncStep() === 'scan' || syncStep() === 'waiting') {
 <div class="dialog-backdrop" (click)="resetSync()" role="presentation">
     <div class="dialog dialog--qr" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
         aria-labelledby="sync-dialog-title">
 
-        @if (syncStep() === 'receive-qr') {
-        <h2 class="dialog__title" id="sync-dialog-title">{{ 'SETTINGS.SYNC_RECEIVE' | translate }}</h2>
-        <p class="dialog__hint">{{ 'SETTINGS.SYNC_RECEIVE_HINT' | translate }}</p>
+        <h2 class="dialog__title" id="sync-dialog-title">{{ 'SETTINGS.SYNC_MACHINES' | translate }}</h2>
+
+        @if (syncStep() === 'qr') {
+        <p class="dialog__hint">{{ 'SETTINGS.SYNC_QR_HINT' | translate }}</p>
         @if (syncQrData()) {
         <div class="dialog__qr">
             <app-qr-code [data]="syncQrData()!" [size]="200" />
@@ -378,18 +370,19 @@
             {{ syncLinkCopied() ? ('SETTINGS.SYNC_LINK_COPIED' | translate) : ('SETTINGS.SYNC_COPY_LINK' | translate) }}
         </button>
         <p class="dialog__hint dialog__hint--sm" aria-live="polite">{{ 'SETTINGS.SYNC_WAITING' | translate }}</p>
+        <button class="btn btn--ghost btn--sm" (click)="showScanner()">
+            {{ 'SETTINGS.SYNC_SCAN_INSTEAD' | translate }}
+        </button>
         }
 
-        @if (syncStep() === 'send-scan') {
-        <h2 class="dialog__title" id="sync-dialog-title">{{ 'SETTINGS.SYNC_SEND' | translate }}</h2>
-        <p class="dialog__hint">{{ 'SETTINGS.SYNC_SEND_HINT' | translate }}</p>
+        @if (syncStep() === 'scan') {
+        <p class="dialog__hint">{{ 'SETTINGS.SYNC_SCAN_HINT' | translate }}</p>
         <div class="dialog__scanner">
             <app-qr-scanner (detected)="onSyncQrDetected($event)" />
         </div>
         }
 
-        @if (syncStep() === 'send-waiting') {
-        <h2 class="dialog__title" id="sync-dialog-title">{{ 'SETTINGS.SYNC_SEND' | translate }}</h2>
+        @if (syncStep() === 'waiting') {
         <p class="dialog__hint dialog__hint--sm" aria-live="polite">{{ 'SETTINGS.SYNC_WAITING' | translate }}</p>
         }
 

@@ -9,11 +9,7 @@ namespace GhostList.Infrastructure.Migrations
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // The previous "AddDeviceSubscriptions" migration was never recognized by EF Core
-            // (no Designer.cs / [Migration] attribute existed for it), so it was never applied
-            // and the "DeviceSubscriptions" table doesn't exist yet. Create it here directly
-            // in its final shape (including the columns this migration was originally meant
-            // to add on top of it).
+
             migrationBuilder.CreateTable(
                 name: "DeviceSubscriptions",
                 columns: table => new

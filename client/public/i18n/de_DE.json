@@ -121,7 +121,11 @@
     "SENDING": "Wird gesendet…",
     "FILE_TOO_LARGE": "Datei ist zu groß (max. 8 MB).",
     "FILE_TYPE_NOT_ALLOWED": "Dieser Dateityp wird nicht unterstützt.",
-    "IMAGE_ALT": "Geteiltes Bild"
+    "IMAGE_ALT": "Geteiltes Bild",
+    "RECORD_ARIA": "Selbstzerstörende Sprachnachricht aufnehmen",
+    "STOP_RECORD_ARIA": "Aufnahme stoppen und senden",
+    "RECORD_NOT_SUPPORTED": "Sprachaufnahme wird in diesem Browser nicht unterstützt.",
+    "AUDIO_FALLBACK": "Dein Browser unterstützt keine Audiowiedergabe."
   },
   "LIST_SETTINGS": {
     "LIST_NAME_TITLE": "Listenname",
@@ -174,7 +178,11 @@
       "OneWeek": "1 Woche",
       "OneMonth": "1 Monat",
       "ThreeMonths": "3 Monate"
-    }
+    },
+    "NOTIFY_ON_LETHE": "Lethe-Einladungen",
+    "NOTIFY_ON_LETHE_HINT": "Benachrichtigen, wenn jemand dich einlädt, in Lethe zu flüstern.",
+    "NOTIFY_ON_CHARON": "Charon-Drops",
+    "NOTIFY_ON_CHARON_HINT": "Benachrichtigen, wenn ein neuer Charon-Drop in dieser Liste erscheint."
   },
   "JOIN": {
     "TITLE": "Liste importieren",
@@ -210,15 +218,15 @@
     "HAPTICS_ENABLE": "Haptisches Feedback aktivieren",
     "HAPTICS_HINT": "Vibration bei Tipps und Aktionen wie dem Hinzufügen oder Abhaken von Einträgen.",
     "SYNC_TITLE": "Sync-Maschine",
-    "SYNC_HINT": "Alle Listen auf einmal auf ein anderes Gerät übertragen.",
-    "SYNC_RECEIVE": "Von anderem Gerät empfangen",
-    "SYNC_SEND": "An anderes Gerät senden",
-    "SYNC_RECEIVE_HINT": "Auf dem anderen Gerät: Link öffnen oder QR-Code scannen — alle Listen werden automatisch übertragen.",
+    "SYNC_HINT": "Listen mit einem anderen Gerät zusammenführen — die Richtung spielt keine Rolle.",
+    "SYNC_MACHINES": "Geräte synchronisieren",
+    "SYNC_QR_HINT": "Auf dem anderen Gerät auf \"Geräte synchronisieren\" tippen und diesen Code scannen — oder stattdessen dessen Code scannen.",
+    "SYNC_SCAN_INSTEAD": "Stattdessen Code scannen",
+    "SYNC_SCAN_HINT": "Auf dem anderen Gerät auf \"Geräte synchronisieren\" tippen, um dessen Code anzuzeigen, und ihn hier scannen.",
     "SYNC_COPY_LINK": "Link kopieren",
     "SYNC_LINK_COPIED": "Link kopiert!",
     "SYNC_WAITING": "Warte — wird automatisch abgeschlossen…",
     "SYNC_DONE": "Fertig! {{count}} Liste(n) zusammengeführt. Beide Geräte sind jetzt synchron.",
-    "SYNC_SEND_HINT": "Auf dem anderen Gerät: Einstellungen → Sync-Maschine → Empfangen und den QR-Code zeigen.",
     "SYNC_ERROR": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
     "SECURITY": {
       "TITLE": "Sicherheit",
@@ -268,6 +276,7 @@
     "TYPE_INFO": "Info",
     "TYPE_RELEASE_NOTES": "Neuigkeiten",
     "TYPE_MAINTENANCE": "Wartung",
+    "DOWNLOAD": "Update herunterladen",
     "DISMISS": "Verstanden"
   },
   "ABOUT": {

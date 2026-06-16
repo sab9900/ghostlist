@@ -66,25 +66,28 @@ export function withKnownLists() {
                     });
                 },
 
-                /** Rolls back a list that was tracked locally but could never be joined (e.g. it's full). */
                 async _unregisterKnownList(listId: string): Promise<void> {
                     await storage.remove(listId).catch(() => { });
                     patchState(store, { knownLists: store.knownLists().filter((l) => l.id !== listId) });
                 },
 
-                /** Updates this device's per-list push notification preferences (opt-out toggles, default ON). */
-                async updateNotificationPreferences(listId: string, notifyOnMessage: boolean, notifyOnItemsChanged: boolean): Promise<void> {
+                async updateNotificationPreferences(
+                    listId: string,
+                    notifyOnMessage: boolean,
+                    notifyOnItemsChanged: boolean,
+                    notifyOnLethe: boolean,
+                    notifyOnCharon: boolean,
+                ): Promise<void> {
                     const known = store.knownLists().find(l => l.id === listId);
                     if (!known) return;
-                    const updated: KnownList = { ...known, notifyOnMessage, notifyOnItemsChanged };
+                    const updated: KnownList = { ...known, notifyOnMessage, notifyOnItemsChanged, notifyOnLethe, notifyOnCharon };
                     await storage.upsert(updated);
                     patchState(store, {
                         knownLists: store.knownLists().map(l => l.id === listId ? updated : l),
                     });
-                    await push.updatePreferences(listId, notifyOnMessage, notifyOnItemsChanged);
+                    await push.updatePreferences(listId, notifyOnMessage, notifyOnItemsChanged, notifyOnLethe, notifyOnCharon);
                 },
 
-                /** Marks (or unmarks) a list as sensitive on this device. Sensitive lists are hidden by default. */
                 async setListSensitive(listId: string, isSensitive: boolean): Promise<void> {
                     const known = store.knownLists().find(l => l.id === listId);
                     if (!known) return;
@@ -99,10 +102,6 @@ export function withKnownLists() {
                     if (registeredThisSession.has(listId)) return;
                     registeredThisSession.add(listId);
 
-                    // Wait for the sender name to be hydrated from IDB, and for the
-                    // user to have responded to the first-run name onboarding dialog
-                    // (saved a name or explicitly skipped it), so we never persist
-                    // "Anonymous" before the user had a chance to set their name.
                     await prefs.whenHydrated();
                     await prefs.whenOnboarded();
 
@@ -116,7 +115,7 @@ export function withKnownLists() {
                         const { ciphertext, iv } = await crypto.encrypt(payload, encryptionKey);
                         await firstValueFrom(api.upsertMember(listId, deviceId.deviceId, ciphertext, iv));
                     } catch (e: unknown) {
-                        // Allow a retry later (e.g. once back online, or after the list has room again).
+
                         registeredThisSession.delete(listId);
                         if (e instanceof HttpErrorResponse && e.status === 409) {
                             throw new ListFullError();

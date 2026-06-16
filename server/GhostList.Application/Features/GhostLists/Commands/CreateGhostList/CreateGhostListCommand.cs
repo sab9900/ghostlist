@@ -7,11 +7,6 @@ using MediatR;
 
 namespace GhostList.Application.Features.GhostLists.Commands.CreateGhostList;
 
-/// <param name="OwnerTokenHash">
-/// SHA-256 hex hash of the client-generated owner token.
-/// The server stores only the hash — the raw token never leaves the client.
-/// Null for anonymous lists (no ownership enforced).
-/// </param>
 public record CreateGhostListCommand(string? OwnerTokenHash = null) : IRequest<Guid>;
 
 public class CreateGhostListCommandHandler : IRequestHandler<CreateGhostListCommand, Guid>

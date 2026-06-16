@@ -25,30 +25,26 @@ export class InfoCenterComponent implements OnInit {
     protected readonly type = signal<InfoMessageType>(InfoMessageType.Info);
     protected readonly title = signal('');
     protected readonly body = signal('');
-    /** null = all platforms */
+
     protected readonly targetPlatform = signal<DevicePlatform | null>(null);
     protected readonly sending = signal(false);
     protected readonly sendError = signal<string | null>(null);
 
-    /** When enabled, Title/Body are edited as JSON maps of language code -> text. */
     protected readonly multiLang = signal(false);
 
     ngOnInit(): void {
         this.load();
     }
 
-    /** Toggles between plain-text and multi-language (JSON) editing for Title/Body. */
     toggleMultiLang(): void {
         if (this.multiLang()) {
-            // Switching back to plain text: collapse the JSON to its resolved (German/English) text.
+
             this.title.set(resolveLocalizedText(this.title()));
             this.body.set(resolveLocalizedText(this.body()));
             this.multiLang.set(false);
             return;
         }
 
-        // Switching to multi-language: wrap existing plain text into a JSON template,
-        // unless it's already a JSON object.
         this.title.set(isJsonObject(this.title()) ? this.title() : buildMultiLangTemplate('de_DE', this.title().trim()));
         this.body.set(isJsonObject(this.body()) ? this.body() : buildMultiLangTemplate('de_DE', this.body().trim()));
         this.multiLang.set(true);
@@ -109,7 +105,6 @@ export class InfoCenterComponent implements OnInit {
         return new Date(date).toLocaleString();
     }
 
-    /** Resolves multi-language title/body (e.g. from the CI release notification) for display. */
     resolveText(value: string): string {
         return resolveLocalizedText(value);
     }

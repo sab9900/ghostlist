@@ -6,11 +6,6 @@ namespace GhostList.Application.Features.ListMembers.Queries;
 
 public record GetListMembersQuery(Guid ListId) : IRequest<IReadOnlyList<ListMemberDto>>;
 
-/// <summary>
-/// LastReadMessageAt is a plain timestamp (no message ids/content), so exposing
-/// it for every member stays zero-knowledge compatible. The client uses it to
-/// show "read by others" status on its own sent messages.
-/// </summary>
 public record ListMemberDto(string DeviceId, string EncryptedPayload, string InitializationVector, DateTimeOffset? LastReadMessageAt);
 
 public class GetListMembersQueryHandler(IApplicationDbContext context)

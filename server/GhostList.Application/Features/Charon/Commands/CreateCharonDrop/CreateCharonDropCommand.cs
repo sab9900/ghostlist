@@ -5,16 +5,10 @@ using GhostList.Application.Common.Notifications;
 using GhostList.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 
 namespace GhostList.Application.Features.Charon.Commands.CreateCharonDrop;
 
-/// <summary>
-/// Creates a new Charon "dead drop": an encrypted blob (image or generic
-/// file, plus encrypted filename/mimetype/size metadata) that is persisted
-/// until every other member of the list has viewed it once
-/// (see <c>MarkCharonDropViewedCommand</c>), or until it expires unread
-/// (see <c>DeleteExpiredCharonDropsCommand</c>).
-/// </summary>
 public record CreateCharonDropCommand(
     Guid GhostListId,
     string EncryptedContent,
@@ -44,7 +38,7 @@ public class CreateCharonDropCommandValidator : AbstractValidator<CreateCharonDr
     }
 }
 
-public class CreateCharonDropCommandHandler(IApplicationDbContext context, IGhostListNotifier notifier)
+public class CreateCharonDropCommandHandler(IApplicationDbContext context, IGhostListNotifier notifier, IPushNotificationService push)
     : IRequestHandler<CreateCharonDropCommand, Guid>
 {
     private const int MaxPendingDropsPerList = 50;
@@ -85,6 +79,9 @@ public class CreateCharonDropCommandHandler(IApplicationDbContext context, IGhos
             drop.CreatedAt,
             drop.SenderDeviceId,
             drop.SenderUserId));
+
+        _ = push.SendNotificationAsync(drop.GhostListId, PushNotificationType.CharonDrop, request.SenderDeviceId, cancellationToken)
+                 .ContinueWith(t => { }, TaskContinuationOptions.OnlyOnFaulted);
 
         return drop.Id;
     }

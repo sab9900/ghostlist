@@ -1,14 +1,15 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, DestroyRef, effect, ElementRef, HostListener, inject, signal, ViewChild } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, computed, effect, ElementRef, HostListener, inject, signal, ViewChild } from '@angular/core';
 import { Capacitor } from '@capacitor/core';
-import { Keyboard } from '@capacitor/keyboard';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { GhostChatMessage } from '../../../core/models';
 import { CryptoService } from '../../../core/services/crypto.service';
 import { DeviceIdService } from '../../../core/services/device-id.service';
 import { UserIdService } from '../../../core/services/user-id.service';
 import { HapticsService } from '../../../core/services/haptics.service';
 import { ImageViewerService } from '../../../core/services/image-viewer.service';
+import { KeyboardInsetService } from '../../../core/services/keyboard-inset.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AppStore } from '../../../store/app.store';
@@ -30,18 +31,8 @@ const SWIPE_TRIGGER_DISTANCE = 56;
 const SWIPE_MAX_DISTANCE = 72;
 const SHOW_READ_RECEIPT_CHECKMARK = false;
 
-/**
- * Conservative raw-file size cap before compression — just a sanity check to
- * avoid hanging on huge originals. Compression to MAX_DIMENSION/JPEG quality
- * (see compressImage) brings nearly everything well under the server limit.
- */
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
-/**
- * Cap on the compressed data URL length. The server limits EncryptedImage to
- * 3,500,000 base64 chars; AES-GCM ciphertext base64 adds ~4/3 on top of the
- * data URL's own size, so ~1.8M chars of data URL stays comfortably under.
- */
 const MAX_DATA_URL_LENGTH = 1_800_000;
 
 @Component({
@@ -58,10 +49,13 @@ export class ChatTabComponent {
     protected readonly deviceId = inject(DeviceIdService);
     protected readonly userId = inject(UserIdService);
     private readonly imageViewer = inject(ImageViewerService);
+    private readonly keyboardInset = inject(KeyboardInsetService);
 
     @ViewChild('messageList') private messageListRef?: ElementRef<HTMLUListElement>;
     @ViewChild('fileInput') private fileInputRef?: ElementRef<HTMLInputElement>;
-    @ViewChild('composeInput') private composeInputRef?: ElementRef<HTMLInputElement>;
+    @ViewChild('composeInput') private composeInputRef?: ElementRef<HTMLTextAreaElement>;
+
+    private readonly isMobile = Capacitor.isNativePlatform() || window.matchMedia('(pointer: coarse)').matches;
 
     protected readonly newMessageText = signal('');
     protected readonly sendingMessage = signal(false);
@@ -96,22 +90,14 @@ export class ChatTabComponent {
         return new Set(this.store.unreadMessageIds()[id] ?? []);
     });
 
-    /** Whether this message hasn't been seen by this device yet (drives dwell-tracking). */
     protected isUnread(messageId: string): boolean {
         return this.unreadMessageIds().has(messageId);
     }
 
-    /** Called once a message has been visible long enough to count as "read". */
     onMessageDwellRead(messageId: string): void {
         this.store.markMessageRead(messageId);
     }
 
-    /**
-     * Returns whether a message/item was sent by this person, based on the stable
-     * `senderUserId` (preferred, survives machine sync) or `senderDeviceId` (legacy
-     * fallback). Returns null if neither identifier is present on the row, in which
-     * case callers should fall back to comparing display names.
-     */
     protected isMineBySenderIds(senderUserId: string | null, senderDeviceId: string | null): boolean | null {
         if (senderUserId !== null) return senderUserId === this.userId.userId();
         if (senderDeviceId !== null) return senderDeviceId === this.deviceId.deviceId;
@@ -125,19 +111,10 @@ export class ChatTabComponent {
     });
 
     constructor() {
-        if (Capacitor.isNativePlatform()) {
-            // Start scrolling as soon as the keyboard *starts* animating in,
-            // and keep pinning to the bottom for the duration of the
-            // --keyboard-height CSS transition (200ms, see styles.scss).
-            // This keeps the compose bar/last message in view throughout the
-            // animation instead of jumping into place after the fact.
-            const listener = Keyboard.addListener('keyboardWillShow', () => {
-                this.scrollToBottomDuringTransition();
-            });
-            inject(DestroyRef).onDestroy(() => {
-                void listener.then(handle => handle.remove());
-            });
-        }
+
+        this.keyboardInset.willShow$.pipe(takeUntilDestroyed()).subscribe(() => {
+            this.scrollToBottomDuringTransition();
+        });
 
         effect(() => {
             void this.store.messages();
@@ -166,18 +143,11 @@ export class ChatTabComponent {
         });
     }
 
-    /**
-     * Pins the message list to the bottom on every frame while the keyboard
-     * is animating in. As --keyboard-height transitions, the list's
-     * clientHeight shrinks, so the "bottom" scroll offset keeps increasing;
-     * re-applying scrollTop = scrollHeight each frame tracks that smoothly
-     * instead of jumping once the animation has finished.
-     */
     private scrollToBottomDuringTransition(): void {
         const el = this.messageListRef?.nativeElement;
         if (!el) return;
 
-        const durationMs = 250; // matches padding-bottom transition + a small buffer
+        const durationMs = 250; 
         const start = performance.now();
 
         const step = () => {
@@ -338,11 +308,25 @@ export class ChatTabComponent {
         this.swipeState.set(null);
     }
 
+    protected onKeydown(event: KeyboardEvent): void {
+        if (this.isMobile) return; 
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            void this.sendMessage();
+        }
+    }
+
+    protected autoResize(event: Event): void {
+        const el = event.target as HTMLTextAreaElement;
+        el.style.height = 'auto';
+        el.style.height = el.scrollHeight + 'px';
+    }
+
     async sendMessage(): Promise<void> {
         const text = this.newMessageText().trim();
         const sender = this.prefs.senderName() || 'Anonymous';
         if (!text) return;
-        (document.activeElement as HTMLElement)?.blur();
+        this.haptics.messageSent();
         this.sendingMessage.set(true);
         try {
             const replyId = this.replyingTo()?.id ?? null;
@@ -351,6 +335,8 @@ export class ChatTabComponent {
             this.replyingTo.set(null);
         } finally {
             this.sendingMessage.set(false);
+            const el = this.composeInputRef?.nativeElement;
+            if (el) el.style.height = 'auto';
         }
     }
 
@@ -383,6 +369,7 @@ export class ChatTabComponent {
             }
             const sender = this.prefs.senderName() || 'Anonymous';
             const replyId = this.replyingTo()?.id ?? null;
+            this.haptics.messageSent();
             await this.store.shareImage(dataUrl, sender, replyId);
             this.replyingTo.set(null);
         } catch {

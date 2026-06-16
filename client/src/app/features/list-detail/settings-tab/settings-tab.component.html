@@ -65,6 +65,28 @@
             <span class="toggle-switch__track" aria-hidden="true"></span>
         </label>
     </div>
+
+    <div class="toggle-row">
+        <div>
+            <p class="toggle-label" id="notify-lethe-label">{{ 'LIST_SETTINGS.NOTIFY_ON_LETHE' | translate }}</p>
+            <p class="toggle-hint">{{ 'LIST_SETTINGS.NOTIFY_ON_LETHE_HINT' | translate }}</p>
+        </div>
+        <label class="toggle-switch" aria-labelledby="notify-lethe-label">
+            <input type="checkbox" [ngModel]="notifyOnLethe()" (ngModelChange)="setNotifyOnLethe($event)" />
+            <span class="toggle-switch__track" aria-hidden="true"></span>
+        </label>
+    </div>
+
+    <div class="toggle-row">
+        <div>
+            <p class="toggle-label" id="notify-charon-label">{{ 'LIST_SETTINGS.NOTIFY_ON_CHARON' | translate }}</p>
+            <p class="toggle-hint">{{ 'LIST_SETTINGS.NOTIFY_ON_CHARON_HINT' | translate }}</p>
+        </div>
+        <label class="toggle-switch" aria-labelledby="notify-charon-label">
+            <input type="checkbox" [ngModel]="notifyOnCharon()" (ngModelChange)="setNotifyOnCharon($event)" />
+            <span class="toggle-switch__track" aria-hidden="true"></span>
+        </label>
+    </div>
 </section>
 
 <section class="settings-section" aria-labelledby="privacy-heading">

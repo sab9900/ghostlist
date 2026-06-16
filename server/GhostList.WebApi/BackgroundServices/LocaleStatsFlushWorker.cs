@@ -3,12 +3,6 @@ using GhostList.WebApi.Services;
 
 namespace GhostList.WebApi.BackgroundServices;
 
-/// <summary>
-/// Periodically drains <see cref="ILocaleStatsAggregator"/> and persists the
-/// counts into <see cref="GhostList.Domain.Entities.LocaleStat"/>, so the
-/// admin dashboard can show a rough breakdown of which languages/regions
-/// requests are coming from (for i18n planning).
-/// </summary>
 public class LocaleStatsFlushWorker(
     ILocaleStatsAggregator aggregator,
     IServiceScopeFactory scopeFactory,
@@ -28,7 +22,7 @@ public class LocaleStatsFlushWorker(
 
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
-        // Flush whatever's left so we don't lose the last interval's data on shutdown.
+
         await FlushAsync(cancellationToken);
         await base.StopAsync(cancellationToken);
     }

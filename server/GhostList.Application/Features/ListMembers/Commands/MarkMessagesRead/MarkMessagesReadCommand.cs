@@ -6,17 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GhostList.Application.Features.ListMembers.Commands.MarkMessagesRead;
 
-/// <summary>
-/// Marks specific chat messages as read by a device, recording a granular
-/// per-message read receipt for each id. Only message ids, the device id and
-/// a timestamp are stored — no message content — so this stays
-/// zero-knowledge compatible.
-///
-/// If the newest marked message is newer than the device's current
-/// <see cref="GhostListMember.LastReadMessageAt"/> rollup, that timestamp is
-/// advanced too (it continues to power the simple "seen by others" divider on
-/// <see cref="Queries.GetListMembersQuery"/>), and other members are notified.
-/// </summary>
 public record MarkMessagesReadCommand(Guid ListId, string DeviceId, List<Guid> MessageIds) : IRequest;
 
 public class MarkMessagesReadCommandHandler(IApplicationDbContext context, IGhostListNotifier notifier)
@@ -33,7 +22,6 @@ public class MarkMessagesReadCommandHandler(IApplicationDbContext context, IGhos
         if (member is null)
             return;
 
-        // Only consider ids that actually belong to this list.
         var messages = await context.GhostChatMessages
             .Where(m => m.GhostListId == request.ListId && request.MessageIds.Contains(m.Id))
             .Select(m => new { m.Id, m.CreatedAt })

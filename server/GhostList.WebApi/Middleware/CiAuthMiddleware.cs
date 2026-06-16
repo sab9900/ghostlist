@@ -1,15 +1,5 @@
 namespace GhostList.WebApi.Middleware;
 
-/// <summary>
-/// Protects <c>/api/ci/*</c> with a single shared-secret header, separate from the admin
-/// credentials. This lets the CI pipeline (e.g. the Android release workflow) trigger a
-/// narrowly-scoped action — like posting a release announcement — without holding the
-/// full admin login.
-///
-/// The secret is configured via <c>Ci:Token</c> (e.g. the <c>Ci__Token</c> environment
-/// variable) and must be sent as the <c>X-Ci-Token</c> request header. If no token is
-/// configured, the CI API is disabled entirely (503).
-/// </summary>
 public class CiAuthMiddleware(RequestDelegate next, IConfiguration configuration)
 {
     private const string CiPathPrefix = "/api/ci";

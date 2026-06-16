@@ -51,6 +51,8 @@ export class SettingsTabComponent {
 
     protected readonly notifyOnMessage = signal(true);
     protected readonly notifyOnItemsChanged = signal(false);
+    protected readonly notifyOnLethe = signal(true);
+    protected readonly notifyOnCharon = signal(true);
     protected readonly isSensitive = signal(false);
 
     constructor() {
@@ -81,6 +83,8 @@ export class SettingsTabComponent {
             this.listName.set(known.name);
             this.notifyOnMessage.set(known.notifyOnMessage ?? true);
             this.notifyOnItemsChanged.set(known.notifyOnItemsChanged ?? false);
+            this.notifyOnLethe.set(known.notifyOnLethe ?? true);
+            this.notifyOnCharon.set(known.notifyOnCharon ?? true);
             this.isSensitive.set(known.isSensitive ?? false);
             void this.loadMembers(known.id, known.encryptionKey);
         }
@@ -189,23 +193,34 @@ export class SettingsTabComponent {
         const id = this.store.currentListId();
         if (!id) return;
         this.notifyOnMessage.set(value);
-        await this.store.updateNotificationPreferences(id, value, this.notifyOnItemsChanged());
+        await this.store.updateNotificationPreferences(id, value, this.notifyOnItemsChanged(), this.notifyOnLethe(), this.notifyOnCharon());
     }
 
     async setNotifyOnItemsChanged(value: boolean): Promise<void> {
         const id = this.store.currentListId();
         if (!id) return;
         this.notifyOnItemsChanged.set(value);
-        await this.store.updateNotificationPreferences(id, this.notifyOnMessage(), value);
+        await this.store.updateNotificationPreferences(id, this.notifyOnMessage(), value, this.notifyOnLethe(), this.notifyOnCharon());
+    }
+
+    async setNotifyOnLethe(value: boolean): Promise<void> {
+        const id = this.store.currentListId();
+        if (!id) return;
+        this.notifyOnLethe.set(value);
+        await this.store.updateNotificationPreferences(id, this.notifyOnMessage(), this.notifyOnItemsChanged(), value, this.notifyOnCharon());
+    }
+
+    async setNotifyOnCharon(value: boolean): Promise<void> {
+        const id = this.store.currentListId();
+        if (!id) return;
+        this.notifyOnCharon.set(value);
+        await this.store.updateNotificationPreferences(id, this.notifyOnMessage(), this.notifyOnItemsChanged(), this.notifyOnLethe(), value);
     }
 
     async setSensitive(value: boolean): Promise<void> {
         const id = this.store.currentListId();
         if (!id) return;
 
-        // No master password set yet — send the user to set one up before
-        // a list can be marked sensitive (sensitive lists would otherwise
-        // be unrecoverable: there's no master password to reveal them with).
         if (value && !this.masterPassword.hasPassword()) {
             await this.router.navigate(['/settings']);
             return;

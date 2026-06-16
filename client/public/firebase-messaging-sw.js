@@ -12,6 +12,21 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+let _badgeCount = 0;
+
+self.addEventListener('message', (event) => {
+    if (event.data?.type === 'BADGE_COUNT_SYNC') {
+        _badgeCount = event.data.count ?? 0;
+    }
+});
+
+function incrementAndSetBadge() {
+    _badgeCount++;
+    if ('setAppBadge' in self.navigator) {
+        self.navigator.setAppBadge(_badgeCount).catch(() => {});
+    }
+}
+
 function routeForType(type) {
     switch (type) {
         case 'message':
@@ -29,6 +44,8 @@ messaging.onBackgroundMessage((payload) => {
     const listId = payload.data?.listId;
     const type = payload.data?.type;
 
+    incrementAndSetBadge();
+
     self.registration.showNotification(title, {
         body,
         icon: '/web-app-manifest-192x192.png',
@@ -39,6 +56,11 @@ messaging.onBackgroundMessage((payload) => {
 
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
+
+    if ('clearAppBadge' in self.navigator) {
+        self.navigator.clearAppBadge().catch(() => {});
+    }
+    _badgeCount = 0;
 
     const listId = event.notification.data?.listId;
     const type = event.notification.data?.type;

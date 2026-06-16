@@ -1,8 +1,5 @@
 #!/usr/bin/env node
 
-// Generates src/app/version.ts from the version field in package.json,
-// so the app version shown in the UI always matches package.json.
-
 const fs = require('fs');
 const path = require('path');
 

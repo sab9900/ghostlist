@@ -5,10 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GhostList.Application.Features.Charon.Queries.GetCharonDropsByListId;
 
-/// <summary>
-/// Returns the Charon drops in a list that <paramref name="DeviceId"/> has
-/// not yet viewed - i.e. its personal "sealed drops" queue.
-/// </summary>
 public record GetCharonDropsByListIdQuery(Guid ListId, string DeviceId) : IRequest<List<CharonDropDto>>;
 
 public record CharonDropDto(

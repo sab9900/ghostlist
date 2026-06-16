@@ -39,14 +39,12 @@ interface AppState {
 
     messages: GhostChatMessage[];
 
-    /** Pending "burn after read" drops (Charon tab) not yet viewed by this device. */
     charonDrops: CharonDropDto[];
 
     imageDataUrls: Record<string, string>;
 
     listsLoaded: boolean;
 
-    /** Number of mutations queued locally, waiting to be sent once back online. */
     pendingOpsCount: number;
 
     loading: boolean;
@@ -68,22 +66,14 @@ const initialState: AppState = {
     error: null,
 };
 
-/** True for HttpClient errors caused by the request never reaching the server (offline). */
 function isNetworkError(e: unknown): boolean {
     return e instanceof HttpErrorResponse && e.status === 0;
 }
 
-/** Generates a local-only id for optimistic items/messages created while offline. */
 function tempId(): string {
     return `local-${self.crypto.randomUUID()}`;
 }
 
-/**
- * Resolves an optimistic item's temp id to its real server id once `createItem`
- * returns. The server's SignalR broadcast is sent to all list members including
- * the creator, so it can race with this response and add the real item first —
- * in that case drop our optimistic placeholder instead of creating a duplicate.
- */
 function resolveCreatedItemId(items: GhostListItem[], tempItemId: string, realId: string): GhostListItem[] {
     if (items.some(i => i.id === realId)) {
         return items.filter(i => i.id !== tempItemId);
@@ -91,7 +81,6 @@ function resolveCreatedItemId(items: GhostListItem[], tempItemId: string, realId
     return items.map(i => i.id === tempItemId ? { ...i, id: realId } : i);
 }
 
-/** Same id-reconciliation as {@link resolveCreatedItemId}, but for chat messages. */
 function resolveCreatedMessageId(messages: GhostChatMessage[], tempMessageId: string, realId: string): GhostChatMessage[] {
     if (messages.some(m => m.id === realId)) {
         return messages.filter(m => m.id !== tempMessageId);
@@ -182,11 +171,6 @@ export const AppStore = signalStore(
             patchState(store, { pendingOpsCount: store.pendingOpsCount() + 1 });
         }
 
-        /**
-         * Queues a toggle, collapsing it with any already-queued toggle for the same item so
-         * repeated offline toggles converge to a single "desired final state" op instead of
-         * stacking up redundant flips.
-         */
         async function upsertToggleOp(listId: string, itemId: string, desiredChecked: boolean, createdAt: string): Promise<void> {
             const ops = await storage.getPendingOps();
             const existing = ops.find(o => o.type === 'toggleItem' && o.itemId === itemId);
@@ -266,9 +250,7 @@ export const AppStore = signalStore(
 
                 try {
                     const list = await firstValueFrom(api.getList(id));
-                    // The user may have navigated to a different list while this request
-                    // was in flight. Don't clobber the now-current list's state (and don't
-                    // decrypt its items/messages with the wrong encryption key).
+
                     if (store.currentListId() === id) {
                         patchState(store, {
                             currentList: list,
@@ -311,9 +293,7 @@ export const AppStore = signalStore(
                     try {
                         await firstValueFrom(api.deleteList(id, ownerToken));
                     } catch (e: unknown) {
-                        // Server-side cleanup may have already removed this list (e.g. it
-                        // became memberless and was garbage-collected). Treat that as
-                        // success so the stale entry still gets cleaned up locally.
+
                         if (!(e instanceof HttpErrorResponse && e.status === 404)) throw e;
                     }
                     await hub.leaveList(id);
@@ -415,10 +395,7 @@ export const AppStore = signalStore(
                     });
                     void persistCurrentList();
                 } catch (e: unknown) {
-                    // Only queue for offline retry if we're actually offline. A network
-                    // error (status 0) while the browser still reports itself online
-                    // doesn't necessarily mean the request never reached the server —
-                    // retrying it via the outbox risks creating a duplicate item.
+
                     if (!isNetworkError(e) || connectivity.online()) {
                         patchState(store, { items: store.items().filter(i => i.id !== id) });
                         void persistCurrentList();
@@ -448,9 +425,7 @@ export const AppStore = signalStore(
                 void persistCurrentList();
 
                 if (itemId.startsWith('local-')) {
-                    // Item hasn't been created on the server yet (still queued). It'll be
-                    // created in its current (unchecked) state once back online; the local
-                    // toggle above keeps the UI in sync until then.
+
                     return;
                 }
 
@@ -538,10 +513,7 @@ export const AppStore = signalStore(
                     });
                     void persistCurrentList();
                 } catch (e: unknown) {
-                    // Only queue for offline retry if we're actually offline. A network
-                    // error (status 0) while the browser still reports itself online
-                    // doesn't necessarily mean the request never reached the server —
-                    // retrying it via the outbox risks creating a duplicate message.
+
                     if (!isNetworkError(e) || connectivity.online()) {
                         patchState(store, { messages: store.messages().filter(m => m.id !== id) });
                         void persistCurrentList();
@@ -610,14 +582,6 @@ export const AppStore = signalStore(
                 return messageId;
             },
 
-            /**
-             * Fetches and decrypts a chat image that wasn't received via the
-             * live SignalR relay (e.g. this device was offline or hadn't
-             * opened the list yet when it was sent). The server only retains
-             * image blobs temporarily — a 404 means it already expired or
-             * was never persisted, which is expected and not an error.
-             * No-op if the image is already cached.
-             */
             async fetchAndCacheImage(messageId: string): Promise<void> {
                 if (store.imageDataUrls()[messageId]) return;
 
@@ -629,17 +593,10 @@ export const AppStore = signalStore(
                     const dataUrl = await crypto.decrypt(image.encryptedImage, image.imageInitializationVector, key);
                     cacheImage(messageId, dataUrl);
                 } catch {
-                    // Not found/expired, offline, or decryption failed — leave
-                    // the placeholder as-is.
+
                 }
             },
 
-            /**
-             * Sends a "burn after read" drop (Charon tab). Pure passthrough of
-             * already-encrypted content/metadata — the caller is responsible for
-             * encryption. Other members receive it via the `CharonDropCreated`
-             * SignalR broadcast, including this device.
-             */
             async sendCharonDrop(
                 encryptedContent: string,
                 contentInitializationVector: string,
@@ -658,11 +615,6 @@ export const AppStore = signalStore(
                 }));
             },
 
-            /**
-             * Marks a Charon drop as viewed by this device and removes it from the
-             * local queue. Once every other member has viewed it, the server burns
-             * (permanently deletes) the drop and broadcasts `CharonDropDeleted`.
-             */
             async viewCharonDrop(dropId: string): Promise<void> {
                 patchState(store, { charonDrops: store.charonDrops().filter(d => d.id !== dropId) });
                 try {
@@ -670,7 +622,6 @@ export const AppStore = signalStore(
                 } catch { }
             },
 
-            /** Recalls (deletes) a Charon drop before it's been viewed by everyone — e.g. sent by mistake. */
             async recallCharonDrop(dropId: string): Promise<void> {
                 patchState(store, { charonDrops: store.charonDrops().filter(d => d.id !== dropId) });
                 try {
@@ -678,7 +629,6 @@ export const AppStore = signalStore(
                 } catch { }
             },
 
-            /** Replays queued offline mutations against the API. Safe to call repeatedly. */
             async flushPendingOps(): Promise<void> {
                 if (flushing) return;
                 flushing = true;
@@ -687,8 +637,6 @@ export const AppStore = signalStore(
                         .slice()
                         .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
-                    // Cache one getItems() per list per flush, so multiple queued
-                    // toggles against the same list don't each trigger a fetch.
                     const itemsCache = new Map<string, Promise<GhostListItem[]>>();
                     function getItemsCached(listId: string): Promise<GhostListItem[]> {
                         let pending = itemsCache.get(listId);
@@ -717,19 +665,17 @@ export const AppStore = signalStore(
                                     const serverItem = serverItems.find(i => i.id === op.itemId);
 
                                     if (!serverItem) {
-                                        // Item no longer exists server-side — nothing to toggle.
+
                                         break;
                                     }
 
                                     if (serverItem.isChecked === op.desiredChecked) {
-                                        // Already converged (e.g. another device made the same change).
+
                                         break;
                                     }
 
                                     if (serverItem.checkedAt && serverItem.checkedAt > op.createdAt) {
-                                        // Someone else changed this item's checked state more recently
-                                        // than our offline toggle — server wins. Pull the server's
-                                        // value into local state instead of overwriting it.
+
                                         if (store.currentListId() === op.listId) {
                                             patchState(store, {
                                                 items: store.items().map(i =>
@@ -751,7 +697,7 @@ export const AppStore = signalStore(
                                         await firstValueFrom(api.deleteItem(op.itemId));
                                     } catch (e: unknown) {
                                         if (isNetworkError(e)) throw e;
-                                        // already gone server-side — nothing to do
+
                                     }
                                     break;
                                 case 'sendMessage': {
@@ -774,7 +720,7 @@ export const AppStore = signalStore(
                             }
                             if (op.localId !== undefined) await storage.removePendingOp(op.localId);
                         } catch (e: unknown) {
-                            if (isNetworkError(e)) break; // still offline — retry later
+                            if (isNetworkError(e)) break; 
                             if (op.localId !== undefined) await storage.removePendingOp(op.localId).catch(() => { });
                         }
                     }
@@ -782,6 +728,26 @@ export const AppStore = signalStore(
                     const remaining = await storage.getPendingOps().catch(() => []);
                     patchState(store, { pendingOpsCount: remaining.length });
                     flushing = false;
+                }
+            },
+
+            async refreshCurrentList(): Promise<void> {
+                const id = store.currentListId();
+                const key = store.currentEncryptionKey();
+                if (!id || !key) return;
+
+                try {
+                    const list = await firstValueFrom(api.getList(id));
+                    if (store.currentListId() === id) {
+                        patchState(store, {
+                            currentList: list,
+                            items: list.items,
+                            messages: list.chatMessages,
+                        });
+                        void persistCurrentList();
+                    }
+                } catch {
+
                 }
             },
 
@@ -800,11 +766,6 @@ export const AppStore = signalStore(
         const crypto = inject(CryptoService);
         const storage = inject(ListStorageService);
 
-        /**
-         * Determines whether an item/message was sent by this person, preferring the
-         * stable `senderUserId` (which survives machine sync) and falling back to
-         * `senderDeviceId` for legacy rows that predate `userId`.
-         */
         function isOwnSender(senderUserId: string | null, senderDeviceId: string | null): boolean {
             if (senderUserId !== null) return senderUserId === userId.userId();
             return senderDeviceId === deviceId.deviceId;
@@ -823,10 +784,7 @@ export const AppStore = signalStore(
                         await Promise.all(lists.map((l) => hub.joinList(l.id)));
                         foreground.start();
                     } catch {
-                        // Offline at startup — continue without a realtime connection.
-                        // Event subscriptions below still get registered, and
-                        // hub.reconnected$ / the 'online' listener will pick things
-                        // back up once connectivity returns.
+
                     }
                 }
 
@@ -856,10 +814,6 @@ export const AppStore = signalStore(
                         store._addUnreadItem(event.ghostListId, event.id);
                     }
 
-                    // If this is our own item and we still have an optimistic placeholder
-                    // for it (waiting on createItem's HTTP response), resolve the
-                    // placeholder to the real id in-place instead of appending a second
-                    // copy — avoids a brief duplicate flash while that response is pending.
                     if (isOwnSender(event.senderUserId, event.senderDeviceId)) {
                         const optimisticMatch = store.items().find((i) =>
                             i.id.startsWith('local-') &&
@@ -932,11 +886,6 @@ export const AppStore = signalStore(
                         store._addUnreadMessage(event.ghostListId, event.id);
                     }
 
-                    // If this is our own message and we still have an optimistic
-                    // placeholder for it (waiting on createMessage's HTTP response),
-                    // resolve the placeholder to the real id in-place instead of
-                    // appending a second copy — avoids a brief duplicate flash while
-                    // that response is pending.
                     if (isOwnSender(event.senderUserId, event.senderDeviceId)) {
                         const optimisticMatch = store.messages().find((m) =>
                             m.id.startsWith('local-') &&
@@ -1041,9 +990,10 @@ export const AppStore = signalStore(
                         await Promise.all(known.map((l) => hub.joinList(l.id).catch(() => { })));
                     }
                     void store.flushPendingOps();
-                    // Re-sync unread counts after being offline/disconnected — events
-                    // missed while disconnected would otherwise leave the badges stale.
+
                     void store.seedUnreadSummaries();
+
+                    if (store.currentListId()) void store.refreshCurrentList();
                 };
 
                 hub.reconnected$.subscribe(() => void rejoinAndFlush());

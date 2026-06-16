@@ -95,17 +95,6 @@ export class HubService implements OnDestroy {
         );
     }
 
-    /**
-     * Tracks an in-flight `connection.start()` call so concurrent callers
-     * (e.g. app startup's `onInit` rejoining known lists at the same time as
-     * a fresh `JoinComponent`/`joinList()` call) await the *same* connect
-     * attempt instead of one of them returning early while the connection is
-     * still `Connecting`. Without this, the early-returning caller would go
-     * on to call `joinList()` against a not-yet-`Connected` connection, that
-     * `JoinListRoom` invoke would throw, and — if list data was cached — the
-     * error got swallowed, leaving the socket never actually joined to the
-     * list's room until the user left and re-entered the list.
-     */
     private connectPromise: Promise<void> | null = null;
 
     async connect(): Promise<void> {
@@ -134,7 +123,6 @@ export class HubService implements OnDestroy {
         await this.connection.invoke('LeaveListRoom', listId);
     }
 
-    /** Reports app-wide foreground/background status, used to suppress push notifications while the app is open. */
     async setAppState(isForeground: boolean): Promise<void> {
         if (this.connection.state !== signalR.HubConnectionState.Connected) return;
         await this.connection.invoke('SetAppState', this.deviceId.deviceId, isForeground);
@@ -144,7 +132,6 @@ export class HubService implements OnDestroy {
         await this.connection.invoke('RelayImage', listId, messageId, encryptedImage, imageInitializationVector);
     }
 
-    /** Joins the ephemeral Whisper room for a list, reporting a plaintext display name for the live presence roster. */
     async joinWhisperRoom(listId: string, displayName: string): Promise<void> {
         await this.connection.invoke('JoinWhisperRoom', listId, this.deviceId.deviceId, displayName);
     }
@@ -154,7 +141,6 @@ export class HubService implements OnDestroy {
         await this.connection.invoke('LeaveWhisperRoom', listId);
     }
 
-    /** Sends a live, never-persisted "whisper" to everyone else currently viewing the Whisper tab. */
     async sendWhisper(listId: string, ciphertext: string, iv: string, senderCiphertext: string, senderIv: string): Promise<void> {
         await this.connection.invoke('SendWhisper', listId, ciphertext, iv, senderCiphertext, senderIv);
     }

@@ -22,7 +22,6 @@ export class PushNotificationService {
     private firebaseApp: FirebaseApp | null = null;
     private messaging: Messaging | null = null;
 
-    /** Resolves once a push token has been obtained (native registration callback or web getToken). */
     private tokenReady: Promise<void>;
     private resolveTokenReady!: () => void;
 
@@ -37,12 +36,6 @@ export class PushNotificationService {
         this.resolveTokenReady();
     }
 
-    /**
-     * Returns the current push token, waiting briefly for an in-flight
-     * registration to complete if none is available yet. This avoids
-     * silently dropping subscription/preference updates that happen right
-     * after app start, before the async registration callback has fired.
-     */
     private async waitForToken(timeoutMs = 8000): Promise<string | null> {
         const existing = this.tokenService.token();
         if (existing) return existing;
@@ -66,6 +59,45 @@ export class PushNotificationService {
     private async initializeNative(listIds: string[]): Promise<void> {
         const { receive } = await PushNotifications.requestPermissions();
         if (receive !== 'granted') return;
+
+        if (this.platform === 'android') {
+            await PushNotifications.createChannel({
+                id: 'ghost_messages',
+                name: 'Nachrichten',
+                description: 'Chat-Nachrichten in deinen Listen',
+                importance: 4, 
+                vibration: true,
+                sound: 'default',
+                visibility: 1, 
+            });
+            await PushNotifications.createChannel({
+                id: 'ghost_lethe',
+                name: 'Lethe – Flüster-Einladungen',
+                description: 'Einladungen in den Lethe-Flüsterkanal',
+                importance: 5, 
+                vibration: true,
+                sound: 'default',
+                visibility: 1, 
+            });
+            await PushNotifications.createChannel({
+                id: 'ghost_charon',
+                name: 'Charon – Drops',
+                description: 'Neue Dateien im Charon Dead-Drop',
+                importance: 4, 
+                vibration: true,
+                sound: 'default',
+                visibility: 1, 
+            });
+            await PushNotifications.createChannel({
+                id: 'ghost_items',
+                name: 'Listen-Updates',
+                description: 'Änderungen an deinen Listen',
+                importance: 3, 
+                vibration: false,
+                sound: 'default',
+                visibility: 1, 
+            });
+        }
 
         await PushNotifications.register();
 
@@ -109,9 +141,7 @@ export class PushNotificationService {
         if (Notification.permission !== 'granted') return;
 
         try {
-            // Register under a dedicated scope so this worker doesn't collide
-            // with the Angular app-shell service worker (ngsw-worker.js),
-            // which is registered at the default '/' scope.
+
             const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
                 scope: '/firebase-cloud-messaging-push-scope',
             });
@@ -150,14 +180,19 @@ export class PushNotificationService {
         await firstValueFrom(this.api.subscribeToList(listId, { deviceToken: token, platform, locale })).catch(() => {});
     }
 
-    /** Re-registers this device for a list with explicit notification preferences (per-list, per-device opt-out). */
-    async updatePreferences(listId: string, notifyOnMessage: boolean, notifyOnItemsChanged: boolean): Promise<void> {
+    async updatePreferences(
+        listId: string,
+        notifyOnMessage: boolean,
+        notifyOnItemsChanged: boolean,
+        notifyOnLethe: boolean,
+        notifyOnCharon: boolean,
+    ): Promise<void> {
         const token = await this.waitForToken();
         const platform = this.platformDto();
         if (!platform || !token) return;
         const locale = this.languageService.currentLang();
         await firstValueFrom(
-            this.api.subscribeToList(listId, { deviceToken: token, platform, notifyOnMessage, notifyOnItemsChanged, locale }),
+            this.api.subscribeToList(listId, { deviceToken: token, platform, notifyOnMessage, notifyOnItemsChanged, notifyOnLethe, notifyOnCharon, locale }),
         ).catch(() => {});
     }
 
@@ -167,13 +202,14 @@ export class PushNotificationService {
         await firstValueFrom(this.api.unsubscribeFromList(listId)).catch(() => {});
     }
 
-    /** Maps a notification's `data.type` to the list-detail tab it should open. */
     private routeForType(type: string | undefined): string {
         switch (type) {
             case 'message':
                 return 'chat';
             case 'whisper_invite':
                 return 'whisper';
+            case 'charon_drop':
+                return 'charon';
             default:
                 return 'items';
         }

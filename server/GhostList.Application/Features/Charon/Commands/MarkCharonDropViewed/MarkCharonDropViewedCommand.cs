@@ -7,14 +7,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GhostList.Application.Features.Charon.Commands.MarkCharonDropViewed;
 
-/// <summary>
-/// Records that <paramref name="DeviceId"/> has viewed (decrypted) a Charon
-/// drop once. Once every other member of the list (i.e. every
-/// <see cref="GhostListMember"/> whose device id differs from the drop's
-/// <see cref="CharonDrop.SenderDeviceId"/>) has a view receipt, the drop and
-/// all its receipts are deleted ("burned") and <c>CharonDropDeleted</c> is
-/// broadcast.
-/// </summary>
 public record MarkCharonDropViewedCommand(Guid DropId, string DeviceId) : IRequest;
 
 public class MarkCharonDropViewedCommandValidator : AbstractValidator<MarkCharonDropViewedCommand>
@@ -59,7 +51,7 @@ public class MarkCharonDropViewedCommandHandler(IApplicationDbContext context, I
 
         if (recipientDeviceIds.Count == 0)
         {
-            // No other members to wait for - the drop is consumed by its first viewer.
+
             fullyViewed = true;
         }
         else

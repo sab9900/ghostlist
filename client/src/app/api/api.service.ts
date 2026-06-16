@@ -199,8 +199,7 @@ export class ApiService {
     }
 
     getLatestInfoMessage(): Observable<InfoMessage | null> {
-        // Capacitor.getPlatform() returns 'ios' | 'android' | 'web', which ASP.NET Core's
-        // enum model binder accepts case-insensitively against DevicePlatform.
+
         return this.http.get<InfoMessage | null>(`${this.BASE}/info/latest`, {
             params: { platform: Capacitor.getPlatform() },
         });
@@ -225,7 +224,6 @@ export class ApiService {
         return this.http.delete<void>(`${this.BASE}/charon/${dropId}`);
     }
 
-    /** Sends a "come watch now" Whisper invite push to other list members (all, or a specific subset). */
     sendWhisperInvite(listId: string, targetDeviceIds?: string[]): Observable<void> {
         return this.http.post<void>(`${this.BASE}/whisper/${listId}/invite`, { targetDeviceIds: targetDeviceIds ?? null },
             { headers: this.deviceIdHeaders() });

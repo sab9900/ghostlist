@@ -4,11 +4,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace GhostList.Infrastructure.Migrations
 {
-    /// <summary>
-    /// Adds the client's UI language (e.g. "en_US", "de_DE") to each push subscription, so
-    /// FcmNotificationService can send notification text in the recipient's language. Existing
-    /// rows get null and fall back to the default language until the client re-subscribes.
-    /// </summary>
+
     public partial class AddDeviceSubscriptionLocale : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

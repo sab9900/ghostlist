@@ -61,6 +61,37 @@
         align-items: flex-start;
     }
 
+    // Audio voice-message card: player spans full width on row 1,
+    // info + dismiss share row 2.
+    &--audio {
+        flex-wrap: wrap;
+        gap: var(--space-2);
+
+        .charon-card__audio {
+            flex: 0 0 100%;
+            order: 0;
+        }
+
+        .charon-card__info {
+            order: 1;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .charon-card__actions {
+            order: 1;
+            flex-direction: row;
+            align-items: center;
+            align-self: flex-start;
+            gap: var(--space-2);
+        }
+
+        .charon-card__dismiss {
+            // Keep it top-right but inline with actions row
+            align-self: center;
+        }
+    }
+
     &__icon {
         flex-shrink: 0;
         width: 40px;
@@ -148,6 +179,13 @@
         }
     }
 
+    &__audio {
+        // Full-width player used inside .charon-card--audio
+        display: block;
+        width: 100%;
+        min-width: 0;
+    }
+
     &__dismiss {
         align-self: flex-end;
         border: none;
@@ -169,7 +207,8 @@
     align-items: center;
     gap: var(--space-3);
 
-    &__attach {
+    &__attach,
+    &__record {
         width: 44px;
         height: 44px;
         flex-shrink: 0;
@@ -181,7 +220,9 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: background var(--duration-fast) var(--ease-out);
+        transition: background var(--duration-fast) var(--ease-out),
+                    color var(--duration-fast) var(--ease-out),
+                    border-color var(--duration-fast) var(--ease-out);
 
         &:hover:not(:disabled) {
             background: var(--color-surface);
@@ -192,9 +233,28 @@
         }
     }
 
+    &__record--active {
+        background: color-mix(in srgb, var(--color-danger, #e53e3e) 12%, transparent);
+        border-color: var(--color-danger, #e53e3e);
+        color: var(--color-danger, #e53e3e);
+        animation: record-pulse 1.4s ease-in-out infinite;
+
+        &:hover:not(:disabled) {
+            background: color-mix(in srgb, var(--color-danger, #e53e3e) 20%, transparent);
+        }
+    }
+
     &__label {
         font-size: var(--text-sm);
         color: var(--color-text-subtle);
+    }
+
+    &__timer {
+        font-size: var(--text-sm);
+        font-variant-numeric: tabular-nums;
+        color: var(--color-danger, #e53e3e);
+        font-weight: var(--weight-medium);
+        min-width: 2.8ch;
     }
 
     &__status {
@@ -202,6 +262,11 @@
         color: var(--color-text-subtle);
         margin-left: auto;
     }
+}
+
+@keyframes record-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
 }
 
 .visually-hidden {

@@ -35,7 +35,6 @@ public class DeleteExpiredCharonDropsCommandHandlerTests
         });
         await context.SaveChangesAsync();
 
-        // Push the stale drop's CreatedAt outside the retention window.
         context.Entry(staleDrop).Property(nameof(CharonDrop.CreatedAt)).CurrentValue =
             DateTime.UtcNow - TimeSpan.FromDays(8);
         await context.SaveChangesAsync();

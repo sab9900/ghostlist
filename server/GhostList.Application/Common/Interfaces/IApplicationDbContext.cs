@@ -27,29 +27,11 @@ public interface IApplicationDbContext
 
     Task<IReadOnlyList<DeletedItemInfo>> DeleteExpiredCheckedItemsAsync(CancellationToken cancellationToken);
 
-    /// <summary>
-    /// Deletes stored image blobs older than <paramref name="maxAge"/> and
-    /// returns how many rows were removed.
-    /// </summary>
     Task<int> DeleteExpiredImageBlobsAsync(TimeSpan maxAge, CancellationToken cancellationToken);
 
-    /// <summary>
-    /// Deletes Charon drops older than <paramref name="maxAge"/> that nobody
-    /// ever fully viewed, along with their view receipts. Returns the ids and
-    /// list ids of the removed drops so callers can broadcast deletions.
-    /// </summary>
     Task<IReadOnlyList<DeletedItemInfo>> DeleteExpiredCharonDropsAsync(TimeSpan maxAge, CancellationToken cancellationToken);
 
-    /// <summary>
-    /// Atomically bumps today's counter for the given metric in <see cref="DailyUsageStat"/>.
-    /// Safe to call from concurrent requests (upsert).
-    /// </summary>
     Task IncrementDailyUsageAsync(UsageMetric metric, CancellationToken cancellationToken);
 
-    /// <summary>
-    /// Atomically bumps today's request counter for a (language, country) pair in
-    /// <see cref="LocaleStat"/> by <paramref name="count"/>. Safe to call from
-    /// concurrent requests (upsert).
-    /// </summary>
     Task IncrementLocaleStatAsync(string language, string country, int count, CancellationToken cancellationToken);
 }

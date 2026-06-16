@@ -30,7 +30,6 @@ export class LoginComponent {
         this.error.set(null);
         this.auth.setCredentials(this.username(), this.password());
 
-        // Verify the credentials by calling a protected endpoint.
         this.stats.getStats(1).subscribe({
             next: () => {
                 this.loading.set(false);

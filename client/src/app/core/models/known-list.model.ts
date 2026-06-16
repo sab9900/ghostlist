@@ -6,6 +6,8 @@ export interface KnownList {
     ownerToken?: string;
     notifyOnMessage?: boolean;
     notifyOnItemsChanged?: boolean;
+    notifyOnLethe?: boolean;
+    notifyOnCharon?: boolean;
     isSensitive?: boolean;
 }
 
@@ -45,6 +47,8 @@ export interface SyncBundlePayload {
     lists: SyncBundleListEntry[];
     senderName: string | null;
     userId: string | null;
+
+    userIdCreatedAt: string | null;
 }
 
 export interface ListMember {

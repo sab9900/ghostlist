@@ -397,8 +397,18 @@ namespace GhostList.Infrastructure.Migrations
                         .HasMaxLength(8)
                         .HasColumnType("character varying(8)");
 
+                    b.Property<bool>("NotifyOnCharon")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
                     b.Property<bool>("NotifyOnItemsChanged")
                         .HasColumnType("boolean");
+
+                    b.Property<bool>("NotifyOnLethe")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<bool>("NotifyOnMessage")
                         .HasColumnType("boolean");

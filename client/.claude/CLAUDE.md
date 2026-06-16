@@ -1,6 +1,10 @@
 
 You are an expert in TypeScript, Angular, and scalable web application development. You write functional, maintainable, performant, and accessible code following Angular and TypeScript best practices.
 
+## Code Style
+
+- **NEVER write comments in code.** No `//`, `/* */`, or `///` comments of any kind. The code must speak for itself.
+
 ## TypeScript Best Practices
 
 - Use strict type checking

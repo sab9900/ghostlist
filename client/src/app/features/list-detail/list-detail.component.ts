@@ -17,7 +17,6 @@ import { WhisperTabComponent } from './whisper-tab/whisper-tab.component';
 
 type Tab = 'items' | 'chat' | 'whisper' | 'charon' | 'settings';
 
-// Which view is shown in the desktop chat pane (a Chat/Whisper/Charon toggle, not a route).
 type DesktopChatView = 'chat' | 'whisper' | 'charon';
 
 const PANE_WIDTH_KEY = 'gl_pane_width';
@@ -49,7 +48,6 @@ export class ListDetailComponent implements OnDestroy {
     private readonly router = inject(Router);
     protected readonly layout = inject(LayoutService);
 
-    // Tracks the active child route ('items' | 'chat' | 'settings') on mobile/tablet.
     private readonly currentUrl = toSignal(
         this.router.events.pipe(
             filter(e => e instanceof NavigationEnd),
@@ -73,7 +71,6 @@ export class ListDetailComponent implements OnDestroy {
     protected readonly settingsOpen = signal(false);
     protected readonly drawerClosing = signal(false);
 
-    // Desktop only: toggles the chat pane between Chat and Whisper.
     protected readonly desktopChatView = signal<DesktopChatView>('chat');
 
     protected readonly paneWidth = signal(loadPaneWidth());
@@ -98,9 +95,6 @@ export class ListDetailComponent implements OnDestroy {
 
     protected readonly pendingCharonDrops = computed(() => this.store.charonDrops().length);
 
-    // Chat, Lethe and Charon only make sense once someone else has joined the
-    // list. Until members are loaded, default to false so these tabs don't
-    // flash visible-then-hidden on solo lists.
     private readonly members = signal<ListMember[]>([]);
     protected readonly isMultiMember = computed(() => this.members().length > 1);
 
@@ -138,8 +132,6 @@ export class ListDetailComponent implements OnDestroy {
             filter(listId => listId === this.store.currentListId()),
         ).subscribe(() => this.router.navigate(['/']));
 
-        // Load the member list whenever the active list (or its key) changes,
-        // so we can tell whether Chat/Lethe/Charon are meaningful yet.
         effect(() => {
             const id = this.store.currentListId();
             const key = this.store.currentEncryptionKey();
@@ -150,23 +142,16 @@ export class ListDetailComponent implements OnDestroy {
             this.refreshMembers();
         });
 
-        // A member leaving/being kicked can turn a shared list back into a
-        // solo one — refresh so the tabs hide again.
         this.hub.memberKicked$.pipe(
             takeUntilDestroyed(),
             filter(({ listId }) => listId === this.store.currentListId()),
         ).subscribe(() => this.refreshMembers());
 
-        // A new device joining the list can turn a solo list into a shared
-        // one — refresh live so Chat/Lethe/Charon appear without a reload.
         this.hub.memberJoined$.pipe(
             takeUntilDestroyed(),
             filter(({ listId }) => listId === this.store.currentListId()),
         ).subscribe(() => this.refreshMembers());
 
-        // On mobile/tablet, items/chat are routed child views. If we land on
-        // the bare /list/:id (no tab segment), default into the items tab.
-        // Desktop never gets a tab segment appended.
         effect(() => {
             if (this.layout.isDesktop()) return;
             const tab = this.routeTab();
@@ -179,22 +164,18 @@ export class ListDetailComponent implements OnDestroy {
                 }
                 return;
             }
-            // Settings is no longer a tab on mobile; deep links open the
-            // settings drawer instead and fall back to the items tab.
+
             if (tab === 'settings') {
                 this.settingsOpen.set(true);
                 void this.router.navigate(['/list', id, 'items'], { replaceUrl: true });
             }
-            // Chat/Lethe/Charon are meaningless on a solo list — bounce back
-            // to items if we land here (or stay) without other members.
+
             if ((tab === 'chat' || tab === 'whisper' || tab === 'charon') && !this.isMultiMember()) {
                 void this.router.navigate(['/list', id, 'items'], { replaceUrl: true });
             }
         });
     }
 
-    // Re-fetches the member list for the currently active list and updates
-    // `members` if it's still the active list once the request resolves.
     private refreshMembers(): void {
         const id = this.store.currentListId();
         const key = this.store.currentEncryptionKey();

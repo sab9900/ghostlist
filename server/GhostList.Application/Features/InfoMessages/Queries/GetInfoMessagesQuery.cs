@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GhostList.Application.Features.InfoMessages.Queries;
 
-/// <summary>All info messages, newest first. Used by the admin client to manage the broadcast history.</summary>
 public record GetInfoMessagesQuery : IRequest<List<InfoMessageDto>>;
 
 public class GetInfoMessagesQueryHandler(IApplicationDbContext context)

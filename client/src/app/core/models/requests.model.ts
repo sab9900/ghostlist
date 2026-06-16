@@ -32,6 +32,8 @@ export interface SubscribeRequest {
     platform: DevicePlatformDto;
     notifyOnMessage?: boolean;
     notifyOnItemsChanged?: boolean;
+    notifyOnLethe?: boolean;
+    notifyOnCharon?: boolean;
     locale?: string;
 }
 

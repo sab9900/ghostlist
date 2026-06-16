@@ -76,6 +76,17 @@
 
     --keyboard-height: 0px;
 
+    /**
+     * Bottom safe-area inset, minus whatever the on-screen keyboard already
+     * covers. When the keyboard is open it sits flush with the bottom edge
+     * (covering the home indicator / nav bar area itself), so adding the
+     * full --safe-bottom on top of --keyboard-height would double-count that
+     * inset and leave a visible empty strip between the content and the
+     * keyboard. Use this instead of --safe-bottom for padding inside areas
+     * that sit above the keyboard (e.g. chat/whisper compose bars).
+     */
+    --safe-bottom-effective: max(0px, calc(var(--safe-bottom) - var(--keyboard-height)));
+
     --color-on-primary: #fff;
 }
 
@@ -149,6 +160,13 @@ html[data-theme='dark'] {
 html,
 body {
     height: 100%;
+    // iOS PWA (standalone, viewport-fit=cover): `100%`/`100vh` can resolve to a
+    // taller "layout viewport" than what's actually visible, leaving a dead
+    // strip at the bottom of the screen below the app. `100dvh` (dynamic
+    // viewport height) tracks the real visible viewport instead. Kept as a
+    // second declaration so browsers without dvh support fall back to 100%.
+    height: 100dvh;
+    overflow: hidden;
     overscroll-behavior: none;
     user-select: none;
     -webkit-user-select: none;

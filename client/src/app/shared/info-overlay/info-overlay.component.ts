@@ -5,17 +5,14 @@ import { InfoCenterService } from '../../core/services/info-center.service';
 import { LanguageService } from '../../core/services/language.service';
 import { resolveLocalizedText } from '../../core/utils/localized-text';
 
+const APK_DOWNLOAD_URL = 'https://ghost-list.com/downloads/ghostlist.apk' as const;
+
 const TYPE_LABEL_KEYS: Readonly<Record<InfoMessageType, string>> = {
     [InfoMessageType.Info]: 'INFO_CENTER.TYPE_INFO',
     [InfoMessageType.ReleaseNotes]: 'INFO_CENTER.TYPE_RELEASE_NOTES',
     [InfoMessageType.Maintenance]: 'INFO_CENTER.TYPE_MAINTENANCE',
 };
 
-/**
- * Full-screen overlay shown once per new admin broadcast message
- * (release notes, maintenance windows, ...). Dismissing it marks the
- * message as read so it won't reappear on the next launch.
- */
 @Component({
     selector: 'app-info-overlay',
     imports: [TranslatePipe],
@@ -33,7 +30,6 @@ export class InfoOverlayComponent {
         return message ? TYPE_LABEL_KEYS[message.type] : '';
     });
 
-    /** Resolves multi-language title/body (see `resolveLocalizedText`) for the current UI language. */
     protected readonly title = computed(() => {
         const message = this.message();
         return message ? resolveLocalizedText(message.title, this.languageService.currentLang()) : '';
@@ -45,6 +41,8 @@ export class InfoOverlayComponent {
     });
 
     protected readonly InfoMessageType = InfoMessageType;
+
+    protected readonly apkDownloadUrl = APK_DOWNLOAD_URL;
 
     dismiss(): void {
         this.infoCenter.dismiss();

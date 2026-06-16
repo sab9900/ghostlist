@@ -3,11 +3,6 @@ using MediatR;
 
 namespace GhostList.Application.Features.Charon.Commands.DeleteExpiredCharonDrops;
 
-/// <summary>
-/// Safety-net cleanup: deletes Charon drops that nobody ever picked up
-/// within the retention window, along with their view receipts, and
-/// broadcasts <c>CharonDropDeleted</c> for each.
-/// </summary>
 public record DeleteExpiredCharonDropsCommand : IRequest<int>;
 
 public class DeleteExpiredCharonDropsCommandHandler(IApplicationDbContext context, IGhostListNotifier notifier)

@@ -221,7 +221,7 @@ export class CryptoService {
     }
 
     toUrlSafeB64(b64: string): string {
-        return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        return b64.replace(/\+/g, '-').replace(/\
     }
 
     fromUrlSafeB64(urlSafe: string): string {

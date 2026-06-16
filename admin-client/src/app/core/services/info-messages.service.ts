@@ -9,7 +9,6 @@ export class InfoMessagesService {
     private readonly http = inject(HttpClient);
     private readonly BASE = `${environment.apiBaseUrl}/admin/info`;
 
-    /** All broadcast messages, newest first. */
     getAll(): Observable<InfoMessage[]> {
         return this.http.get<InfoMessage[]>(this.BASE);
     }

@@ -4,7 +4,6 @@ export enum InfoMessageType {
     Maintenance = 'Maintenance',
 }
 
-/** Matches the server's `DevicePlatform` enum (serialized as a string). */
 export enum DevicePlatform {
     Ios = 'Ios',
     Android = 'Android',
@@ -16,7 +15,7 @@ export interface InfoMessage {
     type: InfoMessageType;
     title: string;
     body: string;
-    /** If set, the message is only shown on this platform. Null/undefined = all platforms. */
+
     targetPlatform: DevicePlatform | null;
     version?: string | null;
     createdAt: string;

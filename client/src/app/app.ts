@@ -4,11 +4,12 @@ import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
-import { Keyboard } from '@capacitor/keyboard';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
+import { BadgeService } from './core/services/badge.service';
 import { InfoCenterService } from './core/services/info-center.service';
+import { KeyboardInsetService } from './core/services/keyboard-inset.service';
 import { LayoutService } from './core/services/layout.service';
 import { SensitiveListsService } from './core/services/sensitive-lists.service';
 import { UserPreferencesService } from './core/services/user-preferences.service';
@@ -43,6 +44,9 @@ function loadSidebarWidth(): number {
 })
 export class App {
     protected readonly layout = inject(LayoutService);
+    private readonly keyboardInset = inject(KeyboardInsetService);
+
+    private readonly _badge = inject(BadgeService);
     protected readonly webAuthn = inject(WebAuthnService);
     protected readonly infoCenter = inject(InfoCenterService);
     protected readonly prefs = inject(UserPreferencesService);
@@ -53,8 +57,6 @@ export class App {
     protected readonly unlocking = signal(false);
     protected readonly lockError = signal(false);
 
-    /** First-run name onboarding dialog: shown once preferences are hydrated and
-     *  the user hasn't yet saved a name or explicitly skipped the prompt. */
     protected readonly showNameDialog = computed(() => this.prefs.hydrated() && !this.prefs.onboarded());
     protected readonly pendingName = signal('');
 
@@ -70,15 +72,10 @@ export class App {
             }
         });
 
+        this.keyboardInset.start();
+
         if (Capacitor.isNativePlatform()) {
             StatusBar.setStyle({ style: Style.Default }).catch(() => {});
-
-            Keyboard.addListener('keyboardWillShow', ({ keyboardHeight }) => {
-                document.documentElement.style.setProperty('--keyboard-height', `${keyboardHeight}px`);
-            });
-            Keyboard.addListener('keyboardWillHide', () => {
-                document.documentElement.style.setProperty('--keyboard-height', '0px');
-            });
 
             CapacitorApp.addListener('appUrlOpen', ({ url }: { url: string }) => {
                 try {

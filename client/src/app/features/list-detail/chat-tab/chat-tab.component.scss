@@ -443,6 +443,7 @@
 
     &__row {
         display: flex;
+        align-items: flex-end;
         gap: var(--space-2);
     }
 
@@ -455,8 +456,16 @@
         color: var(--color-text);
         font-size: var(--text-base);
         font-family: var(--font-sans);
+        line-height: var(--leading-normal);
         outline: none;
         transition: border-color var(--duration-fast) var(--ease-out);
+        // textarea-specific
+        resize: none;
+        overflow-y: auto;
+        min-height: 44px;
+        // 5 Zeilen (15px × 1.5 = 22.5px) + 2 × 12px padding ≈ 137px
+        max-height: 137px;
+        display: block;
 
         &::placeholder {
             color: var(--color-text-subtle);

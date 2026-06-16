@@ -1,4 +1,4 @@
-import { Component, effect, ElementRef, inject, signal, untracked, ViewChild } from '@angular/core';
+import { Component, effect, ElementRef, inject, OnDestroy, signal, untracked, ViewChild } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { CharonDropDto } from '../../../core/models';
@@ -10,7 +10,6 @@ import { UserIdService } from '../../../core/services/user-id.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 import { AppStore } from '../../../store/app.store';
 
-/** Decrypted metadata for a sealed drop (filename/type/size + sender display name). */
 interface CharonMeta {
     fileName: string;
     mimeType: string;
@@ -18,7 +17,6 @@ interface CharonMeta {
     senderName: string;
 }
 
-/** A fully-decrypted drop, kept in this device's session only after burning. */
 interface RevealedDrop {
     id: string;
     dataUrl: string;
@@ -27,32 +25,22 @@ interface RevealedDrop {
     size: number;
     senderName: string;
     isImage: boolean;
+    isAudio: boolean;
 }
 
-/**
- * Conservative raw-file size cap. The server limits EncryptedContent to
- * 15,000,000 base64 chars; a data URL is ~4/3 the raw size, and AES-GCM
- * ciphertext base64 adds another ~4/3, so ~8 MB raw stays comfortably under.
- */
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
 
 const MAX_IMAGE_DIMENSION = 1280;
 const IMAGE_QUALITY = 0.72;
 
-/**
- * Allowed file extensions for Charon drops. Everything sent through Charon is
- * end-to-end encrypted, so the server can never scan its contents — this
- * allowlist is the main safeguard against sharing executables/scripts that a
- * recipient could be tricked into running.
- */
 const ALLOWED_EXTENSIONS = new Set([
-    // Images
+
     'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'heic', 'heif',
-    // Documents
+
     'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp', 'txt', 'rtf', 'csv',
-    // Audio / video
+
     'mp3', 'wav', 'm4a', 'ogg', 'flac', 'mp4', 'mov', 'webm', 'avi',
-    // Archives
+
     'zip',
 ]);
 
@@ -67,7 +55,7 @@ function isAllowedFile(file: File): boolean {
     templateUrl: './charon-tab.component.html',
     styleUrl: './charon-tab.component.scss',
 })
-export class CharonTabComponent {
+export class CharonTabComponent implements OnDestroy {
     protected readonly store = inject(AppStore);
     protected readonly prefs = inject(UserPreferencesService);
     protected readonly deviceId = inject(DeviceIdService);
@@ -79,13 +67,21 @@ export class CharonTabComponent {
 
     @ViewChild('fileInput') private fileInputRef?: ElementRef<HTMLInputElement>;
 
-    /** Decrypted metadata for sealed drops, keyed by drop id. */
     protected readonly dropMeta = signal<Map<string, CharonMeta>>(new Map());
-    /** Drops this device has revealed (and burned) this session. */
+
     protected readonly revealedDrops = signal<RevealedDrop[]>([]);
     protected readonly sending = signal(false);
     protected readonly fileTooLarge = signal(false);
     protected readonly fileTypeNotAllowed = signal(false);
+    protected readonly recording = signal(false);
+    protected readonly recordingSeconds = signal(0);
+    protected readonly recordingNotSupported = signal(false);
+
+    private mediaRecorder: MediaRecorder | null = null;
+    private audioChunks: Blob[] = [];
+    private recordingTimer: ReturnType<typeof setInterval> | null = null;
+
+    private readonly blobUrls = new Map<string, string>();
 
     constructor() {
         effect(() => {
@@ -94,7 +90,6 @@ export class CharonTabComponent {
         });
     }
 
-    /** Decrypts metadata (filename/size/sender) for any drops not seen before. Does not burn the drop. */
     private async decryptNewMeta(drops: CharonDropDto[]): Promise<void> {
         const key = this.store.currentEncryptionKey();
         if (!key) return;
@@ -122,7 +117,6 @@ export class CharonTabComponent {
         return this.dropMeta().get(dropId) ?? null;
     }
 
-    /** Whether this device/user sent the drop (mirrors AppStore.isOwnSender). */
     protected isMine(drop: CharonDropDto): boolean {
         if (drop.senderUserId !== null) return drop.senderUserId === this.userId.userId();
         if (drop.senderDeviceId !== null) return drop.senderDeviceId === this.deviceId.deviceId;
@@ -131,6 +125,10 @@ export class CharonTabComponent {
 
     protected isImageMime(mimeType: string | undefined): boolean {
         return !!mimeType?.startsWith('image/');
+    }
+
+    protected isAudioMime(mimeType: string | undefined): boolean {
+        return !!mimeType?.startsWith('audio/');
     }
 
     protected formatSize(bytes: number): string {
@@ -143,7 +141,6 @@ export class CharonTabComponent {
         this.imageViewer.open(src, alt);
     }
 
-    /** Decrypts the full content of a drop, shows it, and burns it (marks viewed). One-shot, with confirmation. */
     async reveal(drop: CharonDropDto): Promise<void> {
         const key = this.store.currentEncryptionKey();
         if (!key) return;
@@ -159,14 +156,23 @@ export class CharonTabComponent {
             }
             const dataUrl = await this.crypto.decrypt(drop.encryptedContent, drop.contentInitializationVector, key);
 
+            const isAudio = this.isAudioMime(meta!.mimeType);
+            let srcUrl = dataUrl;
+            if (isAudio) {
+                const blob = CharonTabComponent.dataUrlToBlob(dataUrl);
+                srcUrl = URL.createObjectURL(blob);
+                this.blobUrls.set(drop.id, srcUrl);
+            }
+
             this.revealedDrops.update(list => [...list, {
                 id: drop.id,
-                dataUrl,
+                dataUrl: srcUrl,
                 fileName: meta!.fileName,
                 mimeType: meta!.mimeType,
                 size: meta!.size,
                 senderName: meta!.senderName,
                 isImage: this.isImageMime(meta!.mimeType),
+                isAudio,
             }]);
         } catch {
             return;
@@ -175,12 +181,15 @@ export class CharonTabComponent {
         await this.store.viewCharonDrop(drop.id);
     }
 
-    /** Clears a revealed drop from this device's local session view. */
     dismiss(id: string): void {
+        const blobUrl = this.blobUrls.get(id);
+        if (blobUrl) {
+            URL.revokeObjectURL(blobUrl);
+            this.blobUrls.delete(id);
+        }
         this.revealedDrops.update(list => list.filter(d => d.id !== id));
     }
 
-    /** Deletes a not-yet-fully-viewed drop for everyone (only available to its sender). */
     async recall(drop: CharonDropDto): Promise<void> {
         const confirmMsg = await firstValueFrom(this.translate.get('CHARON.RECALL_CONFIRM'));
         if (!confirm(confirmMsg)) return;
@@ -243,11 +252,161 @@ export class CharonTabComponent {
                 content.ciphertext, content.iv,
                 metadata.ciphertext, metadata.iv,
             );
-            this.haptics.itemAdded();
+            this.haptics.charonDropSent();
         } catch {
         } finally {
             this.sending.set(false);
         }
+    }
+
+    ngOnDestroy(): void {
+        if (this.recordingTimer !== null) clearInterval(this.recordingTimer);
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') this.mediaRecorder.stop();
+        this.blobUrls.forEach(url => URL.revokeObjectURL(url));
+        this.blobUrls.clear();
+    }
+
+    protected formatRecordingTime(seconds: number): string {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+
+    async toggleRecording(): Promise<void> {
+        if (this.recording()) {
+            this.haptics.charonDropSent();
+            await this.stopRecording();
+        } else {
+            await this.startRecording();
+        }
+    }
+
+    private async startRecording(): Promise<void> {
+        if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+            this.recordingNotSupported.set(true);
+            setTimeout(() => this.recordingNotSupported.set(false), 4000);
+            return;
+        }
+
+        let stream: MediaStream;
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch {
+            this.recordingNotSupported.set(true);
+            setTimeout(() => this.recordingNotSupported.set(false), 4000);
+            return;
+        }
+
+        const mimeType = CharonTabComponent.getBestAudioMimeType();
+        this.mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+        this.audioChunks = [];
+
+        this.mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) this.audioChunks.push(e.data);
+        };
+
+        this.mediaRecorder.onstop = () => {
+            stream.getTracks().forEach(t => t.stop());
+            const actualMime = this.mediaRecorder?.mimeType || mimeType || 'audio/webm';
+            void this.sendAudioRecording(actualMime);
+        };
+
+        this.mediaRecorder.start(100);
+        this.recording.set(true);
+        this.recordingSeconds.set(0);
+
+        this.recordingTimer = setInterval(() => {
+            const next = this.recordingSeconds() + 1;
+            this.recordingSeconds.set(next);
+            if (next >= 60) void this.stopRecording();
+        }, 1000);
+    }
+
+    private async stopRecording(): Promise<void> {
+        if (this.recordingTimer !== null) {
+            clearInterval(this.recordingTimer);
+            this.recordingTimer = null;
+        }
+        this.recording.set(false);
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+            this.mediaRecorder.stop();
+        }
+    }
+
+    private async sendAudioRecording(mimeType: string): Promise<void> {
+        const blob = new Blob(this.audioChunks, { type: mimeType });
+        this.audioChunks = [];
+
+        if (blob.size > MAX_FILE_SIZE) {
+            this.fileTooLarge.set(true);
+            setTimeout(() => this.fileTooLarge.set(false), 4000);
+            return;
+        }
+
+        const listId = this.store.currentListId();
+        const key = this.store.currentEncryptionKey();
+        if (!listId || !key) return;
+
+        const ext = CharonTabComponent.getAudioExtension(mimeType);
+        const fileName = `voice-${Date.now()}.${ext}`;
+
+        this.sending.set(true);
+        try {
+            const dataUrl = await this.blobToDataUrl(blob);
+            const senderName = this.prefs.senderName() || await firstValueFrom(this.translate.get('CHAT.ANONYMOUS'));
+            const meta: CharonMeta = { fileName, mimeType, size: blob.size, senderName };
+
+            const [content, metadata] = await Promise.all([
+                this.crypto.encrypt(dataUrl, key),
+                this.crypto.encrypt(JSON.stringify(meta), key),
+            ]);
+
+            await this.store.sendCharonDrop(
+                content.ciphertext, content.iv,
+                metadata.ciphertext, metadata.iv,
+            );
+            this.haptics.charonDropSent();
+        } catch {
+        } finally {
+            this.sending.set(false);
+        }
+    }
+
+    private blobToDataUrl(blob: Blob): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = () => reject(reader.error ?? new Error('Could not read blob'));
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    private static dataUrlToBlob(dataUrl: string): Blob {
+        const [header, b64] = dataUrl.split(',');
+        const mime = header.match(/:(.*?);/)?.[1] ?? 'application/octet-stream';
+        const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+        return new Blob([bytes], { type: mime });
+    }
+
+    private static getBestAudioMimeType(): string {
+        const candidates = [
+            'audio/webm;codecs=opus',
+            'audio/webm',
+            'audio/mp4',
+            'audio/ogg;codecs=opus',
+            'audio/ogg',
+        ];
+        for (const type of candidates) {
+            if (MediaRecorder.isTypeSupported(type)) return type;
+        }
+        return '';
+    }
+
+    private static getAudioExtension(mimeType: string): string {
+        if (mimeType.startsWith('audio/webm')) return 'webm';
+        if (mimeType.startsWith('audio/mp4')) return 'm4a';
+        if (mimeType.startsWith('audio/ogg')) return 'ogg';
+        return 'audio';
     }
 
     private compressImage(file: File): Promise<string> {

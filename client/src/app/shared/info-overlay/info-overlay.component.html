@@ -37,7 +37,17 @@
         <h2 class="info-overlay__title" id="info-overlay-title">{{ title() }}</h2>
         <p class="info-overlay__body">{{ body() }}</p>
 
-        <button class="btn btn--primary info-overlay__action" (click)="dismiss()">
+        @if (msg.type === InfoMessageType.ReleaseNotes) {
+        <!--
+            href is bound to a component constant (APK_DOWNLOAD_URL), never to
+            server-supplied content, so there is no XSS or open-redirect risk.
+        -->
+        <a class="btn btn--primary info-overlay__action" [href]="apkDownloadUrl"
+            download rel="noopener noreferrer">
+            {{ 'INFO_CENTER.DOWNLOAD' | translate }}
+        </a>
+        }
+        <button class="btn btn--secondary info-overlay__action" (click)="dismiss()">
             {{ 'INFO_CENTER.DISMISS' | translate }}
         </button>
     </div>

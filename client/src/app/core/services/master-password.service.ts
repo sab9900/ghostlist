@@ -12,20 +12,12 @@ interface StoredMasterPassword {
     iterations: number;
 }
 
-/**
- * Manages an optional per-device "master password" used to gate access to
- * lists the user has marked as sensitive. The password itself is never
- * stored — only a salted PBKDF2 hash, kept in the `user-preferences` IDB
- * store (see `ListStorageService`).
- */
 @Injectable({ providedIn: 'root' })
 export class MasterPasswordService {
     private readonly storage = inject(ListStorageService);
 
-    /** True once a master password has been set on this device. */
     readonly hasPassword = signal(false);
 
-    /** True once the initial IDB hydration has completed. */
     readonly hydrated = signal(false);
 
     private hydratedResolve!: () => void;
@@ -35,7 +27,6 @@ export class MasterPasswordService {
         void this.load();
     }
 
-    /** Resolves once hydration from IDB has completed. */
     whenHydrated(): Promise<void> {
         return this.hydratedPromise;
     }
@@ -52,7 +43,6 @@ export class MasterPasswordService {
         }
     }
 
-    /** Sets (or replaces) the master password for this device. */
     async setPassword(password: string): Promise<void> {
         const salt = crypto.getRandomValues(new Uint8Array(SALT_BYTES));
         const hash = await this.derive(password, salt);
@@ -65,7 +55,6 @@ export class MasterPasswordService {
         this.hasPassword.set(true);
     }
 
-    /** Verifies a candidate password against the stored hash. */
     async verifyPassword(password: string): Promise<boolean> {
         const stored = await this.storage.getPref<StoredMasterPassword>(PREF_KEY);
         if (!stored) return false;
@@ -74,7 +63,6 @@ export class MasterPasswordService {
         return this.constantTimeEqual(hash, this.b64ToBuf(stored.hash));
     }
 
-    /** Removes the master password from this device. */
     async removePassword(): Promise<void> {
         await this.storage.deletePref(PREF_KEY);
         this.hasPassword.set(false);

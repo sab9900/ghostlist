@@ -8,7 +8,6 @@ const LS_KEY          = 'gl_sender_name';
 const LS_ONBOARDED_KEY = 'gl_name_onboarded';
 const LS_HAPTICS_KEY  = 'gl_haptics_enabled';
 
-/** iOS ships with haptics on by default; Android and web ship with it off. */
 const DEFAULT_HAPTICS_ENABLED = Capacitor.getPlatform() === 'ios';
 
 interface EncryptedEntry { key: string; ciphertext: string; iv: string; }
@@ -19,21 +18,8 @@ export class UserPreferencesService {
 
     readonly senderName = signal<string>(localStorage.getItem(LS_KEY) ?? '');
 
-    /**
-     * True once IDB hydration has completed (successfully or not). Reading
-     * `senderName` for persistence decisions (e.g. registering as a list member)
-     * before this is true risks acting on a stale/empty localStorage cache while
-     * IDB actually holds a real value.
-     */
     readonly hydrated = signal(false);
 
-    /**
-     * True once the user has responded to the first-run name onboarding dialog
-     * (either saved a name or explicitly skipped it). Used to avoid persisting
-     * "Anonymous" as a display name before the user has had a chance to respond.
-     * Pre-existing users (who already had a sender name before this flag existed)
-     * are treated as already onboarded once hydration completes.
-     */
     readonly onboarded = signal<boolean>(localStorage.getItem(LS_ONBOARDED_KEY) === '1');
 
     private hydratedResolve!: () => void;
@@ -46,19 +32,16 @@ export class UserPreferencesService {
         void this.loadFromIdb();
     }
 
-    /** Resolves once IDB hydration of `senderName` has completed. */
     whenHydrated(): Promise<void> {
         return this.hydratedPromise;
     }
 
-    /** Resolves once the user has responded to the first-run name dialog (or already had). */
     whenOnboarded(): Promise<void> {
         if (this.onboarded()) return Promise.resolve();
         this.onboardedPromise ??= new Promise(resolve => { this.onboardedResolve = resolve; });
         return this.onboardedPromise;
     }
 
-    /** Marks the first-run name dialog as resolved (name saved or explicitly skipped). */
     markOnboarded(): void {
         if (this.onboarded()) return;
         this.onboarded.set(true);
@@ -75,7 +58,6 @@ export class UserPreferencesService {
         if (trimmed) this.markOnboarded();
     }
 
-    /** Whether haptic feedback (vibration on taps/actions) is enabled. */
     readonly hapticsEnabled = signal<boolean>(
         ((): boolean => {
             const stored = localStorage.getItem(LS_HAPTICS_KEY);
@@ -103,8 +85,7 @@ export class UserPreferencesService {
             localStorage.setItem(LS_KEY, plain);
         } catch { }
         finally {
-            // Pre-existing users who already had a name before onboarding tracking
-            // existed shouldn't see the first-run dialog.
+
             if (this.senderName() && !this.onboarded()) {
                 this.markOnboarded();
             }

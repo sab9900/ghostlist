@@ -127,8 +127,6 @@ export class SettingsComponent {
         }
     }
 
-    // --- Master password (gates sensitive lists) ---
-
     protected static readonly MP_MIN_LENGTH = 4;
 
     protected readonly mpMode = signal<'view' | 'set' | 'change' | 'remove'>('view');
@@ -233,8 +231,7 @@ export class SettingsComponent {
             }
             await this.masterPassword.removePassword();
             this.sensitiveLists.hide();
-            // Unmark all sensitive lists on this device — without a master
-            // password there would be no way to reveal them again.
+
             for (const list of this.store.knownLists()) {
                 if (list.isSensitive) await this.store.setListSensitive(list.id, false);
             }
@@ -260,9 +257,7 @@ export class SettingsComponent {
     }
 
     protected readonly syncStep = signal<
-        'idle' | 'receive-qr' | 'receive-done' |
-        'send-scan' | 'send-waiting' | 'send-done' |
-        'error'
+        'idle' | 'qr' | 'scan' | 'waiting' | 'done' | 'error'
     >('idle');
     protected readonly syncQrData = signal<string | null>(null);
     protected readonly syncImportedCount = signal(0);
@@ -271,7 +266,7 @@ export class SettingsComponent {
     private syncSessionId: string | null = null;
     private syncPayload: SyncQrPayload | null = null;
 
-    async startSyncReceive(): Promise<void> {
+    async startSync(): Promise<void> {
         if (!await this.confirmSyncAuth()) return;
         this.resetSync();
         try {
@@ -279,11 +274,16 @@ export class SettingsComponent {
             this.syncSessionId = payload.sessionId;
             this.syncPayload = payload;
             this.syncQrData.set(JSON.stringify(payload));
-            this.syncStep.set('receive-qr');
+            this.syncStep.set('qr');
             this.startReceivePoll(payload.sessionId);
         } catch {
             this.syncStep.set('error');
         }
+    }
+
+    showScanner(): void {
+        this.stopSyncPoll();
+        this.syncStep.set('scan');
     }
 
     async copySyncLink(): Promise<void> {
@@ -306,15 +306,9 @@ export class SettingsComponent {
                 if (count === null) return;
                 this.stopSyncPoll();
                 this.syncImportedCount.set(count);
-                this.syncStep.set('receive-done');
+                this.syncStep.set('done');
             } catch { }
         }, 2000);
-    }
-
-    async startSyncSend(): Promise<void> {
-        if (!await this.confirmSyncAuth()) return;
-        this.resetSync();
-        this.syncStep.set('send-scan');
     }
 
     async onSyncQrDetected(raw: string): Promise<void> {
@@ -323,7 +317,7 @@ export class SettingsComponent {
             if (payload.type !== 'sync') throw new Error('Not a sync QR.');
             await this.store.initSyncSendToReceiver(payload.sessionId, payload.publicKey);
             this.syncSessionId = payload.sessionId;
-            this.syncStep.set('send-waiting');
+            this.syncStep.set('waiting');
             this.startSendReplyPoll(payload.sessionId);
         } catch {
             this.syncStep.set('error');
@@ -337,7 +331,7 @@ export class SettingsComponent {
                 if (count === null) return;
                 this.stopSyncPoll();
                 this.syncImportedCount.set(count);
-                this.syncStep.set('send-done');
+                this.syncStep.set('done');
             } catch { }
         }, 2000);
     }

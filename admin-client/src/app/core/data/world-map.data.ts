@@ -1,11 +1,6 @@
-/**
- * Approximate centroid coordinates (latitude, longitude) for countries that
- * can realistically show up via the Accept-Language header's region subtag.
- * Used only to place markers on the admin dashboard's locale map — not
- * intended to be cartographically precise.
- */
+
 export const COUNTRY_COORDS: Record<string, [lat: number, lon: number]> = {
-    // Europe
+
     DE: [51.0, 10.4],
     AT: [47.5, 14.5],
     CH: [46.8, 8.2],
@@ -42,7 +37,6 @@ export const COUNTRY_COORDS: Record<string, [lat: number, lon: number]> = {
     MT: [35.9, 14.5],
     CY: [35.1, 33.4],
 
-    // Americas
     US: [39.8, -98.6],
     CA: [56.1, -106.3],
     MX: [23.6, -102.5],
@@ -55,7 +49,6 @@ export const COUNTRY_COORDS: Record<string, [lat: number, lon: number]> = {
     UY: [-32.5, -55.8],
     EC: [-1.8, -78.2],
 
-    // Asia & Middle East
     JP: [36.2, 138.3],
     CN: [35.9, 104.2],
     KR: [36.5, 127.8],
@@ -73,19 +66,16 @@ export const COUNTRY_COORDS: Record<string, [lat: number, lon: number]> = {
     AE: [24.0, 54.0],
     PK: [30.4, 69.3],
 
-    // Africa
     ZA: [-30.6, 22.9],
     EG: [26.8, 30.8],
     NG: [9.1, 8.7],
     KE: [-1.3, 36.8],
     MA: [31.8, -7.1],
 
-    // Oceania
     AU: [-25.3, 133.8],
     NZ: [-41.0, 174.0],
 };
 
-/** Short display names for the country codes above. */
 export const COUNTRY_NAMES: Record<string, string> = {
     DE: 'Germany',
     AT: 'Austria',
@@ -158,7 +148,6 @@ export const COUNTRY_NAMES: Record<string, string> = {
     NZ: 'New Zealand',
 };
 
-/** Display labels for the app's tracked languages (matches client LanguageService.SUPPORTED). */
 export const LANGUAGE_NAMES: Record<string, string> = {
     en: 'English',
     de: 'Deutsch',
@@ -167,17 +156,12 @@ export const LANGUAGE_NAMES: Record<string, string> = {
     other: 'Other',
 };
 
-/**
- * Converts an ISO 3166-1 alpha-2 country code to its flag emoji via Unicode
- * regional indicator symbols (e.g. "DE" -> 🇩🇪). Falls back to the plain code.
- */
 export function countryFlag(code: string): string {
     if (!/^[A-Z]{2}$/.test(code)) return code;
-    const base = 0x1f1e6 - 65; // codepoint for regional indicator 'A' minus 'A'.charCodeAt(0)
+    const base = 0x1f1e6 - 65; 
     return String.fromCodePoint(base + code.charCodeAt(0), base + code.charCodeAt(1));
 }
 
-/** Equirectangular projection of (lat, lon) onto a 1000x500 viewBox. */
 export function projectToMap(lat: number, lon: number): { x: number; y: number } {
     return {
         x: ((lon + 180) / 360) * 1000,

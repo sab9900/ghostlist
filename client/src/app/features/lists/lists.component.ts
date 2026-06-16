@@ -15,7 +15,6 @@ import { QrCodeComponent } from '../../shared/qr-code/qr-code.component';
 import { QrScannerComponent } from '../../shared/qr-scanner/qr-scanner.component';
 import { AppStore } from '../../store/app.store';
 
-/** Max avatars shown before collapsing the rest into a "+N" badge. */
 const MAX_VISIBLE_AVATARS = 3;
 
 @Component({
@@ -51,7 +50,7 @@ export class ListsComponent implements OnDestroy {
             const members = await this.store.fetchMembersForList(listId, encryptionKey);
             this.memberLists.update(m => ({ ...m, [listId]: members }));
         } catch {
-            // Offline or unreachable — leave unset, no avatars shown for this list.
+
         }
     }
 
@@ -95,8 +94,6 @@ export class ListsComponent implements OnDestroy {
     });
     protected readonly totalUnread = computed(() => this.store.totalUnread() + this.store.totalUnreadItems());
     protected readonly activeListId = computed(() => this.store.currentListId());
-
-    // --- Sensitive lists reveal (triple-click ghost logo) ---
 
     private logoClickCount = 0;
     private logoClickTimer: ReturnType<typeof setTimeout> | null = null;

@@ -31,8 +31,28 @@ export class HapticsService {
         if (!this.enabled) return;
         Haptics.impact({ style: ImpactStyle.Light }).catch(() => { });
     }
+
     itemDeleted(): void {
         if (!this.enabled) return;
         Haptics.impact({ style: ImpactStyle.Heavy }).catch(() => { });
+    }
+
+    messageSent(): void {
+        if (!this.enabled) return;
+        Haptics.impact({ style: ImpactStyle.Medium }).catch(() => { });
+        setTimeout(() => Haptics.impact({ style: ImpactStyle.Light }).catch(() => { }), 60);
+    }
+
+    whisperSent(): void {
+        if (!this.enabled) return;
+        Haptics.impact({ style: ImpactStyle.Light }).catch(() => { });
+        setTimeout(() => Haptics.impact({ style: ImpactStyle.Light }).catch(() => { }), 90);
+    }
+
+    charonDropSent(): void {
+        if (!this.enabled) return;
+        Haptics.impact({ style: ImpactStyle.Heavy }).catch(() => { });
+        setTimeout(() => Haptics.impact({ style: ImpactStyle.Medium }).catch(() => { }), 80);
+        setTimeout(() => Haptics.impact({ style: ImpactStyle.Light }).catch(() => { }), 160);
     }
 }

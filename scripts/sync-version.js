@@ -1,12 +1,5 @@
 #!/usr/bin/env node
 
-// Single source of truth for the project version: the root VERSION file.
-//
-// Usage:
-//   node scripts/sync-version.js              Sync client/admin-client/server to match VERSION
-//   node scripts/sync-version.js 0.2.0        Set VERSION to 0.2.0 and sync everything
-//   node scripts/sync-version.js --check      Exit non-zero if anything is out of sync (CI)
-
 const fs = require('fs');
 const path = require('path');
 

@@ -4,12 +4,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace GhostList.Infrastructure.Migrations
 {
-    /// <summary>
-    /// Switches "items changed" push notifications from opt-out to opt-in:
-    /// existing subscriptions are reset to NotifyOnItemsChanged = false, and
-    /// the column default for new rows is changed to false. "New message"
-    /// notifications remain opt-out (NotifyOnMessage default stays true).
-    /// </summary>
+
     public partial class ItemsChangedOptIn : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

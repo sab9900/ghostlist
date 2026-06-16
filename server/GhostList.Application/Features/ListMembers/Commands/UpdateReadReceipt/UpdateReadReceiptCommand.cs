@@ -6,12 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GhostList.Application.Features.ListMembers.Commands.UpdateReadReceipt;
 
-/// <summary>
-/// Records how far a device has "read" into a list's messages/items.
-/// Only plain timestamps are stored — no message/item ids or content — so this
-/// stays zero-knowledge compatible. Values only move forward in time (a stale
-/// receipt from an older/slower device can never roll a newer one back).
-/// </summary>
 public record UpdateReadReceiptCommand(
     Guid ListId,
     string DeviceId,

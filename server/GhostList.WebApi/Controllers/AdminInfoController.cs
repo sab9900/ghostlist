@@ -7,10 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GhostList.WebApi.Controllers;
 
-/// <summary>
-/// Manage broadcast info messages (release notes, maintenance windows, ...) shown to standard clients.
-/// Protected by <see cref="GhostList.WebApi.Middleware.AdminAuthMiddleware"/>.
-/// </summary>
 [ApiController]
 [Route("api/admin/info")]
 public class AdminInfoController(IMediator mediator) : ControllerBase

@@ -1,8 +1,5 @@
 import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges } from '@angular/core';
 
-/**
- * Pins the Monaco build loaded from cdnjs. Bump together when intentionally upgrading.
- */
 const MONACO_VERSION = '0.52.2';
 const MONACO_BASE = `https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/${MONACO_VERSION}/min`;
 
@@ -14,7 +11,6 @@ declare const window: Window & {
 
 let monacoLoaderPromise: Promise<any> | null = null;
 
-/** Loads Monaco's AMD loader + editor bundle from cdnjs (once) and resolves with the `monaco` namespace. */
 function loadMonaco(): Promise<any> {
     if (window.monaco) return Promise.resolve(window.monaco);
     if (monacoLoaderPromise) return monacoLoaderPromise;
@@ -23,7 +19,7 @@ function loadMonaco(): Promise<any> {
         const script = document.createElement('script');
         script.src = `${MONACO_BASE}/vs/loader.js`;
         script.onload = () => {
-            // Web workers (syntax highlighting, JSON validation) also load from the CDN via a tiny proxy.
+
             window.MonacoEnvironment = {
                 getWorkerUrl: (_workerId: string, _label: string) => {
                     const proxy = `
@@ -44,7 +40,6 @@ function loadMonaco(): Promise<any> {
     return monacoLoaderPromise;
 }
 
-/** A minimal Monaco-based JSON editor, used for multi-language info messages. */
 @Component({
     selector: 'app-json-editor',
     template: `<div class="json-editor" [style.height]="height"></div>`,

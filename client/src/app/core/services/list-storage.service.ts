@@ -93,8 +93,6 @@ export class ListStorageService {
         await this.removeListCache(id);
     }
 
-    // --- Offline list cache (items + chat messages per list) ---
-
     async getListCache(id: string): Promise<CachedList | undefined> {
         const db = await this.getDb();
         return new Promise((resolve, reject) => {
@@ -124,8 +122,6 @@ export class ListStorageService {
         });
     }
 
-    // --- Pending offline operations queue ---
-
     async getPendingOps(): Promise<PendingOperation[]> {
         const db = await this.getDb();
         return new Promise((resolve, reject) => {
@@ -154,8 +150,6 @@ export class ListStorageService {
             tx.onerror = () => reject(tx.error);
         });
     }
-
-    // --- Generic per-device preferences store (raw, unencrypted) ---
 
     async getPref<T>(key: string): Promise<T | undefined> {
         const db = await this.getDb();

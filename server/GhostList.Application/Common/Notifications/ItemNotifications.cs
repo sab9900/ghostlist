@@ -29,11 +29,6 @@ public record MessageCreatedNotification(
     string? SenderDeviceId,
     string? SenderUserId);
 
-/// <summary>
-/// Live, non-persisted relay of an encrypted image blob to currently-connected
-/// list members. Never written to the database — purely a SignalR pass-through
-/// so images never live on the server.
-/// </summary>
 public record ImageRelayNotification(
     Guid MessageId,
     Guid GhostListId,
@@ -41,19 +36,11 @@ public record ImageRelayNotification(
     string ImageInitializationVector,
     string SenderConnectionId);
 
-/// <summary>
-/// A member's read-receipt advanced. Plain timestamp + deviceId only — no
-/// message ids/content — so this stays zero-knowledge compatible.
-/// </summary>
 public record ReadReceiptUpdatedNotification(
     Guid GhostListId,
     string DeviceId,
     DateTimeOffset? LastReadMessageAt);
 
-/// <summary>
-/// A new "burn after read" drop was created (Charon tab). Broadcast to every
-/// member of the list so it shows up as a sealed drop in their queue.
-/// </summary>
 public record CharonDropCreatedNotification(
     Guid Id,
     Guid GhostListId,
@@ -65,9 +52,4 @@ public record CharonDropCreatedNotification(
     string? SenderDeviceId,
     string? SenderUserId);
 
-/// <summary>
-/// A Charon drop was permanently removed — either because every other member
-/// has now viewed (burned) it, the sender recalled it, or it expired unread.
-/// Clients should drop it from their queue if still present.
-/// </summary>
 public record CharonDropDeletedNotification(Guid Id, Guid GhostListId);

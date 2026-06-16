@@ -5,11 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GhostList.Application.Features.InfoMessages.Queries;
 
-/// <summary>
-/// The most recent info message visible to <paramref name="Platform"/>, or null if none has been
-/// published yet. Public — used by standard clients. A message with no <c>TargetPlatform</c> is
-/// visible to everyone; one with a <c>TargetPlatform</c> is only visible to that platform.
-/// </summary>
 public record GetLatestInfoMessageQuery(DevicePlatform? Platform) : IRequest<InfoMessageDto?>;
 
 public class GetLatestInfoMessageQueryHandler(IApplicationDbContext context)

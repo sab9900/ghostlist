@@ -199,7 +199,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     {
         if (!Database.IsRelational())
         {
-            // In-memory provider (used by tests) doesn't support raw SQL.
+
             var cutoff = DateTime.UtcNow - maxAge;
             var expired = await GhostMessageImages
                 .Where(i => i.CreatedAt <= cutoff)
@@ -222,7 +222,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     {
         if (!Database.IsRelational())
         {
-            // In-memory provider (used by tests) doesn't support raw SQL.
+
             var cutoff = DateTime.UtcNow - maxAge;
             var expired = await CharonDrops
                 .Where(d => d.CreatedAt <= cutoff)
@@ -262,8 +262,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
         if (!Database.IsRelational())
         {
-            // In-memory provider (used by tests) doesn't support raw SQL.
-            // Fall back to a plain EF Core upsert — not atomic, but fine for tests.
+
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
             var stat = await DailyUsageStats.FindAsync([today], cancellationToken);
             if (stat is null)
@@ -295,18 +294,13 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             cancellationToken);
     }
 
-    /// <summary>
-    /// Bumps today's request counter for a given (language, country) pair in
-    /// <see cref="LocaleStat"/> by <paramref name="count"/>. Safe to call from
-    /// concurrent requests (upsert). Used by the periodic locale-stats flush.
-    /// </summary>
     public async Task IncrementLocaleStatAsync(string language, string country, int count, CancellationToken cancellationToken)
     {
         if (count <= 0) return;
 
         if (!Database.IsRelational())
         {
-            // In-memory provider (used by tests) doesn't support raw SQL.
+
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
             var stat = await LocaleStats.FindAsync([today, language, country], cancellationToken);
             if (stat is null)

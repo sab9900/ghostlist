@@ -7,15 +7,12 @@ namespace GhostList.Application.Features.Admin.Queries.GetAdminStats;
 
 public record GetAdminStatsQuery(int DaysOfHistory = 30) : IRequest<AdminStatsDto>;
 
-/// <summary>Snapshot of currently-existing rows. Shrinks as the cleanup jobs purge old data.</summary>
 public record AdminCurrentCountsDto(int Lists, int Items, int Messages, int Members, int DeviceSubscriptions, int UniqueUsers);
 
-/// <summary>Cumulative counters since tracking started. Never decrease.</summary>
 public record AdminTotalCountsDto(long Lists, long Items, long Messages, long Members);
 
 public record AdminDailyStatDto(DateOnly Date, int Lists, int Items, int Messages, int Members);
 
-/// <summary>Derived engagement metrics computed from the current snapshot of data.</summary>
 public record AdminEngagementDto(
     double AvgItemsPerList,
     double AvgMembersPerList,
@@ -27,17 +24,10 @@ public record AdminEngagementDto(
     int PlatformWeb,
     double MultiDeviceUserShare);
 
-/// <summary>Share of tracked requests whose Accept-Language maps to a given app language.</summary>
 public record AdminLanguageStatDto(string Language, long Count, double Share);
 
-/// <summary>Share of tracked requests whose Accept-Language region maps to a given country.</summary>
 public record AdminCountryStatDto(string Country, long Count, double Share);
 
-/// <summary>
-/// Rough "where are our users" signal derived from the Accept-Language header of
-/// incoming requests (see LocaleStat). No IPs or device/user ids involved — just
-/// aggregate counts, intended for i18n planning.
-/// </summary>
 public record AdminLocaleBreakdownDto(
     List<AdminLanguageStatDto> Languages,
     List<AdminCountryStatDto> Countries,

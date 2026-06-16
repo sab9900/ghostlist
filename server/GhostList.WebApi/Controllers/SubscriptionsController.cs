@@ -10,14 +10,15 @@ public record SubscribeRequest(
     DevicePlatform Platform,
     bool NotifyOnMessage = true,
     bool NotifyOnItemsChanged = false,
+    bool NotifyOnLethe = true,
+    bool NotifyOnCharon = true,
     string? Locale = null);
 
 [ApiController]
 [Route("api/[controller]")]
 public class SubscriptionsController(IApplicationDbContext context) : ControllerBase
 {
-    /// <summary>Locales supported for push notification text (LanguageService.SUPPORTED on the client),
-    /// keyed by the primary language tag from an Accept-Language header (e.g. "de" → "de_DE").</summary>
+
     private static readonly Dictionary<string, string> SupportedLocalesByLanguage = new(StringComparer.OrdinalIgnoreCase)
     {
         ["en"] = "en_US",
@@ -26,11 +27,6 @@ public class SubscriptionsController(IApplicationDbContext context) : Controller
         ["es"] = "es_ES",
     };
 
-    /// <summary>
-    /// Picks the locale to store for this subscription: the client-provided <paramref name="requestLocale"/>
-    /// if present, otherwise the best match from the request's Accept-Language header, otherwise null
-    /// (FcmNotificationService falls back to en_US for null locales).
-    /// </summary>
     private static string? ResolveLocale(string? requestLocale, string? acceptLanguageHeader)
     {
         if (!string.IsNullOrWhiteSpace(requestLocale))
@@ -72,12 +68,6 @@ public class SubscriptionsController(IApplicationDbContext context) : Controller
         return (language, quality);
     }
 
-    /// <summary>
-    /// Register (or update) this device's push subscription for a list —
-    /// including its push token, platform, and per-list notification
-    /// preferences. Called whenever the token changes or the user updates
-    /// their notification settings.
-    /// </summary>
     [HttpPut("{listId:guid}")]
     public async Task<ActionResult> Subscribe(Guid listId, [FromBody] SubscribeRequest request, CancellationToken ct)
     {
@@ -102,19 +92,20 @@ public class SubscriptionsController(IApplicationDbContext context) : Controller
                 request.Platform,
                 request.NotifyOnMessage,
                 request.NotifyOnItemsChanged,
+                request.NotifyOnLethe,
+                request.NotifyOnCharon,
                 locale));
         }
         else
         {
             sub.UpdateToken(request.DeviceToken, request.Platform, locale);
-            sub.UpdatePreferences(request.NotifyOnMessage, request.NotifyOnItemsChanged);
+            sub.UpdatePreferences(request.NotifyOnMessage, request.NotifyOnItemsChanged, request.NotifyOnLethe, request.NotifyOnCharon);
         }
 
         await context.SaveChangesAsync(ct);
         return NoContent();
     }
 
-    /// <summary>Unregister this device from push notifications for a list.</summary>
     [HttpDelete("{listId:guid}")]
     public async Task<ActionResult> Unsubscribe(Guid listId, CancellationToken ct)
     {

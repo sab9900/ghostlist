@@ -1,6 +1,13 @@
 :host {
     position: fixed;
     inset: 0;
+    // iOS PWA standalone: pairing `inset: 0` with an explicit `100dvh` height
+    // (rather than relying on `bottom: 0` alone) keeps the app pinned to the
+    // true visible viewport. Without this, the app can render shorter than
+    // the screen, leaving an empty gap at the bottom that looks like the PWA
+    // isn't running fullscreen. `top`/`height` win over `bottom` here per the
+    // CSS spec for over-constrained absolutely-positioned boxes.
+    height: 100dvh;
     display: flex;
     flex-direction: column;
     background: var(--color-bg);

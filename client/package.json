@@ -1,6 +1,6 @@
 {
   "name": "ghost-list-client",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "scripts": {
     "ng": "ng",
     "prestart": "node scripts/generate-version.js",
@@ -34,6 +34,7 @@
     "@capacitor/keyboard": "^7.0.0",
     "@capacitor/push-notifications": "^7.0.0",
     "@capacitor/status-bar": "^7.0.0",
+    "@capawesome/capacitor-badge": "^7.0.0",
     "@microsoft/signalr": "^10.0.0",
     "firebase": "^12.14.0",
     "@ngrx/signals": "^21.1.0",

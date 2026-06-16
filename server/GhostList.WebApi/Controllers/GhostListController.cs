@@ -36,8 +36,6 @@ public class GhostListController(IMediator mediator) : ControllerBase
         return Ok(result);
     }
 
-    /// <param name="id">List ID.</param>
-    /// <param name="ownerToken">Raw owner token. Required for lists created with an owner.</param>
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult> Delete(Guid id, [FromQuery] string? ownerToken = null)
     {

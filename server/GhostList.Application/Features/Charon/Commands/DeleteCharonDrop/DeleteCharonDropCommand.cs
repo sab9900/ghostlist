@@ -6,11 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GhostList.Application.Features.Charon.Commands.DeleteCharonDrop;
 
-/// <summary>
-/// Manually retracts a Charon drop (e.g. the sender changed their mind)
-/// before everyone has viewed it. Removes the drop and any view receipts
-/// and broadcasts <c>CharonDropDeleted</c>.
-/// </summary>
 public record DeleteCharonDropCommand(Guid DropId) : IRequest;
 
 public class DeleteCharonDropCommandHandler(IApplicationDbContext context, IGhostListNotifier notifier)

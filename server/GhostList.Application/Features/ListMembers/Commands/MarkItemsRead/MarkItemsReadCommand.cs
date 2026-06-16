@@ -6,16 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GhostList.Application.Features.ListMembers.Commands.MarkItemsRead;
 
-/// <summary>
-/// Marks specific list items as read (seen) by a device, recording a granular
-/// per-item read receipt for each id. Only item ids, the device id and a
-/// timestamp are stored — no item content — so this stays zero-knowledge
-/// compatible.
-///
-/// If the newest marked item is newer than the device's current
-/// <see cref="GhostListMember.LastReadItemAt"/> rollup, that timestamp is
-/// advanced too.
-/// </summary>
 public record MarkItemsReadCommand(Guid ListId, string DeviceId, List<Guid> ItemIds) : IRequest;
 
 public class MarkItemsReadCommandHandler(IApplicationDbContext context)
@@ -32,7 +22,6 @@ public class MarkItemsReadCommandHandler(IApplicationDbContext context)
         if (member is null)
             return;
 
-        // Only consider ids that actually belong to this list.
         var items = await context.GhostListItems
             .Where(i => i.GhostListId == request.ListId && request.ItemIds.Contains(i.Id))
             .Select(i => new { i.Id, i.CreatedAt })

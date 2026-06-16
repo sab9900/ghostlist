@@ -66,7 +66,6 @@ public class MembersController(IMediator mediator) : ControllerBase
         return Ok(summary);
     }
 
-    /// <summary>Marks the given chat messages as read by this device (granular per-message read receipts).</summary>
     [HttpPost("{listId:guid}/{deviceId}/read-receipts/messages")]
     public async Task<IActionResult> MarkMessagesRead(Guid listId, string deviceId, [FromBody] MarkReadRequest request, CancellationToken ct)
     {
@@ -75,7 +74,6 @@ public class MembersController(IMediator mediator) : ControllerBase
         return NoContent();
     }
 
-    /// <summary>Marks the given list items as read (seen) by this device (granular per-item read receipts).</summary>
     [HttpPost("{listId:guid}/{deviceId}/read-receipts/items")]
     public async Task<IActionResult> MarkItemsRead(Guid listId, string deviceId, [FromBody] MarkReadRequest request, CancellationToken ct)
     {

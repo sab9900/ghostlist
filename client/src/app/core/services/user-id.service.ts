@@ -1,40 +1,49 @@
 import { Injectable, signal } from '@angular/core';
 
 const USER_ID_KEY = 'gl_user_id';
+const USER_ID_CREATED_AT_KEY = 'gl_user_id_created_at';
 
-/**
- * Stable "person" identity, distinct from {@link DeviceIdService}'s per-installation
- * `deviceId`. While `deviceId` identifies this browser/app install (and is used for
- * push subscriptions and kick semantics), `userId` identifies the person across all
- * of their devices. It's adopted from another device during machine sync so the
- * person "remains themselves" — their own items/messages are recognized as "mine"
- * and excluded from unread counts on every device they sync to.
- */
 @Injectable({ providedIn: 'root' })
 export class UserIdService {
-    private readonly _userId = signal<string>(this.loadOrCreate());
+    private readonly _userId = signal<string>('');
+    private readonly _createdAt = signal<string>('');
     readonly userId = this._userId.asReadonly();
+    readonly createdAt = this._createdAt.asReadonly();
 
-    private loadOrCreate(): string {
+    constructor() {
+        const { id, createdAt } = this.loadOrCreate();
+        this._userId.set(id);
+        this._createdAt.set(createdAt);
+    }
+
+    private loadOrCreate(): { id: string; createdAt: string } {
         try {
-            const stored = localStorage.getItem(USER_ID_KEY);
-            if (stored) return stored;
-            const id = self.crypto.randomUUID();
-            localStorage.setItem(USER_ID_KEY, id);
-            return id;
+            let id = localStorage.getItem(USER_ID_KEY);
+            let createdAt = localStorage.getItem(USER_ID_CREATED_AT_KEY);
+
+            if (!id) {
+                id = self.crypto.randomUUID();
+                createdAt = new Date().toISOString();
+                localStorage.setItem(USER_ID_KEY, id);
+                localStorage.setItem(USER_ID_CREATED_AT_KEY, createdAt);
+            } else if (!createdAt) {
+
+                createdAt = new Date(0).toISOString();
+                localStorage.setItem(USER_ID_CREATED_AT_KEY, createdAt);
+            }
+
+            return { id, createdAt };
         } catch {
-            return self.crypto.randomUUID();
+            return { id: self.crypto.randomUUID(), createdAt: new Date().toISOString() };
         }
     }
 
-    /**
-     * Adopts a userId synced from another of this person's devices, so both
-     * devices are recognized as belonging to the same person from then on.
-     */
-    setUserId(id: string): void {
+    setUserId(id: string, createdAt: string): void {
         this._userId.set(id);
+        this._createdAt.set(createdAt);
         try {
             localStorage.setItem(USER_ID_KEY, id);
+            localStorage.setItem(USER_ID_CREATED_AT_KEY, createdAt);
         } catch { }
     }
 }

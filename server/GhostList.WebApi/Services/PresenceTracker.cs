@@ -3,12 +3,6 @@ using GhostList.Application.Common.Interfaces;
 
 namespace GhostList.WebApi.Services;
 
-/// <summary>
-/// In-memory, singleton presence tracker. State only needs to be correct for
-/// the current process — if the app restarts, every client reconnects and
-/// re-reports its presence (JoinListRoom / SetAppState), so nothing needs to
-/// be persisted.
-/// </summary>
 public class PresenceTracker : IPresenceTracker
 {
     private sealed class ConnectionInfo
@@ -96,7 +90,6 @@ public class PresenceTracker : IPresenceTracker
     public bool ShouldSuppress(string listId, string deviceId)
         => IsPresentInList(listId, deviceId) || IsForeground(deviceId);
 
-    /// <summary>Must be called while holding <see cref="_lock"/>.</summary>
     private ConnectionInfo GetOrRegisterConnection(string connectionId, string deviceId)
     {
         if (_connections.TryGetValue(connectionId, out var existing))
@@ -108,14 +101,12 @@ public class PresenceTracker : IPresenceTracker
         return connection;
     }
 
-    /// <summary>Must be called while holding <see cref="_lock"/>.</summary>
     private void IncrementRoomPresence(string listId, string deviceId)
     {
         var devices = _roomPresence.GetOrAdd(listId, _ => new ConcurrentDictionary<string, int>());
         devices.AddOrUpdate(deviceId, 1, (_, count) => count + 1);
     }
 
-    /// <summary>Must be called while holding <see cref="_lock"/>.</summary>
     private void DecrementRoomPresence(string listId, string deviceId)
     {
         if (!_roomPresence.TryGetValue(listId, out var devices))

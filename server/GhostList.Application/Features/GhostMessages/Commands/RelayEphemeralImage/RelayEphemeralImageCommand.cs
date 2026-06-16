@@ -7,15 +7,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GhostList.Application.Features.GhostMessages.Commands.RelayEphemeralImage;
 
-/// <summary>
-/// Relays an encrypted image blob live to everyone else connected to the
-/// list, and additionally persists it (TTL-bound, see
-/// <c>DeleteExpiredImageBlobsCommand</c>) so devices that weren't connected
-/// at send-time can still fetch it later. Pairs with a regular placeholder
-/// <c>GhostChatMessage</c> (sent separately via the normal chat pipeline) so
-/// the image has a place in the chat history and supports replies — only the
-/// stored image blob is temporary/ephemeral.
-/// </summary>
 public record RelayEphemeralImageCommand(
     Guid ListId,
     Guid MessageId,
@@ -61,9 +52,7 @@ public class RelayEphemeralImageCommandHandler(IApplicationDbContext context, IG
         }
         catch (DbUpdateException)
         {
-            // The owning GhostChatMessage may not be visible yet (race with
-            // its own insert) or may already have been deleted. Persistence
-            // is best-effort — the live relay below still goes out.
+
         }
 
         await notifier.NotifyImageShared(request.ListId, new ImageRelayNotification(

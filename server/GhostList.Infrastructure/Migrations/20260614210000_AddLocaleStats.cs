@@ -4,11 +4,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace GhostList.Infrastructure.Migrations
 {
-    /// <summary>
-    /// Adds an append-only table of daily request counts grouped by the client's
-    /// Accept-Language header (language + region), used to estimate where users
-    /// are located for i18n planning. No IPs or device/user identifiers involved.
-    /// </summary>
+
     public partial class AddLocaleStats : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

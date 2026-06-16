@@ -119,7 +119,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    padding-bottom: var(--safe-bottom);
+    padding-bottom: var(--safe-bottom-effective);
 
     &--scroll {
         overflow-y: auto;
@@ -279,7 +279,7 @@
     box-shadow: -8px 0 32px rgba(0, 0, 0, 0.25);
     animation: drawerIn var(--duration-normal) var(--ease-out) both;
     padding-top: var(--safe-top);
-    padding-bottom: var(--safe-bottom);
+    padding-bottom: var(--safe-bottom-effective);
 
     &--closing {
         animation: drawerOut var(--duration-normal) var(--ease-out) both;

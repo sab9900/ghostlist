@@ -1,6 +1,5 @@
 import { Component, computed, input } from '@angular/core';
 
-/** Small circular avatar showing a member's initial on a deterministic, name-based color. */
 @Component({
     selector: 'app-avatar',
     template: `

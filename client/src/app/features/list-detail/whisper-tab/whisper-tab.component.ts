@@ -1,9 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, ElementRef, ViewChild, effect, inject, signal, untracked } from '@angular/core';
+import { Capacitor } from '@capacitor/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Capacitor } from '@capacitor/core';
-import { Keyboard } from '@capacitor/keyboard';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../../api/api.service';
@@ -11,6 +10,8 @@ import { HubService } from '../../../api/hub.service';
 import { ListMember, WhisperPresenceEntry } from '../../../core/models';
 import { CryptoService } from '../../../core/services/crypto.service';
 import { DeviceIdService } from '../../../core/services/device-id.service';
+import { HapticsService } from '../../../core/services/haptics.service';
+import { KeyboardInsetService } from '../../../core/services/keyboard-inset.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 import { AppStore } from '../../../store/app.store';
 
@@ -22,13 +23,10 @@ interface Whisper {
     fading: boolean;
 }
 
-/** How long a whisper stays on screen before it disappears for good (ms). */
 const WHISPER_LIFETIME_MS = 12_000;
 
-/** How long the fade-out animation runs before the whisper is removed entirely (ms). */
 const WHISPER_FADE_MS = 600;
 
-/** Cooldown between Whisper invites for the same list (must match the server's). */
 const INVITE_COOLDOWN_MS = 60_000;
 
 @Component({
@@ -39,14 +37,19 @@ const INVITE_COOLDOWN_MS = 60_000;
 })
 export class WhisperTabComponent {
     @ViewChild('whisperFeed') private whisperFeedRef?: ElementRef<HTMLDivElement>;
+    @ViewChild('composeInput') private composeInputRef?: ElementRef<HTMLTextAreaElement>;
+
+    private readonly isMobile = Capacitor.isNativePlatform() || window.matchMedia('(pointer: coarse)').matches;
 
     protected readonly store = inject(AppStore);
     protected readonly prefs = inject(UserPreferencesService);
     protected readonly deviceId = inject(DeviceIdService);
     private readonly hub = inject(HubService);
     private readonly crypto = inject(CryptoService);
+    private readonly haptics = inject(HapticsService);
     private readonly translate = inject(TranslateService);
     private readonly api = inject(ApiService);
+    private readonly keyboardInset = inject(KeyboardInsetService);
 
     protected readonly messageText = signal('');
     protected readonly sending = signal(false);
@@ -74,21 +77,10 @@ export class WhisperTabComponent {
     protected readonly onCooldown = () => this.cooldownRemaining() > 0;
 
     constructor() {
-        if (Capacitor.isNativePlatform()) {
-            // Mirrors chat-tab's handling: pin the whisper feed to the bottom for the
-            // duration of the --keyboard-height CSS transition (200ms, see styles.scss)
-            // when the keyboard starts animating in. Besides keeping the latest
-            // whisper/compose bar in view, the repeated layout reads/writes this
-            // triggers also work around an Android WebView repaint glitch where the
-            // area freed up by the padding-bottom transition is left as a stale
-            // black region until something forces a reflow.
-            const listener = Keyboard.addListener('keyboardWillShow', () => {
-                this.scrollToBottomDuringTransition();
-            });
-            inject(DestroyRef).onDestroy(() => {
-                void listener.then(handle => handle.remove());
-            });
-        }
+
+        this.keyboardInset.willShow$.pipe(takeUntilDestroyed()).subscribe(() => {
+            this.scrollToBottomDuringTransition();
+        });
 
         let joinedListId: string | null = null;
 
@@ -164,18 +156,11 @@ export class WhisperTabComponent {
         } catch { }
     }
 
-    /**
-     * Pins the whisper feed to the bottom on every frame while the keyboard is
-     * animating in. As --keyboard-height transitions, the feed's clientHeight
-     * shrinks, so the "bottom" scroll offset keeps increasing; re-applying
-     * scrollTop = scrollHeight each frame tracks that smoothly instead of
-     * jumping once the animation has finished.
-     */
     private scrollToBottomDuringTransition(): void {
         const el = this.whisperFeedRef?.nativeElement;
         if (!el) return;
 
-        const durationMs = 250; // matches padding-bottom transition + a small buffer
+        const durationMs = 250; 
         const start = performance.now();
 
         const step = () => {
@@ -212,13 +197,27 @@ export class WhisperTabComponent {
         this.timers.add(removeTimer);
     }
 
+    protected onKeydown(event: KeyboardEvent): void {
+        if (this.isMobile) return;
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            void this.sendWhisper();
+        }
+    }
+
+    protected autoResize(event: Event): void {
+        const el = event.target as HTMLTextAreaElement;
+        el.style.height = 'auto';
+        el.style.height = el.scrollHeight + 'px';
+    }
+
     async sendWhisper(): Promise<void> {
         const text = this.messageText().trim();
         const listId = this.store.currentListId();
         const key = this.store.currentEncryptionKey();
         if (!text || !listId || !key) return;
 
-        (document.activeElement as HTMLElement)?.blur();
+        this.haptics.whisperSent();
         this.sending.set(true);
         try {
             const senderName = this.prefs.senderName() || await firstValueFrom(this.translate.get('CHAT.ANONYMOUS'));
@@ -231,6 +230,8 @@ export class WhisperTabComponent {
             this.messageText.set('');
         } finally {
             this.sending.set(false);
+            const el = this.composeInputRef?.nativeElement;
+            if (el) el.style.height = 'auto';
         }
     }
 
@@ -292,7 +293,7 @@ export class WhisperTabComponent {
     }
 
     private onInviteError(e: unknown): void {
-        // 429 = another device just sent an invite for this list; sync our cooldown to match.
+
         if (e instanceof HttpErrorResponse && e.status === 429) {
             this.startCooldown();
         }
