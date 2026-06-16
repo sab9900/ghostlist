@@ -43,7 +43,11 @@
     "REVEAL_PLACEHOLDER": "Contraseña maestra",
     "REVEAL_ERROR": "Contraseña incorrecta o autenticación fallida.",
     "REVEAL_BTN": "Mostrar",
-    "REVEAL_CHECKING": "Comprobando…"
+    "REVEAL_CHECKING": "Comprobando…",
+    "MARK_ALL_READ_TITLE": "Marcar todo como leído",
+    "MARK_ALL_READ_HINT": "Esto restablece el estado \"nuevo\" de todos los elementos y mensajes en todas las listas.",
+    "MARK_ALL_READ_BTN": "Marcar todo leído",
+    "MARK_ALL_READ_MARKING": "Marcando…"
   },
   "ITEMS": {
     "ADD_PLACEHOLDER": "Añadir elemento…",
@@ -89,6 +93,7 @@
     "RECORD_ARIA": "Grabar nota de voz",
     "STOP_RECORD_ARIA": "Detener grabación",
     "RECORD_NOT_SUPPORTED": "La grabación de voz no está disponible en este dispositivo.",
+    "RECORD_PERMISSION_DENIED": "Acceso al micrófono denegado. Permítelo en los ajustes de la app.",
     "SENDING_VOICE": "Enviando nota de voz…",
     "READ_PARTIAL_ARIA": "Leído por al menos una persona",
     "READ_ALL_ARIA": "Leído por todos",
@@ -143,6 +148,7 @@
     "RECORD_ARIA": "Grabar un mensaje de voz autodestructivo",
     "STOP_RECORD_ARIA": "Detener grabación y enviar",
     "RECORD_NOT_SUPPORTED": "La grabación de voz no está disponible en este navegador.",
+    "RECORD_PERMISSION_DENIED": "Acceso al micrófono denegado. Permítelo en los ajustes de la app.",
     "AUDIO_FALLBACK": "Tu navegador no admite la reproducción de audio."
   },
   "LIST_SETTINGS": {

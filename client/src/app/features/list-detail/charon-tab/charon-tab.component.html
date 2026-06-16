@@ -94,6 +94,9 @@
     @if (recordingNotSupported()) {
     <p class="charon__error" role="alert">{{ 'CHARON.RECORD_NOT_SUPPORTED' | translate }}</p>
     }
+    @if (recordingPermissionDenied()) {
+    <p class="charon__error" role="alert">{{ 'CHARON.RECORD_PERMISSION_DENIED' | translate }}</p>
+    }
 
     <div class="compose" role="form" [attr.aria-label]="'CHARON.ATTACH_ARIA' | translate">
         <input #fileInput type="file" class="visually-hidden" tabindex="-1"

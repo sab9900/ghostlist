@@ -5,7 +5,9 @@
         <h1 class="header__title">Ghost List</h1>
         <div class="header__actions">
             @if (totalUnread() > 0) {
-            <app-badge [count]="totalUnread()" role="status" [attr.aria-label]="totalUnread() + ' unread'" />
+            <button class="badge-btn" (click)="openMarkAllReadDialog()" [attr.aria-label]="totalUnread() + ' unread, tap to mark all read'">
+                <app-badge [count]="totalUnread()" />
+            </button>
             }
             <div class="menu-anchor">
                 <button class="header__action" (click)="toggleMenu()" [attr.aria-label]="'LISTS.MENU_SETTINGS' | translate" [attr.aria-expanded]="showMenu()">
@@ -225,6 +227,23 @@
                 <button class="btn btn--primary" (click)="submitReveal()" [disabled]="!revealPassword() || revealing()"
                     [attr.aria-busy]="revealing()">
                     {{ revealing() ? ('LISTS.REVEAL_CHECKING' | translate) : ('LISTS.REVEAL_BTN' | translate) }}
+                </button>
+            </div>
+        </div>
+    </div>
+    }
+
+    @if (showMarkAllReadDialog()) {
+    <div class="dialog-backdrop" (click)="closeMarkAllReadDialog()" role="presentation">
+        <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+            aria-labelledby="mark-all-read-dialog-title" aria-describedby="mark-all-read-dialog-hint">
+            <h2 class="dialog__title" id="mark-all-read-dialog-title">{{ 'LISTS.MARK_ALL_READ_TITLE' | translate }}</h2>
+            <p class="dialog__hint" id="mark-all-read-dialog-hint">{{ 'LISTS.MARK_ALL_READ_HINT' | translate }}</p>
+            <div class="dialog__actions">
+                <button class="btn btn--ghost" (click)="closeMarkAllReadDialog()" [disabled]="markingAllRead()">{{ 'COMMON.CANCEL' | translate }}</button>
+                <button class="btn btn--primary" (click)="confirmMarkAllRead()" [disabled]="markingAllRead()"
+                    [attr.aria-busy]="markingAllRead()">
+                    {{ markingAllRead() ? ('LISTS.MARK_ALL_READ_MARKING' | translate) : ('LISTS.MARK_ALL_READ_BTN' | translate) }}
                 </button>
             </div>
         </div>

@@ -186,6 +186,23 @@ export class ListsComponent implements OnDestroy {
     private exportListName: string | null = null;
     private exportClaimTimer: ReturnType<typeof setInterval> | null = null;
 
+    protected readonly showMarkAllReadDialog = signal(false);
+    protected readonly markingAllRead = signal(false);
+
+    openMarkAllReadDialog(): void { this.showMarkAllReadDialog.set(true); }
+    closeMarkAllReadDialog(): void { this.showMarkAllReadDialog.set(false); }
+
+    async confirmMarkAllRead(): Promise<void> {
+        if (this.markingAllRead()) return;
+        this.markingAllRead.set(true);
+        try {
+            await this.store.markAllRead();
+            this.closeMarkAllReadDialog();
+        } finally {
+            this.markingAllRead.set(false);
+        }
+    }
+
     protected readonly showExportDialog = signal(false);
     protected readonly exportSelectedListId = signal<string | null>(null);
     protected readonly exportQrData = signal<string | null>(null);

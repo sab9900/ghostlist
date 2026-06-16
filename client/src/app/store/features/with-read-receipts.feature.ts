@@ -135,6 +135,40 @@ export function withReadReceipts() {
                     scheduleFlush(id, 'items');
                 },
 
+                async markAllRead(): Promise<void> {
+                    const lists = store.knownLists();
+                    const devId = deviceId.deviceId;
+
+                    // Snapshot IDs before clearing
+                    const toFlush = lists.map(l => ({
+                        id: l.id,
+                        msgIds: [...(store.unreadMessageIds()[l.id] ?? [])],
+                        itemIds: [...(store.unreadItemIds()[l.id] ?? [])],
+                    }));
+
+                    // Clear state immediately
+                    const clearedCounts: Record<string, number> = {};
+                    const clearedIds: Record<string, string[]> = {};
+                    for (const l of lists) {
+                        clearedCounts[l.id] = 0;
+                        clearedIds[l.id] = [];
+                    }
+                    patchState(store, {
+                        unreadCounts: { ...store.unreadCounts(), ...clearedCounts },
+                        unreadItemCounts: { ...store.unreadItemCounts(), ...clearedCounts },
+                        unreadMessageIds: { ...store.unreadMessageIds(), ...clearedIds },
+                        unreadItemIds: { ...store.unreadItemIds(), ...clearedIds },
+                    });
+
+                    // Flush to server for each list
+                    await Promise.all(toFlush.map(async ({ id, msgIds, itemIds }) => {
+                        try {
+                            if (msgIds.length > 0) await firstValueFrom(api.markMessagesRead(id, devId, msgIds));
+                            if (itemIds.length > 0) await firstValueFrom(api.markItemsRead(id, devId, itemIds));
+                        } catch { }
+                    }));
+                },
+
                 async refreshOthersReadReceipt(listId?: string): Promise<void> {
                     const id = listId ?? store.currentListId();
                     const key = store.currentEncryptionKey();

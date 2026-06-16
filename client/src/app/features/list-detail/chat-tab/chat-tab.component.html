@@ -227,6 +227,9 @@
 @if (recordingNotSupported()) {
 <p class="upload-error" role="alert">{{ 'CHAT.RECORD_NOT_SUPPORTED' | translate }}</p>
 }
+@if (recordingPermissionDenied()) {
+<p class="upload-error" role="alert">{{ 'CHAT.RECORD_PERMISSION_DENIED' | translate }}</p>
+}
 @if (sendingAudio()) {
 <p class="compose__sending-audio" role="status">{{ 'CHAT.SENDING_VOICE' | translate }}</p>
 }

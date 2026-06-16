@@ -67,6 +67,7 @@ export class ChatTabComponent implements OnDestroy {
     protected readonly recording = signal(false);
     protected readonly recordingSeconds = signal(0);
     protected readonly recordingNotSupported = signal(false);
+    protected readonly recordingPermissionDenied = signal(false);
     protected readonly decryptedMessages = signal<DecryptedMessage[]>([]);
 
     private mediaRecorder: MediaRecorder | null = null;
@@ -308,9 +309,14 @@ export class ChatTabComponent implements OnDestroy {
         let stream: MediaStream;
         try {
             stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        } catch {
-            this.recordingNotSupported.set(true);
-            setTimeout(() => this.recordingNotSupported.set(false), 4000);
+        } catch (err) {
+            if (err instanceof DOMException && err.name === 'NotAllowedError') {
+                this.recordingPermissionDenied.set(true);
+                setTimeout(() => this.recordingPermissionDenied.set(false), 5000);
+            } else {
+                this.recordingNotSupported.set(true);
+                setTimeout(() => this.recordingNotSupported.set(false), 4000);
+            }
             return;
         }
 

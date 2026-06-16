@@ -43,7 +43,11 @@
     "REVEAL_PLACEHOLDER": "Master password",
     "REVEAL_ERROR": "Incorrect password or authentication failed.",
     "REVEAL_BTN": "Show",
-    "REVEAL_CHECKING": "Checking…"
+    "REVEAL_CHECKING": "Checking…",
+    "MARK_ALL_READ_TITLE": "Mark all as read",
+    "MARK_ALL_READ_HINT": "This resets the \"new\" status of all items and messages across every list.",
+    "MARK_ALL_READ_BTN": "Mark all read",
+    "MARK_ALL_READ_MARKING": "Marking…"
   },
   "ITEMS": {
     "ADD_PLACEHOLDER": "Add item…",
@@ -89,6 +93,7 @@
     "RECORD_ARIA": "Record voice note",
     "STOP_RECORD_ARIA": "Stop recording",
     "RECORD_NOT_SUPPORTED": "Voice recording is not supported on this device.",
+    "RECORD_PERMISSION_DENIED": "Microphone access denied. Please allow it in app settings.",
     "SENDING_VOICE": "Sending voice note…",
     "READ_PARTIAL_ARIA": "Read by at least one person",
     "READ_ALL_ARIA": "Read by everyone",
@@ -143,6 +148,7 @@
     "RECORD_ARIA": "Record a self-destructing voice message",
     "STOP_RECORD_ARIA": "Stop recording and send",
     "RECORD_NOT_SUPPORTED": "Voice recording isn't supported in this browser.",
+    "RECORD_PERMISSION_DENIED": "Microphone access denied. Please allow it in app settings.",
     "AUDIO_FALLBACK": "Your browser does not support audio playback."
   },
   "LIST_SETTINGS": {

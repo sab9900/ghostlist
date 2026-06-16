@@ -43,7 +43,11 @@
     "REVEAL_PLACEHOLDER": "Master-Passwort",
     "REVEAL_ERROR": "Falsches Passwort oder Authentifizierung fehlgeschlagen.",
     "REVEAL_BTN": "Anzeigen",
-    "REVEAL_CHECKING": "Prüfe…"
+    "REVEAL_CHECKING": "Prüfe…",
+    "MARK_ALL_READ_TITLE": "Alles als gelesen markieren",
+    "MARK_ALL_READ_HINT": "Dadurch wird der \"Neu\"-Status aller Einträge und Nachrichten in allen Listen zurückgesetzt.",
+    "MARK_ALL_READ_BTN": "Alles gelesen",
+    "MARK_ALL_READ_MARKING": "Markiere…"
   },
   "ITEMS": {
     "ADD_PLACEHOLDER": "Eintrag hinzufügen…",
@@ -89,6 +93,7 @@
     "RECORD_ARIA": "Sprachnachricht aufnehmen",
     "STOP_RECORD_ARIA": "Aufnahme stoppen",
     "RECORD_NOT_SUPPORTED": "Sprachaufnahme wird auf diesem Gerät nicht unterstützt.",
+    "RECORD_PERMISSION_DENIED": "Mikrofonzugriff verweigert. Bitte in den App-Einstellungen erlauben.",
     "SENDING_VOICE": "Sprachnachricht wird gesendet…",
     "READ_PARTIAL_ARIA": "Von mindestens einer Person gelesen",
     "READ_ALL_ARIA": "Von allen gelesen",
@@ -143,6 +148,7 @@
     "RECORD_ARIA": "Selbstzerstörende Sprachnachricht aufnehmen",
     "STOP_RECORD_ARIA": "Aufnahme stoppen und senden",
     "RECORD_NOT_SUPPORTED": "Sprachaufnahme wird in diesem Browser nicht unterstützt.",
+    "RECORD_PERMISSION_DENIED": "Mikrofonzugriff verweigert. Bitte in den App-Einstellungen erlauben.",
     "AUDIO_FALLBACK": "Dein Browser unterstützt keine Audiowiedergabe."
   },
   "LIST_SETTINGS": {
