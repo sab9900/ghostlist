@@ -1,6 +1,6 @@
 {
   "name": "ghost-list-admin-client",
-  "version": "0.2.13",
+  "version": "0.2.14",
   "scripts": {
     "ng": "ng",
     "prestart": "node scripts/generate-version.js",
