@@ -7,7 +7,7 @@ import com.getcapacitor.BridgeWebChromeClient;
 public class MainActivity extends BridgeActivity {
 
     @Override
-    protected void onStart() {
+    public void onStart() {
         super.onStart();
         // Grant WebView-level media permissions (microphone) so that
         // navigator.mediaDevices.getUserMedia works inside the Capacitor WebView.
