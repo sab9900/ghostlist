@@ -39,7 +39,9 @@ public class MembersController(IMediator mediator) : ControllerBase
     [HttpDelete("{listId:guid}/{deviceId}")]
     public async Task<IActionResult> DeleteMember(Guid listId, string deviceId, CancellationToken ct)
     {
-        await mediator.Send(new DeleteListMemberCommand(listId, deviceId), ct);
+        var requestingDeviceId = Request.Headers["X-Device-Id"].FirstOrDefault();
+        var requestingUserId = Request.Headers["X-User-Id"].FirstOrDefault();
+        await mediator.Send(new DeleteListMemberCommand(listId, deviceId, requestingDeviceId, requestingUserId), ct);
         return NoContent();
     }
 

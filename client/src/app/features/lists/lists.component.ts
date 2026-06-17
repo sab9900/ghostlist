@@ -74,15 +74,31 @@ export class ListsComponent implements OnDestroy {
     }
 
     protected isShared(listId: string): boolean {
-        return this.membersFor(listId).length > 1;
+        return this.memberUserKeys(listId).size > 1;
     }
 
     protected avatarMembers(listId: string): ListMember[] {
-        return this.membersFor(listId).slice(0, MAX_VISIBLE_AVATARS);
+        return this.uniqueUserMembers(listId).slice(0, MAX_VISIBLE_AVATARS);
     }
 
     protected extraMemberCount(listId: string): number {
-        return Math.max(0, this.membersFor(listId).length - MAX_VISIBLE_AVATARS);
+        return Math.max(0, this.uniqueUserMembers(listId).length - MAX_VISIBLE_AVATARS);
+    }
+
+    private memberUserKeys(listId: string): Set<string> {
+        return new Set(this.membersFor(listId).map(m => m.userId ? `user:${m.userId}` : `device:${m.deviceId}`));
+    }
+
+    private uniqueUserMembers(listId: string): ListMember[] {
+        const seen = new Set<string>();
+        const result: ListMember[] = [];
+        for (const member of this.membersFor(listId)) {
+            const key = member.userId ? `user:${member.userId}` : `device:${member.deviceId}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            result.push(member);
+        }
+        return result;
     }
 
     @ViewChild('createInput') private createInputRef?: ElementRef<HTMLInputElement>;

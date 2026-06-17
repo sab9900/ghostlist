@@ -157,7 +157,8 @@ export class ApiService {
     }
 
     deleteMember(listId: string, deviceId: string): Observable<void> {
-        return this.http.delete<void>(`${this.BASE}/members/${listId}/${deviceId}`);
+        return this.http.delete<void>(`${this.BASE}/members/${listId}/${deviceId}`,
+            { headers: { ...this.deviceIdHeaders(), ...this.userIdHeaders() } });
     }
 
     kickMember(listId: string, deviceId: string, ownerToken: string): Observable<void> {

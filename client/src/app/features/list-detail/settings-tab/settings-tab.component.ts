@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, effect, inject, signal, untracked } from '@angular/core';
+import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
@@ -12,6 +12,14 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { AppStore } from '../../../store/app.store';
 import { environment } from '../../../../environments/environment';
+
+interface MemberGroup {
+    key: string;
+    displayName: string;
+    joinedAt: string;
+    isCurrentUser: boolean;
+    devices: ListMember[];
+}
 
 @Component({
     selector: 'app-settings-tab',
@@ -46,6 +54,33 @@ export class SettingsTabComponent {
     protected readonly scannedJson = signal('');
 
     protected readonly members = signal<ListMember[]>([]);
+    protected readonly memberGroups = computed<MemberGroup[]>(() => {
+        const groups = new Map<string, MemberGroup>();
+
+        for (const member of this.members()) {
+            const key = member.userId ? `user:${member.userId}` : `device:${member.deviceId}`;
+            const existing = groups.get(key);
+            if (existing) {
+                existing.devices.push(member);
+                if (member.isCurrentUser) existing.isCurrentUser = true;
+                if (member.joinedAt < existing.joinedAt) existing.joinedAt = member.joinedAt;
+            } else {
+                groups.set(key, {
+                    key,
+                    displayName: member.displayName,
+                    joinedAt: member.joinedAt,
+                    isCurrentUser: member.isCurrentUser,
+                    devices: [member],
+                });
+            }
+        }
+
+        return [...groups.values()].sort((a, b) => {
+            if (a.isCurrentUser) return -1;
+            if (b.isCurrentUser) return 1;
+            return a.displayName.localeCompare(b.displayName);
+        });
+    });
     protected readonly membersLoading = signal(false);
     protected readonly kickingDeviceId = signal<string | null>(null);
 
@@ -97,6 +132,9 @@ export class SettingsTabComponent {
             members.sort((a, b) => {
                 if (a.isCurrentUser) return -1;
                 if (b.isCurrentUser) return 1;
+                if (a.userId && b.userId && a.userId === b.userId) {
+                    return a.joinedAt.localeCompare(b.joinedAt);
+                }
                 return a.displayName.localeCompare(b.displayName);
             });
             this.members.set(members);
@@ -238,6 +276,20 @@ export class SettingsTabComponent {
         this.kickingDeviceId.set(targetDeviceId);
         try {
             await this.store.kickMember(id, targetDeviceId);
+            this.members.update(list => list.filter(m => m.deviceId !== targetDeviceId));
+        } catch { } finally {
+            this.kickingDeviceId.set(null);
+        }
+    }
+
+    async removeOwnMachine(targetDeviceId: string): Promise<void> {
+        const msg = await firstValueFrom(this.translate.get('LIST_SETTINGS.MACHINE_REMOVE_CONFIRM'));
+        if (!confirm(msg)) return;
+        const id = this.store.currentListId();
+        if (!id) return;
+        this.kickingDeviceId.set(targetDeviceId);
+        try {
+            await this.store.removeOwnMemberMachine(id, targetDeviceId);
             this.members.update(list => list.filter(m => m.deviceId !== targetDeviceId));
         } catch { } finally {
             this.kickingDeviceId.set(null);

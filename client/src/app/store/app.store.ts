@@ -398,6 +398,10 @@ export const AppStore = signalStore(
                 await firstValueFrom(api.kickMember(listId, targetDeviceId, ownerToken));
             },
 
+            async removeOwnMemberMachine(listId: string, targetDeviceId: string): Promise<void> {
+                await firstValueFrom(api.deleteMember(listId, targetDeviceId));
+            },
+
             async updateTtl(ttl: DeleteAfterDuration): Promise<void> {
                 const id = store.currentListId();
                 if (!id) return;

@@ -105,7 +105,10 @@ export class ListDetailComponent implements OnDestroy {
 
     private readonly members = signal<ListMember[]>([]);
     private readonly membersLoaded = signal(false);
-    protected readonly isMultiMember = computed(() => this.members().length > 1);
+    protected readonly isMultiMember = computed(() => {
+        const keys = new Set(this.members().map(m => m.userId ? `user:${m.userId}` : `device:${m.deviceId}`));
+        return keys.size > 1;
+    });
 
     constructor() {
 
