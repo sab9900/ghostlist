@@ -5,6 +5,7 @@ import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
+import { LucideBell, LucideLock } from '@lucide/angular';
 import { TranslatePipe } from '@ngx-translate/core';
 import { filter, map, startWith } from 'rxjs';
 import { BadgeService } from './core/services/badge.service';
@@ -40,7 +41,7 @@ function loadSidebarWidth(): number {
 
 @Component({
     selector: 'app-root',
-    imports: [RouterOutlet, ListsComponent, TranslatePipe, FormsModule, PwaInstallBannerComponent, OfflineBannerComponent, InfoOverlayComponent, ImageViewerComponent],
+    imports: [LucideBell, LucideLock, RouterOutlet, ListsComponent, TranslatePipe, FormsModule, PwaInstallBannerComponent, OfflineBannerComponent, InfoOverlayComponent, ImageViewerComponent],
     templateUrl: './app.html',
     styleUrl: './app.scss',
 })
@@ -65,15 +66,12 @@ export class App {
     protected readonly showNameDialog = computed(() => this.prefs.hydrated() && !this.prefs.onboarded());
     protected readonly pendingName = signal('');
 
-    /**
-     * Show the notification onboarding dialog once, after the name dialog is dismissed,
-     * on all platforms, only when permission hasn't been decided yet.
-     */
     protected readonly showNotifDialog = computed(() =>
         this.prefs.onboarded() &&
         !this.prefs.notifPrompted() &&
         this.push.webPushPermission() === 'default',
     );
+
     protected readonly notifEnabling = signal(false);
 
     private backgroundedAt: number | null = null;

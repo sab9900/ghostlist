@@ -56,7 +56,6 @@
             cursor: not-allowed;
         }
     }
-
 }
 
 @container (max-width: 260px) {
@@ -121,8 +120,8 @@
     // ── inner clip wrapper — overflow:hidden lives here, not on .item ──────
 
     &__clip {
-        position: relative;   // anchor for .item__swipe-delete
-        overflow: hidden;      // clip the swipe reveal
+        position: relative; // anchor for .item__swipe-delete
+        overflow: hidden; // clip the swipe reveal
         flex: 1;
         display: flex;
         align-items: stretch;
@@ -153,11 +152,13 @@
         transition: background var(--duration-fast) var(--ease-out);
         will-change: transform;
 
-        &:hover {
-            background: var(--color-surface-2);
-            margin: 0 calc(-1 * var(--space-4));
-            padding-left: var(--space-4);
-            padding-right: var(--space-4);
+        @media (hover: hover) {
+            &:hover {
+                background: var(--color-surface-2);
+                margin: 0 calc(-1 * var(--space-4));
+                padding-left: var(--space-4);
+                padding-right: var(--space-4);
+            }
         }
     }
 
@@ -258,9 +259,11 @@
             color var(--duration-fast) var(--ease-out),
             background var(--duration-fast) var(--ease-out);
 
-        &:hover {
-            color: var(--color-text);
-            background: var(--color-surface-3);
+        @media (hover: hover) {
+            &:hover {
+                color: var(--color-text);
+                background: var(--color-surface-3);
+            }
         }
     }
 
@@ -280,6 +283,21 @@
         display: flex;
         flex-direction: column;
         animation: menu-pop var(--duration-fast) var(--ease-out);
+
+        // @media (hover: none) and (pointer: coarse) {
+        //     position: fixed;
+        //     bottom: 0;
+        //     left: 0;
+        //     right: 0;
+        //     top: auto;
+        //     border-radius: var(--radius-md) var(--radius-md) 0 0;
+        //     border-bottom: none;
+        //     padding: var(--space-2) 0;
+        //     padding-bottom: calc(var(--space-2) + var(--safe-bottom-effective, env(safe-area-inset-bottom, 0px)));
+        //     min-width: unset;
+        //     z-index: 200;
+        //     animation: none;
+        // }
     }
 
     &__menu-item {
@@ -296,6 +314,11 @@
         gap: var(--space-3);
         transition: background var(--duration-fast) var(--ease-out);
 
+        @media (hover: none) and (pointer: coarse) {
+            padding: var(--space-4) var(--space-4);
+            font-size: var(--text-base);
+        }
+
         &:hover {
             background: var(--color-surface-3);
         }
@@ -307,6 +330,18 @@
         &--danger {
             color: var(--color-danger);
         }
+    }
+}
+
+.item-menu-backdrop {
+    display: none;
+
+    @media (hover: none) and (pointer: coarse) {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 199;
     }
 }
 
@@ -372,19 +407,29 @@
         &--go {
             color: var(--color-primary);
             border-color: var(--color-primary);
-            &:hover { background: rgba(var(--color-primary-rgb, 255 111 60), 0.1); }
+            &:hover {
+                background: rgba(var(--color-primary-rgb, 255 111 60), 0.1);
+            }
         }
 
         &--dismiss {
             color: var(--color-text-subtle);
-            &:hover { background: var(--color-surface-3); }
+            &:hover {
+                background: var(--color-surface-3);
+            }
         }
     }
 }
 
 @keyframes banner-drop {
-    from { opacity: 0; transform: translateY(-16px) scale(0.97); }
-    to   { opacity: 1; transform: translateY(0)    scale(1);    }
+    from {
+        opacity: 0;
+        transform: translateY(-16px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 // ── reminder dialog ────────────────────────────────────────────────────────
@@ -530,16 +575,32 @@
 }
 
 @keyframes fade-in {
-    from { opacity: 0; }
-    to   { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes slide-up {
-    from { transform: translateY(12px); opacity: 0; }
-    to   { transform: translateY(0);    opacity: 1; }
+    from {
+        transform: translateY(12px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 @keyframes menu-pop {
-    from { opacity: 0; transform: scale(0.95) translateY(-4px); }
-    to   { opacity: 1; transform: scale(1)    translateY(0);    }
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }

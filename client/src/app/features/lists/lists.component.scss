@@ -133,7 +133,7 @@
     transition: background var(--duration-fast) var(--ease-out);
 
     &:first-child { border-top: none; }
-    &:hover { background: var(--color-surface-2); }
+    @media (hover: hover) { &:hover { background: var(--color-surface-2); } }
 
     svg { flex-shrink: 0; color: var(--color-text-muted); }
     span { flex: 1; }
@@ -187,11 +187,16 @@
         border-color var(--duration-fast) var(--ease-out);
     -webkit-tap-highlight-color: transparent;
 
-    &:hover,
     &:focus-visible {
         background: var(--color-surface-2);
         border-color: var(--color-primary);
         outline: none;
+    }
+    @media (hover: hover) {
+        &:hover {
+            background: var(--color-surface-2);
+            border-color: var(--color-primary);
+        }
     }
 
     &:active {
@@ -299,6 +304,8 @@
     align-items: center;
     justify-content: center;
     padding: var(--space-4);
+    padding-bottom: calc(var(--keyboard-height, 0px) + var(--space-4));
+    transition: padding-bottom 200ms var(--ease-out);
     z-index: 100;
 
     @media (min-width: 900px) {

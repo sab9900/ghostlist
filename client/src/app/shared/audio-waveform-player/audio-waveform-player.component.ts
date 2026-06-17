@@ -8,19 +8,21 @@ import {
     signal,
     ViewChild,
 } from '@angular/core';
+import { LucidePause, LucidePlay } from "@lucide/angular";
 
-export type WaveformBar = { height: number }; // normalized 0–1
+export type WaveformBar = { height: number };
 
 const BAR_COUNT = 50;
 const FALLBACK_BAR_HEIGHT = 0.15;
 
 @Component({
+    imports: [LucidePause, LucidePlay],
     selector: 'app-audio-waveform-player',
     templateUrl: './audio-waveform-player.component.html',
     styleUrl: './audio-waveform-player.component.scss',
 })
 export class AudioWaveformPlayerComponent implements OnDestroy {
-    /** Blob URL or data URL of the audio to play. */
+
     readonly src = input.required<string>();
 
     @ViewChild('audioEl') private audioElRef?: ElementRef<HTMLAudioElement>;
@@ -52,7 +54,6 @@ export class AudioWaveformPlayerComponent implements OnDestroy {
     private decoded = false;
 
     constructor() {
-        // Re-decode whenever src changes.
         effect(() => {
             const src = this.src();
             if (src) void this.decodeWaveform(src);
@@ -68,7 +69,6 @@ export class AudioWaveformPlayerComponent implements OnDestroy {
             const response = await fetch(src);
             const arrayBuffer = await response.arrayBuffer();
 
-            // OfflineAudioContext only needs to decode — no playback needed.
             const ctx = new OfflineAudioContext(1, 1, 44100);
             const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
 
@@ -85,14 +85,12 @@ export class AudioWaveformPlayerComponent implements OnDestroy {
                 bars.push({ height: sum / blockSize });
             }
 
-            // Normalize to [0.08, 1].
             const max = Math.max(...bars.map(b => b.height), 0.0001);
             const MIN_NORMALIZED = 0.08;
             this.bars.set(bars.map(b => ({ height: MIN_NORMALIZED + (b.height / max) * (1 - MIN_NORMALIZED) })));
             this.decoded = true;
         } catch {
             this.decodeError.set(true);
-            // Keep fallback bars so the UI remains usable.
         } finally {
             this.decoding.set(false);
         }
@@ -103,9 +101,6 @@ export class AudioWaveformPlayerComponent implements OnDestroy {
         if (!el) return;
 
         if (el.paused) {
-            // HAVE_FUTURE_DATA (3) = enough buffered to play without stalling.
-            // With preload="auto" this is usually already satisfied, but on mobile
-            // the audio session may not be ready yet — wait for canplay if needed.
             if (el.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) {
                 await new Promise<void>(resolve => {
                     const onCanPlay = () => {
@@ -118,7 +113,6 @@ export class AudioWaveformPlayerComponent implements OnDestroy {
             try {
                 await el.play();
             } catch {
-                // Autoplay policy blocked or element was destroyed — no-op.
             }
         } else {
             el.pause();

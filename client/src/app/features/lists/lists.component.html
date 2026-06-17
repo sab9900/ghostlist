@@ -5,70 +5,41 @@
         <h1 class="header__title">Ghost List</h1>
         <div class="header__actions">
             @if (totalUnread() > 0) {
-            <button class="badge-btn" (click)="openMarkAllReadDialog()" [attr.aria-label]="totalUnread() + ' unread, tap to mark all read'">
+            <button class="badge-btn" (click)="openMarkAllReadDialog()"
+                [attr.aria-label]="totalUnread() + ' unread, tap to mark all read'">
                 <app-badge [count]="totalUnread()" />
             </button>
             }
             <div class="menu-anchor">
-                <button class="header__action" (click)="toggleMenu()" [attr.aria-label]="'LISTS.MENU_SETTINGS' | translate" [attr.aria-expanded]="showMenu()">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <line x1="3" y1="6" x2="21" y2="6" />
-                        <line x1="3" y1="12" x2="21" y2="12" />
-                        <line x1="3" y1="18" x2="21" y2="18" />
-                    </svg>
+                <button class="header__action" (click)="toggleMenu()"
+                    [attr.aria-label]="'LISTS.MENU_SETTINGS' | translate" [attr.aria-expanded]="showMenu()">
+                    <svg lucideMenu [size]="20" aria-hidden="true"></svg>
                 </button>
 
                 @if (showMenu()) {
                 <div class="menu-overlay" (click)="closeMenu()" aria-hidden="true"></div>
                 <nav class="menu" role="menu" [attr.aria-label]="'LISTS.MENU_SETTINGS' | translate">
                     <button class="menu-item" (click)="openImportFromMenu()" role="menuitem">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="7 10 12 15 17 10" />
-                            <line x1="12" y1="15" x2="12" y2="3" />
-                        </svg>
+                        <svg lucideDownload [size]="18" aria-hidden="true"></svg>
                         <span>{{ 'LISTS.MENU_IMPORT' | translate }}</span>
                     </button>
                     <button class="menu-item" (click)="openExportFromMenu()" role="menuitem">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="17 8 12 3 7 8" />
-                            <line x1="12" y1="3" x2="12" y2="15" />
-                        </svg>
+                        <svg lucideUpload [size]="18" aria-hidden="true"></svg>
                         <span>{{ 'LISTS.MENU_EXPORT' | translate }}</span>
                     </button>
                     <button class="menu-item" (click)="goToSettingsFromMenu()" role="menuitem">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="12" cy="12" r="3" />
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                        </svg>
+                        <svg lucideSettings [size]="18" aria-hidden="true"></svg>
                         <span>{{ 'LISTS.MENU_SETTINGS' | translate }}</span>
                     </button>
                     @if (showCoffeeLink) {
                     <a class="menu-item" href="https://buymeacoffee.com/sab.norica.informatics" target="_blank"
                         rel="noopener noreferrer" role="menuitem">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M17 8h1a4 4 0 0 1 0 8h-1" />
-                            <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
-                            <line x1="6" y1="2" x2="6" y2="4" />
-                            <line x1="10" y1="2" x2="10" y2="4" />
-                            <line x1="14" y1="2" x2="14" y2="4" />
-                        </svg>
+                        <svg lucideCoffee [size]="18" aria-hidden="true"></svg>
                         <span>{{ 'LISTS.MENU_COFFEE' | translate }}</span>
                     </a>
                     }
                     <button class="menu-item" (click)="openAboutFromMenu()" role="menuitem">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="12" cy="12" r="10" />
-                            <line x1="12" y1="16" x2="12" y2="12" />
-                            <line x1="12" y1="8" x2="12.01" y2="8" />
-                        </svg>
+                        <svg lucideInfo [size]="18" aria-hidden="true"></svg>
                         <span>{{ 'LISTS.MENU_ABOUT' | translate }}</span>
                     </button>
                 </nav>
@@ -126,14 +97,16 @@
         <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
             aria-labelledby="create-dialog-title">
             <h2 class="dialog__title" id="create-dialog-title">{{ 'LISTS.CREATE_TITLE' | translate }}</h2>
-            <input #createInput class="dialog__input" type="text" [attr.placeholder]="'LISTS.CREATE_PLACEHOLDER' | translate"
-                [(ngModel)]="newListName" (keydown.enter)="createList()" maxlength="60"
-                [attr.aria-label]="'LISTS.CREATE_PLACEHOLDER' | translate" aria-required="true" />
+            <input #createInput class="dialog__input" type="text"
+                [attr.placeholder]="'LISTS.CREATE_PLACEHOLDER' | translate" [(ngModel)]="newListName"
+                (keydown.enter)="createList()" maxlength="60" [attr.aria-label]="'LISTS.CREATE_PLACEHOLDER' | translate"
+                aria-required="true" />
             @if (createError()) {
             <p class="dialog__error" role="alert">{{ createError() }}</p>
             }
             <div class="dialog__actions">
-                <button class="btn btn--ghost" (click)="closeCreateDialog()" [disabled]="creating()">{{ 'COMMON.CANCEL' | translate }}</button>
+                <button class="btn btn--ghost" (click)="closeCreateDialog()" [disabled]="creating()">{{ 'COMMON.CANCEL'
+                    | translate }}</button>
                 <button class="btn btn--primary" (click)="createList()" [disabled]="!newListName().trim() || creating()"
                     [attr.aria-busy]="creating()">
                     {{ creating() ? ('LISTS.CREATING_BTN' | translate) : ('LISTS.CREATE_BTN' | translate) }}
@@ -166,7 +139,8 @@
                 @if (importQrData()) {
                 <app-qr-code [data]="importQrData()!" [size]="200" />
                 } @else {
-                <div class="dialog__qr-loading" role="status" aria-live="polite">{{ 'LISTS.GENERATING' | translate }}</div>
+                <div class="dialog__qr-loading" role="status" aria-live="polite">{{ 'LISTS.GENERATING' | translate }}
+                </div>
                 }
             </div>
             @if (importErrorMsg()) {
@@ -217,13 +191,15 @@
             <h2 class="dialog__title" id="reveal-dialog-title">{{ 'LISTS.REVEAL_TITLE' | translate }}</h2>
             <p class="dialog__hint" id="reveal-dialog-hint">{{ 'LISTS.REVEAL_HINT' | translate }}</p>
             <input class="dialog__input" type="password" [attr.placeholder]="'LISTS.REVEAL_PLACEHOLDER' | translate"
-                [ngModel]="revealPassword()" (ngModelChange)="revealPassword.set($event)" (keydown.enter)="submitReveal()"
-                autofocus [attr.aria-label]="'LISTS.REVEAL_PLACEHOLDER' | translate" aria-required="true" />
+                [ngModel]="revealPassword()" (ngModelChange)="revealPassword.set($event)"
+                (keydown.enter)="submitReveal()" autofocus [attr.aria-label]="'LISTS.REVEAL_PLACEHOLDER' | translate"
+                aria-required="true" />
             @if (revealError()) {
             <p class="dialog__error" role="alert">{{ 'LISTS.REVEAL_ERROR' | translate }}</p>
             }
             <div class="dialog__actions">
-                <button class="btn btn--ghost" (click)="closeRevealDialog()" [disabled]="revealing()">{{ 'COMMON.CANCEL' | translate }}</button>
+                <button class="btn btn--ghost" (click)="closeRevealDialog()" [disabled]="revealing()">{{ 'COMMON.CANCEL'
+                    | translate }}</button>
                 <button class="btn btn--primary" (click)="submitReveal()" [disabled]="!revealPassword() || revealing()"
                     [attr.aria-busy]="revealing()">
                     {{ revealing() ? ('LISTS.REVEAL_CHECKING' | translate) : ('LISTS.REVEAL_BTN' | translate) }}
@@ -240,10 +216,12 @@
             <h2 class="dialog__title" id="mark-all-read-dialog-title">{{ 'LISTS.MARK_ALL_READ_TITLE' | translate }}</h2>
             <p class="dialog__hint" id="mark-all-read-dialog-hint">{{ 'LISTS.MARK_ALL_READ_HINT' | translate }}</p>
             <div class="dialog__actions">
-                <button class="btn btn--ghost" (click)="closeMarkAllReadDialog()" [disabled]="markingAllRead()">{{ 'COMMON.CANCEL' | translate }}</button>
+                <button class="btn btn--ghost" (click)="closeMarkAllReadDialog()" [disabled]="markingAllRead()">{{
+                    'COMMON.CANCEL' | translate }}</button>
                 <button class="btn btn--primary" (click)="confirmMarkAllRead()" [disabled]="markingAllRead()"
                     [attr.aria-busy]="markingAllRead()">
-                    {{ markingAllRead() ? ('LISTS.MARK_ALL_READ_MARKING' | translate) : ('LISTS.MARK_ALL_READ_BTN' | translate) }}
+                    {{ markingAllRead() ? ('LISTS.MARK_ALL_READ_MARKING' | translate) : ('LISTS.MARK_ALL_READ_BTN' |
+                    translate) }}
                 </button>
             </div>
         </div>
@@ -275,7 +253,8 @@
                 @if (exportQrData()) {
                 <app-qr-code [data]="exportQrData()!" [size]="200" />
                 } @else {
-                <div class="dialog__qr-loading" role="status" aria-live="polite">{{ 'LISTS.GENERATING' | translate }}</div>
+                <div class="dialog__qr-loading" role="status" aria-live="polite">{{ 'LISTS.GENERATING' | translate }}
+                </div>
                 }
             </div>
             <p class="dialog__hint dialog__hint--sm" aria-live="polite">

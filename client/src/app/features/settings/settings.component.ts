@@ -1,27 +1,39 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
+import { LucideChevronLeft, LucideCopy, LucideLock, LucideRefreshCw, LucideShield } from "@lucide/angular";
 import { TranslatePipe } from '@ngx-translate/core';
 import { environment } from '../../../environments/environment';
+import { SwipeBackDirective } from '../../core/directives/swipe-back.directive';
 import { SyncQrPayload } from '../../core/models';
 import { CryptoService } from '../../core/services/crypto.service';
 import { LanguageService } from '../../core/services/language.service';
 import { LayoutService } from '../../core/services/layout.service';
 import { MasterPasswordService } from '../../core/services/master-password.service';
+import { PushNotificationService } from '../../core/services/push-notification.service';
 import { SensitiveListsService } from '../../core/services/sensitive-lists.service';
 import { Theme, ThemeAccent, ThemeService } from '../../core/services/theme.service';
-import { PushNotificationService } from '../../core/services/push-notification.service';
 import { UserPreferencesService } from '../../core/services/user-preferences.service';
 import { AUTO_LOCK_OPTIONS, WebAuthnService } from '../../core/services/webauthn.service';
-import { AppStore } from '../../store/app.store';
 import { QrCodeComponent } from '../../shared/qr-code/qr-code.component';
 import { QrScannerComponent } from '../../shared/qr-scanner/qr-scanner.component';
-import { SwipeBackDirective } from '../../core/directives/swipe-back.directive';
+import { AppStore } from '../../store/app.store';
 
 @Component({
     selector: 'app-settings',
-    imports: [TranslatePipe, FormsModule, QrCodeComponent, QrScannerComponent, SwipeBackDirective],
+    imports: [
+        TranslatePipe,
+        FormsModule,
+        QrCodeComponent,
+        QrScannerComponent,
+        SwipeBackDirective,
+        LucideChevronLeft,
+        LucideShield,
+        LucideLock,
+        LucideRefreshCw,
+        LucideCopy
+    ],
     templateUrl: './settings.component.html',
     styleUrl: './settings.component.scss',
 })
@@ -45,15 +57,15 @@ export class SettingsComponent {
 
     protected readonly themeOptions: { value: Theme; labelKey: string; descKey: string }[] = [
         { value: 'system', labelKey: 'SETTINGS.THEME.SYSTEM', descKey: 'SETTINGS.THEME.SYSTEM_DESC' },
-        { value: 'light',  labelKey: 'SETTINGS.THEME.LIGHT',  descKey: 'SETTINGS.THEME.LIGHT_DESC'  },
-        { value: 'dark',   labelKey: 'SETTINGS.THEME.DARK',   descKey: 'SETTINGS.THEME.DARK_DESC'   },
+        { value: 'light', labelKey: 'SETTINGS.THEME.LIGHT', descKey: 'SETTINGS.THEME.LIGHT_DESC' },
+        { value: 'dark', labelKey: 'SETTINGS.THEME.DARK', descKey: 'SETTINGS.THEME.DARK_DESC' },
     ];
 
     protected readonly accentOptions: { value: ThemeAccent; labelKey: string; color: string }[] = [
         { value: 'violet', labelKey: 'SETTINGS.ACCENT.VIOLET', color: '#7c6af7' },
-        { value: 'cyan',   labelKey: 'SETTINGS.ACCENT.CYAN',   color: '#06b6d4' },
-        { value: 'red',    labelKey: 'SETTINGS.ACCENT.RED',    color: '#f87171' },
-        { value: 'noir',   labelKey: 'SETTINGS.ACCENT.NOIR',   color: 'linear-gradient(135deg, #111114 50%, #f0f0f2 50%)' },
+        { value: 'cyan', labelKey: 'SETTINGS.ACCENT.CYAN', color: '#06b6d4' },
+        { value: 'red', labelKey: 'SETTINGS.ACCENT.RED', color: '#f87171' },
+        { value: 'noir', labelKey: 'SETTINGS.ACCENT.NOIR', color: 'linear-gradient(135deg, #111114 50%, #f0f0f2 50%)' },
     ];
 
     protected readonly supportedLangs = LanguageService.SUPPORTED;

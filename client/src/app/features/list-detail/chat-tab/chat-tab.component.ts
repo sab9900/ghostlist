@@ -1,21 +1,22 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, effect, ElementRef, HostListener, inject, OnDestroy, signal, ViewChild } from '@angular/core';
-import { Capacitor } from '@capacitor/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { Capacitor } from '@capacitor/core';
+import { LucideCheck, LucideCheckCheck, LucideCopy, LucideCornerUpLeft, LucideEllipsisVertical, LucideImage, LucideMic, LucideSquare, LucideTrash2 } from "@lucide/angular";
+import { TranslatePipe } from '@ngx-translate/core';
+import { ViewportDwellDirective } from '../../../core/directives/viewport-dwell.directive';
 import { GhostChatMessage } from '../../../core/models';
 import { CryptoService } from '../../../core/services/crypto.service';
 import { DeviceIdService } from '../../../core/services/device-id.service';
-import { UserIdService } from '../../../core/services/user-id.service';
 import { HapticsService } from '../../../core/services/haptics.service';
 import { ImageViewerService } from '../../../core/services/image-viewer.service';
 import { KeyboardInsetService } from '../../../core/services/keyboard-inset.service';
+import { UserIdService } from '../../../core/services/user-id.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
-import { TranslatePipe } from '@ngx-translate/core';
-import { AppStore } from '../../../store/app.store';
-import { ViewportDwellDirective } from '../../../core/directives/viewport-dwell.directive';
-import { AvatarComponent } from '../../../shared/avatar/avatar.component';
 import { AudioWaveformPlayerComponent } from '../../../shared/audio-waveform-player/audio-waveform-player.component';
+import { AvatarComponent } from '../../../shared/avatar/avatar.component';
+import { AppStore } from '../../../store/app.store';
 
 interface DecryptedMessage {
     id: string;
@@ -39,7 +40,7 @@ const MAX_DATA_URL_LENGTH = 1_800_000;
 
 @Component({
     selector: 'app-chat-tab',
-    imports: [FormsModule, DatePipe, TranslatePipe, ViewportDwellDirective, AvatarComponent, AudioWaveformPlayerComponent],
+    imports: [FormsModule, DatePipe, TranslatePipe, ViewportDwellDirective, AvatarComponent, AudioWaveformPlayerComponent, LucideCornerUpLeft, LucideImage, LucideMic, LucideCheckCheck, LucideCheck, LucideEllipsisVertical, LucideCopy, LucideTrash2, LucideSquare],
     templateUrl: './chat-tab.component.html',
     styleUrl: './chat-tab.component.scss',
 })
@@ -165,7 +166,7 @@ export class ChatTabComponent implements OnDestroy {
         const el = this.messageListRef?.nativeElement;
         if (!el) return;
 
-        const durationMs = 250; 
+        const durationMs = 250;
         const start = performance.now();
 
         const step = () => {
@@ -305,8 +306,8 @@ export class ChatTabComponent implements OnDestroy {
             const reason = !navigator.mediaDevices
                 ? 'mediaDevices undefined'
                 : !navigator.mediaDevices.getUserMedia
-                  ? 'getUserMedia undefined'
-                  : 'MediaRecorder undefined';
+                    ? 'getUserMedia undefined'
+                    : 'MediaRecorder undefined';
             this.recordingDebugError.set(reason);
             this.recordingNotSupported.set(true);
             setTimeout(() => { this.recordingNotSupported.set(false); this.recordingDebugError.set(null); }, 8000);
@@ -485,7 +486,7 @@ export class ChatTabComponent implements OnDestroy {
     }
 
     protected onKeydown(event: KeyboardEvent): void {
-        if (this.isMobile) return; 
+        if (this.isMobile) return;
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
             void this.sendMessage();

@@ -1,9 +1,10 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, effect, ElementRef, inject, OnDestroy, signal, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { TranslatePipe } from '@ngx-translate/core';
 import { Router } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
+import { LucideCoffee, LucideDownload, LucideInfo, LucideMenu, LucideSettings, LucideUpload } from "@lucide/angular";
+import { TranslatePipe } from '@ngx-translate/core';
 import { ExportQrPayload, ListFullError, ListMember, ReceiveQrPayload } from '../../core/models';
 import { HapticsService } from '../../core/services/haptics.service';
 import { MasterPasswordService } from '../../core/services/master-password.service';
@@ -19,7 +20,21 @@ const MAX_VISIBLE_AVATARS = 3;
 
 @Component({
     selector: 'app-lists',
-    imports: [FormsModule, DatePipe, QrCodeComponent, QrScannerComponent, BadgeComponent, AvatarComponent, TranslatePipe],
+    imports: [
+        FormsModule,
+        DatePipe,
+        QrCodeComponent,
+        QrScannerComponent,
+        BadgeComponent,
+        AvatarComponent,
+        TranslatePipe,
+        LucideMenu,
+        LucideDownload,
+        LucideUpload,
+        LucideSettings,
+        LucideCoffee,
+        LucideInfo
+    ],
     templateUrl: './lists.component.html',
     styleUrl: './lists.component.scss',
 })

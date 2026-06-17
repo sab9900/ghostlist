@@ -1,4 +1,5 @@
 import { Component, computed, inject } from '@angular/core';
+import { LucideGift, LucideInfo, LucideWrench } from "@lucide/angular";
 import { TranslatePipe } from '@ngx-translate/core';
 import { InfoMessageType } from '../../core/models';
 import { InfoCenterService } from '../../core/services/info-center.service';
@@ -15,7 +16,7 @@ const TYPE_LABEL_KEYS: Readonly<Record<InfoMessageType, string>> = {
 
 @Component({
     selector: 'app-info-overlay',
-    imports: [TranslatePipe],
+    imports: [TranslatePipe, LucideGift, LucideWrench, LucideInfo],
     templateUrl: './info-overlay.component.html',
     styleUrl: './info-overlay.component.scss',
 })

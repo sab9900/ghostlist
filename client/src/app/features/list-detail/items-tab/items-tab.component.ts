@@ -1,19 +1,19 @@
 import { Component, computed, effect, HostListener, inject, OnDestroy, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { LucideCheck, LucideCircleX, LucideClock, LucideEllipsisVertical, LucideTrash2 } from "@lucide/angular";
 import { TranslatePipe } from '@ngx-translate/core';
 import { Subscription } from 'rxjs';
+import { ApiService } from '../../../api/api.service';
+import { HubService } from '../../../api/hub.service';
+import { ViewportDwellDirective } from '../../../core/directives/viewport-dwell.directive';
 import { GhostListItem, ListMember } from '../../../core/models';
 import { CryptoService } from '../../../core/services/crypto.service';
 import { DeviceIdService } from '../../../core/services/device-id.service';
+import { DeviceTokenService } from '../../../core/services/device-token.service';
+import { HapticsService } from '../../../core/services/haptics.service';
 import { UserIdService } from '../../../core/services/user-id.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
-import { HapticsService } from '../../../core/services/haptics.service';
 import { AppStore } from '../../../store/app.store';
-import { ViewportDwellDirective } from '../../../core/directives/viewport-dwell.directive';
-import { ApiService } from '../../../api/api.service';
-import { HubService } from '../../../api/hub.service';
-import { DeviceTokenService } from '../../../core/services/device-token.service';
-import { SwipeClampPipe } from './swipe-clamp.pipe';
 
 interface DecryptedItem {
     id: string;
@@ -42,7 +42,7 @@ const SWIPE_MAX_DISTANCE = 80;
 
 @Component({
     selector: 'app-items-tab',
-    imports: [FormsModule, TranslatePipe, ViewportDwellDirective, SwipeClampPipe],
+    imports: [FormsModule, TranslatePipe, ViewportDwellDirective, LucideTrash2, LucideClock, LucideEllipsisVertical, LucideCircleX, LucideCheck],
     templateUrl: './items-tab.component.html',
     styleUrl: './items-tab.component.scss',
 })
@@ -247,12 +247,12 @@ export class ItemsTabComponent implements OnDestroy {
     protected formatReminderDate(isoStr: string): string {
         const d = new Date(isoStr);
         const now = new Date();
-        const startOfToday    = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const startOfTomorrow = new Date(startOfToday.getTime() + 86_400_000);
         const startOfDayAfter = new Date(startOfTomorrow.getTime() + 86_400_000);
         const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-        if (d >= startOfToday    && d < startOfTomorrow) return timeStr;
+        if (d >= startOfToday && d < startOfTomorrow) return timeStr;
         if (d >= startOfTomorrow && d < startOfDayAfter) return `+1d ${timeStr}`;
         return d.toLocaleDateString([], { day: 'numeric', month: 'numeric' }) + ' ' + timeStr;
     }
@@ -330,7 +330,7 @@ export class ItemsTabComponent implements OnDestroy {
         if (item?.isChecked) {
             const reminder = this.reminders().get(id);
             if (reminder) {
-                this.api.deleteItemReminder(reminder.id).subscribe({ error: () => {} });
+                this.api.deleteItemReminder(reminder.id).subscribe({ error: () => { } });
                 const updated = new Map(this.reminders());
                 updated.delete(id);
                 this.reminders.set(updated);

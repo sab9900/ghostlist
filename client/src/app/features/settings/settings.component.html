@@ -2,10 +2,7 @@
 
     <header class="header" role="banner">
         <button class="header__back" (click)="goBack()" [attr.aria-label]="'LIST_DETAIL.BACK_ARIA' | translate">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <polyline points="15 18 9 12 15 6" />
-            </svg>
+            <svg lucideChevronLeft [size]="20" aria-hidden="true"></svg>
         </button>
         <h1 class="header__title">{{ 'SETTINGS.TITLE' | translate }}</h1>
     </header>
@@ -77,10 +74,8 @@
                 } @else if (webAuthn.isEnabled()) {
                 <div class="security-row">
                     <span class="security-badge">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                        </svg>
+                        <svg lucideShield [size]="14"></svg>
+
                         {{ 'SETTINGS.SECURITY.ENABLED' | translate }}
                     </span>
                     <button class="btn btn--ghost btn--sm btn--danger" (click)="disableBiometricLock()"
@@ -142,11 +137,7 @@
                     @if (masterPassword.hasPassword()) {
                     <div class="security-row">
                         <span class="security-badge">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                            </svg>
+                            <svg lucideLock [size]="14" aria-hidden="true"></svg>
                             {{ 'SETTINGS.SECURITY.MASTER_PASSWORD.ENABLED' | translate }}
                         </span>
                         <button class="btn btn--ghost btn--sm" (click)="startChangeMasterPassword()">
@@ -249,13 +240,7 @@
             <div class="sync-actions">
                 <button class="btn btn--primary btn--sm btn--icon" (click)="startSync()"
                     [disabled]="!webAuthn.isEnabled()">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M17 2.1l4 4-4 4"/>
-                        <path d="M3 12.2v-2a4 4 0 0 1 4-4h12.8"/>
-                        <path d="M7 21.9l-4-4 4-4"/>
-                        <path d="M21 11.8v2a4 4 0 0 1-4 4H4.2"/>
-                    </svg>
+                    <svg lucideRefreshCw [size]="15" aria-hidden="true"></svg>
                     {{ 'SETTINGS.SYNC_MACHINES' | translate }}
                 </button>
             </div>
@@ -395,11 +380,7 @@
         <div class="dialog__qr"><div class="dialog__qr-loading" role="status">…</div></div>
         }
         <button class="btn btn--ghost btn--sm btn--icon" (click)="copySyncLink()">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
+            <svg lucideCopy [size]="14" aria-hidden="true"></svg>
             {{ syncLinkCopied() ? ('SETTINGS.SYNC_LINK_COPIED' | translate) : ('SETTINGS.SYNC_COPY_LINK' | translate) }}
         </button>
         <p class="dialog__hint dialog__hint--sm" aria-live="polite">{{ 'SETTINGS.SYNC_WAITING' | translate }}</p>

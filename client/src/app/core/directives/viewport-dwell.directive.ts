@@ -1,10 +1,10 @@
-import { Directive, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, inject } from '@angular/core';
+import { Directive, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, inject } from '@angular/core';
 
 @Directive({
     selector: '[appViewportDwell]',
     standalone: true,
 })
-export class ViewportDwellDirective implements OnInit, OnDestroy {
+export class ViewportDwellDirective implements OnInit, OnChanges, OnDestroy {
 
     @Input('appViewportDwell') id!: string;
     @Input() dwellMs = 1500;
@@ -19,8 +19,32 @@ export class ViewportDwellDirective implements OnInit, OnDestroy {
     private readonly onVisibilityChange = () => this.evaluate();
 
     ngOnInit(): void {
-        if (!this.id) return;
+        if (this.id) {
+            this.startObserving();
+        }
+    }
 
+    ngOnChanges(changes: SimpleChanges): void {
+        if (!changes['id'] || changes['id'].firstChange) return;
+        const newId = changes['id'].currentValue as string;
+        const oldId = changes['id'].previousValue as string;
+        if (newId === oldId) return;
+
+        // Cancel any in-flight observation for the old id
+        this.cleanup();
+        this.fired = false;
+        this.intersecting = false;
+
+        if (newId) {
+            this.startObserving();
+        }
+    }
+
+    ngOnDestroy(): void {
+        this.cleanup();
+    }
+
+    private startObserving(): void {
         if (typeof IntersectionObserver === 'undefined') {
             this.timer = setTimeout(() => this.fire(), this.dwellMs);
             return;
@@ -37,10 +61,6 @@ export class ViewportDwellDirective implements OnInit, OnDestroy {
         this.observer.observe(this.elementRef.nativeElement);
 
         document.addEventListener('visibilitychange', this.onVisibilityChange);
-    }
-
-    ngOnDestroy(): void {
-        this.cleanup();
     }
 
     private evaluate(): void {

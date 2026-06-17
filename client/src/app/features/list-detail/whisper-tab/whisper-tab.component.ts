@@ -1,8 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, ElementRef, ViewChild, effect, inject, signal, untracked } from '@angular/core';
-import { Capacitor } from '@capacitor/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { Capacitor } from '@capacitor/core';
+import { LucideEye } from "@lucide/angular";
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../../api/api.service';
@@ -31,7 +32,7 @@ const INVITE_COOLDOWN_MS = 60_000;
 
 @Component({
     selector: 'app-whisper-tab',
-    imports: [FormsModule, TranslatePipe],
+    imports: [FormsModule, TranslatePipe, LucideEye],
     templateUrl: './whisper-tab.component.html',
     styleUrl: './whisper-tab.component.scss',
 })
@@ -170,7 +171,7 @@ export class WhisperTabComponent {
         const el = this.whisperFeedRef?.nativeElement;
         if (!el) return;
 
-        const durationMs = 250; 
+        const durationMs = 250;
         const start = performance.now();
 
         const step = () => {

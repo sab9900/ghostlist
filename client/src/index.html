@@ -26,12 +26,26 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <script>
-        // iOS PWA reports the wrong viewport height via CSS (excludes safe-area
-        // bottom), causing a black strip at the bottom. window.innerHeight is
-        // always the real physical screen height, so we expose it as a CSS
-        // variable and use it as the app shell height instead.
+        // Sets --app-height for the app shell.
+        //
+        // iOS PWA quirk: on older iOS, window.innerHeight returned the full
+        // physical screen height (including safe-area-inset-bottom), which was
+        // larger than the CSS viewport. On iOS 26+, this changed — innerHeight
+        // now excludes the safe area, matching CSS viewport behaviour, which
+        // leaves a ~32 px gap at the bottom.
+        //
+        // Fix: in iOS standalone PWA mode (navigator.standalone === true),
+        // use Math.max(innerHeight, screen.height) so we always get the larger
+        // of the two values. screen.height on iOS is always the full CSS-pixel
+        // screen height regardless of safe-area treatment, so this future-
+        // proofs us against further iOS viewport changes without affecting
+        // Android, web PWA, or regular browser tabs.
         function updateAppHeight() {
-            document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
+            var isIosPwa = window.navigator.standalone === true;
+            var h = isIosPwa
+                ? Math.max(window.innerHeight, window.screen.height)
+                : window.innerHeight;
+            document.documentElement.style.setProperty('--app-height', h + 'px');
         }
         updateAppHeight();
         window.addEventListener('resize', updateAppHeight);

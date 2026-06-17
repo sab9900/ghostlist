@@ -71,9 +71,11 @@
             color var(--duration-fast) var(--ease-out),
             background var(--duration-fast) var(--ease-out);
 
-        &:hover {
-            color: var(--color-primary);
-            background: var(--color-surface-2);
+        @media (hover: hover) {
+            &:hover {
+                color: var(--color-primary);
+                background: var(--color-surface-2);
+            }
         }
     }
 }
@@ -317,9 +319,11 @@
             color var(--duration-fast) var(--ease-out),
             background var(--duration-fast) var(--ease-out);
 
-        &:hover {
-            color: var(--color-text);
-            background: var(--color-surface-2);
+        @media (hover: hover) {
+            &:hover {
+                color: var(--color-text);
+                background: var(--color-surface-2);
+            }
         }
     }
 

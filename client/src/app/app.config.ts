@@ -1,5 +1,5 @@
-import { ApplicationConfig, inject, isDevMode, provideAppInitializer, provideBrowserGlobalErrorListeners, provideZonelessChangeDetection } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
+import { ApplicationConfig, inject, isDevMode, provideAppInitializer, provideBrowserGlobalErrorListeners, provideZonelessChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideServiceWorker } from '@angular/service-worker';
 import { provideTranslateService } from '@ngx-translate/core';
@@ -10,6 +10,7 @@ import { LanguageService } from './core/services/language.service';
 
 export const appConfig: ApplicationConfig = {
     providers: [
+
         provideZonelessChangeDetection(),
         provideBrowserGlobalErrorListeners(),
         provideRouter(routes),

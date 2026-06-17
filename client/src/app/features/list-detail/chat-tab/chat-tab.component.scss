@@ -286,7 +286,7 @@
         opacity: 1;
     }
 
-    @media (hover: none) {
+    @media (hover: none) and (pointer: coarse) {
         &__actions-btn {
             opacity: 0.6;
         }
@@ -305,6 +305,20 @@
         flex-direction: column;
         min-width: 140px;
         z-index: 10;
+
+        // @media (hover: none) and (pointer: coarse) {
+        //     position: fixed;
+        //     bottom: 0;
+        //     left: 0;
+        //     right: 0;
+        //     top: auto;
+        //     border-radius: var(--radius-md) var(--radius-md) 0 0;
+        //     border-bottom: none;
+        //     padding: var(--space-2);
+        //     padding-bottom: calc(var(--space-2) + var(--safe-bottom-effective, env(safe-area-inset-bottom, 0px)));
+        //     min-width: unset;
+        //     z-index: 200;
+        // }
     }
 
     &__menu-item {
@@ -321,6 +335,11 @@
         color: var(--color-text);
         cursor: pointer;
         white-space: nowrap;
+
+        @media (hover: none) and (pointer: coarse) {
+            padding: var(--space-3) var(--space-4);
+            font-size: var(--text-base);
+        }
 
         &:hover {
             background: var(--color-surface-2);
@@ -362,7 +381,6 @@
 }
 
 @keyframes message-highlight {
-
     0%,
     100% {
         box-shadow: none;
@@ -375,7 +393,6 @@
 }
 
 @keyframes recording-pulse {
-
     0%,
     100% {
         opacity: 1;
@@ -383,6 +400,18 @@
 
     50% {
         opacity: 0.25;
+    }
+}
+
+.message-menu-backdrop {
+    display: none;
+
+    @media (hover: none) and (pointer: coarse) {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 9;
     }
 }
 
@@ -674,4 +703,3 @@
         }
     }
 }
-

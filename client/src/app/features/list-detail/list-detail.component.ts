@@ -1,14 +1,15 @@
 import { Component, computed, effect, inject, OnDestroy, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { LucideSettings } from "@lucide/angular";
+import { TranslatePipe } from '@ngx-translate/core';
 import { filter, from, map, of, switchMap, take } from 'rxjs';
 import { HubService } from '../../api/hub.service';
+import { SwipeBackDirective } from '../../core/directives/swipe-back.directive';
 import { ListMember } from '../../core/models';
 import { LayoutService } from '../../core/services/layout.service';
-import { TranslatePipe } from '@ngx-translate/core';
 import { BadgeComponent } from '../../shared/badge/badge.component';
 import { AppStore } from '../../store/app.store';
-import { SwipeBackDirective } from '../../core/directives/swipe-back.directive';
 import { CharonTabComponent } from './charon-tab/charon-tab.component';
 import { ChatTabComponent } from './chat-tab/chat-tab.component';
 import { ItemsTabComponent } from './items-tab/items-tab.component';
@@ -37,7 +38,14 @@ function loadPaneWidth(): number {
 
 @Component({
     selector: 'app-list-detail',
-    imports: [BadgeComponent, ItemsTabComponent, ChatTabComponent, WhisperTabComponent, CharonTabComponent, SettingsTabComponent, RouterOutlet, TranslatePipe, SwipeBackDirective],
+    imports: [
+        BadgeComponent,
+        ItemsTabComponent,
+        ChatTabComponent,
+        WhisperTabComponent,
+        CharonTabComponent,
+        SettingsTabComponent,
+        RouterOutlet, TranslatePipe, SwipeBackDirective, LucideSettings],
     templateUrl: './list-detail.component.html',
     styleUrl: './list-detail.component.scss',
 })

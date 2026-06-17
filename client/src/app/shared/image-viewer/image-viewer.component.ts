@@ -1,10 +1,11 @@
 import { Component, HostListener, inject } from '@angular/core';
+import { LucideX } from "@lucide/angular";
 import { TranslatePipe } from '@ngx-translate/core';
 import { ImageViewerService } from '../../core/services/image-viewer.service';
 
 @Component({
     selector: 'app-image-viewer',
-    imports: [TranslatePipe],
+    imports: [TranslatePipe, LucideX],
     templateUrl: './image-viewer.component.html',
     styleUrl: './image-viewer.component.scss',
 })

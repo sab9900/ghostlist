@@ -2,10 +2,7 @@
 
     <header class="header" role="banner">
         <button class="header__back" (click)="goBack()" [attr.aria-label]="'LIST_DETAIL.BACK_ARIA' | translate">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <polyline points="15 18 9 12 15 6" />
-            </svg>
+            <svg lucideChevronLeft [size]="20" aria-hidden="true"></svg>
         </button>
         <h1 class="header__title">{{ 'ABOUT.TITLE' | translate }}</h1>
     </header>
@@ -37,11 +34,7 @@
                 <div class="feature-list">
                     <div class="feature">
                         <div class="feature__icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                            </svg>
+                            <svg lucideLock [size]="20" aria-hidden="true"></svg>
                         </div>
                         <div class="feature__body">
                             <p class="feature__label">{{ 'ABOUT.FEATURE_ENCRYPTION_LABEL' | translate }}</p>
@@ -50,12 +43,7 @@
                     </div>
                     <div class="feature">
                         <div class="feature__icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                                <polyline points="16 6 12 2 8 6" />
-                                <line x1="12" y1="2" x2="12" y2="15" />
-                            </svg>
+                            <svg lucideUpload [size]="20" aria-hidden="true"></svg>
                         </div>
                         <div class="feature__body">
                             <p class="feature__label">{{ 'ABOUT.FEATURE_QR_LABEL' | translate }}</p>
@@ -64,13 +52,7 @@
                     </div>
                     <div class="feature">
                         <div class="feature__icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="17 1 21 5 17 9" />
-                                <path d="M3 11V9a4 4 0 0 1 4-4h14" />
-                                <polyline points="7 23 3 19 7 15" />
-                                <path d="M21 13v2a4 4 0 0 1-4 4H3" />
-                            </svg>
+                            <svg lucideRepeat [size]="20" aria-hidden="true"></svg>
                         </div>
                         <div class="feature__body">
                             <p class="feature__label">{{ 'ABOUT.FEATURE_REALTIME_LABEL' | translate }}</p>
@@ -79,10 +61,7 @@
                     </div>
                     <div class="feature">
                         <div class="feature__icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                            </svg>
+                            <svg lucideShield [size]="20" aria-hidden="true"></svg>
                         </div>
                         <div class="feature__body">
                             <p class="feature__label">{{ 'ABOUT.FEATURE_ZERO_LABEL' | translate }}</p>
@@ -91,12 +70,7 @@
                     </div>
                     <div class="feature">
                         <div class="feature__icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M9 10h.01" />
-                                <path d="M15 10h.01" />
-                                <path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z" />
-                            </svg>
+                            <svg lucideGhost [size]="20" aria-hidden="true"></svg>
                         </div>
                         <div class="feature__body">
                             <p class="feature__label">{{ 'ABOUT.FEATURE_LETHE_LABEL' | translate }}</p>
@@ -105,10 +79,7 @@
                     </div>
                     <div class="feature">
                         <div class="feature__icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
-                            </svg>
+                            <svg lucideGhost [size]="20" aria-hidden="true"></svg>
                         </div>
                         <div class="feature__body">
                             <p class="feature__label">{{ 'ABOUT.FEATURE_CHARON_LABEL' | translate }}</p>
@@ -117,11 +88,7 @@
                     </div>
                     <div class="feature">
                         <div class="feature__icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-                                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-                            </svg>
+                            <svg lucideBell [size]="20" aria-hidden="true"></svg>
                         </div>
                         <div class="feature__body">
                             <p class="feature__label">{{ 'ABOUT.FEATURE_PUSH_LABEL' | translate }}</p>
@@ -130,13 +97,7 @@
                     </div>
                     <div class="feature">
                         <div class="feature__icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-                                <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-                                <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-                                <line x1="2" y1="2" x2="22" y2="22" />
-                            </svg>
+                            <svg lucideBellOff [size]="20" aria-hidden="true"></svg>
                         </div>
                         <div class="feature__body">
                             <p class="feature__label">{{ 'ABOUT.FEATURE_HIDDEN_LABEL' | translate }}</p>

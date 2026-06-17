@@ -1,10 +1,11 @@
 import { Component, inject } from '@angular/core';
+import { LucideX } from "@lucide/angular";
 import { TranslatePipe } from '@ngx-translate/core';
 import { PwaInstallService } from '../../core/services/pwa-install.service';
 
 @Component({
     selector: 'app-pwa-install-banner',
-    imports: [TranslatePipe],
+    imports: [TranslatePipe, LucideX],
     templateUrl: './pwa-install-banner.component.html',
     styleUrl: './pwa-install-banner.component.scss',
 })

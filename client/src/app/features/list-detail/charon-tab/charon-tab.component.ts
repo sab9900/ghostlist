@@ -1,4 +1,5 @@
 import { Component, effect, ElementRef, inject, OnDestroy, signal, untracked, ViewChild } from '@angular/core';
+import { LucideFileText, LucideImage, LucideMic, LucidePaperclip } from "@lucide/angular";
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { CharonDropDto } from '../../../core/models';
@@ -8,8 +9,9 @@ import { HapticsService } from '../../../core/services/haptics.service';
 import { ImageViewerService } from '../../../core/services/image-viewer.service';
 import { UserIdService } from '../../../core/services/user-id.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
-import { AppStore } from '../../../store/app.store';
 import { AudioWaveformPlayerComponent } from '../../../shared/audio-waveform-player/audio-waveform-player.component';
+import { AppStore } from '../../../store/app.store';
+
 
 interface CharonMeta {
     fileName: string;
@@ -52,7 +54,7 @@ function isAllowedFile(file: File): boolean {
 
 @Component({
     selector: 'app-charon-tab',
-    imports: [TranslatePipe, AudioWaveformPlayerComponent],
+    imports: [TranslatePipe, AudioWaveformPlayerComponent, LucidePaperclip, LucideMic, LucideImage, LucideFileText],
     templateUrl: './charon-tab.component.html',
     styleUrl: './charon-tab.component.scss',
 })
@@ -289,8 +291,8 @@ export class CharonTabComponent implements OnDestroy {
             const reason = !navigator.mediaDevices
                 ? 'mediaDevices undefined'
                 : !navigator.mediaDevices.getUserMedia
-                  ? 'getUserMedia undefined'
-                  : 'MediaRecorder undefined';
+                    ? 'getUserMedia undefined'
+                    : 'MediaRecorder undefined';
             this.recordingDebugError.set(reason);
             this.recordingNotSupported.set(true);
             setTimeout(() => { this.recordingNotSupported.set(false); this.recordingDebugError.set(null); }, 8000);
