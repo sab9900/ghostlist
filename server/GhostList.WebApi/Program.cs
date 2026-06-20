@@ -40,6 +40,7 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
+builder.Services.AddHealthChecks();
 builder.Services.AddMemoryCache();
 builder.Services.AddSignalR(options =>
 {
@@ -75,6 +76,7 @@ app.UseAuthorization();
 app.UseMiddleware<AdminAuthMiddleware>();
 app.UseMiddleware<CiAuthMiddleware>();
 
+app.MapHealthChecks("/health");
 app.MapControllers();
 app.MapHub<GhostListHub>("/hubs/ghostlist");
 app.Run();

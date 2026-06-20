@@ -7,11 +7,12 @@ namespace GhostList.Application.Tests.Features.ListMembers;
 
 public class MarkItemsReadCommandHandlerTests
 {
-    private static GhostListMember CreateMember(Guid listId, string deviceId) => new()
+    private static GhostListMember CreateMember(Guid listId, string deviceId, string? userId = null) => new()
     {
         Id = Guid.NewGuid(),
         GhostListId = listId,
         DeviceId = deviceId,
+        UserId = userId,
         EncryptedPayload = "payload",
         InitializationVector = "iv",
         UpdatedAt = DateTimeOffset.UtcNow
@@ -95,5 +96,26 @@ public class MarkItemsReadCommandHandlerTests
         await handler.Handle(new MarkItemsReadCommand(list.Id, "unknown-device", [item.Id]), CancellationToken.None);
 
         context.ItemReadReceipts.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Handle_SecondDeviceSameUser_DoesNotCreateDuplicateReceipt()
+    {
+        await using var context = DbContextFactory.Create();
+        var list = Domain.Entities.GhostList.Create();
+        var item = GhostListItem.Create(list.Id, "payload", "iv", senderDeviceId: "device2");
+        var memberPhone = CreateMember(list.Id, "phone", userId: "user-abc");
+        var memberLaptop = CreateMember(list.Id, "laptop", userId: "user-abc");
+
+        context.GhostLists.Add(list);
+        context.GhostListItems.Add(item);
+        context.GhostListMembers.AddRange(memberPhone, memberLaptop);
+        await context.SaveChangesAsync();
+
+        var handler = new MarkItemsReadCommandHandler(context);
+        await handler.Handle(new MarkItemsReadCommand(list.Id, "phone", [item.Id], UserId: "user-abc"), CancellationToken.None);
+        await handler.Handle(new MarkItemsReadCommand(list.Id, "laptop", [item.Id], UserId: "user-abc"), CancellationToken.None);
+
+        context.ItemReadReceipts.Count(r => r.ItemId == item.Id).Should().Be(1);
     }
 }

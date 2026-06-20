@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GhostList.Application.Features.Charon.Commands.MarkCharonDropViewed;
 
-public record MarkCharonDropViewedCommand(Guid DropId, string DeviceId) : IRequest;
+public record MarkCharonDropViewedCommand(Guid DropId, string DeviceId, string? UserId = null) : IRequest;
 
 public class MarkCharonDropViewedCommandValidator : AbstractValidator<MarkCharonDropViewedCommand>
 {
@@ -28,7 +28,9 @@ public class MarkCharonDropViewedCommandHandler(IApplicationDbContext context, I
             ?? throw new NotFoundException(nameof(CharonDrop), request.DropId);
 
         var alreadyViewed = await context.CharonViewReceipts
-            .AnyAsync(r => r.DropId == drop.Id && r.DeviceId == request.DeviceId, cancellationToken);
+            .AnyAsync(r => r.DropId == drop.Id &&
+                (request.UserId != null ? r.UserId == request.UserId : r.DeviceId == request.DeviceId),
+                cancellationToken);
 
         if (!alreadyViewed)
         {
@@ -36,33 +38,43 @@ public class MarkCharonDropViewedCommandHandler(IApplicationDbContext context, I
             {
                 DropId = drop.Id,
                 DeviceId = request.DeviceId,
+                UserId = request.UserId,
                 ViewedAt = DateTimeOffset.UtcNow,
             });
 
             await context.SaveChangesAsync(cancellationToken);
         }
 
-        var recipientDeviceIds = await context.GhostListMembers
-            .Where(m => m.GhostListId == drop.GhostListId && m.DeviceId != drop.SenderDeviceId)
-            .Select(m => m.DeviceId)
+        var recipientMembers = await context.GhostListMembers
+            .Where(m => m.GhostListId == drop.GhostListId)
+            .Where(m => !(
+                (drop.SenderUserId != null && m.UserId != null && m.UserId == drop.SenderUserId)
+                || (m.DeviceId == drop.SenderDeviceId)))
+            .Select(m => new { m.DeviceId, m.UserId })
             .ToListAsync(cancellationToken);
+
+        var recipientIdentities = recipientMembers
+            .Select(m => m.UserId ?? m.DeviceId)
+            .ToHashSet();
 
         bool fullyViewed;
 
-        if (recipientDeviceIds.Count == 0)
+        if (recipientIdentities.Count == 0)
         {
-
             fullyViewed = true;
         }
         else
         {
-            var viewedDeviceIds = await context.CharonViewReceipts
+            var viewReceipts = await context.CharonViewReceipts
                 .Where(r => r.DropId == drop.Id)
-                .Select(r => r.DeviceId)
+                .Select(r => new { r.DeviceId, r.UserId })
                 .ToListAsync(cancellationToken);
 
-            var viewedSet = viewedDeviceIds.ToHashSet();
-            fullyViewed = recipientDeviceIds.All(viewedSet.Contains);
+            var viewedIdentities = viewReceipts
+                .Select(r => r.UserId ?? r.DeviceId)
+                .ToHashSet();
+
+            fullyViewed = recipientIdentities.All(viewedIdentities.Contains);
         }
 
         if (!fullyViewed)

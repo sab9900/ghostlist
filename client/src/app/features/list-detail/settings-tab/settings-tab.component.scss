@@ -47,9 +47,18 @@
     font-size: var(--text-base);
     font-family: var(--font-sans);
     outline: none;
+    min-width: 0;
+    box-sizing: border-box;
 
     &:focus {
         border-color: var(--color-primary);
+    }
+
+    &--datetime {
+        color-scheme: dark;
+        font-size: var(--text-sm);
+        -webkit-appearance: none;
+        appearance: none;
     }
 }
 

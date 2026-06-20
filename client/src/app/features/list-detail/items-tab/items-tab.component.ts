@@ -1,16 +1,17 @@
-import { Component, computed, effect, HostListener, inject, OnDestroy, signal, untracked } from '@angular/core';
+import { Component, computed, effect, HostListener, inject, OnDestroy, OnInit, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucideCheck, LucideCircleX, LucideClock, LucideEllipsisVertical, LucideTrash2 } from "@lucide/angular";
 import { TranslatePipe } from '@ngx-translate/core';
 import { Subscription } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../../api/api.service';
 import { HubService } from '../../../api/hub.service';
 import { ViewportDwellDirective } from '../../../core/directives/viewport-dwell.directive';
 import { GhostListItem, ListMember } from '../../../core/models';
 import { CryptoService } from '../../../core/services/crypto.service';
 import { DeviceIdService } from '../../../core/services/device-id.service';
-import { DeviceTokenService } from '../../../core/services/device-token.service';
 import { HapticsService } from '../../../core/services/haptics.service';
+import { IcalService } from '../../../core/services/ical.service';
 import { UserIdService } from '../../../core/services/user-id.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 import { AppStore } from '../../../store/app.store';
@@ -46,7 +47,7 @@ const SWIPE_MAX_DISTANCE = 80;
     templateUrl: './items-tab.component.html',
     styleUrl: './items-tab.component.scss',
 })
-export class ItemsTabComponent implements OnDestroy {
+export class ItemsTabComponent implements OnInit, OnDestroy {
     private readonly store = inject(AppStore);
     private readonly crypto = inject(CryptoService);
     private readonly haptics = inject(HapticsService);
@@ -55,9 +56,8 @@ export class ItemsTabComponent implements OnDestroy {
     private readonly prefs = inject(UserPreferencesService);
     private readonly api = inject(ApiService);
     private readonly hub = inject(HubService);
-    private readonly deviceToken = inject(DeviceTokenService);
-
-    protected readonly hasPushToken = computed(() => this.deviceToken.token() !== null);
+    private readonly ical = inject(IcalService);
+    private readonly route = inject(ActivatedRoute);
 
     protected readonly newItemText = signal('');
     protected readonly addingItem = signal(false);
@@ -66,6 +66,7 @@ export class ItemsTabComponent implements OnDestroy {
 
     // ── context menu ──────────────────────────────────────────────────────
     protected readonly openMenuId = signal<string | null>(null);
+    protected readonly menuAbove = signal(false);
 
     // ── swipe-to-delete ───────────────────────────────────────────────────
     readonly swipeTriggerDistance = SWIPE_TRIGGER_DISTANCE;
@@ -85,11 +86,19 @@ export class ItemsTabComponent implements OnDestroy {
     private readonly banneredIds = new Set<string>();
     private readonly hubSub: Subscription;
 
+    // ── highlight (deep-link from iCal / push) ────────────────────────────
+    protected readonly highlightedItemId = signal<string | null>(null);
+    private pendingHighlightId: string | null = null;
+    private highlightApplied = false;
+    private highlightClearTimer: ReturnType<typeof setTimeout> | null = null;
+
     // ── reminder dialog ───────────────────────────────────────────────────
     protected readonly reminderItem = signal<DecryptedItem | null>(null);
     protected reminderDateTime = '';
     protected readonly savingReminder = signal(false);
     protected readonly reminderSaved = signal(false);
+    private lastSavedRemindAt = '';
+    private lastSavedItemId = '';
 
     /** Minimum value for the datetime-local input: now + 1 minute (local time, YYYY-MM-DDTHH:MM). */
     protected readonly reminderMinDateTime = computed(() => {
@@ -120,6 +129,7 @@ export class ItemsTabComponent implements OnDestroy {
         effect(() => {
             void this.store.items();
             void this.members();
+            void this.store.unreadItemIds();
             void this.decryptItems();
         });
 
@@ -140,8 +150,18 @@ export class ItemsTabComponent implements OnDestroy {
         });
     }
 
+    ngOnInit(): void {
+        const itemId = this.route.snapshot.queryParamMap.get('highlight');
+        if (itemId) {
+            this.pendingHighlightId = itemId;
+            this.highlightApplied = false;
+            this.highlightedItemId.set(itemId);
+        }
+    }
+
     ngOnDestroy(): void {
         this.hubSub.unsubscribe();
+        if (this.highlightClearTimer !== null) clearTimeout(this.highlightClearTimer);
     }
 
     private async loadMembers(listId: string | null): Promise<void> {
@@ -225,6 +245,16 @@ export class ItemsTabComponent implements OnDestroy {
         }
     }
 
+    private applyHighlight(itemId: string): void {
+        if (this.highlightClearTimer !== null) clearTimeout(this.highlightClearTimer);
+        this.highlightedItemId.set(itemId);
+        setTimeout(() => this.scrollToItem(itemId), 60);
+        this.highlightClearTimer = setTimeout(() => {
+            this.highlightedItemId.set(null);
+            this.pendingHighlightId = null;
+        }, 4000);
+    }
+
     private scrollToItem(itemId: string): void {
         // Give the DOM a tick, then scroll the item into view
         setTimeout(() => {
@@ -267,14 +297,14 @@ export class ItemsTabComponent implements OnDestroy {
         if (userId === null && deviceId === null) return null;
 
         if (this.isMineBySenderIds(userId, deviceId)) {
-            return this.prefs.senderName() || 'Anonymous';
+            return this.prefs.senderName() || null;
         }
 
         const member = this.members().find(m =>
             (userId !== null && m.userId === userId) ||
             (deviceId !== null && m.deviceId === deviceId),
         );
-        return member?.displayName || 'Anonymous';
+        return member?.displayName || null;
     }
 
     private async decryptItems(): Promise<void> {
@@ -295,6 +325,11 @@ export class ItemsTabComponent implements OnDestroy {
             })),
         );
         this.decryptedItems.set(items);
+
+        if (this.pendingHighlightId && !this.highlightApplied && items.some(i => i.id === this.pendingHighlightId)) {
+            this.highlightApplied = true;
+            this.applyHighlight(this.pendingHighlightId);
+        }
     }
 
     onItemDwellRead(itemId: string): void {
@@ -346,7 +381,16 @@ export class ItemsTabComponent implements OnDestroy {
     // ── context menu ──────────────────────────────────────────────────────
     toggleMenu(id: string, event: Event): void {
         event.stopPropagation();
-        this.openMenuId.set(this.openMenuId() === id ? null : id);
+        if (this.openMenuId() === id) {
+            this.openMenuId.set(null);
+            return;
+        }
+        const btn = event.currentTarget as HTMLElement;
+        const rect = btn.getBoundingClientRect();
+        const container = btn.closest('.item-list');
+        const containerBottom = container ? container.getBoundingClientRect().bottom : window.innerHeight;
+        this.menuAbove.set(containerBottom - rect.bottom < 120);
+        this.openMenuId.set(id);
     }
 
     @HostListener('document:click')
@@ -411,6 +455,14 @@ export class ItemsTabComponent implements OnDestroy {
 
     closeReminder(): void {
         this.reminderItem.set(null);
+        this.reminderSaved.set(false);
+    }
+
+    downloadIcal(): void {
+        const listId = this.store.currentListId();
+        if (!listId || !this.lastSavedItemId || !this.lastSavedRemindAt) return;
+        this.ical.download(listId, this.lastSavedItemId, this.lastSavedRemindAt);
+        setTimeout(() => this.closeReminder(), 400);
     }
 
     async saveReminder(): Promise<void> {
@@ -430,14 +482,14 @@ export class ItemsTabComponent implements OnDestroy {
             }).toPromise();
 
             if (reminderId) {
-                // update local map immediately — no reload needed
                 const updated = new Map(this.reminders());
                 updated.set(item.id, { id: reminderId, remindAt });
                 this.reminders.set(updated);
+                this.lastSavedItemId = item.id;
+                this.lastSavedRemindAt = remindAt;
             }
 
             this.reminderSaved.set(true);
-            setTimeout(() => this.closeReminder(), 1200);
         } catch {
         } finally {
             this.savingReminder.set(false);

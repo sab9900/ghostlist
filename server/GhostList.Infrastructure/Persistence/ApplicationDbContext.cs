@@ -15,8 +15,6 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<GhostListMember> GhostListMembers => Set<GhostListMember>();
     public DbSet<DailyUsageStat> DailyUsageStats => Set<DailyUsageStat>();
     public DbSet<LocaleStat> LocaleStats => Set<LocaleStat>();
-    public DbSet<GhostMessageImage> GhostMessageImages => Set<GhostMessageImage>();
-    public DbSet<GhostMessageAudio> GhostMessageAudios => Set<GhostMessageAudio>();
     public DbSet<InfoMessage> InfoMessages => Set<InfoMessage>();
     public DbSet<MessageReadReceipt> MessageReadReceipts => Set<MessageReadReceipt>();
     public DbSet<ItemReadReceipt> ItemReadReceipts => Set<ItemReadReceipt>();
@@ -112,28 +110,6 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.Country).HasMaxLength(2);
         });
 
-        modelBuilder.Entity<GhostMessageImage>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.EncryptedImage).IsRequired();
-            entity.Property(e => e.ImageInitializationVector).IsRequired();
-            entity.HasOne<GhostChatMessage>()
-                  .WithOne()
-                  .HasForeignKey<GhostMessageImage>(e => e.Id)
-                  .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<GhostMessageAudio>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.EncryptedAudio).IsRequired();
-            entity.Property(e => e.AudioInitializationVector).IsRequired();
-            entity.HasOne<GhostChatMessage>()
-                  .WithOne()
-                  .HasForeignKey<GhostMessageAudio>(e => e.Id)
-                  .OnDelete(DeleteBehavior.Cascade);
-        });
-
         modelBuilder.Entity<InfoMessage>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -149,6 +125,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         {
             entity.HasKey(e => new { e.MessageId, e.DeviceId });
             entity.Property(e => e.DeviceId).HasMaxLength(64).IsRequired();
+            entity.Property(e => e.UserId).HasMaxLength(128);
+            entity.HasIndex(e => new { e.MessageId, e.UserId });
             entity.HasOne<GhostChatMessage>()
                   .WithMany()
                   .HasForeignKey(e => e.MessageId)
@@ -159,6 +137,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         {
             entity.HasKey(e => new { e.ItemId, e.DeviceId });
             entity.Property(e => e.DeviceId).HasMaxLength(64).IsRequired();
+            entity.Property(e => e.UserId).HasMaxLength(128);
+            entity.HasIndex(e => new { e.ItemId, e.UserId });
             entity.HasOne<GhostListItem>()
                   .WithMany()
                   .HasForeignKey(e => e.ItemId)
@@ -168,8 +148,6 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<CharonDrop>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.EncryptedContent).IsRequired();
-            entity.Property(e => e.ContentInitializationVector).IsRequired();
             entity.Property(e => e.EncryptedMetadata).IsRequired();
             entity.Property(e => e.MetadataInitializationVector).IsRequired();
             entity.Property(e => e.SenderDeviceId).HasMaxLength(64);
@@ -185,6 +163,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         {
             entity.HasKey(e => new { e.DropId, e.DeviceId });
             entity.Property(e => e.DeviceId).HasMaxLength(64).IsRequired();
+            entity.Property(e => e.UserId).HasMaxLength(128);
+            entity.HasIndex(e => new { e.DropId, e.UserId });
             entity.HasOne<CharonDrop>()
                   .WithMany()
                   .HasForeignKey(e => e.DropId)
@@ -195,7 +175,6 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.DeviceId).HasMaxLength(64).IsRequired();
-            // ItemId is intentionally NOT a FK — the item may be deleted before the reminder fires
             entity.HasIndex(e => new { e.IsSent, e.RemindAt });
             entity.HasIndex(e => new { e.IsAcknowledged, e.RemindAt });
             entity.HasOne<Domain.Entities.GhostList>()
@@ -223,56 +202,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         => base.SaveChangesAsync(cancellationToken);
 
-    public async Task<int> DeleteExpiredImageBlobsAsync(TimeSpan maxAge, CancellationToken cancellationToken)
-    {
-        if (!Database.IsRelational())
-        {
-
-            var cutoff = DateTime.UtcNow - maxAge;
-            var expired = await GhostMessageImages
-                .Where(i => i.CreatedAt <= cutoff)
-                .ToListAsync(cancellationToken);
-            if (expired.Count == 0) return 0;
-            GhostMessageImages.RemoveRange(expired);
-            await SaveChangesAsync(cancellationToken);
-            return expired.Count;
-        }
-
-        return await Database.ExecuteSqlInterpolatedAsync(
-            $"""
-            DELETE FROM "GhostMessageImages"
-            WHERE "CreatedAt" <= NOW() - {maxAge}
-            """,
-            cancellationToken);
-    }
-
-    public async Task<int> DeleteExpiredAudioBlobsAsync(TimeSpan maxAge, CancellationToken cancellationToken)
-    {
-        if (!Database.IsRelational())
-        {
-            var cutoff = DateTime.UtcNow - maxAge;
-            var expired = await GhostMessageAudios
-                .Where(a => a.CreatedAt <= cutoff)
-                .ToListAsync(cancellationToken);
-            if (expired.Count == 0) return 0;
-            GhostMessageAudios.RemoveRange(expired);
-            await SaveChangesAsync(cancellationToken);
-            return expired.Count;
-        }
-
-        return await Database.ExecuteSqlInterpolatedAsync(
-            $"""
-            DELETE FROM "GhostMessageAudios"
-            WHERE "CreatedAt" <= NOW() - {maxAge}
-            """,
-            cancellationToken);
-    }
-
     public async Task<IReadOnlyList<DeletedItemInfo>> DeleteExpiredCharonDropsAsync(TimeSpan maxAge, CancellationToken cancellationToken)
     {
         if (!Database.IsRelational())
         {
-
             var cutoff = DateTime.UtcNow - maxAge;
             var expired = await CharonDrops
                 .Where(d => d.CreatedAt <= cutoff)
@@ -312,7 +245,6 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
         if (!Database.IsRelational())
         {
-
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
             var stat = await DailyUsageStats.FindAsync([today], cancellationToken);
             if (stat is null)
@@ -333,8 +265,6 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             return;
         }
 
-        // column is derived from a closed enum switch with 4 hardcoded string literals — no injection risk.
-        // Column names cannot be SQL-parameterized, so ExecuteSqlAsync is not applicable here.
 #pragma warning disable EF1002
         await Database.ExecuteSqlRawAsync(
             $"""
@@ -354,7 +284,6 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
         if (!Database.IsRelational())
         {
-
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
             var stat = await LocaleStats.FindAsync([today, language, country], cancellationToken);
             if (stat is null)

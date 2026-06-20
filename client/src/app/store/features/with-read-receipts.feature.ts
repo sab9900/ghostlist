@@ -64,9 +64,9 @@ export function withReadReceipts() {
                 const ids = pendingMessageIds[listId];
                 if (!ids || ids.size === 0) return;
                 const batch = [...ids];
-                ids.clear();
                 try {
                     await firstValueFrom(api.markMessagesRead(listId, deviceId.deviceId, batch));
+                    batch.forEach(id => ids.delete(id));
                 } catch { }
             }
 
@@ -74,9 +74,9 @@ export function withReadReceipts() {
                 const ids = pendingItemIds[listId];
                 if (!ids || ids.size === 0) return;
                 const batch = [...ids];
-                ids.clear();
                 try {
                     await firstValueFrom(api.markItemsRead(listId, deviceId.deviceId, batch));
+                    batch.forEach(id => ids.delete(id));
                 } catch { }
             }
 
@@ -212,9 +212,32 @@ export function withReadReceipts() {
                     } catch { }
                 },
 
+                async flushAllPendingReads(): Promise<void> {
+                    const listIds = new Set([
+                        ...Object.keys(pendingMessageIds).filter(id => (pendingMessageIds[id]?.size ?? 0) > 0),
+                        ...Object.keys(pendingItemIds).filter(id => (pendingItemIds[id]?.size ?? 0) > 0),
+                    ]);
+
+                    for (const listId of listIds) {
+                        for (const kind of ['messages', 'items'] as const) {
+                            const key = `${kind}:${listId}`;
+                            if (flushTimers[key]) {
+                                clearTimeout(flushTimers[key]);
+                                delete flushTimers[key];
+                            }
+                        }
+                    }
+
+                    await Promise.all([...listIds].map(async (listId) => {
+                        await Promise.all([flushMessages(listId), flushItems(listId)]);
+                    }));
+                },
+
                 async seedUnreadSummaries(): Promise<void> {
                     const lists = store.knownLists();
                     if (lists.length === 0) return;
+
+                    const currentListId = store.currentListId();
 
                     const results = await Promise.all(lists.map(async (l) => {
                         try {
@@ -228,12 +251,14 @@ export function withReadReceipts() {
                     const unreadItemCounts = { ...store.unreadItemCounts() };
                     const unreadMessageIds = { ...store.unreadMessageIds() };
                     const unreadItemIds = { ...store.unreadItemIds() };
-                    const currentListId = store.currentListId();
 
                     for (const r of results) {
                         if (!r) continue;
 
                         if (r.id === currentListId) continue;
+                        if ((pendingMessageIds[r.id]?.size ?? 0) > 0) continue;
+                        if ((pendingItemIds[r.id]?.size ?? 0) > 0) continue;
+
                         unreadCounts[r.id] = r.summary.unreadMessageCount;
                         unreadItemCounts[r.id] = r.summary.unreadItemCount;
                         unreadMessageIds[r.id] = r.summary.unreadMessageIds;

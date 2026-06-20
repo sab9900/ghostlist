@@ -7,7 +7,7 @@ namespace GhostList.Application.Features.Admin.Queries.GetAdminStats;
 
 public record GetAdminStatsQuery(int DaysOfHistory = 30) : IRequest<AdminStatsDto>;
 
-public record AdminCurrentCountsDto(int Lists, int Items, int Messages, int Members, int DeviceSubscriptions, int UniqueUsers);
+public record AdminCurrentCountsDto(int Lists, int Items, int Messages, int Members, int DeviceSubscriptions, int UniqueUsers, int DistinctDevices);
 
 public record AdminTotalCountsDto(long Lists, long Items, long Messages, long Members);
 
@@ -16,13 +16,19 @@ public record AdminDailyStatDto(DateOnly Date, int Lists, int Items, int Message
 public record AdminEngagementDto(
     double AvgItemsPerList,
     double AvgMembersPerList,
-    double ItemCompletionRate,
+    double AvgMembersPerCollaborativeList,
     double CollaborativeListsShare,
+    double ProtectedListsShare,
     double PushOptInRate,
     int PlatformIos,
     int PlatformAndroid,
     int PlatformWeb,
-    double MultiDeviceUserShare);
+    double MultiDeviceUserShare,
+    int ActiveLists7d,
+    int ActiveLists30d,
+    int CharonDropCount,
+    int ActiveReminderCount,
+    double ReminderSentRate);
 
 public record AdminLanguageStatDto(string Language, long Count, double Share);
 
@@ -33,24 +39,33 @@ public record AdminLocaleBreakdownDto(
     List<AdminCountryStatDto> Countries,
     double UnknownCountryShare);
 
+public record AdminTtlStatDto(string Label, long Count, double Share);
+
 public record AdminStatsDto(
     AdminCurrentCountsDto Current,
     AdminTotalCountsDto AllTime,
     List<AdminDailyStatDto> Daily,
     AdminEngagementDto Engagement,
-    AdminLocaleBreakdownDto LocaleBreakdown);
+    AdminLocaleBreakdownDto LocaleBreakdown,
+    List<AdminTtlStatDto> TtlBreakdown);
 
 public class GetAdminStatsQueryHandler(IApplicationDbContext context) : IRequestHandler<GetAdminStatsQuery, AdminStatsDto>
 {
     public async Task<AdminStatsDto> Handle(GetAdminStatsQuery request, CancellationToken cancellationToken)
     {
+        var distinctDevices = await context.GhostListMembers
+            .Select(m => m.DeviceId)
+            .Distinct()
+            .CountAsync(cancellationToken);
+
         var current = new AdminCurrentCountsDto(
             await context.GhostLists.CountAsync(cancellationToken),
             await context.GhostListItems.CountAsync(cancellationToken),
             await context.GhostChatMessages.CountAsync(cancellationToken),
             await context.GhostListMembers.CountAsync(cancellationToken),
             await context.DeviceSubscriptions.CountAsync(cancellationToken),
-            await context.GhostListMembers.Where(m => m.UserId != null).Select(m => m.UserId).Distinct().CountAsync(cancellationToken));
+            await context.GhostListMembers.Where(m => m.UserId != null).Select(m => m.UserId).Distinct().CountAsync(cancellationToken),
+            distinctDevices);
 
         var allTime = await context.DailyUsageStats
             .GroupBy(_ => 1)
@@ -82,9 +97,43 @@ public class GetAdminStatsQueryHandler(IApplicationDbContext context) : IRequest
 
         var engagement = await ComputeEngagement(context, current, cancellationToken);
         var localeBreakdown = await ComputeLocaleBreakdown(context, cancellationToken);
+        var ttlBreakdown = await ComputeTtlBreakdown(context, cancellationToken);
 
-        return new AdminStatsDto(current, allTime, daily, engagement, localeBreakdown);
+        return new AdminStatsDto(current, allTime, daily, engagement, localeBreakdown, ttlBreakdown);
     }
+
+    private static async Task<List<AdminTtlStatDto>> ComputeTtlBreakdown(
+        IApplicationDbContext context, CancellationToken cancellationToken)
+    {
+        var totals = await context.GhostLists
+            .GroupBy(l => l.CompletedItemsTtl)
+            .Select(g => new { Ttl = g.Key, Count = (long)g.Count() })
+            .ToListAsync(cancellationToken);
+
+        var total = totals.Sum(t => t.Count);
+
+        return totals
+            .OrderByDescending(t => t.Count)
+            .Select(t => new AdminTtlStatDto(
+                TtlLabel(t.Ttl),
+                t.Count,
+                total > 0 ? (double)t.Count / total : 0))
+            .ToList();
+    }
+
+    private static string TtlLabel(DeleteAfterDuration ttl) => ttl switch
+    {
+        DeleteAfterDuration.Immediately => "Immediately",
+        DeleteAfterDuration.OneHour => "1 hour",
+        DeleteAfterDuration.SixHours => "6 hours",
+        DeleteAfterDuration.TwelveHours => "12 hours",
+        DeleteAfterDuration.OneDay => "1 day",
+        DeleteAfterDuration.ThreeDays => "3 days",
+        DeleteAfterDuration.OneWeek => "1 week",
+        DeleteAfterDuration.OneMonth => "1 month",
+        DeleteAfterDuration.ThreeMonths => "3 months",
+        _ => ttl.ToString()
+    };
 
     private static async Task<AdminLocaleBreakdownDto> ComputeLocaleBreakdown(
         IApplicationDbContext context, CancellationToken cancellationToken)
@@ -125,19 +174,21 @@ public class GetAdminStatsQueryHandler(IApplicationDbContext context) : IRequest
         var avgItemsPerList = current.Lists > 0 ? (double)current.Items / current.Lists : 0;
         var avgMembersPerList = current.Lists > 0 ? (double)current.Members / current.Lists : 0;
 
-        var checkedItems = await context.GhostListItems.CountAsync(i => i.IsChecked, cancellationToken);
-        var itemCompletionRate = current.Items > 0 ? (double)checkedItems / current.Items : 0;
-
         var memberCountsByList = await context.GhostListMembers
             .GroupBy(m => m.GhostListId)
             .Select(g => g.Count())
             .ToListAsync(cancellationToken);
         var listsWithMembers = memberCountsByList.Count;
-        var collaborativeLists = memberCountsByList.Count(c => c > 1);
+        var collaborativeCounts = memberCountsByList.Where(c => c > 1).ToList();
+        var collaborativeLists = collaborativeCounts.Count;
         var collaborativeListsShare = listsWithMembers > 0 ? (double)collaborativeLists / listsWithMembers : 0;
+        var avgMembersPerCollaborativeList = collaborativeLists > 0 ? (double)collaborativeCounts.Sum() / collaborativeLists : 0;
+
+        var protectedLists = await context.GhostLists.CountAsync(l => l.OwnerTokenHash != null, cancellationToken);
+        var protectedListsShare = current.Lists > 0 ? (double)protectedLists / current.Lists : 0;
 
         var optedInSubscriptions = await context.DeviceSubscriptions
-            .CountAsync(d => d.NotifyOnMessage || d.NotifyOnItemsChanged, cancellationToken);
+            .CountAsync(d => d.NotifyOnMessage || d.NotifyOnItemsChanged || d.NotifyOnLethe || d.NotifyOnCharon, cancellationToken);
         var pushOptInRate = current.DeviceSubscriptions > 0 ? (double)optedInSubscriptions / current.DeviceSubscriptions : 0;
 
         var platformCounts = await context.DeviceSubscriptions
@@ -161,15 +212,45 @@ public class GetAdminStatsQueryHandler(IApplicationDbContext context) : IRequest
         var multiDeviceUsers = userDeviceCounts.Count(c => c > 1);
         var multiDeviceUserShare = totalUsers > 0 ? (double)multiDeviceUsers / totalUsers : 0;
 
+        var cutoff7d = DateTime.UtcNow.AddDays(-7);
+        var cutoff30d = DateTime.UtcNow.AddDays(-30);
+
+        var activeLists7d = await context.GhostLists
+            .Where(l => l.CreatedAt >= cutoff7d
+                || l.Items.Any(i => i.CreatedAt >= cutoff7d)
+                || l.ChatMessages.Any(m => m.CreatedAt >= cutoff7d))
+            .CountAsync(cancellationToken);
+
+        var activeLists30d = await context.GhostLists
+            .Where(l => l.CreatedAt >= cutoff30d
+                || l.Items.Any(i => i.CreatedAt >= cutoff30d)
+                || l.ChatMessages.Any(m => m.CreatedAt >= cutoff30d))
+            .CountAsync(cancellationToken);
+
+        var charonDropCount = await context.CharonDrops.CountAsync(cancellationToken);
+
+        var now = DateTime.UtcNow;
+        var totalReminders = await context.ItemReminders.CountAsync(cancellationToken);
+        var sentReminders = await context.ItemReminders.CountAsync(r => r.IsSent, cancellationToken);
+        var activeReminderCount = await context.ItemReminders
+            .CountAsync(r => !r.IsSent && r.RemindAt >= now, cancellationToken);
+        var reminderSentRate = totalReminders > 0 ? (double)sentReminders / totalReminders : 0;
+
         return new AdminEngagementDto(
             avgItemsPerList,
             avgMembersPerList,
-            itemCompletionRate,
+            avgMembersPerCollaborativeList,
             collaborativeListsShare,
+            protectedListsShare,
             pushOptInRate,
             platformIos,
             platformAndroid,
             platformWeb,
-            multiDeviceUserShare);
+            multiDeviceUserShare,
+            activeLists7d,
+            activeLists30d,
+            charonDropCount,
+            activeReminderCount,
+            reminderSentRate);
     }
 }

@@ -47,7 +47,12 @@
     "MARK_ALL_READ_TITLE": "Marcar todo como leído",
     "MARK_ALL_READ_HINT": "Esto restablece el estado \"nuevo\" de todos los elementos y mensajes en todas las listas.",
     "MARK_ALL_READ_BTN": "Marcar todo leído",
-    "MARK_ALL_READ_MARKING": "Marcando…"
+    "MARK_ALL_READ_MARKING": "Marcando…",
+    "IMPORT_PASTE_URL": "Pegar enlace",
+    "IMPORT_URL_HINT": "Pega el enlace compartido (desde Ajustes → Copiar enlace).",
+    "IMPORT_URL_PLACEHOLDER": "https://app.ghost-list.com/join/…",
+    "IMPORT_URL_BTN": "Importar",
+    "IMPORT_URL_INVALID": "Enlace inválido. Por favor pega un enlace de invitación válido de Ghost List."
   },
   "ITEMS": {
     "ADD_PLACEHOLDER": "Añadir elemento…",
@@ -65,7 +70,8 @@
     "REMINDER_SAVED": "✓ Recordatorio establecido",
     "SWIPE_DELETE_HINT": "Eliminar",
     "REMINDER_BANNER_DISMISS": "OK",
-    "REMINDER_BANNER_GO": "Ver"
+    "REMINDER_BANNER_GO": "Ver",
+    "REMINDER_ADD_TO_CALENDAR": "Añadir al calendario"
   },
   "CHAT": {
     "NO_MESSAGES": "Aún no hay mensajes.",
@@ -211,7 +217,10 @@
     "NOTIFY_ON_LETHE": "Invitaciones de Lethe",
     "NOTIFY_ON_LETHE_HINT": "Notificar cuando alguien te invite a susurrar en Lethe.",
     "NOTIFY_ON_CHARON": "Drops de Charon",
-    "NOTIFY_ON_CHARON_HINT": "Notificar cuando se publique un nuevo drop de Charon en esta lista."
+    "NOTIFY_ON_CHARON_HINT": "Notificar cuando se publique un nuevo drop de Charon en esta lista.",
+    "REMINDER_TITLE": "Recuérdamelo",
+    "REMINDER_HINT": "Descarga un evento de calendario que enlaza de vuelta a esta lista.",
+    "REMINDER_DOWNLOAD": "Añadir al calendario"
   },
   "JOIN": {
     "TITLE": "Importar lista",

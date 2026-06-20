@@ -1,8 +1,8 @@
+using GhostList.Application.Common;
 using GhostList.Application.Common.Exceptions;
 using GhostList.Application.Common.Interfaces;
 using GhostList.Domain.Entities;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace GhostList.Application.Features.GhostMessages.Queries.GetGhostMessageImage;
 
@@ -13,21 +13,30 @@ public record GhostMessageImageDto(
     string EncryptedImage,
     string ImageInitializationVector);
 
-public class GetGhostMessageImageQueryHandler(IApplicationDbContext context)
+public class GetGhostMessageImageQueryHandler(IBlobStorage blobStorage)
     : IRequestHandler<GetGhostMessageImageQuery, GhostMessageImageDto>
 {
     public async Task<GhostMessageImageDto> Handle(
         GetGhostMessageImageQuery request,
         CancellationToken cancellationToken)
     {
-        var image = await context.GhostMessageImages
-            .Where(i => i.Id == request.MessageId)
-            .Select(i => new GhostMessageImageDto(i.Id, i.EncryptedImage, i.ImageInitializationVector))
-            .FirstOrDefaultAsync(cancellationToken);
+        string payload;
+        try
+        {
+            payload = await blobStorage.GetAsync(BlobKeys.ChatImage(request.MessageId), cancellationToken);
+        }
+        catch
+        {
+            throw new NotFoundException(nameof(GhostMessageImage), request.MessageId);
+        }
 
-        if (image is null)
+        var separatorIndex = payload.IndexOf(':');
+        if (separatorIndex < 0)
             throw new NotFoundException(nameof(GhostMessageImage), request.MessageId);
 
-        return image;
+        var iv = payload[..separatorIndex];
+        var encryptedImage = payload[(separatorIndex + 1)..];
+
+        return new GhostMessageImageDto(request.MessageId, encryptedImage, iv);
     }
 }

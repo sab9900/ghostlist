@@ -54,6 +54,11 @@ public class GhostListHub(IMediator mediator, IPresenceTracker presence, IWhispe
         });
     }
 
+    public async Task NotifyTyping(string listId, string encryptedName, string nameIv)
+    {
+        await Clients.GroupExcept(listId, Context.ConnectionId).SendAsync("TypingIndicator", listId, encryptedName, nameIv);
+    }
+
     public Task SetAppState(string deviceId, bool isForeground)
     {
         presence.SetForeground(Context.ConnectionId, deviceId, isForeground);

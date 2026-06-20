@@ -15,67 +15,101 @@
     } @else if (error()) {
         <p class="dashboard__status dashboard__status--error">{{ error() }}</p>
     } @else if (stats(); as s) {
+
+        <h2 class="section-title">Current snapshot</h2>
         <section class="stat-grid">
             <div class="stat-card">
                 <span class="stat-card__label">Lists</span>
                 <span class="stat-card__value">{{ s.current.lists }}</span>
-                <span class="stat-card__sub">{{ s.allTime.lists }} total created</span>
+                <span class="stat-card__sub">{{ s.allTime.lists }} ever created</span>
             </div>
             <div class="stat-card">
                 <span class="stat-card__label">Items</span>
                 <span class="stat-card__value">{{ s.current.items }}</span>
-                <span class="stat-card__sub">{{ s.allTime.items }} total created</span>
+                <span class="stat-card__sub">{{ s.allTime.items }} ever created</span>
             </div>
             <div class="stat-card">
                 <span class="stat-card__label">Messages</span>
                 <span class="stat-card__value">{{ s.current.messages }}</span>
-                <span class="stat-card__sub">{{ s.allTime.messages }} total created</span>
+                <span class="stat-card__sub">{{ s.allTime.messages }} ever created</span>
             </div>
             <div class="stat-card">
                 <span class="stat-card__label">Members</span>
                 <span class="stat-card__value">{{ s.current.members }}</span>
-                <span class="stat-card__sub">{{ s.allTime.members }} total joined</span>
+                <span class="stat-card__sub">{{ s.allTime.members }} ever joined</span>
             </div>
             <div class="stat-card">
-                <span class="stat-card__label">Device subscriptions</span>
-                <span class="stat-card__value">{{ s.current.deviceSubscriptions }}</span>
-                <span class="stat-card__sub">currently active</span>
+                <span class="stat-card__label">Distinct devices</span>
+                <span class="stat-card__value">{{ s.current.distinctDevices }}</span>
+                <span class="stat-card__sub">unique device IDs (incl. anonymous)</span>
             </div>
             <div class="stat-card">
-                <span class="stat-card__label">Unique users</span>
+                <span class="stat-card__label">Signed-in users</span>
                 <span class="stat-card__value">{{ s.current.uniqueUsers }}</span>
-                <span class="stat-card__sub">distinct people (synced userId)</span>
+                <span class="stat-card__sub">distinct user IDs (logged-in only)</span>
             </div>
         </section>
 
+        <h2 class="section-title">Activity</h2>
         <section class="stat-grid">
+            <div class="stat-card">
+                <span class="stat-card__label">Active lists (7 d)</span>
+                <span class="stat-card__value">{{ s.engagement.activeLists7d }}</span>
+                <span class="stat-card__sub">created or had new items / messages</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card__label">Active lists (30 d)</span>
+                <span class="stat-card__value">{{ s.engagement.activeLists30d }}</span>
+                <span class="stat-card__sub">created or had new items / messages</span>
+            </div>
             <div class="stat-card">
                 <span class="stat-card__label">Avg. items / list</span>
                 <span class="stat-card__value">{{ round1(s.engagement.avgItemsPerList) }}</span>
-            </div>
-            <div class="stat-card">
-                <span class="stat-card__label">Avg. members / list</span>
-                <span class="stat-card__value">{{ round1(s.engagement.avgMembersPerList) }}</span>
-            </div>
-            <div class="stat-card">
-                <span class="stat-card__label">Item completion rate</span>
-                <span class="stat-card__value">{{ pct(s.engagement.itemCompletionRate) }}</span>
-                <span class="stat-card__sub">of current items checked off</span>
+                <span class="stat-card__sub">across all current lists</span>
             </div>
             <div class="stat-card">
                 <span class="stat-card__label">Collaborative lists</span>
                 <span class="stat-card__value">{{ pct(s.engagement.collaborativeListsShare) }}</span>
-                <span class="stat-card__sub">have 2+ members</span>
+                <span class="stat-card__sub">have 2+ distinct device members</span>
             </div>
             <div class="stat-card">
-                <span class="stat-card__label">Push opt-in rate</span>
-                <span class="stat-card__value">{{ pct(s.engagement.pushOptInRate) }}</span>
-                <span class="stat-card__sub">of device subscriptions</span>
+                <span class="stat-card__label">Avg. members (collaborative)</span>
+                <span class="stat-card__value">{{ round1(s.engagement.avgMembersPerCollaborativeList) }}</span>
+                <span class="stat-card__sub">only lists with 2+ members</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card__label">Protected lists</span>
+                <span class="stat-card__value">{{ pct(s.engagement.protectedListsShare) }}</span>
+                <span class="stat-card__sub">have an owner token set</span>
             </div>
             <div class="stat-card">
                 <span class="stat-card__label">Multi-device users</span>
                 <span class="stat-card__value">{{ pct(s.engagement.multiDeviceUserShare) }}</span>
-                <span class="stat-card__sub">synced across 2+ devices</span>
+                <span class="stat-card__sub">signed-in users on 2+ devices</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card__label">Charon drops (live)</span>
+                <span class="stat-card__value">{{ s.engagement.charonDropCount }}</span>
+                <span class="stat-card__sub">file drops currently in DB</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card__label">Pending reminders</span>
+                <span class="stat-card__value">{{ s.engagement.activeReminderCount }}</span>
+                <span class="stat-card__sub">{{ pct(s.engagement.reminderSentRate) }} of all reminders sent so far</span>
+            </div>
+        </section>
+
+        <h2 class="section-title">Push notifications</h2>
+        <section class="stat-grid">
+            <div class="stat-card">
+                <span class="stat-card__label">Device subscriptions</span>
+                <span class="stat-card__value">{{ s.current.deviceSubscriptions }}</span>
+                <span class="stat-card__sub">currently registered</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card__label">Push opt-in rate</span>
+                <span class="stat-card__value">{{ pct(s.engagement.pushOptInRate) }}</span>
+                <span class="stat-card__sub">at least one notification type enabled</span>
             </div>
             <div class="stat-card">
                 <span class="stat-card__label">Platform mix</span>
@@ -86,9 +120,10 @@
             </div>
         </section>
 
+        <h2 class="section-title">Daily activity (last {{ s.daily.length }} days)</h2>
         <section class="charts">
             <div class="chart">
-                <h2>New lists per day (last 30 days)</h2>
+                <h3>New lists</h3>
                 <div class="chart__bars">
                     @for (day of s.daily; track day.date) {
                         <div class="chart__bar-wrap" [title]="formatDate(day.date) + ': ' + day.lists">
@@ -97,9 +132,8 @@
                     }
                 </div>
             </div>
-
             <div class="chart">
-                <h2>New items per day</h2>
+                <h3>New items</h3>
                 <div class="chart__bars">
                     @for (day of s.daily; track day.date) {
                         <div class="chart__bar-wrap" [title]="formatDate(day.date) + ': ' + day.items">
@@ -108,9 +142,8 @@
                     }
                 </div>
             </div>
-
             <div class="chart">
-                <h2>New chat messages per day</h2>
+                <h3>New messages</h3>
                 <div class="chart__bars">
                     @for (day of s.daily; track day.date) {
                         <div class="chart__bar-wrap" [title]="formatDate(day.date) + ': ' + day.messages">
@@ -119,9 +152,8 @@
                     }
                 </div>
             </div>
-
             <div class="chart">
-                <h2>New members per day</h2>
+                <h3>New members</h3>
                 <div class="chart__bars">
                     @for (day of s.daily; track day.date) {
                         <div class="chart__bar-wrap" [title]="formatDate(day.date) + ': ' + day.members">
@@ -132,9 +164,25 @@
             </div>
         </section>
 
+        <h2 class="section-title">Completed-items TTL distribution</h2>
+        <section class="panel ttl-breakdown">
+            <div class="locale-bars">
+                @for (t of s.ttlBreakdown; track t.label) {
+                    <div class="locale-bar">
+                        <span class="locale-bar__label">{{ t.label }}</span>
+                        <div class="locale-bar__track">
+                            <div class="locale-bar__fill" [style.width.%]="t.share * 100"></div>
+                        </div>
+                        <span class="locale-bar__value">{{ pct(t.share) }} ({{ t.count }})</span>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <h2 class="section-title">Locale</h2>
         <section class="locale">
             <div class="panel locale__languages">
-                <h2>App language (Accept-Language)</h2>
+                <h3>App language (Accept-Language)</h3>
                 <div class="locale-bars">
                     @for (lang of s.localeBreakdown.languages; track lang.language) {
                         <div class="locale-bar">
@@ -149,7 +197,7 @@
             </div>
 
             <div class="panel locale__map">
-                <h2>Where requests come from</h2>
+                <h3>Where requests come from</h3>
                 <svg class="world-map" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet">
                     <defs>
                         <filter id="markerGlow" x="-100%" y="-100%" width="300%" height="300%">
@@ -187,13 +235,13 @@
                 <p class="locale__hint">
                     Marker size = share of requests with a known country.
                     @if (s.localeBreakdown.unknownCountryShare > 0) {
-                        {{ pct(s.localeBreakdown.unknownCountryShare) }} of requests didn't include a region.
+                        {{ pct(s.localeBreakdown.unknownCountryShare) }} of requests had no region header.
                     }
                 </p>
             </div>
 
             <div class="panel locale__countries">
-                <h2>Top countries</h2>
+                <h3>Top countries</h3>
                 @if (topCountries().length > 0) {
                     <div class="locale-bars">
                         @for (c of topCountries(); track c.country) {

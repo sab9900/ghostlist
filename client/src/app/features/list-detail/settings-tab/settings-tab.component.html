@@ -1,3 +1,17 @@
+<section class="settings-section" aria-labelledby="reminder-heading">
+    <h3 class="settings-section__title" id="reminder-heading">{{ 'LIST_SETTINGS.REMINDER_TITLE' | translate }}</h3>
+    <p class="settings-section__hint">{{ 'LIST_SETTINGS.REMINDER_HINT' | translate }}</p>
+    <div class="settings-row">
+        <input class="settings-input settings-input--datetime" type="datetime-local"
+            [ngModel]="listReminderDateTime()" (ngModelChange)="listReminderDateTime.set($event)"
+            [min]="listReminderMinDateTime()" aria-labelledby="reminder-heading" />
+        <button class="btn btn--primary btn--sm" (click)="downloadListReminder()"
+            [disabled]="!listReminderDateTime()">
+            {{ 'LIST_SETTINGS.REMINDER_DOWNLOAD' | translate }}
+        </button>
+    </div>
+</section>
+
 <section class="settings-section" aria-labelledby="rename-heading">
     <h3 class="settings-section__title" id="rename-heading">{{ 'LIST_SETTINGS.LIST_NAME_TITLE' | translate }}</h3>
     <p class="settings-section__hint">{{ 'LIST_SETTINGS.LIST_NAME_HINT' | translate }}</p>

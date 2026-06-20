@@ -5,8 +5,8 @@ export interface AdminCurrentCounts {
     messages: number;
     members: number;
     deviceSubscriptions: number;
-
     uniqueUsers: number;
+    distinctDevices: number;
 }
 
 export interface AdminTotalCounts {
@@ -27,13 +27,19 @@ export interface AdminDailyStat {
 export interface AdminEngagement {
     avgItemsPerList: number;
     avgMembersPerList: number;
-    itemCompletionRate: number;
+    avgMembersPerCollaborativeList: number;
     collaborativeListsShare: number;
+    protectedListsShare: number;
     pushOptInRate: number;
     platformIos: number;
     platformAndroid: number;
     platformWeb: number;
     multiDeviceUserShare: number;
+    activeLists7d: number;
+    activeLists30d: number;
+    charonDropCount: number;
+    activeReminderCount: number;
+    reminderSentRate: number;
 }
 
 export interface AdminLanguageStat {
@@ -54,10 +60,17 @@ export interface AdminLocaleBreakdown {
     unknownCountryShare: number;
 }
 
+export interface AdminTtlStat {
+    label: string;
+    count: number;
+    share: number;
+}
+
 export interface AdminStats {
     current: AdminCurrentCounts;
     allTime: AdminTotalCounts;
     daily: AdminDailyStat[];
     engagement: AdminEngagement;
     localeBreakdown: AdminLocaleBreakdown;
+    ttlBreakdown: AdminTtlStat[];
 }

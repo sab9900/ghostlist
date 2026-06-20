@@ -11,11 +11,12 @@ namespace GhostList.Application.Tests.Features.ListMembers;
 
 public class GetGhostListUnreadSummaryQueryHandlerTests
 {
-    private static GhostListMember CreateMember(Guid listId, string deviceId) => new()
+    private static GhostListMember CreateMember(Guid listId, string deviceId, string? userId = null) => new()
     {
         Id = Guid.NewGuid(),
         GhostListId = listId,
         DeviceId = deviceId,
+        UserId = userId,
         EncryptedPayload = "payload",
         InitializationVector = "iv",
         UpdatedAt = DateTimeOffset.UtcNow
@@ -86,8 +87,7 @@ public class GetGhostListUnreadSummaryQueryHandlerTests
         await using var context = DbContextFactory.Create();
         var list = Domain.Entities.GhostList.Create();
         var messageFromOtherDevice = GhostChatMessage.Create(list.Id, "enc", "iv", "encName", "nameIv", senderDeviceId: "device2", senderUserId: "user1");
-        var member = CreateMember(list.Id, "device1");
-        member.UserId = "user1";
+        var member = CreateMember(list.Id, "device1", userId: "user1");
 
         context.GhostLists.Add(list);
         context.GhostChatMessages.Add(messageFromOtherDevice);
@@ -99,5 +99,36 @@ public class GetGhostListUnreadSummaryQueryHandlerTests
 
         result.UnreadMessageCount.Should().Be(0);
         result.UnreadMessageIds.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Handle_ReadOnPhone_LaptopSeesAsReadViaSameUserId()
+    {
+        await using var context = DbContextFactory.Create();
+        var list = Domain.Entities.GhostList.Create();
+        var message = GhostChatMessage.Create(list.Id, "enc", "iv", "encName", "nameIv", senderDeviceId: "device-other");
+        var item = GhostListItem.Create(list.Id, "payload", "iv", senderDeviceId: "device-other");
+        var memberPhone = CreateMember(list.Id, "phone", userId: "user1");
+        var memberLaptop = CreateMember(list.Id, "laptop", userId: "user1");
+
+        context.GhostLists.Add(list);
+        context.GhostChatMessages.Add(message);
+        context.GhostListItems.Add(item);
+        context.GhostListMembers.AddRange(memberPhone, memberLaptop);
+        await context.SaveChangesAsync();
+
+        var notifier = Substitute.For<IGhostListNotifier>();
+        notifier.NotifyReadReceiptUpdated(Arg.Any<Guid>(), Arg.Any<ReadReceiptUpdatedNotification>()).Returns(Task.CompletedTask);
+
+        await new MarkMessagesReadCommandHandler(context, notifier)
+            .Handle(new MarkMessagesReadCommand(list.Id, "phone", [message.Id], UserId: "user1"), CancellationToken.None);
+        await new MarkItemsReadCommandHandler(context)
+            .Handle(new MarkItemsReadCommand(list.Id, "phone", [item.Id], UserId: "user1"), CancellationToken.None);
+
+        var handler = new GetGhostListUnreadSummaryQueryHandler(context);
+        var result = await handler.Handle(new GetGhostListUnreadSummaryQuery(list.Id, "laptop", UserId: "user1"), CancellationToken.None);
+
+        result.UnreadMessageCount.Should().Be(0);
+        result.UnreadItemCount.Should().Be(0);
     }
 }

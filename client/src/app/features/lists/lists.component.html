@@ -131,6 +131,10 @@
                     (click)="setImportMode('scan')" role="tab" [attr.aria-selected]="importMode() === 'scan'">
                     {{ 'LISTS.IMPORT_SCAN_QR' | translate }}
                 </button>
+                <button class="dialog__tab" [class.dialog__tab--active]="importMode() === 'url'"
+                    (click)="setImportMode('url')" role="tab" [attr.aria-selected]="importMode() === 'url'">
+                    {{ 'LISTS.IMPORT_PASTE_URL' | translate }}
+                </button>
             </div>
 
             @if (importMode() === 'show') {
@@ -177,8 +181,24 @@
             }
             }
 
+            @if (importMode() === 'url') {
+            <p class="dialog__hint">{{ 'LISTS.IMPORT_URL_HINT' | translate }}</p>
+            <input class="dialog__input" type="url" [attr.placeholder]="'LISTS.IMPORT_URL_PLACEHOLDER' | translate"
+                [ngModel]="importUrl()" (ngModelChange)="importUrl.set($event)"
+                (keydown.enter)="submitImportUrl()"
+                [attr.aria-label]="'LISTS.IMPORT_URL_PLACEHOLDER' | translate" />
+            @if (importUrlError()) {
+            <p class="dialog__error" role="alert">{{ importUrlError()! | translate }}</p>
+            }
+            }
+
             <div class="dialog__actions">
                 <button class="btn btn--ghost" (click)="closeImportDialog()">{{ 'COMMON.CANCEL' | translate }}</button>
+                @if (importMode() === 'url') {
+                <button class="btn btn--primary" (click)="submitImportUrl()" [disabled]="!importUrl().trim()">
+                    {{ 'LISTS.IMPORT_URL_BTN' | translate }}
+                </button>
+                }
             </div>
         </div>
     </div>

@@ -204,7 +204,9 @@ export class ListsComponent implements OnDestroy {
     protected readonly createError = signal<string | null>(null);
 
     protected readonly showImportDialog = signal(false);
-    protected readonly importMode = signal<'show' | 'scan'>('show');
+    protected readonly importMode = signal<'show' | 'scan' | 'url'>('show');
+    protected readonly importUrl = signal('');
+    protected readonly importUrlError = signal<string | null>(null);
     protected readonly importQrData = signal<string | null>(null);
     protected readonly importPending = signal(false);
     private importPollTimer: ReturnType<typeof setInterval> | null = null;
@@ -291,6 +293,8 @@ export class ListsComponent implements OnDestroy {
         this.importQrData.set(null);
         this.scanStep.set('scanning');
         this.importErrorMsg.set(null);
+        this.importUrl.set('');
+        this.importUrlError.set(null);
         this.showImportDialog.set(true);
         await this.startShowMode();
     }
@@ -301,18 +305,22 @@ export class ListsComponent implements OnDestroy {
         this.showImportDialog.set(false);
         this.importQrData.set(null);
         this.importErrorMsg.set(null);
+        this.importUrl.set('');
+        this.importUrlError.set(null);
         this.importSessionId = null;
         this.exportSessionId = null;
         this.exportListId = null;
         this.exportListName = null;
     }
 
-    async setImportMode(mode: 'show' | 'scan'): Promise<void> {
+    async setImportMode(mode: 'show' | 'scan' | 'url'): Promise<void> {
         this.stopImportPolling();
         this.stopExportClaimPolling();
         this.importMode.set(mode);
         this.scanStep.set('scanning');
         this.importErrorMsg.set(null);
+        this.importUrl.set('');
+        this.importUrlError.set(null);
         if (mode === 'show') await this.startShowMode();
     }
 
@@ -396,6 +404,27 @@ export class ListsComponent implements OnDestroy {
         this.scanStep.set('scanning');
         this.importErrorMsg.set(null);
         this.exportSessionId = null;
+    }
+
+    async submitImportUrl(): Promise<void> {
+        const raw = this.importUrl().trim();
+        if (!raw) return;
+        this.importUrlError.set(null);
+        try {
+            const parsed = new URL(raw);
+            const segments = parsed.pathname.split('/').filter(Boolean);
+            const joinIndex = segments.indexOf('join');
+            const id = joinIndex !== -1 ? segments[joinIndex + 1] : undefined;
+            if (!id || !parsed.hash) {
+                this.importUrlError.set('LISTS.IMPORT_URL_INVALID');
+                return;
+            }
+            const slug = parsed.pathname + parsed.search + parsed.hash;
+            this.closeImportDialog();
+            await this.router.navigateByUrl(slug);
+        } catch {
+            this.importUrlError.set('LISTS.IMPORT_URL_INVALID');
+        }
     }
 
     openExportDialog(): void {

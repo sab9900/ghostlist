@@ -1,9 +1,7 @@
 using FluentValidation;
 using GhostList.Application.Common.Interfaces;
 using GhostList.Application.Common.Notifications;
-using GhostList.Domain.Entities;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace GhostList.Application.Features.GhostMessages.Commands.RelayEphemeralAudio;
 
@@ -23,43 +21,20 @@ public class RelayEphemeralAudioCommandValidator : AbstractValidator<RelayEpheme
 
         RuleFor(x => x.EncryptedAudio)
             .NotEmpty()
-            .MaximumLength(14_000_000); // ~10 MB base64-encoded audio
+            .MaximumLength(14_000_000);
 
         RuleFor(x => x.AudioInitializationVector).NotEmpty();
     }
 }
 
-public class RelayEphemeralAudioCommandHandler(IApplicationDbContext context, IGhostListNotifier notifier)
+public class RelayEphemeralAudioCommandHandler(IGhostListNotifier notifier)
     : IRequestHandler<RelayEphemeralAudioCommand>
 {
-    public async Task Handle(RelayEphemeralAudioCommand request, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var alreadyStored = await context.GhostMessageAudios
-                .AnyAsync(a => a.Id == request.MessageId, cancellationToken);
-
-            if (!alreadyStored)
-            {
-                context.GhostMessageAudios.Add(GhostMessageAudio.Create(
-                    request.MessageId,
-                    request.ListId,
-                    request.EncryptedAudio,
-                    request.AudioInitializationVector));
-
-                await context.SaveChangesAsync(cancellationToken);
-            }
-        }
-        catch (DbUpdateException)
-        {
-            // Race condition: another request stored it first — continue to relay.
-        }
-
-        await notifier.NotifyAudioShared(request.ListId, new AudioRelayNotification(
+    public Task Handle(RelayEphemeralAudioCommand request, CancellationToken cancellationToken)
+        => notifier.NotifyAudioShared(request.ListId, new AudioRelayNotification(
             request.MessageId,
             request.ListId,
             request.EncryptedAudio,
             request.AudioInitializationVector,
             request.SenderConnectionId));
-    }
 }

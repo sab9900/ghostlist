@@ -41,13 +41,17 @@ public class GetGhostListUnreadSummaryQueryHandler(IApplicationDbContext context
             .ToListAsync(cancellationToken);
 
         var readMessageIds = (await context.MessageReadReceipts
-            .Where(r => r.DeviceId == request.DeviceId)
+            .Where(r => request.UserId != null
+                ? r.UserId == request.UserId
+                : r.DeviceId == request.DeviceId)
             .Select(r => r.MessageId)
             .ToListAsync(cancellationToken))
             .ToHashSet();
 
         var readItemIds = (await context.ItemReadReceipts
-            .Where(r => r.DeviceId == request.DeviceId)
+            .Where(r => request.UserId != null
+                ? r.UserId == request.UserId
+                : r.DeviceId == request.DeviceId)
             .Select(r => r.ItemId)
             .ToListAsync(cancellationToken))
             .ToHashSet();

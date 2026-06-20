@@ -1,5 +1,7 @@
 using GhostList.Application.Features.GhostMessages.Commands.CreateGhostChatMessage;
 using GhostList.Application.Features.GhostMessages.Commands.DeleteGhostChatMessage;
+using GhostList.Application.Features.GhostMessages.Commands.SaveGhostMessageAudio;
+using GhostList.Application.Features.GhostMessages.Commands.SaveGhostMessageImage;
 using GhostList.Application.Features.GhostMessages.Queries.GetGhostChatMessagesByListId;
 using GhostList.Application.Features.GhostMessages.Queries.GetGhostMessageAudio;
 using GhostList.Application.Features.GhostMessages.Queries.GetGhostMessageImage;
@@ -7,6 +9,9 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GhostList.WebApi.Controllers;
+
+public record SaveGhostMessageImageRequest(string EncryptedImage, string ImageInitializationVector);
+public record SaveGhostMessageAudioRequest(string EncryptedAudio, string AudioInitializationVector);
 
 [ApiController]
 [Route("api/[controller]")]
@@ -35,11 +40,25 @@ public class ChatController(IMediator mediator) : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("{messageId:guid}/image")]
+    public async Task<ActionResult> SaveImage(Guid messageId, [FromBody] SaveGhostMessageImageRequest request)
+    {
+        await mediator.Send(new SaveGhostMessageImageCommand(messageId, request.EncryptedImage, request.ImageInitializationVector));
+        return NoContent();
+    }
+
     [HttpGet("{messageId:guid}/image")]
     public async Task<ActionResult<GhostMessageImageDto>> GetImage(Guid messageId)
     {
         var image = await mediator.Send(new GetGhostMessageImageQuery(messageId));
         return Ok(image);
+    }
+
+    [HttpPost("{messageId:guid}/audio")]
+    public async Task<ActionResult> SaveAudio(Guid messageId, [FromBody] SaveGhostMessageAudioRequest request)
+    {
+        await mediator.Send(new SaveGhostMessageAudioCommand(messageId, request.EncryptedAudio, request.AudioInitializationVector));
+        return NoContent();
     }
 
     [HttpGet("{messageId:guid}/audio")]

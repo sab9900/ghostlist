@@ -16,8 +16,6 @@ public interface IApplicationDbContext
     DbSet<GhostListMember> GhostListMembers { get; }
     DbSet<DailyUsageStat> DailyUsageStats { get; }
     DbSet<LocaleStat> LocaleStats { get; }
-    DbSet<GhostMessageImage> GhostMessageImages { get; }
-    DbSet<GhostMessageAudio> GhostMessageAudios { get; }
     DbSet<InfoMessage> InfoMessages { get; }
     DbSet<MessageReadReceipt> MessageReadReceipts { get; }
     DbSet<ItemReadReceipt> ItemReadReceipts { get; }
@@ -28,10 +26,6 @@ public interface IApplicationDbContext
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 
     Task<IReadOnlyList<DeletedItemInfo>> DeleteExpiredCheckedItemsAsync(CancellationToken cancellationToken);
-
-    Task<int> DeleteExpiredImageBlobsAsync(TimeSpan maxAge, CancellationToken cancellationToken);
-
-    Task<int> DeleteExpiredAudioBlobsAsync(TimeSpan maxAge, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<DeletedItemInfo>> DeleteExpiredCharonDropsAsync(TimeSpan maxAge, CancellationToken cancellationToken);
 

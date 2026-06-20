@@ -70,6 +70,12 @@ export interface ReminderFiredEvent {
     reminderId: string;
 }
 
+export interface TypingIndicatorEvent {
+    listId: string;
+    encryptedName: string;
+    nameIv: string;
+}
+
 export interface CharonDropCreatedEvent {
     id: string;
     ghostListId: string;

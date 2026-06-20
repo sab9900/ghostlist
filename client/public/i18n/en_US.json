@@ -47,7 +47,12 @@
     "MARK_ALL_READ_TITLE": "Mark all as read",
     "MARK_ALL_READ_HINT": "This resets the \"new\" status of all items and messages across every list.",
     "MARK_ALL_READ_BTN": "Mark all read",
-    "MARK_ALL_READ_MARKING": "Marking…"
+    "MARK_ALL_READ_MARKING": "Marking…",
+    "IMPORT_PASTE_URL": "Paste link",
+    "IMPORT_URL_HINT": "Paste the share link (from Settings → Copy link).",
+    "IMPORT_URL_PLACEHOLDER": "https://app.ghost-list.com/join/…",
+    "IMPORT_URL_BTN": "Import",
+    "IMPORT_URL_INVALID": "Invalid link. Please paste a valid Ghost List invite link."
   },
   "ITEMS": {
     "ADD_PLACEHOLDER": "Add item…",
@@ -65,7 +70,8 @@
     "REMINDER_SAVED": "✓ Reminder set",
     "SWIPE_DELETE_HINT": "Delete",
     "REMINDER_BANNER_DISMISS": "OK",
-    "REMINDER_BANNER_GO": "Show"
+    "REMINDER_BANNER_GO": "Show",
+    "REMINDER_ADD_TO_CALENDAR": "Add to Calendar"
   },
   "CHAT": {
     "NO_MESSAGES": "No messages yet.",
@@ -211,7 +217,10 @@
     "NOTIFY_ON_LETHE": "Lethe invitations",
     "NOTIFY_ON_LETHE_HINT": "Notify when someone invites you to whisper in Lethe.",
     "NOTIFY_ON_CHARON": "Charon drops",
-    "NOTIFY_ON_CHARON_HINT": "Notify when a new Charon dead-drop is posted to this list."
+    "NOTIFY_ON_CHARON_HINT": "Notify when a new Charon dead-drop is posted to this list.",
+    "REMINDER_TITLE": "Remind me",
+    "REMINDER_HINT": "Download a calendar event that links back to this list.",
+    "REMINDER_DOWNLOAD": "Add to Calendar"
   },
   "JOIN": {
     "TITLE": "Import list",

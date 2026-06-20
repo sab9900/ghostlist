@@ -6,5 +6,7 @@ public class CharonViewReceipt
 
     public string DeviceId { get; set; } = string.Empty;
 
+    public string? UserId { get; set; }
+
     public DateTimeOffset ViewedAt { get; set; }
 }

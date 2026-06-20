@@ -1,9 +1,7 @@
 using FluentValidation;
 using GhostList.Application.Common.Interfaces;
 using GhostList.Application.Common.Notifications;
-using GhostList.Domain.Entities;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace GhostList.Application.Features.GhostMessages.Commands.RelayEphemeralImage;
 
@@ -29,37 +27,14 @@ public class RelayEphemeralImageCommandValidator : AbstractValidator<RelayEpheme
     }
 }
 
-public class RelayEphemeralImageCommandHandler(IApplicationDbContext context, IGhostListNotifier notifier)
+public class RelayEphemeralImageCommandHandler(IGhostListNotifier notifier)
     : IRequestHandler<RelayEphemeralImageCommand>
 {
-    public async Task Handle(RelayEphemeralImageCommand request, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var alreadyStored = await context.GhostMessageImages
-                .AnyAsync(i => i.Id == request.MessageId, cancellationToken);
-
-            if (!alreadyStored)
-            {
-                context.GhostMessageImages.Add(GhostMessageImage.Create(
-                    request.MessageId,
-                    request.ListId,
-                    request.EncryptedImage,
-                    request.ImageInitializationVector));
-
-                await context.SaveChangesAsync(cancellationToken);
-            }
-        }
-        catch (DbUpdateException)
-        {
-
-        }
-
-        await notifier.NotifyImageShared(request.ListId, new ImageRelayNotification(
+    public Task Handle(RelayEphemeralImageCommand request, CancellationToken cancellationToken)
+        => notifier.NotifyImageShared(request.ListId, new ImageRelayNotification(
             request.MessageId,
             request.ListId,
             request.EncryptedImage,
             request.ImageInitializationVector,
             request.SenderConnectionId));
-    }
 }

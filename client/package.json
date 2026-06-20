@@ -28,6 +28,7 @@
         "@aparajita/capacitor-biometric-auth": "^10.0.0",
         "@capacitor/android": "^7.0.0",
         "@capacitor/app": "^7.0.0",
+        "@capacitor/clipboard": "^8.0.1",
         "@capacitor/core": "^7.0.0",
         "@capacitor/haptics": "^7.0.0",
         "@capacitor/ios": "^7.0.0",

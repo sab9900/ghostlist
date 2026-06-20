@@ -1,3 +1,4 @@
+using GhostList.Application.Common;
 using GhostList.Application.Common.Exceptions;
 using GhostList.Application.Common.Interfaces;
 using GhostList.Domain.Entities;
@@ -8,7 +9,7 @@ namespace GhostList.Application.Features.Charon.Commands.DeleteCharonDrop;
 
 public record DeleteCharonDropCommand(Guid DropId) : IRequest;
 
-public class DeleteCharonDropCommandHandler(IApplicationDbContext context, IGhostListNotifier notifier)
+public class DeleteCharonDropCommandHandler(IApplicationDbContext context, IBlobStorage blobStorage, IGhostListNotifier notifier)
     : IRequestHandler<DeleteCharonDropCommand>
 {
     public async Task Handle(DeleteCharonDropCommand request, CancellationToken cancellationToken)
@@ -25,6 +26,7 @@ public class DeleteCharonDropCommandHandler(IApplicationDbContext context, IGhos
         context.CharonDrops.Remove(drop);
         await context.SaveChangesAsync(cancellationToken);
 
+        await blobStorage.DeleteAsync(BlobKeys.CharonDrop(drop.Id), cancellationToken);
         await notifier.NotifyCharonDropDeleted(drop.GhostListId, drop.Id);
     }
 }

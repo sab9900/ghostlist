@@ -20,7 +20,6 @@
     ],
     "theme_color": "#0e0e10",
     "background_color": "#0e0e10",
-    "display_override": ["fullscreen", "standalone"],
-    "display": "fullscreen",
-    "orientation": "portrait"
+    "display_override": ["standalone"],
+    "display": "standalone"
 }

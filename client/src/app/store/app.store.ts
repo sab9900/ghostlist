@@ -621,6 +621,8 @@ export const AppStore = signalStore(
 
                 cacheImage(messageId, dataUrl);
 
+                await firstValueFrom(api.saveMessageImage(messageId, image.ciphertext, image.iv));
+
                 try {
                     await hub.relayImage(listId, messageId, image.ciphertext, image.iv);
                 } catch { }
@@ -666,9 +668,10 @@ export const AppStore = signalStore(
                     }),
                 );
 
-                // Convert data URL to blob URL for local playback.
                 const blob = AudioBlobConverter.dataUrlToBlob(dataUrl);
                 cacheAudio(messageId, URL.createObjectURL(blob));
+
+                await firstValueFrom(api.saveMessageAudio(messageId, audio.ciphertext, audio.iv));
 
                 try {
                     await hub.relayAudio(listId, messageId, audio.ciphertext, audio.iv);
@@ -1098,6 +1101,7 @@ export const AppStore = signalStore(
                     }
                     void store.flushPendingOps();
 
+                    await store.flushAllPendingReads();
                     void store.seedUnreadSummaries();
 
                     if (store.currentListId()) void store.refreshCurrentList();

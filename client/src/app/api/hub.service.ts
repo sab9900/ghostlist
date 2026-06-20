@@ -12,6 +12,7 @@ import {
     MessageCreatedEvent,
     ReadReceiptUpdatedEvent,
     ReminderFiredEvent,
+    TypingIndicatorEvent,
     WhisperPresenceEntry,
     WhisperReceivedEvent,
 } from '../core/models';
@@ -42,6 +43,7 @@ export class HubService implements OnDestroy {
     private readonly _charonDropDeleted$ = new Subject<string>();
     private readonly _audioShared$ = new Subject<AudioSharedEvent>();
     private readonly _reminderFired$ = new Subject<ReminderFiredEvent>();
+    private readonly _typingIndicator$ = new Subject<TypingIndicatorEvent>();
     private readonly _reconnected$ = new Subject<void>();
 
     readonly itemCreated$ = this._itemCreated$.asObservable();
@@ -62,6 +64,7 @@ export class HubService implements OnDestroy {
     readonly audioShared$ = this._audioShared$.asObservable();
     readonly reminderFired$ = this._reminderFired$.asObservable();
 
+    readonly typingIndicator$ = this._typingIndicator$.asObservable();
     readonly reconnected$ = this._reconnected$.asObservable();
 
     private readonly connection = new signalR.HubConnectionBuilder()
@@ -89,6 +92,9 @@ export class HubService implements OnDestroy {
         this.connection.on('CharonDropDeleted', (id: string) => this._charonDropDeleted$.next(id));
         this.connection.on('AudioShared', (e: AudioSharedEvent) => this._audioShared$.next(e));
         this.connection.on('ReminderFired', (e: ReminderFiredEvent) => this._reminderFired$.next(e));
+        this.connection.on('TypingIndicator', (listId: string, encryptedName: string, nameIv: string) =>
+            this._typingIndicator$.next({ listId, encryptedName, nameIv }),
+        );
 
         this.connection.onreconnecting(() =>
             this.connectionState.set(signalR.HubConnectionState.Reconnecting),
@@ -151,6 +157,11 @@ export class HubService implements OnDestroy {
     async leaveWhisperRoom(listId: string): Promise<void> {
         if (this.connection.state !== signalR.HubConnectionState.Connected) return;
         await this.connection.invoke('LeaveWhisperRoom', listId);
+    }
+
+    async notifyTyping(listId: string, encryptedName: string, nameIv: string): Promise<void> {
+        if (this.connection.state !== signalR.HubConnectionState.Connected) return;
+        await this.connection.invoke('NotifyTyping', listId, encryptedName, nameIv);
     }
 
     async sendWhisper(listId: string, ciphertext: string, iv: string, senderCiphertext: string, senderIv: string): Promise<void> {

@@ -72,7 +72,8 @@ public class MembersController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> MarkMessagesRead(Guid listId, string deviceId, [FromBody] MarkReadRequest request, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(deviceId) || deviceId.Length > 64) return BadRequest();
-        await mediator.Send(new MarkMessagesReadCommand(listId, deviceId, request.Ids), ct);
+        var userId = Request.Headers["X-User-Id"].FirstOrDefault();
+        await mediator.Send(new MarkMessagesReadCommand(listId, deviceId, request.Ids, userId), ct);
         return NoContent();
     }
 
@@ -80,7 +81,8 @@ public class MembersController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> MarkItemsRead(Guid listId, string deviceId, [FromBody] MarkReadRequest request, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(deviceId) || deviceId.Length > 64) return BadRequest();
-        await mediator.Send(new MarkItemsReadCommand(listId, deviceId, request.Ids), ct);
+        var userId = Request.Headers["X-User-Id"].FirstOrDefault();
+        await mediator.Send(new MarkItemsReadCommand(listId, deviceId, request.Ids, userId), ct);
         return NoContent();
     }
 }

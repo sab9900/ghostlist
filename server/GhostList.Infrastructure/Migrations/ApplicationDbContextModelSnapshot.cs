@@ -27,16 +27,8 @@ namespace GhostList.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("ContentInitializationVector")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("EncryptedContent")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<string>("EncryptedMetadata")
                         .IsRequired()
@@ -73,10 +65,16 @@ namespace GhostList.Infrastructure.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<string>("UserId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
                     b.Property<DateTimeOffset>("ViewedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("DropId", "DeviceId");
+
+                    b.HasIndex("DropId", "UserId");
 
                     b.ToTable("CharonViewReceipts");
                 });
@@ -219,54 +217,6 @@ namespace GhostList.Infrastructure.Migrations
                     b.ToTable("GhostListItems");
                 });
 
-            modelBuilder.Entity("GhostList.Domain.Entities.GhostMessageAudio", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("AudioInitializationVector")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("EncryptedAudio")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("GhostListId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("GhostMessageAudios");
-                });
-
-            modelBuilder.Entity("GhostList.Domain.Entities.GhostMessageImage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("EncryptedImage")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("GhostListId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ImageInitializationVector")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("GhostMessageImages");
-                });
-
             modelBuilder.Entity("GhostList.Domain.Entities.InfoMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -312,10 +262,16 @@ namespace GhostList.Infrastructure.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<string>("UserId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
                     b.Property<DateTimeOffset>("ReadAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("ItemId", "DeviceId");
+
+                    b.HasIndex("ItemId", "UserId");
 
                     b.ToTable("ItemReadReceipts");
                 });
@@ -390,10 +346,16 @@ namespace GhostList.Infrastructure.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<string>("UserId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
                     b.Property<DateTimeOffset>("ReadAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("MessageId", "DeviceId");
+
+                    b.HasIndex("MessageId", "UserId");
 
                     b.ToTable("MessageReadReceipts");
                 });
@@ -430,24 +392,6 @@ namespace GhostList.Infrastructure.Migrations
                     b.HasOne("GhostList.Domain.Entities.GhostList", null)
                         .WithMany("Items")
                         .HasForeignKey("GhostListId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("GhostList.Domain.Entities.GhostMessageAudio", b =>
-                {
-                    b.HasOne("GhostList.Domain.Entities.GhostChatMessage", null)
-                        .WithOne()
-                        .HasForeignKey("GhostList.Domain.Entities.GhostMessageAudio", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("GhostList.Domain.Entities.GhostMessageImage", b =>
-                {
-                    b.HasOne("GhostList.Domain.Entities.GhostChatMessage", null)
-                        .WithOne()
-                        .HasForeignKey("GhostList.Domain.Entities.GhostMessageImage", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

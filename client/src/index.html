@@ -30,6 +30,14 @@
         }
         updateAppHeight();
         window.addEventListener('resize', updateAppHeight);
+        // iOS PWA: window.innerHeight is not final on first synchronous execution
+        // in standalone mode — the WebView finishes layout asynchronously. A single
+        // rAF is enough on most devices; the 300ms fallback covers edge cases where
+        // the first rAF still fires before the safe-area geometry is committed.
+        if (navigator.standalone) {
+            requestAnimationFrame(updateAppHeight);
+            setTimeout(updateAppHeight, 300);
+        }
     </script>
 </head>
 

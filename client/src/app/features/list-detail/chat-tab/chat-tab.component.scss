@@ -19,14 +19,57 @@
 }
 
 .message {
+    // -------------------------------------------------------------
+    // STANDARD-VARIABLEN (Für empfangene Nachrichten)
+    // -------------------------------------------------------------
+    --msg-justify: flex-start;
+    --msg-row-direction: row;
+    --msg-bubble-bg: var(--color-surface-2);
+    --msg-bubble-border: 1px solid var(--color-border);
+    --msg-radius-left: var(--radius-sm);
+    --msg-radius-right: var(--radius-md);
+    --msg-text-color: var(--color-text);
+    --msg-sender-color: var(--color-primary);
+    --msg-time-color: var(--color-text-subtle);
+    --msg-unread-bg: var(--color-primary);
+
+    --msg-quote-bg: color-mix(in srgb, var(--color-text) 6%, transparent);
+    --msg-quote-border-color: var(--color-primary);
+    --msg-quote-sender-color: var(--color-primary);
+    --msg-quote-text-color: var(--color-text-muted);
+
+    --msg-placeholder-color: var(--color-text-subtle);
+
     position: relative;
     display: flex;
-    justify-content: flex-start;
+    justify-content: var(--msg-justify);
 
+    // -------------------------------------------------------------
+    // MODIFIER: Eigene Nachrichten ändern nur die Variablen
+    // -------------------------------------------------------------
     &--mine {
-        justify-content: flex-end;
+        --msg-justify: flex-end;
+        --msg-row-direction: row-reverse;
+        --msg-bubble-bg: var(--color-primary);
+        --msg-bubble-border: 1px solid transparent;
+        --msg-radius-left: var(--radius-md);
+        --msg-radius-right: var(--radius-sm);
+        --msg-text-color: var(--color-on-primary);
+        --msg-sender-color: color-mix(in srgb, var(--color-on-primary) 75%, transparent);
+        --msg-time-color: color-mix(in srgb, var(--color-on-primary) 60%, transparent);
+        --msg-unread-bg: var(--color-on-primary);
+
+        --msg-quote-bg: color-mix(in srgb, var(--color-on-primary) 18%, transparent);
+        --msg-quote-border-color: var(--color-on-primary);
+        --msg-quote-sender-color: var(--color-on-primary);
+        --msg-quote-text-color: color-mix(in srgb, var(--color-on-primary) 80%, transparent);
+
+        --msg-placeholder-color: color-mix(in srgb, var(--color-on-primary) 70%, transparent);
     }
 
+    // -------------------------------------------------------------
+    // ELEMENT-STYLES (Nutzen die dynamischen Variablen)
+    // -------------------------------------------------------------
     &--highlight &__bubble {
         animation: message-highlight 1.4s var(--ease-out);
     }
@@ -48,10 +91,7 @@
         max-width: 100%;
         min-width: 0;
         transition: transform var(--duration-fast) var(--ease-out);
-    }
-
-    &--mine &__row {
-        flex-direction: row-reverse;
+        flex-direction: var(--msg-row-direction);
     }
 
     &__avatar {
@@ -62,10 +102,11 @@
 
     &__bubble {
         max-width: 75vw;
-        background: var(--color-surface-2);
-        border: 1px solid var(--color-border);
+        background: var(--msg-bubble-bg);
+        border: var(--msg-bubble-border);
         border-radius: var(--radius-md);
-        border-bottom-left-radius: var(--radius-sm);
+        border-bottom-left-radius: var(--msg-radius-left);
+        border-bottom-right-radius: var(--msg-radius-right);
         padding: var(--space-2) var(--space-3);
         display: flex;
         flex-direction: column;
@@ -73,21 +114,14 @@
         min-width: 0;
     }
 
-    &--mine &__bubble {
-        background: var(--color-primary);
-        border-color: transparent;
-        border-bottom-left-radius: var(--radius-md);
-        border-bottom-right-radius: var(--radius-sm);
-    }
-
     &__quote {
         display: flex;
         flex-direction: column;
         gap: 2px;
         text-align: left;
-        background: color-mix(in srgb, var(--color-text) 6%, transparent);
+        background: var(--msg-quote-bg);
         border: none;
-        border-left: 3px solid var(--color-primary);
+        border-left: 3px solid var(--msg-quote-border-color);
         border-radius: var(--radius-sm);
         padding: var(--space-1) var(--space-2);
         cursor: pointer;
@@ -99,32 +133,23 @@
         }
 
         &--unavailable {
-            border-left-color: var(--color-text-subtle);
+            border-left-color: var(--color-text-subtle) !important;
         }
     }
 
-    &--mine &__quote {
-        background: color-mix(in srgb, var(--color-on-primary) 18%, transparent);
-        border-left-color: var(--color-on-primary);
-    }
-
     &--mine &__quote--unavailable {
-        border-left-color: color-mix(in srgb, var(--color-on-primary) 50%, transparent);
+        border-left-color: color-mix(in srgb, var(--color-on-primary) 50%, transparent) !important;
     }
 
     &__quote-sender {
         font-size: var(--text-xs);
         font-weight: var(--weight-semi);
-        color: var(--color-primary);
-    }
-
-    &--mine &__quote-sender {
-        color: var(--color-on-primary);
+        color: var(--msg-quote-sender-color);
     }
 
     &__quote-text {
         font-size: var(--text-xs);
-        color: var(--color-text-muted);
+        color: var(--msg-quote-text-color);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -135,10 +160,6 @@
         &--unavailable {
             font-style: italic;
         }
-    }
-
-    &--mine &__quote-text {
-        color: color-mix(in srgb, var(--color-on-primary) 80%, transparent);
     }
 
     &__image {
@@ -156,14 +177,10 @@
         align-items: center;
         gap: var(--space-1);
         padding: var(--space-4);
-        color: var(--color-text-subtle);
+        color: var(--msg-placeholder-color);
         font-size: var(--text-xs);
         min-width: 140px;
         text-align: center;
-    }
-
-    &--mine &__image-placeholder {
-        color: color-mix(in srgb, var(--color-on-primary) 70%, transparent);
     }
 
     &__audio {
@@ -175,13 +192,9 @@
         display: flex;
         align-items: center;
         gap: var(--space-2);
-        color: var(--color-text-subtle);
+        color: var(--msg-placeholder-color);
         font-size: var(--text-xs);
         padding: var(--space-1) 0;
-    }
-
-    &--mine &__audio-placeholder {
-        color: color-mix(in srgb, var(--color-on-primary) 70%, transparent);
     }
 
     &__text {
@@ -189,11 +202,7 @@
         line-height: var(--leading-normal);
         word-break: break-word;
         white-space: pre-wrap;
-        color: var(--color-text);
-    }
-
-    &--mine &__text {
-        color: var(--color-on-primary);
+        color: var(--msg-text-color);
     }
 
     &__meta {
@@ -205,21 +214,13 @@
     &__sender {
         font-size: var(--text-xs);
         font-weight: var(--weight-semi);
-        color: var(--color-primary);
-    }
-
-    &--mine &__sender {
-        color: color-mix(in srgb, var(--color-on-primary) 75%, transparent);
+        color: var(--msg-sender-color);
     }
 
     &__time {
         font-size: var(--text-xs);
-        color: var(--color-text-subtle);
+        color: var(--msg-time-color);
         margin-left: auto;
-    }
-
-    &--mine &__time {
-        color: color-mix(in srgb, var(--color-on-primary) 60%, transparent);
     }
 
     &__unread-dot {
@@ -227,11 +228,7 @@
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background: var(--color-primary);
-    }
-
-    &--mine &__unread-dot {
-        background: var(--color-on-primary);
+        background: var(--msg-unread-bg);
     }
 
     &__status {
@@ -241,14 +238,8 @@
         flex-shrink: 0;
     }
 
-    &__status--read {
-        color: var(--color-on-primary);
-    }
-
-    &__status--partial {
-        color: var(--color-on-primary);
-    }
-
+    &__status--read,
+    &__status--partial,
     &__status--all {
         color: var(--color-on-primary);
     }
@@ -295,6 +286,7 @@
     &__menu {
         position: absolute;
         bottom: calc(100% + var(--space-1));
+        top: auto;
         right: 0;
         background: var(--color-surface);
         border: 1px solid var(--color-border);
@@ -306,19 +298,15 @@
         min-width: 140px;
         z-index: 10;
 
-        // @media (hover: none) and (pointer: coarse) {
-        //     position: fixed;
-        //     bottom: 0;
-        //     left: 0;
-        //     right: 0;
-        //     top: auto;
-        //     border-radius: var(--radius-md) var(--radius-md) 0 0;
-        //     border-bottom: none;
-        //     padding: var(--space-2);
-        //     padding-bottom: calc(var(--space-2) + var(--safe-bottom-effective, env(safe-area-inset-bottom, 0px)));
-        //     min-width: unset;
-        //     z-index: 200;
-        // }
+        &--below {
+            bottom: auto;
+            top: calc(100% + var(--space-1));
+        }
+
+        &--left {
+            right: auto;
+            left: 0;
+        }
     }
 
     &__menu-item {
@@ -380,12 +368,14 @@
     }
 }
 
+// -------------------------------------------------------------
+// RESTLICHE ALLGEMEINE SELEKTOREN (Unverändert)
+// -------------------------------------------------------------
 @keyframes message-highlight {
     0%,
     100% {
         box-shadow: none;
     }
-
     20%,
     60% {
         box-shadow: 0 0 0 2px var(--color-primary);
@@ -397,7 +387,6 @@
     100% {
         opacity: 1;
     }
-
     50% {
         opacity: 0.25;
     }
@@ -504,7 +493,6 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
-    // background: var(--color-surface);
 
     &__name-row {
         display: flex;
@@ -553,11 +541,9 @@
         line-height: var(--leading-normal);
         outline: none;
         transition: border-color var(--duration-fast) var(--ease-out);
-        // textarea-specific
         resize: none;
         overflow-y: auto;
         min-height: 44px;
-        // 5 Zeilen (15px × 1.5 = 22.5px) + 2 × 12px padding ≈ 137px
         max-height: 137px;
         display: block;
 
@@ -700,6 +686,49 @@
         &__attach {
             width: 100%;
             height: 40px;
+        }
+    }
+}
+
+.message__mention {
+    font-weight: var(--weight-semibold, 600);
+}
+
+.typing-indicator {
+    flex-shrink: 0;
+    margin: 0;
+    padding: var(--space-1) var(--space-4);
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    font-style: italic;
+    animation: fade-in var(--duration-fast) var(--ease-out);
+}
+
+.mention-list {
+    list-style: none;
+    margin: 0;
+    padding: var(--space-1) 0;
+    background: var(--color-surface-raised, var(--color-surface));
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    max-height: 180px;
+    overflow-y: auto;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
+
+    &__item {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-2) var(--space-3);
+        cursor: pointer;
+        font-size: var(--text-sm);
+        color: var(--color-text);
+        transition: background var(--duration-fast) var(--ease-out);
+
+        &--active,
+        &:hover {
+            background: var(--color-surface-hover, var(--color-primary-muted, rgba(0, 0, 0, 0.06)));
         }
     }
 }

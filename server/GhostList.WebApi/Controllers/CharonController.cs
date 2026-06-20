@@ -18,7 +18,8 @@ public class CharonController(IMediator mediator) : ControllerBase
         if (string.IsNullOrWhiteSpace(deviceId))
             return BadRequest("X-Device-Id header is required.");
 
-        var drops = await mediator.Send(new GetCharonDropsByListIdQuery(listId, deviceId));
+        var userId = Request.Headers["X-User-Id"].FirstOrDefault();
+        var drops = await mediator.Send(new GetCharonDropsByListIdQuery(listId, deviceId, userId));
         return Ok(drops);
     }
 
@@ -38,7 +39,8 @@ public class CharonController(IMediator mediator) : ControllerBase
         if (string.IsNullOrWhiteSpace(deviceId))
             return BadRequest("X-Device-Id header is required.");
 
-        await mediator.Send(new MarkCharonDropViewedCommand(id, deviceId));
+        var userId = Request.Headers["X-User-Id"].FirstOrDefault();
+        await mediator.Send(new MarkCharonDropViewedCommand(id, deviceId, userId));
         return NoContent();
     }
 

@@ -1,6 +1,18 @@
 services:
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: "${MINIO_ROOT_USER}"
+      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD}"
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+
   server:
     image: ghcr.io/sab9900/ghostlist-server:latest
+    depends_on:
+      - minio
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
@@ -8,16 +20,31 @@ services:
       Admin__Username: "${ADMIN_USERNAME}"
       Admin__Password: "${ADMIN_PASSWORD}"
       Fcm__CredentialsJson: "${FCM_CREDENTIALS_JSON}"
+      Minio__Endpoint: "minio:9000"
+      Minio__AccessKey: "${MINIO_ROOT_USER}"
+      Minio__SecretKey: "${MINIO_ROOT_PASSWORD}"
+      Minio__BucketName: "ghostlist-images"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     restart: unless-stopped
 
   client:
     image: ghcr.io/sab9900/ghostlist-client:latest
     depends_on:
-      - server
+      server:
+        condition: service_healthy
     restart: unless-stopped
 
   admin-client:
     image: ghcr.io/sab9900/ghostlist-admin-client:latest
     depends_on:
-      - server
+      server:
+        condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  minio_data:

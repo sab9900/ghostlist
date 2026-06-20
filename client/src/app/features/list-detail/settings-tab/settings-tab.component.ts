@@ -3,6 +3,7 @@ import { Component, computed, effect, inject, signal, untracked } from '@angular
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
+import { IcalService } from '../../../core/services/ical.service';
 import { DeleteAfterDuration, ListMember, TTL_LABELS, TTL_VALUE_TO_ENUM } from '../../../core/models';
 import { CryptoService } from '../../../core/services/crypto.service';
 import { MasterPasswordService } from '../../../core/services/master-password.service';
@@ -34,6 +35,7 @@ export class SettingsTabComponent {
     private readonly router = inject(Router);
     private readonly crypto = inject(CryptoService);
     private readonly translate = inject(TranslateService);
+    private readonly ical = inject(IcalService);
 
     protected readonly ttlOptions = Object.values(DeleteAfterDuration).map(v => ({
         value: v,
@@ -45,6 +47,13 @@ export class SettingsTabComponent {
     protected readonly ttlSaved = signal(false);
     protected readonly deletingList = signal(false);
     protected readonly linkCopied = signal(false);
+
+    protected readonly listReminderDateTime = signal('');
+    protected readonly listReminderMinDateTime = computed(() => {
+        const d = new Date(Date.now() + 60_000);
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    });
 
     protected readonly listName = signal('');
     protected readonly renamingList = signal(false);
@@ -204,6 +213,13 @@ export class SettingsTabComponent {
         } catch {
             this.shareStep.set('error');
         }
+    }
+
+    downloadListReminder(): void {
+        const id = this.store.currentListId();
+        const dt = this.listReminderDateTime();
+        if (!id || !dt) return;
+        this.ical.downloadForList(id, new Date(dt).toISOString());
     }
 
     async deleteList(): Promise<void> {

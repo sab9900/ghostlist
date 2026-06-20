@@ -54,3 +54,7 @@ appsettings.*.json
 !.vscode/mcp.json
 *.DS_Store
 Thumbs.db
+
+# ─── Claude ───────────────────────────────────────────────────────────────────
+CLAUDE.md
+.claude/

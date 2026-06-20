@@ -18,11 +18,12 @@ public class MarkMessagesReadCommandHandlerTests
         return notifier;
     }
 
-    private static GhostListMember CreateMember(Guid listId, string deviceId) => new()
+    private static GhostListMember CreateMember(Guid listId, string deviceId, string? userId = null) => new()
     {
         Id = Guid.NewGuid(),
         GhostListId = listId,
         DeviceId = deviceId,
+        UserId = userId,
         EncryptedPayload = "payload",
         InitializationVector = "iv",
         UpdatedAt = DateTimeOffset.UtcNow
@@ -115,5 +116,47 @@ public class MarkMessagesReadCommandHandlerTests
 
         context.MessageReadReceipts.Should().BeEmpty();
         await notifier.DidNotReceive().NotifyReadReceiptUpdated(Arg.Any<Guid>(), Arg.Any<ReadReceiptUpdatedNotification>());
+    }
+
+    [Fact]
+    public async Task Handle_WithUserId_StoresUserIdOnReceipt()
+    {
+        await using var context = DbContextFactory.Create();
+        var list = Domain.Entities.GhostList.Create();
+        var message = GhostChatMessage.Create(list.Id, "enc", "iv", "encName", "nameIv", senderDeviceId: "device2");
+        var member = CreateMember(list.Id, "device1", userId: "user-abc");
+
+        context.GhostLists.Add(list);
+        context.GhostChatMessages.Add(message);
+        context.GhostListMembers.Add(member);
+        await context.SaveChangesAsync();
+
+        var handler = new MarkMessagesReadCommandHandler(context, MockNotifier());
+        await handler.Handle(new MarkMessagesReadCommand(list.Id, "device1", [message.Id], UserId: "user-abc"), CancellationToken.None);
+
+        var receipt = context.MessageReadReceipts.Single(r => r.MessageId == message.Id);
+        receipt.UserId.Should().Be("user-abc");
+        receipt.DeviceId.Should().Be("device1");
+    }
+
+    [Fact]
+    public async Task Handle_SecondDeviceSameUser_DoesNotCreateDuplicateReceipt()
+    {
+        await using var context = DbContextFactory.Create();
+        var list = Domain.Entities.GhostList.Create();
+        var message = GhostChatMessage.Create(list.Id, "enc", "iv", "encName", "nameIv", senderDeviceId: "device2");
+        var memberPhone = CreateMember(list.Id, "phone", userId: "user-abc");
+        var memberLaptop = CreateMember(list.Id, "laptop", userId: "user-abc");
+
+        context.GhostLists.Add(list);
+        context.GhostChatMessages.Add(message);
+        context.GhostListMembers.AddRange(memberPhone, memberLaptop);
+        await context.SaveChangesAsync();
+
+        var handler = new MarkMessagesReadCommandHandler(context, MockNotifier());
+        await handler.Handle(new MarkMessagesReadCommand(list.Id, "phone", [message.Id], UserId: "user-abc"), CancellationToken.None);
+        await handler.Handle(new MarkMessagesReadCommand(list.Id, "laptop", [message.Id], UserId: "user-abc"), CancellationToken.None);
+
+        context.MessageReadReceipts.Count(r => r.MessageId == message.Id).Should().Be(1);
     }
 }

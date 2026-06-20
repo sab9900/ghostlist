@@ -20,6 +20,17 @@ public static class DependencyInjection
         services.Configure<FcmOptions>(configuration.GetSection("Fcm"));
         services.AddScoped<IPushNotificationService, FcmNotificationService>();
 
+        var minioEndpoint = configuration["Minio:Endpoint"];
+        if (string.IsNullOrWhiteSpace(minioEndpoint))
+        {
+            services.AddSingleton<IBlobStorage, InMemoryBlobStorage>();
+        }
+        else
+        {
+            services.Configure<MinIOOptions>(configuration.GetSection("Minio"));
+            services.AddSingleton<IBlobStorage, MinIOBlobStorage>();
+        }
+
         return services;
     }
 
@@ -32,6 +43,24 @@ public static class DependencyInjection
         await db.Database.ExecuteSqlRawAsync("""
             ALTER TABLE "GhostLists"
             ADD COLUMN IF NOT EXISTS "OwnerTokenHash" character varying(64);
+
+            ALTER TABLE "MessageReadReceipts"
+            ADD COLUMN IF NOT EXISTS "UserId" character varying(128);
+
+            ALTER TABLE "ItemReadReceipts"
+            ADD COLUMN IF NOT EXISTS "UserId" character varying(128);
+
+            ALTER TABLE "CharonViewReceipts"
+            ADD COLUMN IF NOT EXISTS "UserId" character varying(128);
+
+            CREATE INDEX IF NOT EXISTS "IX_MessageReadReceipts_MessageId_UserId"
+            ON "MessageReadReceipts" ("MessageId", "UserId");
+
+            CREATE INDEX IF NOT EXISTS "IX_ItemReadReceipts_ItemId_UserId"
+            ON "ItemReadReceipts" ("ItemId", "UserId");
+
+            CREATE INDEX IF NOT EXISTS "IX_CharonViewReceipts_DropId_UserId"
+            ON "CharonViewReceipts" ("DropId", "UserId");
             """);
     }
 }

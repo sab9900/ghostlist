@@ -2,9 +2,12 @@ import { DatePipe } from '@angular/common';
 import { Component, computed, effect, ElementRef, HostListener, inject, OnDestroy, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { Clipboard } from '@capacitor/clipboard';
 import { Capacitor } from '@capacitor/core';
 import { LucideCheck, LucideCheckCheck, LucideCopy, LucideCornerUpLeft, LucideEllipsisVertical, LucideImage, LucideMic, LucideSquare, LucideTrash2 } from "@lucide/angular";
 import { TranslatePipe } from '@ngx-translate/core';
+import { debounceTime, Subject } from 'rxjs';
+import { HubService } from '../../../api/hub.service';
 import { ViewportDwellDirective } from '../../../core/directives/viewport-dwell.directive';
 import { GhostChatMessage } from '../../../core/models';
 import { CryptoService } from '../../../core/services/crypto.service';
@@ -53,6 +56,7 @@ export class ChatTabComponent implements OnDestroy {
     protected readonly userId = inject(UserIdService);
     private readonly imageViewer = inject(ImageViewerService);
     private readonly keyboardInset = inject(KeyboardInsetService);
+    private readonly hub = inject(HubService);
 
     @ViewChild('messageList') private messageListRef?: ElementRef<HTMLUListElement>;
     @ViewChild('fileInput') private fileInputRef?: ElementRef<HTMLInputElement>;
@@ -72,12 +76,21 @@ export class ChatTabComponent implements OnDestroy {
     protected readonly recordingDebugError = signal<string | null>(null);
     protected readonly decryptedMessages = signal<DecryptedMessage[]>([]);
 
+    protected readonly typingNames = signal<string[]>([]);
+    protected readonly mentionQuery = signal<string | null>(null);
+    protected readonly mentionIndex = signal(0);
+
+    private readonly typingInput$ = new Subject<void>();
+    private readonly typingClearTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
     private mediaRecorder: MediaRecorder | null = null;
     private audioChunks: Blob[] = [];
     private recordingTimer: ReturnType<typeof setInterval> | null = null;
 
     protected readonly replyingTo = signal<DecryptedMessage | null>(null);
     protected readonly openMenuId = signal<string | null>(null);
+    protected readonly menuBelow = signal(false);
+    protected readonly menuLeft = signal(false);
     protected readonly highlightedId = signal<string | null>(null);
 
     protected readonly swipeTriggerDistance = SWIPE_TRIGGER_DISTANCE;
@@ -129,10 +142,44 @@ export class ChatTabComponent implements OnDestroy {
         return (this.store.cachedMembers()[id] ?? []).filter(m => !m.isCurrentDevice);
     });
 
+    private readonly allMemberNames = computed(() => {
+        const id = this.store.currentListId();
+        if (!id) return [] as string[];
+        return (this.store.cachedMembers()[id] ?? [])
+            .filter(m => !m.isCurrentDevice)
+            .map(m => m.displayName);
+    });
+
+    protected readonly mentionCandidates = computed(() => {
+        const query = this.mentionQuery();
+        if (query === null) return [] as string[];
+        const lower = query.toLowerCase();
+        return this.allMemberNames().filter(n => n.toLowerCase().startsWith(lower));
+    });
+
     constructor() {
 
         this.keyboardInset.willShow$.pipe(takeUntilDestroyed()).subscribe(() => {
             this.scrollToBottomDuringTransition();
+        });
+
+        this.typingInput$.pipe(debounceTime(400), takeUntilDestroyed()).subscribe(() => {
+            void this.sendTypingNotification();
+        });
+
+        this.hub.typingIndicator$.pipe(takeUntilDestroyed()).subscribe(async event => {
+            const listId = this.store.currentListId();
+            if (event.listId !== listId) return;
+            const key = this.store.currentEncryptionKey();
+            if (!key) return;
+            const name = await this.crypto.decrypt(event.encryptedName, event.nameIv, key);
+            this.typingNames.update(names => names.includes(name) ? names : [...names, name]);
+            const existing = this.typingClearTimers.get(name);
+            if (existing !== undefined) clearTimeout(existing);
+            this.typingClearTimers.set(name, setTimeout(() => {
+                this.typingNames.update(names => names.filter(n => n !== name));
+                this.typingClearTimers.delete(name);
+            }, 3000));
         });
 
         effect(() => {
@@ -432,7 +479,17 @@ export class ChatTabComponent implements OnDestroy {
 
     toggleMenu(id: string, event: Event): void {
         event.stopPropagation();
-        this.openMenuId.set(this.openMenuId() === id ? null : id);
+        if (this.openMenuId() === id) {
+            this.openMenuId.set(null);
+            return;
+        }
+        const btn = event.currentTarget as HTMLElement;
+        const rect = btn.getBoundingClientRect();
+        const container = btn.closest('.message-list');
+        const containerTop = container ? container.getBoundingClientRect().top : 0;
+        this.menuBelow.set(rect.top - containerTop < 160);
+        this.menuLeft.set(rect.left < 160);
+        this.openMenuId.set(id);
     }
 
     @HostListener('document:click')
@@ -444,7 +501,7 @@ export class ChatTabComponent implements OnDestroy {
         this.openMenuId.set(null);
         if (msg.isImage) return;
         try {
-            await navigator.clipboard.writeText(msg.text);
+            await Clipboard.write({ string: msg.text });
         } catch { }
     }
 
@@ -486,6 +543,31 @@ export class ChatTabComponent implements OnDestroy {
     }
 
     protected onKeydown(event: KeyboardEvent): void {
+        if (this.mentionQuery() !== null) {
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                this.mentionIndex.update(i => Math.min(i + 1, this.mentionCandidates().length - 1));
+                return;
+            }
+            if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                this.mentionIndex.update(i => Math.max(i - 1, 0));
+                return;
+            }
+            if (event.key === 'Enter' || event.key === 'Tab') {
+                const candidate = this.mentionCandidates()[this.mentionIndex()];
+                if (candidate) {
+                    event.preventDefault();
+                    this.insertMention(candidate);
+                    return;
+                }
+            }
+            if (event.key === 'Escape') {
+                this.mentionQuery.set(null);
+                return;
+            }
+        }
+
         if (this.isMobile) return;
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
@@ -497,6 +579,63 @@ export class ChatTabComponent implements OnDestroy {
         const el = event.target as HTMLTextAreaElement;
         el.style.height = 'auto';
         el.style.height = el.scrollHeight + 'px';
+        this.updateMentionQuery(el);
+        this.typingInput$.next();
+    }
+
+    private updateMentionQuery(el: HTMLTextAreaElement): void {
+        const pos = el.selectionStart ?? 0;
+        const before = el.value.slice(0, pos);
+        const match = before.match(/(?:^|(?<=\s))@(\w*)$/);
+        if (match) {
+            this.mentionQuery.set(match[1]);
+            this.mentionIndex.set(0);
+        } else {
+            this.mentionQuery.set(null);
+        }
+    }
+
+    protected parseText(text: string): { value: string; isMention: boolean }[] {
+        const segments: { value: string; isMention: boolean }[] = [];
+        const regex = /@(\w+)/g;
+        let last = 0;
+        let match: RegExpExecArray | null;
+        while ((match = regex.exec(text)) !== null) {
+            if (match.index > last) segments.push({ value: text.slice(last, match.index), isMention: false });
+            segments.push({ value: match[0], isMention: true });
+            last = match.index + match[0].length;
+        }
+        if (last < text.length) segments.push({ value: text.slice(last), isMention: false });
+        return segments;
+    }
+
+    insertMention(name: string): void {
+        const el = this.composeInputRef?.nativeElement;
+        if (!el) return;
+        const pos = el.selectionStart ?? 0;
+        const value = el.value;
+        const before = value.slice(0, pos);
+        const after = value.slice(pos);
+        const replaced = before.replace(/(?:^|(?<=\s))@\w*$/, (m) => {
+            const prefix = m.startsWith('@') ? '' : m.slice(0, m.indexOf('@'));
+            return prefix + '@' + name + ' ';
+        });
+        const newValue = replaced + after;
+        this.newMessageText.set(newValue);
+        this.mentionQuery.set(null);
+        requestAnimationFrame(() => {
+            el.setSelectionRange(replaced.length, replaced.length);
+            el.focus();
+        });
+    }
+
+    private async sendTypingNotification(): Promise<void> {
+        const listId = this.store.currentListId();
+        const key = this.store.currentEncryptionKey();
+        const senderName = this.prefs.senderName() || 'Anonymous';
+        if (!listId || !key) return;
+        const { ciphertext, iv } = await this.crypto.encrypt(senderName, key);
+        await this.hub.notifyTyping(listId, ciphertext, iv);
     }
 
     async sendMessage(): Promise<void> {
@@ -593,6 +732,7 @@ export class ChatTabComponent implements OnDestroy {
     ngOnDestroy(): void {
         if (this.recordingTimer !== null) clearInterval(this.recordingTimer);
         if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') this.mediaRecorder.stop();
+        this.typingClearTimers.forEach(t => clearTimeout(t));
     }
 
 }

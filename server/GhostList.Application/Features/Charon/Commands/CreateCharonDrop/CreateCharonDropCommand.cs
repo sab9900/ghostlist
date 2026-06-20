@@ -1,11 +1,11 @@
 using FluentValidation;
+using GhostList.Application.Common;
 using GhostList.Application.Common.Exceptions;
 using GhostList.Application.Common.Interfaces;
 using GhostList.Application.Common.Notifications;
 using GhostList.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
 
 namespace GhostList.Application.Features.Charon.Commands.CreateCharonDrop;
 
@@ -38,7 +38,7 @@ public class CreateCharonDropCommandValidator : AbstractValidator<CreateCharonDr
     }
 }
 
-public class CreateCharonDropCommandHandler(IApplicationDbContext context, IGhostListNotifier notifier, IPushNotificationService push)
+public class CreateCharonDropCommandHandler(IApplicationDbContext context, IBlobStorage blobStorage, IGhostListNotifier notifier, IPushNotificationService push)
     : IRequestHandler<CreateCharonDropCommand, Guid>
 {
     private const int MaxPendingDropsPerList = 50;
@@ -59,8 +59,6 @@ public class CreateCharonDropCommandHandler(IApplicationDbContext context, IGhos
 
         var drop = CharonDrop.Create(
             request.GhostListId,
-            request.EncryptedContent,
-            request.ContentInitializationVector,
             request.EncryptedMetadata,
             request.MetadataInitializationVector,
             request.SenderDeviceId,
@@ -69,11 +67,14 @@ public class CreateCharonDropCommandHandler(IApplicationDbContext context, IGhos
         context.CharonDrops.Add(drop);
         await context.SaveChangesAsync(cancellationToken);
 
+        var contentPayload = $"{request.ContentInitializationVector}:{request.EncryptedContent}";
+        await blobStorage.SaveAsync(BlobKeys.CharonDrop(drop.Id), contentPayload, cancellationToken);
+
         await notifier.NotifyCharonDropCreated(drop.GhostListId, new CharonDropCreatedNotification(
             drop.Id,
             drop.GhostListId,
-            drop.EncryptedContent,
-            drop.ContentInitializationVector,
+            request.EncryptedContent,
+            request.ContentInitializationVector,
             drop.EncryptedMetadata,
             drop.MetadataInitializationVector,
             drop.CreatedAt,

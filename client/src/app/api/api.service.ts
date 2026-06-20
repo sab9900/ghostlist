@@ -121,6 +121,14 @@ export class ApiService {
         return this.http.delete<void>(`${this.BASE}/chat/${id}`);
     }
 
+    saveMessageImage(messageId: string, encryptedImage: string, imageInitializationVector: string): Observable<void> {
+        return this.http.post<void>(`${this.BASE}/chat/${messageId}/image`, { encryptedImage, imageInitializationVector });
+    }
+
+    saveMessageAudio(messageId: string, encryptedAudio: string, audioInitializationVector: string): Observable<void> {
+        return this.http.post<void>(`${this.BASE}/chat/${messageId}/audio`, { encryptedAudio, audioInitializationVector });
+    }
+
     getMessageImage(messageId: string): Observable<GhostMessageImageDto> {
         return this.http.get<GhostMessageImageDto>(`${this.BASE}/chat/${messageId}/image`);
     }
@@ -175,11 +183,13 @@ export class ApiService {
     }
 
     markMessagesRead(listId: string, deviceId: string, ids: string[]): Observable<void> {
-        return this.http.post<void>(`${this.BASE}/members/${listId}/${deviceId}/read-receipts/messages`, { ids } satisfies MarkReadRequest);
+        return this.http.post<void>(`${this.BASE}/members/${listId}/${deviceId}/read-receipts/messages`, { ids } satisfies MarkReadRequest,
+            { headers: this.userIdHeaders() });
     }
 
     markItemsRead(listId: string, deviceId: string, ids: string[]): Observable<void> {
-        return this.http.post<void>(`${this.BASE}/members/${listId}/${deviceId}/read-receipts/items`, { ids } satisfies MarkReadRequest);
+        return this.http.post<void>(`${this.BASE}/members/${listId}/${deviceId}/read-receipts/items`, { ids } satisfies MarkReadRequest,
+            { headers: this.userIdHeaders() });
     }
 
     putSyncBundle(sessionId: string, encryptedPayload: string, iv: string, senderPublicKey: string): Observable<void> {
@@ -215,7 +225,7 @@ export class ApiService {
 
     getCharonDrops(listId: string): Observable<CharonDropDto[]> {
         return this.http.get<CharonDropDto[]>(`${this.BASE}/charon/${listId}`,
-            { headers: this.deviceIdHeaders() });
+            { headers: { ...this.deviceIdHeaders(), ...this.userIdHeaders() } });
     }
 
     createCharonDrop(request: CreateCharonDropRequest): Observable<string> {
@@ -225,7 +235,7 @@ export class ApiService {
 
     markCharonDropViewed(dropId: string): Observable<void> {
         return this.http.post<void>(`${this.BASE}/charon/${dropId}/view`, null,
-            { headers: this.deviceIdHeaders() });
+            { headers: { ...this.deviceIdHeaders(), ...this.userIdHeaders() } });
     }
 
     deleteCharonDrop(dropId: string): Observable<void> {

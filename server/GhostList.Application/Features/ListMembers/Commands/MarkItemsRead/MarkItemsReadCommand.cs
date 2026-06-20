@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GhostList.Application.Features.ListMembers.Commands.MarkItemsRead;
 
-public record MarkItemsReadCommand(Guid ListId, string DeviceId, List<Guid> ItemIds) : IRequest;
+public record MarkItemsReadCommand(Guid ListId, string DeviceId, List<Guid> ItemIds, string? UserId = null) : IRequest;
 
 public class MarkItemsReadCommandHandler(IApplicationDbContext context)
     : IRequestHandler<MarkItemsReadCommand>
@@ -31,7 +31,9 @@ public class MarkItemsReadCommandHandler(IApplicationDbContext context)
             return;
 
         var alreadyRead = await context.ItemReadReceipts
-            .Where(r => r.DeviceId == request.DeviceId)
+            .Where(r => request.UserId != null
+                ? r.UserId == request.UserId
+                : r.DeviceId == request.DeviceId)
             .Select(r => r.ItemId)
             .ToListAsync(cancellationToken);
 
@@ -47,6 +49,7 @@ public class MarkItemsReadCommandHandler(IApplicationDbContext context)
             {
                 ItemId = item.Id,
                 DeviceId = request.DeviceId,
+                UserId = request.UserId,
                 ReadAt = now
             });
         }

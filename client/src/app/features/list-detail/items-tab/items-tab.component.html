@@ -13,6 +13,7 @@
     @let swipeDx = swipeOffset(item.id);
     @let activeReminder = reminderFor(item.id);
     <li class="item" [attr.data-item-id]="item.id" [class.item--open]="openMenuId() === item.id"
+        [class.item--highlight]="highlightedItemId() === item.id"
         [attr.aria-label]="('ITEMS.MARK_DONE_ARIA' | translate:{text: item.text})" tabindex="0" role="button"
         aria-pressed="false" (keydown.enter)="toggleItem(item.id)"
         (keydown.space)="$event.preventDefault(); toggleItem(item.id)" [appViewportDwell]="item.isNew ? item.id : ''"
@@ -50,14 +51,14 @@
         </div>
 
         @if (openMenuId() === item.id) {
-        <div class="item__menu" role="menu" (click)="$event.stopPropagation()">
+        <div class="item__menu" role="menu" [class.item__menu--above]="menuAbove()" (click)="$event.stopPropagation()">
             @if (activeReminder) {
             <button type="button" role="menuitem" class="item__menu-item item__menu-item--warning"
                 (click)="cancelReminder(item.id)">
                 <svg lucideXCircle [size]="15" aria-hidden="true"></svg>
                 {{ 'ITEMS.CANCEL_REMINDER' | translate }}
             </button>
-            } @else if (hasPushToken()) {
+            } @else {
             <button type="button" role="menuitem" class="item__menu-item" (click)="openReminder(item)">
                 <svg lucideClock [size]="15" aria-hidden="true"></svg>
                 {{ 'ITEMS.REMEMBER_ME' | translate }}
@@ -110,7 +111,7 @@
         </div>
 
         @if (openMenuId() === item.id) {
-        <div class="item__menu" role="menu" (click)="$event.stopPropagation()">
+        <div class="item__menu" role="menu" [class.item__menu--above]="menuAbove()" (click)="$event.stopPropagation()">
             <button type="button" role="menuitem" class="item__menu-item item__menu-item--danger"
                 (click)="deleteItem(item.id)">
                 <svg lucideTrash2 [size]="15" aria-hidden="true"></svg>
@@ -162,17 +163,26 @@
             </label>
         </div>
 
+        @if (reminderSaved()) {
+        <p class="reminder-dialog__saved-hint">{{ 'ITEMS.REMINDER_SAVED' | translate }}</p>
+        }
+
         <div class="reminder-dialog__actions">
+            @if (reminderSaved()) {
+            <button class="reminder-dialog__cancel" type="button" (click)="closeReminder()">
+                {{ 'COMMON.CANCEL' | translate }}
+            </button>
+            <button class="reminder-dialog__save reminder-dialog__save--ical" type="button" (click)="downloadIcal()">
+                {{ 'ITEMS.REMINDER_ADD_TO_CALENDAR' | translate }}
+            </button>
+            } @else {
             <button class="reminder-dialog__cancel" type="button" (click)="closeReminder()">
                 {{ 'COMMON.CANCEL' | translate }}
             </button>
             <button class="reminder-dialog__save" type="button" (click)="saveReminder()" [disabled]="savingReminder()">
-                @if (reminderSaved()) {
-                {{ 'ITEMS.REMINDER_SAVED' | translate }}
-                } @else {
                 {{ 'ITEMS.REMINDER_SAVE' | translate }}
-                }
             </button>
+            }
         </div>
     </div>
 </div>

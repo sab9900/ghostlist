@@ -83,7 +83,9 @@
                 </div>
                 }
                 } @else {
-                <p class="message__text">{{ msg.text }}</p>
+                <p class="message__text">@for (seg of parseText(msg.text); track $index) {
+                    @if (seg.isMention) {<strong class="message__mention">{{ seg.value }}</strong>} @else {{{ seg.value }}}
+                }</p>
                 }
 
                 <div class="message__meta">
@@ -117,7 +119,7 @@
                 </button>
 
                 @if (openMenuId() === msg.id) {
-                <div class="message__menu" role="menu" [class.message__menu--mine]="mine"
+                <div class="message__menu" role="menu" [class.message__menu--below]="menuBelow()" [class.message__menu--left]="menuLeft()"
                     (click)="$event.stopPropagation()">
                     <button type="button" role="menuitem" class="message__menu-item" (click)="startReply(msg)">
                         <svg lucideCornerUpLeft [size]="15" aria-hidden="true"></svg>
@@ -178,6 +180,29 @@
     <button type="button" class="reply-bar__cancel" (click)="cancelReply()"
         [attr.aria-label]="'CHAT.CANCEL_REPLY_ARIA' | translate">×</button>
 </div>
+}
+
+@if (typingNames().length > 0) {
+<p class="typing-indicator" role="status" aria-live="polite">
+    @if (typingNames().length === 1) {
+    {{ typingNames()[0] }} is typing…
+    } @else {
+    {{ typingNames().join(', ') }} are typing…
+    }
+</p>
+}
+
+@if (mentionQuery() !== null && mentionCandidates().length > 0) {
+<ul class="mention-list" role="listbox" aria-label="Mention suggestions">
+    @for (name of mentionCandidates(); track name; let i = $index) {
+    <li class="mention-list__item" role="option" [class.mention-list__item--active]="mentionIndex() === i"
+        [attr.aria-selected]="mentionIndex() === i" (mousedown)="$event.preventDefault()"
+        (click)="insertMention(name)">
+        <app-avatar [name]="name" [size]="20" />
+        {{ name }}
+    </li>
+    }
+</ul>
 }
 
 @if (fileTooLarge()) {

@@ -1,3 +1,4 @@
+using GhostList.Application.Common;
 using GhostList.Application.Common.Exceptions;
 using GhostList.Application.Common.Interfaces;
 using MediatR;
@@ -5,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GhostList.Application.Features.Charon.Queries.GetCharonDropsByListId;
 
-public record GetCharonDropsByListIdQuery(Guid ListId, string DeviceId) : IRequest<List<CharonDropDto>>;
+public record GetCharonDropsByListIdQuery(Guid ListId, string DeviceId, string? UserId = null) : IRequest<List<CharonDropDto>>;
 
 public record CharonDropDto(
     Guid Id,
@@ -18,7 +19,7 @@ public record CharonDropDto(
     string? SenderDeviceId,
     string? SenderUserId);
 
-public class GetCharonDropsByListIdQueryHandler(IApplicationDbContext context)
+public class GetCharonDropsByListIdQueryHandler(IApplicationDbContext context, IBlobStorage blobStorage)
     : IRequestHandler<GetCharonDropsByListIdQuery, List<CharonDropDto>>
 {
     public async Task<List<CharonDropDto>> Handle(
@@ -32,22 +33,45 @@ public class GetCharonDropsByListIdQueryHandler(IApplicationDbContext context)
             throw new NotFoundException(nameof(Domain.Entities.GhostList), request.ListId);
 
         var viewedDropIds = context.CharonViewReceipts
-            .Where(r => r.DeviceId == request.DeviceId)
+            .Where(r => request.UserId != null
+                ? r.UserId == request.UserId
+                : r.DeviceId == request.DeviceId)
             .Select(r => r.DropId);
 
-        return await context.CharonDrops
+        var drops = await context.CharonDrops
             .Where(d => d.GhostListId == request.ListId && !viewedDropIds.Contains(d.Id))
             .OrderBy(d => d.CreatedAt)
-            .Select(d => new CharonDropDto(
+            .ToListAsync(cancellationToken);
+
+        var results = await Task.WhenAll(drops.Select(async d =>
+        {
+            string encryptedContent = string.Empty;
+            string contentIv = string.Empty;
+
+            try
+            {
+                var payload = await blobStorage.GetAsync(BlobKeys.CharonDrop(d.Id), cancellationToken);
+                var separatorIndex = payload.IndexOf(':');
+                if (separatorIndex >= 0)
+                {
+                    contentIv = payload[..separatorIndex];
+                    encryptedContent = payload[(separatorIndex + 1)..];
+                }
+            }
+            catch { }
+
+            return new CharonDropDto(
                 d.Id,
                 d.GhostListId,
-                d.EncryptedContent,
-                d.ContentInitializationVector,
+                encryptedContent,
+                contentIv,
                 d.EncryptedMetadata,
                 d.MetadataInitializationVector,
                 d.CreatedAt,
                 d.SenderDeviceId,
-                d.SenderUserId))
-            .ToListAsync(cancellationToken);
+                d.SenderUserId);
+        }));
+
+        return [.. results];
     }
 }
