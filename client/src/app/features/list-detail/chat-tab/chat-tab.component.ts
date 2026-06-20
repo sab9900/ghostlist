@@ -1,14 +1,10 @@
-import { DatePipe } from '@angular/common';
-import { Component, computed, effect, ElementRef, HostListener, inject, OnDestroy, signal, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormsModule } from '@angular/forms';
 import { Clipboard } from '@capacitor/clipboard';
 import { Capacitor } from '@capacitor/core';
-import { LucideCheck, LucideCheckCheck, LucideCopy, LucideCornerUpLeft, LucideEllipsisVertical, LucideImage, LucideMic, LucideSquare, LucideTrash2 } from "@lucide/angular";
 import { TranslatePipe } from '@ngx-translate/core';
-import { debounceTime, Subject } from 'rxjs';
+import { Subject, debounceTime } from 'rxjs';
 import { HubService } from '../../../api/hub.service';
-import { ViewportDwellDirective } from '../../../core/directives/viewport-dwell.directive';
 import { GhostChatMessage } from '../../../core/models';
 import { CryptoService } from '../../../core/services/crypto.service';
 import { DeviceIdService } from '../../../core/services/device-id.service';
@@ -17,33 +13,23 @@ import { ImageViewerService } from '../../../core/services/image-viewer.service'
 import { KeyboardInsetService } from '../../../core/services/keyboard-inset.service';
 import { UserIdService } from '../../../core/services/user-id.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
-import { AudioWaveformPlayerComponent } from '../../../shared/audio-waveform-player/audio-waveform-player.component';
-import { AvatarComponent } from '../../../shared/avatar/avatar.component';
 import { AppStore } from '../../../store/app.store';
-
-interface DecryptedMessage {
-    id: string;
-    text: string;
-    senderName: string;
-    createdAt: string;
-    replyToMessageId: string | null;
-    isImage: boolean;
-    isAudio: boolean;
-    senderDeviceId: string | null;
-    senderUserId: string | null;
-}
+import { ShareHandlerService } from '../../../core/services/share-handler.service';
+import { ChatComposeComponent } from './components/chat-compose/chat-compose.component';
+import { ChatMessageComponent } from './components/chat-message/chat-message.component';
+import { MentionListComponent } from './components/mention-list/mention-list.component';
+import { ReplyBarComponent } from './components/reply-bar/reply-bar.component';
+import { DecryptedMessage, ReplyPreview } from './chat-tab.types';
 
 const SWIPE_TRIGGER_DISTANCE = 56;
 const SWIPE_MAX_DISTANCE = 72;
 const SHOW_READ_RECEIPT_CHECKMARK = true;
-
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
-
 const MAX_DATA_URL_LENGTH = 1_800_000;
 
 @Component({
     selector: 'app-chat-tab',
-    imports: [FormsModule, DatePipe, TranslatePipe, ViewportDwellDirective, AvatarComponent, AudioWaveformPlayerComponent, LucideCornerUpLeft, LucideImage, LucideMic, LucideCheckCheck, LucideCheck, LucideEllipsisVertical, LucideCopy, LucideTrash2, LucideSquare],
+    imports: [TranslatePipe, ChatMessageComponent, ReplyBarComponent, MentionListComponent, ChatComposeComponent],
     templateUrl: './chat-tab.component.html',
     styleUrl: './chat-tab.component.scss',
 })
@@ -57,10 +43,10 @@ export class ChatTabComponent implements OnDestroy {
     private readonly imageViewer = inject(ImageViewerService);
     private readonly keyboardInset = inject(KeyboardInsetService);
     private readonly hub = inject(HubService);
+    private readonly shareHandler = inject(ShareHandlerService);
 
-    @ViewChild('messageList') private messageListRef?: ElementRef<HTMLUListElement>;
-    @ViewChild('fileInput') private fileInputRef?: ElementRef<HTMLInputElement>;
-    @ViewChild('composeInput') private composeInputRef?: ElementRef<HTMLTextAreaElement>;
+    private readonly messageListRef = viewChild<ElementRef<HTMLUListElement>>('messageList');
+    private readonly composeRef = viewChild<ChatComposeComponent>('composeRef');
 
     private readonly isMobile = Capacitor.isNativePlatform() || window.matchMedia('(pointer: coarse)').matches;
 
@@ -116,13 +102,9 @@ export class ChatTabComponent implements OnDestroy {
         return new Set(this.store.unreadMessageIds()[id] ?? []);
     });
 
-    protected isUnread(messageId: string): boolean {
-        return this.unreadMessageIds().has(messageId);
-    }
+    protected isUnread(messageId: string): boolean { return this.unreadMessageIds().has(messageId); }
 
-    onMessageDwellRead(messageId: string): void {
-        this.store.markMessageRead(messageId);
-    }
+    onMessageDwellRead(messageId: string): void { this.store.markMessageRead(messageId); }
 
     protected isMineBySenderIds(senderUserId: string | null, senderDeviceId: string | null): boolean | null {
         if (senderUserId !== null) return senderUserId === this.userId.userId();
@@ -145,9 +127,7 @@ export class ChatTabComponent implements OnDestroy {
     private readonly allMemberNames = computed(() => {
         const id = this.store.currentListId();
         if (!id) return [] as string[];
-        return (this.store.cachedMembers()[id] ?? [])
-            .filter(m => !m.isCurrentDevice)
-            .map(m => m.displayName);
+        return (this.store.cachedMembers()[id] ?? []).filter(m => !m.isCurrentDevice).map(m => m.displayName);
     });
 
     protected readonly mentionCandidates = computed(() => {
@@ -157,16 +137,50 @@ export class ChatTabComponent implements OnDestroy {
         return this.allMemberNames().filter(n => n.toLowerCase().startsWith(lower));
     });
 
-    constructor() {
+    protected replyPreviewFor(msg: DecryptedMessage): ReplyPreview | null {
+        if (!msg.replyToMessageId) return null;
+        const src = this.messagesById().get(msg.replyToMessageId);
+        if (!src) return null;
+        return { senderName: src.senderName, text: src.text, isImage: src.isImage, isAudio: src.isAudio };
+    }
 
+    protected readReceiptStateFor(msg: DecryptedMessage): 'sent' | 'partial' | 'all' {
+        const others = this.otherMembers();
+        if (others.length === 0) return 'sent';
+        const msgTime = new Date(msg.createdAt).getTime();
+        const readCount = others.filter(m => m.lastReadMessageAt && new Date(m.lastReadMessageAt).getTime() >= msgTime).length;
+        if (readCount === 0) return 'sent';
+        if (readCount >= others.length) return 'all';
+        return 'partial';
+    }
+
+    protected readersForMessage(msg: DecryptedMessage): { displayName: string }[] {
+        const others = this.otherMembers();
+        const msgTime = new Date(msg.createdAt).getTime();
+        return others.filter(m => m.lastReadMessageAt && new Date(m.lastReadMessageAt).getTime() >= msgTime);
+    }
+
+    protected isMineFor(msg: DecryptedMessage): boolean {
+        const byId = this.isMineBySenderIds(msg.senderUserId, msg.senderDeviceId);
+        if (byId !== null) return byId;
+        return msg.senderName === (this.prefs.senderName() || '');
+    }
+
+    protected swipeOffset(id: string): number {
+        const state = this.swipeState();
+        return state?.id === id ? state.dx : 0;
+    }
+
+    protected imageDataUrl(id: string): string | null { return this.store.imageDataUrls()[id] ?? null; }
+    protected audioDataUrl(id: string): string | null { return this.store.audioDataUrls()[id] ?? null; }
+
+    constructor() {
         this.keyboardInset.willShow$.pipe(takeUntilDestroyed()).subscribe(() => {
             this.scrollToBottomDuringTransition();
         });
-
         this.typingInput$.pipe(debounceTime(400), takeUntilDestroyed()).subscribe(() => {
             void this.sendTypingNotification();
         });
-
         this.hub.typingIndicator$.pipe(takeUntilDestroyed()).subscribe(async event => {
             const listId = this.store.currentListId();
             if (event.listId !== listId) return;
@@ -181,21 +195,25 @@ export class ChatTabComponent implements OnDestroy {
                 this.typingClearTimers.delete(name);
             }, 3000));
         });
+        effect(() => {
+            const payload = this.shareHandler.pendingPayload();
+            if (!payload || !payload.confirmed || payload.target !== 'chat') return;
+            const file = payload.files[0];
+            if (file) {
+                this.shareHandler.consume();
+                void this.sendSharedFile(file);
+            }
+        });
 
         effect(() => {
             void this.store.messages();
             void this.decryptMessages().then(ok => {
                 if (!ok) return;
-
                 if (!this._firstDecryptDone) {
-
                     this._firstDecryptDone = true;
                     this.scrollToFirstUnreadOrBottom();
-                    setTimeout(() => {
-                        this._fullyOpened = true;
-                    }, 1200);
+                    setTimeout(() => { this._fullyOpened = true; }, 1200);
                 } else if (this._fullyOpened) {
-
                     this.scrollToBottom();
                 }
             });
@@ -204,37 +222,30 @@ export class ChatTabComponent implements OnDestroy {
 
     private scrollToBottom(): void {
         requestAnimationFrame(() => {
-            const el = this.messageListRef?.nativeElement;
+            const el = this.messageListRef()?.nativeElement;
             if (el) el.scrollTop = el.scrollHeight;
         });
     }
 
     private scrollToBottomDuringTransition(): void {
-        const el = this.messageListRef?.nativeElement;
+        const el = this.messageListRef()?.nativeElement;
         if (!el) return;
-
         const durationMs = 250;
         const start = performance.now();
-
         const step = () => {
             el.scrollTop = el.scrollHeight;
-            if (performance.now() - start < durationMs) {
-                requestAnimationFrame(step);
-            }
+            if (performance.now() - start < durationMs) requestAnimationFrame(step);
         };
         requestAnimationFrame(step);
     }
 
     private scrollToFirstUnreadOrBottom(): void {
         requestAnimationFrame(() => {
-            const el = this.messageListRef?.nativeElement;
+            const el = this.messageListRef()?.nativeElement;
             if (!el) return;
             const firstUnread = el.querySelector<HTMLElement>('.message--unread');
-            if (firstUnread) {
-                firstUnread.scrollIntoView({ block: 'center' });
-            } else {
-                el.scrollTop = el.scrollHeight;
-            }
+            if (firstUnread) firstUnread.scrollIntoView({ block: 'center' });
+            else el.scrollTop = el.scrollHeight;
         });
     }
 
@@ -245,244 +256,42 @@ export class ChatTabComponent implements OnDestroy {
             this.store.messages().map(async (msg: GhostChatMessage) => {
                 const text = await this.crypto.decrypt(msg.encryptedMessage, msg.messageInitializationVector, key);
                 const senderName = await this.crypto.decrypt(msg.encryptedSenderName, msg.senderNameInitializationVector, key);
-                let isImage = false;
-                let isAudio = false;
+                let isImage = false; let isAudio = false;
                 if (text.length < 100) {
-                    try {
-                        const parsed = JSON.parse(text);
-                        isImage = parsed?.type === 'image';
-                        isAudio = parsed?.type === 'audio';
-                    } catch { }
+                    try { const parsed = JSON.parse(text); isImage = parsed?.type === 'image'; isAudio = parsed?.type === 'audio'; } catch { }
                 }
-                return {
-                    id: msg.id,
-                    text,
-                    senderName,
-                    createdAt: msg.createdAt,
-                    replyToMessageId: msg.replyToMessageId,
-                    isImage,
-                    isAudio,
-                    senderDeviceId: msg.senderDeviceId,
-                    senderUserId: msg.senderUserId,
-                } satisfies DecryptedMessage;
+                return { id: msg.id, text, senderName, createdAt: msg.createdAt, replyToMessageId: msg.replyToMessageId, isImage, isAudio, senderDeviceId: msg.senderDeviceId, senderUserId: msg.senderUserId } satisfies DecryptedMessage;
             }),
         );
         this.decryptedMessages.set(messages);
-
         const imageDataUrls = this.store.imageDataUrls();
         const audioDataUrls = this.store.audioDataUrls();
         for (const msg of messages) {
-            if (msg.isImage && !imageDataUrls[msg.id]) {
-                void this.store.fetchAndCacheImage(msg.id);
-            }
-            if (msg.isAudio && !audioDataUrls[msg.id]) {
-                void this.store.fetchAndCacheAudio(msg.id);
-            }
+            if (msg.isImage && !imageDataUrls[msg.id]) void this.store.fetchAndCacheImage(msg.id);
+            if (msg.isAudio && !audioDataUrls[msg.id]) void this.store.fetchAndCacheAudio(msg.id);
         }
-
         return true;
-    }
-
-    protected replyPreview(msg: DecryptedMessage): DecryptedMessage | null {
-        if (!msg.replyToMessageId) return null;
-        return this.messagesById().get(msg.replyToMessageId) ?? null;
-    }
-
-    /** @deprecated use readReceiptState */
-    protected isReadByOthers(msg: DecryptedMessage): boolean {
-        const ts = this.othersLastRead();
-        if (!ts) return false;
-        return new Date(msg.createdAt).getTime() <= new Date(ts).getTime();
-    }
-
-    /**
-     * 'sent'    – no other member has read this message yet
-     * 'partial' – at least one other member has read it
-     * 'all'     – every known other member has read it
-     */
-    protected readReceiptState(msg: DecryptedMessage): 'sent' | 'partial' | 'all' {
-        const others = this.otherMembers();
-        if (others.length === 0) return 'sent';
-        const msgTime = new Date(msg.createdAt).getTime();
-        const readCount = others.filter(
-            m => m.lastReadMessageAt && new Date(m.lastReadMessageAt).getTime() >= msgTime,
-        ).length;
-        if (readCount === 0) return 'sent';
-        if (readCount >= others.length) return 'all';
-        return 'partial';
-    }
-
-    /** Members (excluding self) who have read up to and including this message. */
-    protected readersForMessage(msg: DecryptedMessage): { displayName: string }[] {
-        const others = this.otherMembers();
-        const msgTime = new Date(msg.createdAt).getTime();
-        return others.filter(
-            m => m.lastReadMessageAt && new Date(m.lastReadMessageAt).getTime() >= msgTime,
-        );
-    }
-
-    protected imageDataUrl(id: string): string | null {
-        return this.store.imageDataUrls()[id] ?? null;
-    }
-
-    protected audioDataUrl(id: string): string | null {
-        return this.store.audioDataUrls()[id] ?? null;
-    }
-
-    protected openImage(src: string, alt: string): void {
-        this.imageViewer.open(src, alt);
-    }
-
-    protected formatRecordingTime(seconds: number): string {
-        const m = Math.floor(seconds / 60);
-        const s = seconds % 60;
-        return `${m}:${s.toString().padStart(2, '0')}`;
-    }
-
-    async toggleRecording(): Promise<void> {
-        if (this.recording()) {
-            this.haptics.messageSent();
-            await this.stopRecording();
-        } else {
-            await this.startRecording();
-        }
-    }
-
-    private async startRecording(): Promise<void> {
-        if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
-            const reason = !navigator.mediaDevices
-                ? 'mediaDevices undefined'
-                : !navigator.mediaDevices.getUserMedia
-                    ? 'getUserMedia undefined'
-                    : 'MediaRecorder undefined';
-            this.recordingDebugError.set(reason);
-            this.recordingNotSupported.set(true);
-            setTimeout(() => { this.recordingNotSupported.set(false); this.recordingDebugError.set(null); }, 8000);
-            return;
-        }
-
-        let stream: MediaStream;
-        try {
-            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        } catch (err) {
-            if (err instanceof DOMException && err.name === 'NotAllowedError') {
-                this.recordingPermissionDenied.set(true);
-                setTimeout(() => this.recordingPermissionDenied.set(false), 5000);
-            } else {
-                const errName = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-                this.recordingDebugError.set(errName);
-                this.recordingNotSupported.set(true);
-                setTimeout(() => { this.recordingNotSupported.set(false); this.recordingDebugError.set(null); }, 8000);
-            }
-            return;
-        }
-
-        const mimeType = ChatTabComponent.getBestAudioMimeType();
-        this.mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-        this.audioChunks = [];
-
-        this.mediaRecorder.ondataavailable = (e) => {
-            if (e.data.size > 0) this.audioChunks.push(e.data);
-        };
-
-        this.mediaRecorder.onstop = () => {
-            stream.getTracks().forEach(t => t.stop());
-            const actualMime = this.mediaRecorder?.mimeType || mimeType || 'audio/webm';
-            void this.sendAudioMessage(actualMime);
-        };
-
-        this.mediaRecorder.start(100);
-        this.recording.set(true);
-        this.recordingSeconds.set(0);
-
-        this.recordingTimer = setInterval(() => {
-            const next = this.recordingSeconds() + 1;
-            this.recordingSeconds.set(next);
-            if (next >= 120) void this.stopRecording();
-        }, 1000);
-    }
-
-    private async stopRecording(): Promise<void> {
-        if (this.recordingTimer !== null) {
-            clearInterval(this.recordingTimer);
-            this.recordingTimer = null;
-        }
-        this.recording.set(false);
-        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
-            this.mediaRecorder.stop();
-        }
-    }
-
-    private async sendAudioMessage(mimeType: string): Promise<void> {
-        const blob = new Blob(this.audioChunks, { type: mimeType });
-        this.audioChunks = [];
-
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onerror = () => reject(reader.error ?? new Error('Could not read audio blob'));
-            reader.onload = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
-        });
-
-        const sender = this.prefs.senderName() || 'Anonymous';
-        const replyId = this.replyingTo()?.id ?? null;
-
-        this.sendingAudio.set(true);
-        try {
-            this.haptics.messageSent();
-            await this.store.shareAudio(dataUrl, sender, replyId);
-            this.replyingTo.set(null);
-        } catch {
-        } finally {
-            this.sendingAudio.set(false);
-        }
-    }
-
-    private static getBestAudioMimeType(): string {
-        const candidates = [
-            'audio/webm;codecs=opus',
-            'audio/webm',
-            'audio/mp4',
-            'audio/ogg;codecs=opus',
-            'audio/ogg',
-        ];
-        for (const type of candidates) {
-            if (MediaRecorder.isTypeSupported(type)) return type;
-        }
-        return '';
-    }
-
-    protected swipeOffset(id: string): number {
-        const state = this.swipeState();
-        return state?.id === id ? state.dx : 0;
     }
 
     startReply(msg: DecryptedMessage): void {
         this.replyingTo.set(msg);
         this.openMenuId.set(null);
-        requestAnimationFrame(() => this.composeInputRef?.nativeElement?.focus());
+        requestAnimationFrame(() => this.composeRef()?.focusInput());
     }
 
-    cancelReply(): void {
-        this.replyingTo.set(null);
-    }
+    cancelReply(): void { this.replyingTo.set(null); }
 
     scrollToMessage(id: string): void {
-        const el = this.messageListRef?.nativeElement?.querySelector<HTMLElement>(`[data-message-id="${id}"]`);
+        const el = this.messageListRef()?.nativeElement?.querySelector<HTMLElement>(`[data-message-id="${id}"]`);
         if (!el) return;
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         this.highlightedId.set(id);
-        setTimeout(() => {
-            if (this.highlightedId() === id) this.highlightedId.set(null);
-        }, 1400);
+        setTimeout(() => { if (this.highlightedId() === id) this.highlightedId.set(null); }, 1400);
     }
 
-    toggleMenu(id: string, event: Event): void {
+    toggleMenu(id: string, event: MouseEvent): void {
         event.stopPropagation();
-        if (this.openMenuId() === id) {
-            this.openMenuId.set(null);
-            return;
-        }
+        if (this.openMenuId() === id) { this.openMenuId.set(null); return; }
         const btn = event.currentTarget as HTMLElement;
         const rect = btn.getBoundingClientRect();
         const container = btn.closest('.message-list');
@@ -493,16 +302,12 @@ export class ChatTabComponent implements OnDestroy {
     }
 
     @HostListener('document:click')
-    closeMenu(): void {
-        this.openMenuId.set(null);
-    }
+    closeMenu(): void { this.openMenuId.set(null); }
 
     async copyMessage(msg: DecryptedMessage): Promise<void> {
         this.openMenuId.set(null);
         if (msg.isImage) return;
-        try {
-            await Clipboard.write({ string: msg.text });
-        } catch { }
+        try { await Clipboard.write({ string: msg.text }); } catch { }
     }
 
     onTouchStart(event: TouchEvent, msg: DecryptedMessage): void {
@@ -516,70 +321,43 @@ export class ChatTabComponent implements OnDestroy {
     onTouchMove(event: TouchEvent, msg: DecryptedMessage): void {
         const state = this.swipeState();
         if (!state || state.id !== msg.id) return;
-
         const dx = event.touches[0].clientX - this.swipeStartX;
         const dy = event.touches[0].clientY - this.swipeStartY;
-
         if (!this.swipeAxisLocked) {
             if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
             this.swipeAxisLocked = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
         }
         if (this.swipeAxisLocked !== 'x') return;
-
         const clamped = Math.max(0, Math.min(dx, SWIPE_MAX_DISTANCE));
-        if (clamped >= SWIPE_TRIGGER_DISTANCE && state.dx < SWIPE_TRIGGER_DISTANCE) {
-            this.haptics.listTap();
-        }
+        if (clamped >= SWIPE_TRIGGER_DISTANCE && state.dx < SWIPE_TRIGGER_DISTANCE) this.haptics.listTap();
         this.swipeState.set({ id: msg.id, dx: clamped });
     }
 
     onTouchEnd(msg: DecryptedMessage): void {
         const state = this.swipeState();
         this.swipeAxisLocked = null;
-        if (state && state.id === msg.id && state.dx >= SWIPE_TRIGGER_DISTANCE) {
-            this.startReply(msg);
-        }
+        if (state && state.id === msg.id && state.dx >= SWIPE_TRIGGER_DISTANCE) this.startReply(msg);
         this.swipeState.set(null);
     }
 
-    protected onKeydown(event: KeyboardEvent): void {
+    onKeydown(event: KeyboardEvent): void {
         if (this.mentionQuery() !== null) {
-            if (event.key === 'ArrowDown') {
-                event.preventDefault();
-                this.mentionIndex.update(i => Math.min(i + 1, this.mentionCandidates().length - 1));
-                return;
-            }
-            if (event.key === 'ArrowUp') {
-                event.preventDefault();
-                this.mentionIndex.update(i => Math.max(i - 1, 0));
-                return;
-            }
+            if (event.key === 'ArrowDown') { event.preventDefault(); this.mentionIndex.update(i => Math.min(i + 1, this.mentionCandidates().length - 1)); return; }
+            if (event.key === 'ArrowUp') { event.preventDefault(); this.mentionIndex.update(i => Math.max(i - 1, 0)); return; }
             if (event.key === 'Enter' || event.key === 'Tab') {
                 const candidate = this.mentionCandidates()[this.mentionIndex()];
-                if (candidate) {
-                    event.preventDefault();
-                    this.insertMention(candidate);
-                    return;
-                }
+                if (candidate) { event.preventDefault(); this.insertMention(candidate); return; }
             }
-            if (event.key === 'Escape') {
-                this.mentionQuery.set(null);
-                return;
-            }
+            if (event.key === 'Escape') { this.mentionQuery.set(null); return; }
         }
-
         if (this.isMobile) return;
-        if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault();
-            void this.sendMessage();
-        }
+        if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void this.sendMessage(); }
     }
 
-    protected autoResize(event: Event): void {
-        const el = event.target as HTMLTextAreaElement;
-        el.style.height = 'auto';
-        el.style.height = el.scrollHeight + 'px';
-        this.updateMentionQuery(el);
+    onTextChange(value: string): void {
+        this.newMessageText.set(value);
+        const el = this.composeRef()?.textarea()?.nativeElement;
+        if (el) this.updateMentionQuery(el);
         this.typingInput$.next();
     }
 
@@ -587,30 +365,12 @@ export class ChatTabComponent implements OnDestroy {
         const pos = el.selectionStart ?? 0;
         const before = el.value.slice(0, pos);
         const match = before.match(/(?:^|(?<=\s))@(\w*)$/);
-        if (match) {
-            this.mentionQuery.set(match[1]);
-            this.mentionIndex.set(0);
-        } else {
-            this.mentionQuery.set(null);
-        }
-    }
-
-    protected parseText(text: string): { value: string; isMention: boolean }[] {
-        const segments: { value: string; isMention: boolean }[] = [];
-        const regex = /@(\w+)/g;
-        let last = 0;
-        let match: RegExpExecArray | null;
-        while ((match = regex.exec(text)) !== null) {
-            if (match.index > last) segments.push({ value: text.slice(last, match.index), isMention: false });
-            segments.push({ value: match[0], isMention: true });
-            last = match.index + match[0].length;
-        }
-        if (last < text.length) segments.push({ value: text.slice(last), isMention: false });
-        return segments;
+        if (match) { this.mentionQuery.set(match[1]); this.mentionIndex.set(0); }
+        else this.mentionQuery.set(null);
     }
 
     insertMention(name: string): void {
-        const el = this.composeInputRef?.nativeElement;
+        const el = this.composeRef()?.textarea()?.nativeElement;
         if (!el) return;
         const pos = el.selectionStart ?? 0;
         const value = el.value;
@@ -623,10 +383,7 @@ export class ChatTabComponent implements OnDestroy {
         const newValue = replaced + after;
         this.newMessageText.set(newValue);
         this.mentionQuery.set(null);
-        requestAnimationFrame(() => {
-            el.setSelectionRange(replaced.length, replaced.length);
-            el.focus();
-        });
+        requestAnimationFrame(() => { el.setSelectionRange(replaced.length, replaced.length); el.focus(); });
     }
 
     private async sendTypingNotification(): Promise<void> {
@@ -651,7 +408,7 @@ export class ChatTabComponent implements OnDestroy {
             this.replyingTo.set(null);
         } finally {
             this.sendingMessage.set(false);
-            const el = this.composeInputRef?.nativeElement;
+            const el = this.composeRef()?.textarea()?.nativeElement;
             if (el) el.style.height = 'auto';
         }
     }
@@ -661,37 +418,70 @@ export class ChatTabComponent implements OnDestroy {
         await this.store.deleteMessage(id);
     }
 
-    pickImage(): void {
-        this.fileInputRef?.nativeElement.click();
-    }
+    openImage(url: string, alt: string): void { this.imageViewer.open(url, alt); }
+
+    pickImage(): void { this.composeRef()?.fileInput()?.nativeElement.click(); }
 
     async onFileSelected(event: Event): Promise<void> {
         const input = event.target as HTMLInputElement;
         const file = input.files?.[0];
         input.value = '';
         if (!file || !file.type.startsWith('image/')) return;
-
-        if (file.size > MAX_FILE_SIZE) {
-            this.showFileTooLarge();
-            return;
-        }
-
+        if (file.size > MAX_FILE_SIZE) { this.showFileTooLarge(); return; }
         this.sendingImage.set(true);
         try {
             const dataUrl = await this.compressImage(file);
-            if (dataUrl.length > MAX_DATA_URL_LENGTH) {
-                this.showFileTooLarge();
-                return;
-            }
+            if (dataUrl.length > MAX_DATA_URL_LENGTH) { this.showFileTooLarge(); return; }
             const sender = this.prefs.senderName() || 'Anonymous';
             const replyId = this.replyingTo()?.id ?? null;
             this.haptics.messageSent();
             await this.store.shareImage(dataUrl, sender, replyId);
             this.replyingTo.set(null);
         } catch {
-        } finally {
-            this.sendingImage.set(false);
+        } finally { this.sendingImage.set(false); }
+    }
+
+    async sendSharedFile(file: File): Promise<void> {
+        if (file.type.startsWith('image/')) {
+            await this.sendSharedImage(file);
+        } else if (file.type.startsWith('audio/')) {
+            await this.sendSharedAudio(file);
         }
+    }
+
+    private async sendSharedImage(file: File): Promise<void> {
+        if (file.size > MAX_FILE_SIZE) { this.showFileTooLarge(); return; }
+        this.sendingImage.set(true);
+        try {
+            const dataUrl = await this.compressImage(file);
+            if (dataUrl.length > MAX_DATA_URL_LENGTH) { this.showFileTooLarge(); return; }
+            const sender = this.prefs.senderName() || 'Anonymous';
+            this.haptics.messageSent();
+            await this.store.shareImage(dataUrl, sender, null);
+        } catch {
+        } finally { this.sendingImage.set(false); }
+    }
+
+    private async sendSharedAudio(file: File): Promise<void> {
+        if (file.size > MAX_FILE_SIZE) { this.showFileTooLarge(); return; }
+        this.sendingAudio.set(true);
+        try {
+            const dataUrl = await this.readAsDataUrl(file);
+            if (dataUrl.length > MAX_DATA_URL_LENGTH) { this.showFileTooLarge(); return; }
+            const sender = this.prefs.senderName() || 'Anonymous';
+            this.haptics.messageSent();
+            await this.store.shareAudio(dataUrl, sender, null);
+        } catch {
+        } finally { this.sendingAudio.set(false); }
+    }
+
+    private readAsDataUrl(file: File): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = () => reject(reader.error ?? new Error('Could not read file'));
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(file);
+        });
     }
 
     private showFileTooLarge(): void {
@@ -700,8 +490,7 @@ export class ChatTabComponent implements OnDestroy {
     }
 
     private compressImage(file: File): Promise<string> {
-        const MAX_DIMENSION = 1280;
-        const QUALITY = 0.72;
+        const MAX_DIMENSION = 1280; const QUALITY = 0.72;
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onerror = () => reject(reader.error ?? new Error('Could not read file'));
@@ -712,12 +501,10 @@ export class ChatTabComponent implements OnDestroy {
                     let { width, height } = img;
                     if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
                         const scale = MAX_DIMENSION / Math.max(width, height);
-                        width = Math.round(width * scale);
-                        height = Math.round(height * scale);
+                        width = Math.round(width * scale); height = Math.round(height * scale);
                     }
                     const canvas = document.createElement('canvas');
-                    canvas.width = width;
-                    canvas.height = height;
+                    canvas.width = width; canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     if (!ctx) { reject(new Error('Canvas unavailable')); return; }
                     ctx.drawImage(img, 0, 0, width, height);
@@ -729,10 +516,79 @@ export class ChatTabComponent implements OnDestroy {
         });
     }
 
+    async toggleRecording(): Promise<void> {
+        if (this.recording()) { this.haptics.messageSent(); await this.stopRecording(); }
+        else await this.startRecording();
+    }
+
+    private async startRecording(): Promise<void> {
+        if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+            const reason = !navigator.mediaDevices ? 'mediaDevices undefined' : !navigator.mediaDevices.getUserMedia ? 'getUserMedia undefined' : 'MediaRecorder undefined';
+            this.recordingDebugError.set(reason); this.recordingNotSupported.set(true);
+            setTimeout(() => { this.recordingNotSupported.set(false); this.recordingDebugError.set(null); }, 8000);
+            return;
+        }
+        let stream: MediaStream;
+        try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+        catch (err) {
+            if (err instanceof DOMException && err.name === 'NotAllowedError') {
+                this.recordingPermissionDenied.set(true);
+                setTimeout(() => this.recordingPermissionDenied.set(false), 5000);
+            } else {
+                const errName = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+                this.recordingDebugError.set(errName); this.recordingNotSupported.set(true);
+                setTimeout(() => { this.recordingNotSupported.set(false); this.recordingDebugError.set(null); }, 8000);
+            }
+            return;
+        }
+        const mimeType = ChatTabComponent.getBestAudioMimeType();
+        this.mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+        this.audioChunks = [];
+        this.mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) this.audioChunks.push(e.data); };
+        this.mediaRecorder.onstop = () => {
+            stream.getTracks().forEach(t => t.stop());
+            const actualMime = this.mediaRecorder?.mimeType || mimeType || 'audio/webm';
+            void this.sendAudioMessage(actualMime);
+        };
+        this.mediaRecorder.start(100);
+        this.recording.set(true); this.recordingSeconds.set(0);
+        this.recordingTimer = setInterval(() => {
+            const next = this.recordingSeconds() + 1;
+            this.recordingSeconds.set(next);
+            if (next >= 120) void this.stopRecording();
+        }, 1000);
+    }
+
+    private async stopRecording(): Promise<void> {
+        if (this.recordingTimer !== null) { clearInterval(this.recordingTimer); this.recordingTimer = null; }
+        this.recording.set(false);
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') this.mediaRecorder.stop();
+    }
+
+    private async sendAudioMessage(mimeType: string): Promise<void> {
+        const blob = new Blob(this.audioChunks, { type: mimeType }); this.audioChunks = [];
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = () => reject(reader.error ?? new Error('Could not read audio blob'));
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+        });
+        const sender = this.prefs.senderName() || 'Anonymous';
+        const replyId = this.replyingTo()?.id ?? null;
+        this.sendingAudio.set(true);
+        try { this.haptics.messageSent(); await this.store.shareAudio(dataUrl, sender, replyId); this.replyingTo.set(null); }
+        catch { } finally { this.sendingAudio.set(false); }
+    }
+
+    private static getBestAudioMimeType(): string {
+        const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus', 'audio/ogg'];
+        for (const type of candidates) { if (MediaRecorder.isTypeSupported(type)) return type; }
+        return '';
+    }
+
     ngOnDestroy(): void {
         if (this.recordingTimer !== null) clearInterval(this.recordingTimer);
         if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') this.mediaRecorder.stop();
         this.typingClearTimers.forEach(t => clearTimeout(t));
     }
-
 }

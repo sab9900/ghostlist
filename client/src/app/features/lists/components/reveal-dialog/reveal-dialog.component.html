@@ -1,0 +1,24 @@
+@if (show()) {
+<div class="backdrop" (click)="close()" role="presentation">
+    <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+        aria-labelledby="reveal-dialog-title" aria-describedby="reveal-dialog-hint">
+        <h2 class="title" id="reveal-dialog-title">{{ 'LISTS.REVEAL_TITLE' | translate }}</h2>
+        <p class="hint" id="reveal-dialog-hint">{{ 'LISTS.REVEAL_HINT' | translate }}</p>
+        <input class="input" type="password"
+            [attr.placeholder]="'LISTS.REVEAL_PLACEHOLDER' | translate"
+            [ngModel]="password()" (ngModelChange)="password.set($event)"
+            (keydown.enter)="submit()" autofocus
+            [attr.aria-label]="'LISTS.REVEAL_PLACEHOLDER' | translate"
+            aria-required="true" />
+        @if (error()) {
+        <p class="error-msg" role="alert">{{ 'LISTS.REVEAL_ERROR' | translate }}</p>
+        }
+        <div class="actions">
+            <button class="btn btn--ghost" (click)="close()" [disabled]="revealing()">{{ 'COMMON.CANCEL' | translate }}</button>
+            <button class="btn btn--primary" (click)="submit()" [disabled]="!password() || revealing()" [attr.aria-busy]="revealing()">
+                {{ revealing() ? ('LISTS.REVEAL_CHECKING' | translate) : ('LISTS.REVEAL_BTN' | translate) }}
+            </button>
+        </div>
+    </div>
+</div>
+}

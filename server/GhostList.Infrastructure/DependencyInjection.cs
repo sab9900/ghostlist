@@ -61,6 +61,12 @@ public static class DependencyInjection
 
             CREATE INDEX IF NOT EXISTS "IX_CharonViewReceipts_DropId_UserId"
             ON "CharonViewReceipts" ("DropId", "UserId");
+
+            ALTER TABLE "CharonDrops" DROP COLUMN IF EXISTS "EncryptedContent";
+            ALTER TABLE "CharonDrops" DROP COLUMN IF EXISTS "ContentInitializationVector";
+
+            DROP TABLE IF EXISTS "GhostMessageImages";
+            DROP TABLE IF EXISTS "GhostMessageAudios";
             """);
     }
 }

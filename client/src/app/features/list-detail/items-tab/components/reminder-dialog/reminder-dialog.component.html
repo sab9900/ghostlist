@@ -1,0 +1,30 @@
+@if (item(); as it) {
+<div class="backdrop" (click)="close.emit()" role="dialog" aria-modal="true"
+    [attr.aria-label]="'ITEMS.REMINDER_DIALOG_TITLE' | translate">
+    <div class="dialog" (click)="$event.stopPropagation()">
+        <h3 class="title">{{ 'ITEMS.REMINDER_DIALOG_TITLE' | translate }}</h3>
+        <p class="text">{{ it.text }}</p>
+
+        <div class="fields">
+            <label class="label">
+                {{ 'ITEMS.REMINDER_DATETIME_LABEL' | translate }}
+                <input class="input" type="datetime-local" [(ngModel)]="dateTime" [min]="minDateTime()" />
+            </label>
+        </div>
+
+        @if (saved()) {
+        <p class="saved">{{ 'ITEMS.REMINDER_SAVED' | translate }}</p>
+        }
+
+        <div class="actions">
+            @if (saved()) {
+            <button class="cancel" type="button" (click)="close.emit()">{{ 'COMMON.CANCEL' | translate }}</button>
+            <button class="save save--ical" type="button" (click)="downloadIcal.emit()">{{ 'ITEMS.REMINDER_ADD_TO_CALENDAR' | translate }}</button>
+            } @else {
+            <button class="cancel" type="button" (click)="close.emit()">{{ 'COMMON.CANCEL' | translate }}</button>
+            <button class="save" type="button" (click)="submit()" [disabled]="saving()">{{ 'ITEMS.REMINDER_SAVE' | translate }}</button>
+            }
+        </div>
+    </div>
+</div>
+}

@@ -1,15 +1,9 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withHooks, withMethods, withState } from '@ngrx/signals';
-import { firstValueFrom } from 'rxjs';
-import { ApiService } from '../api/api.service';
 import { HubService } from '../api/hub.service';
 import {
     AudioSharedEvent,
     CharonDropDto,
-    CreateGhostListItemRequest,
-    CreateGhostMessageRequest,
-    DeleteAfterDuration,
     GhostChatMessage,
     GhostList,
     GhostListItem,
@@ -19,37 +13,31 @@ import {
 import { ConnectivityService } from '../core/services/connectivity.service';
 import { CryptoService } from '../core/services/crypto.service';
 import { DeviceIdService } from '../core/services/device-id.service';
-import { UserIdService } from '../core/services/user-id.service';
 import { ForegroundService } from '../core/services/foreground.service';
 import { HapticsService } from '../core/services/haptics.service';
 import { ListStorageService } from '../core/services/list-storage.service';
 import { PushNotificationService } from '../core/services/push-notification.service';
+import { UserIdService } from '../core/services/user-id.service';
+import { dataUrlToBlob } from '../core/utils/audio-blob.util';
+import { createCharonDropsMethods } from './features/with-charon-drops.feature';
+import { createItemsMethods } from './features/with-items.feature';
+import { createListManagementMethods } from './features/with-list-management.feature';
 import { withListSync } from './features/with-list-sync.feature';
+import { createMediaMethods } from './features/with-media.feature';
+import { createMessagesMethods } from './features/with-messages.feature';
 
 interface AppState {
-
     knownLists: KnownList[];
-
     currentListId: string | null;
-
     currentEncryptionKey: string | null;
-
     currentList: GhostList | null;
-
     items: GhostListItem[];
-
     messages: GhostChatMessage[];
-
     charonDrops: CharonDropDto[];
-
     imageDataUrls: Record<string, string>;
-
     audioDataUrls: Record<string, string>;
-
     listsLoaded: boolean;
-
     pendingOpsCount: number;
-
     loading: boolean;
     error: string | null;
 }
@@ -70,60 +58,20 @@ const initialState: AppState = {
     error: null,
 };
 
-/** Converts a data URL to a Blob without requiring a full fetch round-trip. */
-class AudioBlobConverter {
-    static dataUrlToBlob(dataUrl: string): Blob {
-        const [header, b64] = dataUrl.split(',');
-        const mime = header.match(/:(.*?);/)?.[1] ?? 'audio/webm';
-        const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-        return new Blob([bytes], { type: mime });
-    }
-}
-
-function isNetworkError(e: unknown): boolean {
-    return e instanceof HttpErrorResponse && e.status === 0;
-}
-
-function tempId(): string {
-    return `local-${self.crypto.randomUUID()}`;
-}
-
-function resolveCreatedItemId(items: GhostListItem[], tempItemId: string, realId: string): GhostListItem[] {
-    if (items.some(i => i.id === realId)) {
-        return items.filter(i => i.id !== tempItemId);
-    }
-    return items.map(i => i.id === tempItemId ? { ...i, id: realId } : i);
-}
-
-function resolveCreatedMessageId(messages: GhostChatMessage[], tempMessageId: string, realId: string): GhostChatMessage[] {
-    if (messages.some(m => m.id === realId)) {
-        return messages.filter(m => m.id !== tempMessageId);
-    }
-    return messages.map(m => m.id === tempMessageId ? { ...m, id: realId } : m);
-}
-
 export const AppStore = signalStore(
     { providedIn: 'root' },
 
     withState(initialState),
-
     withListSync(),
 
     withComputed((store) => {
         const connectivity = inject(ConnectivityService);
-
         return {
-
             online: computed(() => connectivity.online()),
-
             isListOpen: computed(() => store.currentListId() !== null && store.currentList() !== null),
-
             activeItems: computed(() => store.items().filter((i) => !i.isChecked)),
-
             checkedItems: computed(() => store.items().filter((i) => i.isChecked)),
-
             canShare: computed(() => store.currentListId() !== null && store.currentEncryptionKey() !== null),
-
             isCurrentListOwner: computed(() => {
                 const id = store.currentListId();
                 if (!id) return false;
@@ -132,727 +80,13 @@ export const AppStore = signalStore(
         };
     }),
 
-    withMethods((store) => {
-        const api = inject(ApiService);
-        const hub = inject(HubService);
-        const storage = inject(ListStorageService);
-        const crypto = inject(CryptoService);
-        const push = inject(PushNotificationService);
-        const deviceId = inject(DeviceIdService);
-        const userId = inject(UserIdService);
-        const foreground = inject(ForegroundService);
-        const connectivity = inject(ConnectivityService);
-
-        function setError(error: string | null) {
-            patchState(store, { error, loading: false });
-        }
-
-        const IMAGE_CACHE_LIMIT = 30;
-        const imageCacheOrder: string[] = [];
-
-        function cacheImage(messageId: string, dataUrl: string): void {
-            const current = store.imageDataUrls();
-            if (!(messageId in current)) {
-                imageCacheOrder.push(messageId);
-                if (imageCacheOrder.length > IMAGE_CACHE_LIMIT) {
-                    const evict = imageCacheOrder.shift();
-                    if (evict && evict in store.imageDataUrls()) {
-                        const rest = { ...store.imageDataUrls() };
-                        delete rest[evict];
-                        patchState(store, { imageDataUrls: rest });
-                    }
-                }
-            }
-            patchState(store, { imageDataUrls: { ...store.imageDataUrls(), [messageId]: dataUrl } });
-        }
-
-        const AUDIO_CACHE_LIMIT = 20;
-        const audioCacheOrder: string[] = [];
-
-        function cacheAudio(messageId: string, blobUrl: string): void {
-            const current = store.audioDataUrls();
-            if (!(messageId in current)) {
-                audioCacheOrder.push(messageId);
-                if (audioCacheOrder.length > AUDIO_CACHE_LIMIT) {
-                    const evict = audioCacheOrder.shift();
-                    if (evict && evict in store.audioDataUrls()) {
-                        URL.revokeObjectURL(store.audioDataUrls()[evict]);
-                        const rest = { ...store.audioDataUrls() };
-                        delete rest[evict];
-                        patchState(store, { audioDataUrls: rest });
-                    }
-                }
-            }
-            patchState(store, { audioDataUrls: { ...store.audioDataUrls(), [messageId]: blobUrl } });
-        }
-
-        async function persistCurrentList(): Promise<void> {
-            const id = store.currentListId();
-            if (!id) return;
-            const list = store.currentList();
-            await storage.putListCache({
-                id,
-                ttl: list?.ttl ?? 0,
-                createdAt: list?.createdAt ?? new Date().toISOString(),
-                items: store.items(),
-                messages: store.messages(),
-                cachedAt: new Date().toISOString(),
-            }).catch(() => { });
-        }
-
-        async function enqueueOp(op: Parameters<ListStorageService['addPendingOp']>[0]): Promise<void> {
-            await storage.addPendingOp(op);
-            patchState(store, { pendingOpsCount: store.pendingOpsCount() + 1 });
-        }
-
-        async function upsertToggleOp(listId: string, itemId: string, desiredChecked: boolean, createdAt: string): Promise<void> {
-            const ops = await storage.getPendingOps();
-            const existing = ops.find(o => o.type === 'toggleItem' && o.itemId === itemId);
-            if (existing?.localId !== undefined) {
-                await storage.removePendingOp(existing.localId);
-                await storage.addPendingOp({ type: 'toggleItem', listId, itemId, desiredChecked, createdAt });
-                return;
-            }
-            await enqueueOp({ type: 'toggleItem', listId, itemId, desiredChecked, createdAt });
-        }
-
-        let flushing = false;
-
-        return {
-
-            async createList(encryptionKey: string, name: string): Promise<string> {
-                patchState(store, { loading: true });
-                try {
-                    const tokenBytes = self.crypto.getRandomValues(new Uint8Array(32));
-                    const ownerToken = btoa(String.fromCharCode(...tokenBytes));
-                    const ownerTokenHash = await crypto.sha256Hex(ownerToken);
-
-                    const id = await firstValueFrom(api.createList(ownerTokenHash));
-                    const entry: KnownList = { id, encryptionKey, name, addedAt: new Date().toISOString(), ownerToken };
-                    await store._persistAndTrack(entry);
-
-                    // Hub-Join und Push im Hintergrund — blockiert den Dialog nicht
-                    void (async () => {
-                        try {
-                            await hub.connect();
-                            await hub.joinList(id);
-                            foreground.start();
-                        } catch { }
-                    })();
-                    void push.subscribeToList(id).catch(() => { });
-                    void store._registerAsMember(id, encryptionKey);
-                    return id;
-                } catch (e: unknown) {
-                    setError(e instanceof Error ? e.message : 'Failed to create list');
-                    throw e;
-                } finally {
-                    patchState(store, { loading: false });
-                }
-            },
-
-            async joinList(id: string, encryptionKey: string): Promise<void> {
-                const registration = store._registerAsMember(id, encryptionKey);
-
-                if (store.currentListId() === id) return;
-
-                const cached = await storage.getListCache(id).catch(() => undefined);
-
-                patchState(store, {
-                    currentListId: id,
-                    currentEncryptionKey: encryptionKey,
-                    currentList: cached
-                        ? { id: cached.id, ttl: cached.ttl, createdAt: cached.createdAt, items: cached.items, chatMessages: cached.messages }
-                        : null,
-                    items: cached?.items ?? [],
-                    messages: cached?.messages ?? [],
-                    charonDrops: [],
-                    audioDataUrls: {},
-                    error: null,
-                    loading: !cached,
-                });
-
-                try {
-                    await hub.connect();
-                    await hub.joinList(id);
-                    foreground.start();
-                } catch (e: unknown) {
-                    patchState(store, { loading: false });
-                    if (cached) return;
-                    setError(e instanceof Error ? e.message : 'Failed to open list');
-                    throw e;
-                }
-
-                try {
-                    const drops = await firstValueFrom(api.getCharonDrops(id));
-                    if (store.currentListId() === id) {
-                        patchState(store, { charonDrops: drops });
-                    }
-                } catch { }
-
-                try {
-                    const list = await firstValueFrom(api.getList(id));
-
-                    if (store.currentListId() === id) {
-                        patchState(store, {
-                            currentList: list,
-                            items: list.items,
-                            messages: list.chatMessages,
-                            loading: false,
-                        });
-                        void persistCurrentList();
-                    }
-
-                    await registration;
-                    await store.ensureUnreadSeeded(id);
-                    if (store.currentListId() === id) void store.refreshOthersReadReceipt(id);
-                } catch (e: unknown) {
-                    if (store.currentListId() === id) patchState(store, { loading: false });
-                    if (cached) return;
-                    setError(e instanceof Error ? e.message : 'Failed to open list');
-                    throw e;
-                }
-            },
-
-            async leaveCurrentList(): Promise<void> {
-                patchState(store, {
-                    currentListId: null,
-                    currentEncryptionKey: null,
-                    currentList: null,
-                    items: [],
-                    messages: [],
-                    charonDrops: [],
-                    audioDataUrls: {},
-                    error: null,
-                });
-
-            },
-
-            async deleteList(id: string): Promise<void> {
-                patchState(store, { loading: true });
-                try {
-                    await push.unsubscribeFromList(id);
-                    const ownerToken = store.knownLists().find(l => l.id === id)?.ownerToken;
-                    try {
-                        await firstValueFrom(api.deleteList(id, ownerToken));
-                    } catch (e: unknown) {
-
-                        if (!(e instanceof HttpErrorResponse && e.status === 404)) throw e;
-                    }
-                    await hub.leaveList(id);
-                    await storage.remove(id);
-                    const knownLists = store.knownLists().filter((l) => l.id !== id);
-                    const patch: Partial<AppState> = { knownLists, loading: false };
-                    if (store.currentListId() === id) {
-                        Object.assign(patch, {
-                            currentListId: null,
-                            currentEncryptionKey: null,
-                            currentList: null,
-                            items: [],
-                            messages: [],
-                            charonDrops: [],
-                        });
-                    }
-                    patchState(store, patch);
-                } catch (e: unknown) {
-                    setError(e instanceof Error ? e.message : 'Failed to delete list');
-                    throw e;
-                }
-            },
-
-            async renameList(id: string, name: string): Promise<void> {
-                const existing = store.knownLists().find(l => l.id === id);
-                if (!existing) return;
-                await store._persistAndTrack({ ...existing, name });
-            },
-
-            async forgetList(id: string): Promise<void> {
-                const known = store.knownLists().find(l => l.id === id);
-
-                if (known?.ownerToken) {
-                    await this.deleteList(id);
-                    return;
-                }
-
-                void firstValueFrom(api.deleteMember(id, deviceId.deviceId)).catch(() => { });
-                await push.unsubscribeFromList(id);
-                await hub.leaveList(id);
-                await storage.remove(id);
-                const knownLists = store.knownLists().filter((l) => l.id !== id);
-                const patch: Partial<AppState> = { knownLists };
-                if (store.currentListId() === id) {
-                    Object.assign(patch, {
-                        currentListId: null,
-                        currentEncryptionKey: null,
-                        currentList: null,
-                        items: [],
-                        messages: [],
-                        charonDrops: [],
-                    });
-                }
-                patchState(store, patch);
-            },
-
-            async kickMember(listId: string, targetDeviceId: string): Promise<void> {
-                const ownerToken = store.knownLists().find(l => l.id === listId)?.ownerToken;
-                if (!ownerToken) throw new Error('Not the list owner.');
-                await firstValueFrom(api.kickMember(listId, targetDeviceId, ownerToken));
-            },
-
-            async removeOwnMemberMachine(listId: string, targetDeviceId: string): Promise<void> {
-                await firstValueFrom(api.deleteMember(listId, targetDeviceId));
-            },
-
-            async updateTtl(ttl: DeleteAfterDuration): Promise<void> {
-                const id = store.currentListId();
-                if (!id) return;
-                await firstValueFrom(api.updateTtl(id, ttl));
-
-            },
-
-            async addItem(plaintext: string): Promise<void> {
-                const listId = store.currentListId();
-                const key = store.currentEncryptionKey();
-                if (!listId || !key) return;
-
-                const { ciphertext, iv } = await crypto.encrypt(plaintext, key);
-                const payload: CreateGhostListItemRequest = { ghostListId: listId, encryptedPayload: ciphertext, initializationVector: iv };
-
-                const id = tempId();
-                const optimisticItem: GhostListItem = {
-                    id,
-                    ghostListId: listId,
-                    encryptedPayload: ciphertext,
-                    initializationVector: iv,
-                    isChecked: false,
-                    checkedAt: null,
-                    createdAt: new Date().toISOString(),
-                    senderDeviceId: deviceId.deviceId,
-                    senderUserId: userId.userId(),
-                    checkedByDeviceId: null,
-                    checkedByUserId: null,
-                };
-                patchState(store, { items: [...store.items(), optimisticItem] });
-                void persistCurrentList();
-
-                try {
-                    const realId = await firstValueFrom(api.createItem(payload));
-                    patchState(store, {
-                        items: resolveCreatedItemId(store.items(), id, realId),
-                    });
-                    void persistCurrentList();
-                } catch (e: unknown) {
-
-                    if (!isNetworkError(e) || connectivity.online()) {
-                        patchState(store, { items: store.items().filter(i => i.id !== id) });
-                        void persistCurrentList();
-                        throw e;
-                    }
-                    await enqueueOp({ type: 'createItem', listId, tempItemId: id, payload, createdAt: new Date().toISOString() });
-                }
-            },
-
-            async toggleItem(itemId: string): Promise<void> {
-
-                const prev = store.items();
-                const desiredChecked = !(prev.find(i => i.id === itemId)?.isChecked ?? false);
-                patchState(store, {
-                    items: prev.map(i =>
-                        i.id === itemId
-                            ? {
-                                ...i,
-                                isChecked: !i.isChecked,
-                                checkedAt: !i.isChecked ? new Date().toISOString() : null,
-                                checkedByDeviceId: !i.isChecked ? deviceId.deviceId : null,
-                                checkedByUserId: !i.isChecked ? userId.userId() : null,
-                            }
-                            : i,
-                    ),
-                });
-                void persistCurrentList();
-
-                if (itemId.startsWith('local-')) {
-
-                    return;
-                }
-
-                try {
-                    await firstValueFrom(api.toggleItem(itemId));
-                } catch (e: unknown) {
-                    if (!isNetworkError(e)) {
-                        patchState(store, { items: prev });
-                        void persistCurrentList();
-                        throw e;
-                    }
-                    await upsertToggleOp(store.currentListId() ?? '', itemId, desiredChecked, new Date().toISOString());
-                }
-            },
-
-            async deleteItem(itemId: string): Promise<void> {
-                const prev = store.items();
-                patchState(store, { items: prev.filter(i => i.id !== itemId) });
-                void persistCurrentList();
-
-                if (itemId.startsWith('local-')) {
-                    const ops = await storage.getPendingOps();
-                    const match = ops.find(o => o.type === 'createItem' && o.tempItemId === itemId);
-                    if (match?.localId !== undefined) {
-                        await storage.removePendingOp(match.localId);
-                        patchState(store, { pendingOpsCount: Math.max(0, store.pendingOpsCount() - 1) });
-                    }
-                    return;
-                }
-
-                try {
-                    await firstValueFrom(api.deleteItem(itemId));
-                } catch (e: unknown) {
-                    if (!isNetworkError(e)) {
-                        patchState(store, { items: prev });
-                        void persistCurrentList();
-                        throw e;
-                    }
-                    await enqueueOp({ type: 'deleteItem', listId: store.currentListId() ?? '', itemId, createdAt: new Date().toISOString() });
-                }
-            },
-
-            async sendMessage(plainMessage: string, plainSenderName: string, replyToMessageId?: string | null): Promise<void> {
-                const listId = store.currentListId();
-                const key = store.currentEncryptionKey();
-                if (!listId || !key) return;
-
-                const [msg, sender] = await Promise.all([
-                    crypto.encrypt(plainMessage, key),
-                    crypto.encrypt(plainSenderName, key),
-                ]);
-
-                const payload: CreateGhostMessageRequest = {
-                    ghostListId: listId,
-                    encryptedMessage: msg.ciphertext,
-                    messageInitializationVector: msg.iv,
-                    encryptedSenderName: sender.ciphertext,
-                    senderNameInitializationVector: sender.iv,
-                    replyToMessageId: replyToMessageId ?? null,
-                };
-
-                const id = tempId();
-                const optimisticMessage: GhostChatMessage = {
-                    id,
-                    ghostListId: listId,
-                    encryptedMessage: payload.encryptedMessage,
-                    messageInitializationVector: payload.messageInitializationVector,
-                    encryptedSenderName: payload.encryptedSenderName,
-                    senderNameInitializationVector: payload.senderNameInitializationVector,
-                    replyToMessageId: payload.replyToMessageId ?? null,
-                    createdAt: new Date().toISOString(),
-                    senderDeviceId: deviceId.deviceId,
-                    senderUserId: userId.userId(),
-                };
-
-                patchState(store, {
-                    messages: [...store.messages(), optimisticMessage],
-                });
-                void persistCurrentList();
-
-                try {
-                    const realId = await firstValueFrom(api.createMessage(payload));
-                    patchState(store, {
-                        messages: resolveCreatedMessageId(store.messages(), id, realId),
-                    });
-                    void persistCurrentList();
-                } catch (e: unknown) {
-
-                    if (!isNetworkError(e) || connectivity.online()) {
-                        patchState(store, { messages: store.messages().filter(m => m.id !== id) });
-                        void persistCurrentList();
-                        throw e;
-                    }
-                    await enqueueOp({ type: 'sendMessage', listId, tempMessageId: id, payload, createdAt: new Date().toISOString() });
-                }
-            },
-
-            async deleteMessage(messageId: string): Promise<void> {
-                const prev = store.messages();
-                patchState(store, { messages: prev.filter(m => m.id !== messageId) });
-                void persistCurrentList();
-
-                if (messageId.startsWith('local-')) {
-                    const ops = await storage.getPendingOps();
-                    const match = ops.find(o => o.type === 'sendMessage' && o.tempMessageId === messageId);
-                    if (match?.localId !== undefined) {
-                        await storage.removePendingOp(match.localId);
-                        patchState(store, { pendingOpsCount: Math.max(0, store.pendingOpsCount() - 1) });
-                    }
-                    return;
-                }
-
-                try {
-                    await firstValueFrom(api.deleteMessage(messageId));
-                } catch (e: unknown) {
-                    if (!isNetworkError(e)) {
-                        patchState(store, { messages: prev });
-                        void persistCurrentList();
-                        throw e;
-                    }
-                    await enqueueOp({ type: 'deleteMessage', listId: store.currentListId() ?? '', messageId, createdAt: new Date().toISOString() });
-                }
-            },
-
-            async shareImage(dataUrl: string, plainSenderName: string, replyToMessageId?: string | null): Promise<string> {
-                const listId = store.currentListId();
-                const key = store.currentEncryptionKey();
-                if (!listId || !key) throw new Error('No list is currently open.');
-
-                const placeholder = JSON.stringify({ type: 'image' });
-                const [msg, sender, image] = await Promise.all([
-                    crypto.encrypt(placeholder, key),
-                    crypto.encrypt(plainSenderName, key),
-                    crypto.encrypt(dataUrl, key),
-                ]);
-
-                const messageId = await firstValueFrom(
-                    api.createMessage({
-                        ghostListId: listId,
-                        encryptedMessage: msg.ciphertext,
-                        messageInitializationVector: msg.iv,
-                        encryptedSenderName: sender.ciphertext,
-                        senderNameInitializationVector: sender.iv,
-                        replyToMessageId: replyToMessageId ?? null,
-                    }),
-                );
-
-                cacheImage(messageId, dataUrl);
-
-                await firstValueFrom(api.saveMessageImage(messageId, image.ciphertext, image.iv));
-
-                try {
-                    await hub.relayImage(listId, messageId, image.ciphertext, image.iv);
-                } catch { }
-
-                return messageId;
-            },
-
-            async fetchAndCacheImage(messageId: string): Promise<void> {
-                if (store.imageDataUrls()[messageId]) return;
-
-                const key = store.currentEncryptionKey();
-                if (!key) return;
-
-                try {
-                    const image = await firstValueFrom(api.getMessageImage(messageId));
-                    const dataUrl = await crypto.decrypt(image.encryptedImage, image.imageInitializationVector, key);
-                    cacheImage(messageId, dataUrl);
-                } catch {
-
-                }
-            },
-
-            async shareAudio(dataUrl: string, plainSenderName: string, replyToMessageId?: string | null): Promise<string> {
-                const listId = store.currentListId();
-                const key = store.currentEncryptionKey();
-                if (!listId || !key) throw new Error('No list is currently open.');
-
-                const placeholder = JSON.stringify({ type: 'audio' });
-                const [msg, sender, audio] = await Promise.all([
-                    crypto.encrypt(placeholder, key),
-                    crypto.encrypt(plainSenderName, key),
-                    crypto.encrypt(dataUrl, key),
-                ]);
-
-                const messageId = await firstValueFrom(
-                    api.createMessage({
-                        ghostListId: listId,
-                        encryptedMessage: msg.ciphertext,
-                        messageInitializationVector: msg.iv,
-                        encryptedSenderName: sender.ciphertext,
-                        senderNameInitializationVector: sender.iv,
-                        replyToMessageId: replyToMessageId ?? null,
-                    }),
-                );
-
-                const blob = AudioBlobConverter.dataUrlToBlob(dataUrl);
-                cacheAudio(messageId, URL.createObjectURL(blob));
-
-                await firstValueFrom(api.saveMessageAudio(messageId, audio.ciphertext, audio.iv));
-
-                try {
-                    await hub.relayAudio(listId, messageId, audio.ciphertext, audio.iv);
-                } catch { }
-
-                return messageId;
-            },
-
-            async fetchAndCacheAudio(messageId: string): Promise<void> {
-                if (store.audioDataUrls()[messageId]) return;
-
-                const key = store.currentEncryptionKey();
-                if (!key) return;
-
-                try {
-                    const dto = await firstValueFrom(api.getMessageAudio(messageId));
-                    const dataUrl = await crypto.decrypt(dto.encryptedAudio, dto.audioInitializationVector, key);
-                    const blob = AudioBlobConverter.dataUrlToBlob(dataUrl);
-                    cacheAudio(messageId, URL.createObjectURL(blob));
-                } catch { }
-            },
-
-            async sendCharonDrop(
-                encryptedContent: string,
-                contentInitializationVector: string,
-                encryptedMetadata: string,
-                metadataInitializationVector: string,
-            ): Promise<void> {
-                const listId = store.currentListId();
-                if (!listId) return;
-
-                await firstValueFrom(api.createCharonDrop({
-                    ghostListId: listId,
-                    encryptedContent,
-                    contentInitializationVector,
-                    encryptedMetadata,
-                    metadataInitializationVector,
-                }));
-            },
-
-            async viewCharonDrop(dropId: string): Promise<void> {
-                patchState(store, { charonDrops: store.charonDrops().filter(d => d.id !== dropId) });
-                try {
-                    await firstValueFrom(api.markCharonDropViewed(dropId));
-                } catch { }
-            },
-
-            async recallCharonDrop(dropId: string): Promise<void> {
-                patchState(store, { charonDrops: store.charonDrops().filter(d => d.id !== dropId) });
-                try {
-                    await firstValueFrom(api.deleteCharonDrop(dropId));
-                } catch { }
-            },
-
-            async flushPendingOps(): Promise<void> {
-                if (flushing) return;
-                flushing = true;
-                try {
-                    const ops = (await storage.getPendingOps().catch(() => []))
-                        .slice()
-                        .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-
-                    const itemsCache = new Map<string, Promise<GhostListItem[]>>();
-                    function getItemsCached(listId: string): Promise<GhostListItem[]> {
-                        let pending = itemsCache.get(listId);
-                        if (!pending) {
-                            pending = firstValueFrom(api.getItems(listId));
-                            itemsCache.set(listId, pending);
-                        }
-                        return pending;
-                    }
-
-                    for (const op of ops) {
-                        try {
-                            switch (op.type) {
-                                case 'createItem': {
-                                    const realId = await firstValueFrom(api.createItem(op.payload));
-                                    if (store.currentListId() === op.listId) {
-                                        patchState(store, {
-                                            items: resolveCreatedItemId(store.items(), op.tempItemId, realId),
-                                        });
-                                        void persistCurrentList();
-                                    }
-                                    break;
-                                }
-                                case 'toggleItem': {
-                                    const serverItems = await getItemsCached(op.listId);
-                                    const serverItem = serverItems.find(i => i.id === op.itemId);
-
-                                    if (!serverItem) {
-
-                                        break;
-                                    }
-
-                                    if (serverItem.isChecked === op.desiredChecked) {
-
-                                        break;
-                                    }
-
-                                    if (serverItem.checkedAt && serverItem.checkedAt > op.createdAt) {
-
-                                        if (store.currentListId() === op.listId) {
-                                            patchState(store, {
-                                                items: store.items().map(i =>
-                                                    i.id === op.itemId
-                                                        ? { ...i, isChecked: serverItem.isChecked, checkedAt: serverItem.checkedAt }
-                                                        : i,
-                                                ),
-                                            });
-                                            void persistCurrentList();
-                                        }
-                                        break;
-                                    }
-
-                                    await firstValueFrom(api.toggleItem(op.itemId));
-                                    break;
-                                }
-                                case 'deleteItem':
-                                    try {
-                                        await firstValueFrom(api.deleteItem(op.itemId));
-                                    } catch (e: unknown) {
-                                        if (isNetworkError(e)) throw e;
-
-                                    }
-                                    break;
-                                case 'sendMessage': {
-                                    const realId = await firstValueFrom(api.createMessage(op.payload));
-                                    if (store.currentListId() === op.listId) {
-                                        patchState(store, {
-                                            messages: resolveCreatedMessageId(store.messages(), op.tempMessageId, realId),
-                                        });
-                                        void persistCurrentList();
-                                    }
-                                    break;
-                                }
-                                case 'deleteMessage':
-                                    try {
-                                        await firstValueFrom(api.deleteMessage(op.messageId));
-                                    } catch (e: unknown) {
-                                        if (isNetworkError(e)) throw e;
-                                    }
-                                    break;
-                            }
-                            if (op.localId !== undefined) await storage.removePendingOp(op.localId);
-                        } catch (e: unknown) {
-                            if (isNetworkError(e)) break; 
-                            if (op.localId !== undefined) await storage.removePendingOp(op.localId).catch(() => { });
-                        }
-                    }
-                } finally {
-                    const remaining = await storage.getPendingOps().catch(() => []);
-                    patchState(store, { pendingOpsCount: remaining.length });
-                    flushing = false;
-                }
-            },
-
-            async refreshCurrentList(): Promise<void> {
-                const id = store.currentListId();
-                const key = store.currentEncryptionKey();
-                if (!id || !key) return;
-
-                try {
-                    const list = await firstValueFrom(api.getList(id));
-                    if (store.currentListId() === id) {
-                        patchState(store, {
-                            currentList: list,
-                            items: list.items,
-                            messages: list.chatMessages,
-                        });
-                        void persistCurrentList();
-                    }
-                } catch {
-
-                }
-            },
-
-            _cacheImage: cacheImage,
-            _cacheAudio: cacheAudio,
-            _persistCurrentList: persistCurrentList,
-        };
-    }),
+    withMethods((store) => ({
+        ...createItemsMethods(store),
+        ...createMessagesMethods(store),
+        ...createMediaMethods(store),
+        ...createCharonDropsMethods(store),
+        ...createListManagementMethods(store),
+    })),
 
     withHooks((store) => {
         const hub = inject(HubService);
@@ -871,7 +105,6 @@ export const AppStore = signalStore(
 
         return {
             async onInit() {
-
                 await store.loadKnownLists();
 
                 const lists = store.knownLists();
@@ -881,9 +114,7 @@ export const AppStore = signalStore(
                         await hub.connect();
                         await Promise.all(lists.map((l) => hub.joinList(l.id)));
                         foreground.start();
-                    } catch {
-
-                    }
+                    } catch { }
                 }
 
                 try {
@@ -1036,7 +267,7 @@ export const AppStore = signalStore(
                     if (!known) return;
                     try {
                         const dataUrl = await crypto.decrypt(event.encryptedAudio, event.audioInitializationVector, known.encryptionKey);
-                        const blob = AudioBlobConverter.dataUrlToBlob(dataUrl);
+                        const blob = dataUrlToBlob(dataUrl);
                         store._cacheAudio(event.messageId, URL.createObjectURL(blob));
                     } catch { }
                 });
@@ -1084,7 +315,6 @@ export const AppStore = signalStore(
                 });
 
                 hub.listDeleted$.subscribe(async (listId) => {
-
                     await store.forgetList(listId);
                 });
 
@@ -1100,10 +330,8 @@ export const AppStore = signalStore(
                         await Promise.all(known.map((l) => hub.joinList(l.id).catch(() => { })));
                     }
                     void store.flushPendingOps();
-
                     await store.flushAllPendingReads();
                     void store.seedUnreadSummaries();
-
                     if (store.currentListId()) void store.refreshCurrentList();
                 };
 

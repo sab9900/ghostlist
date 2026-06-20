@@ -1,52 +1,14 @@
 <div class="screen" role="main">
 
-    <header class="header" role="banner">
-        <img class="header__logo" src="/ghost-header.svg" [attr.alt]="'Ghost List'" (click)="onLogoClick()" />
-        <h1 class="header__title">Ghost List</h1>
-        <div class="header__actions">
-            @if (totalUnread() > 0) {
-            <button class="badge-btn" (click)="openMarkAllReadDialog()"
-                [attr.aria-label]="totalUnread() + ' unread, tap to mark all read'">
-                <app-badge [count]="totalUnread()" />
-            </button>
-            }
-            <div class="menu-anchor">
-                <button class="header__action" (click)="toggleMenu()"
-                    [attr.aria-label]="'LISTS.MENU_SETTINGS' | translate" [attr.aria-expanded]="showMenu()">
-                    <svg lucideMenu [size]="20" aria-hidden="true"></svg>
-                </button>
-
-                @if (showMenu()) {
-                <div class="menu-overlay" (click)="closeMenu()" aria-hidden="true"></div>
-                <nav class="menu" role="menu" [attr.aria-label]="'LISTS.MENU_SETTINGS' | translate">
-                    <button class="menu-item" (click)="openImportFromMenu()" role="menuitem">
-                        <svg lucideDownload [size]="18" aria-hidden="true"></svg>
-                        <span>{{ 'LISTS.MENU_IMPORT' | translate }}</span>
-                    </button>
-                    <button class="menu-item" (click)="openExportFromMenu()" role="menuitem">
-                        <svg lucideUpload [size]="18" aria-hidden="true"></svg>
-                        <span>{{ 'LISTS.MENU_EXPORT' | translate }}</span>
-                    </button>
-                    <button class="menu-item" (click)="goToSettingsFromMenu()" role="menuitem">
-                        <svg lucideSettings [size]="18" aria-hidden="true"></svg>
-                        <span>{{ 'LISTS.MENU_SETTINGS' | translate }}</span>
-                    </button>
-                    @if (showCoffeeLink) {
-                    <a class="menu-item" href="https://buymeacoffee.com/sab.norica.informatics" target="_blank"
-                        rel="noopener noreferrer" role="menuitem">
-                        <svg lucideCoffee [size]="18" aria-hidden="true"></svg>
-                        <span>{{ 'LISTS.MENU_COFFEE' | translate }}</span>
-                    </a>
-                    }
-                    <button class="menu-item" (click)="openAboutFromMenu()" role="menuitem">
-                        <svg lucideInfo [size]="18" aria-hidden="true"></svg>
-                        <span>{{ 'LISTS.MENU_ABOUT' | translate }}</span>
-                    </button>
-                </nav>
-                }
-            </div>
-        </div>
-    </header>
+    <app-lists-header
+        [totalUnread]="totalUnread()"
+        [showCoffeeLink]="showCoffeeLink"
+        (logoClick)="onLogoClick()"
+        (markAllReadOpen)="showMarkAllReadDialog.set(true)"
+        (importOpen)="showImportDialog.set(true)"
+        (exportOpen)="showExportDialog.set(true)"
+        (settingsOpen)="goToSettings()"
+        (aboutOpen)="goToAbout()" />
 
     <main class="content">
 
@@ -59,30 +21,12 @@
 
         <ul class="card-list" role="list" [attr.aria-label]="'LISTS.MENU_IMPORT' | translate">
             @for (list of lists(); track list.id) {
-            <li class="card" (click)="openList(list.id)" role="button" tabindex="0"
-                [class.card--active]="activeListId() === list.id"
-                [attr.aria-current]="activeListId() === list.id ? 'true' : null"
-                [attr.aria-label]="list.name + (unreadFor(list.id) > 0 ? ', ' + unreadFor(list.id) + ' unread' : '')"
-                (keydown.enter)="openList(list.id)" (keydown.space)="openList(list.id)">
-                <div class="card__body" aria-hidden="true">
-                    <span class="card__name truncate">{{ list.name }}</span>
-                    <span class="card__date">{{ list.addedAt | date:'d MMM yyyy' }}</span>
-                </div>
-                @if (isShared(list.id)) {
-                <div class="card__avatars" aria-hidden="true">
-                    @for (member of avatarMembers(list.id); track member.deviceId) {
-                    <app-avatar class="card__avatar" [name]="member.displayName" [size]="22" />
-                    }
-                    @if (extraMemberCount(list.id) > 0) {
-                    <span class="card__avatar-extra">+{{ extraMemberCount(list.id) }}</span>
-                    }
-                </div>
-                }
-                @if (unreadFor(list.id) > 0) {
-                <app-badge [count]="unreadFor(list.id)" aria-hidden="true" />
-                }
-                <span class="card__arrow" aria-hidden="true">›</span>
-            </li>
+            <app-list-card
+                [list]="list"
+                [unread]="unreadFor(list.id)"
+                [isActive]="activeListId() === list.id"
+                [members]="membersFor(list.id)"
+                (open)="openList(list.id)" />
             }
         </ul>
 
@@ -92,215 +36,31 @@
         <span aria-hidden="true">+</span>
     </button>
 
-    @if (showCreateDialog()) {
-    <div class="dialog-backdrop" (click)="closeCreateDialog()" role="presentation">
-        <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
-            aria-labelledby="create-dialog-title">
-            <h2 class="dialog__title" id="create-dialog-title">{{ 'LISTS.CREATE_TITLE' | translate }}</h2>
-            <input #createInput class="dialog__input" type="text"
-                [attr.placeholder]="'LISTS.CREATE_PLACEHOLDER' | translate" [(ngModel)]="newListName"
-                (keydown.enter)="createList()" maxlength="60" [attr.aria-label]="'LISTS.CREATE_PLACEHOLDER' | translate"
-                aria-required="true" />
-            @if (createError()) {
-            <p class="dialog__error" role="alert">{{ createError() }}</p>
-            }
-            <div class="dialog__actions">
-                <button class="btn btn--ghost" (click)="closeCreateDialog()" [disabled]="creating()">{{ 'COMMON.CANCEL'
-                    | translate }}</button>
-                <button class="btn btn--primary" (click)="createList()" [disabled]="!newListName().trim() || creating()"
-                    [attr.aria-busy]="creating()">
-                    {{ creating() ? ('LISTS.CREATING_BTN' | translate) : ('LISTS.CREATE_BTN' | translate) }}
-                </button>
-            </div>
-        </div>
-    </div>
-    }
+    <app-create-list-dialog
+        [show]="showCreateDialog()"
+        [creating]="creating()"
+        [error]="createError()"
+        (create)="createList($event)"
+        (close)="showCreateDialog.set(false)" />
 
-    @if (showImportDialog()) {
-    <div class="dialog-backdrop" (click)="closeImportDialog()" role="presentation">
-        <div class="dialog dialog--qr" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
-            aria-labelledby="import-dialog-title">
-            <h2 class="dialog__title" id="import-dialog-title">{{ 'LISTS.IMPORT_TITLE' | translate }}</h2>
+    <app-import-dialog
+        [show]="showImportDialog()"
+        (closed)="showImportDialog.set(false)" />
 
-            <div class="dialog__tabs" role="tablist">
-                <button class="dialog__tab" [class.dialog__tab--active]="importMode() === 'show'"
-                    (click)="setImportMode('show')" role="tab" [attr.aria-selected]="importMode() === 'show'">
-                    {{ 'LISTS.IMPORT_SHOW_QR' | translate }}
-                </button>
-                <button class="dialog__tab" [class.dialog__tab--active]="importMode() === 'scan'"
-                    (click)="setImportMode('scan')" role="tab" [attr.aria-selected]="importMode() === 'scan'">
-                    {{ 'LISTS.IMPORT_SCAN_QR' | translate }}
-                </button>
-                <button class="dialog__tab" [class.dialog__tab--active]="importMode() === 'url'"
-                    (click)="setImportMode('url')" role="tab" [attr.aria-selected]="importMode() === 'url'">
-                    {{ 'LISTS.IMPORT_PASTE_URL' | translate }}
-                </button>
-            </div>
+    <app-export-dialog
+        [show]="showExportDialog()"
+        [lists]="lists()"
+        [activeListId]="activeListId()"
+        (closed)="showExportDialog.set(false)" />
 
-            @if (importMode() === 'show') {
-            <p class="dialog__hint">{{ 'LISTS.IMPORT_SHOW_HINT' | translate }}</p>
-            <div class="dialog__qr" role="img" [attr.aria-label]="'LISTS.IMPORT_TITLE' | translate">
-                @if (importQrData()) {
-                <app-qr-code [data]="importQrData()!" [size]="200" />
-                } @else {
-                <div class="dialog__qr-loading" role="status" aria-live="polite">{{ 'LISTS.GENERATING' | translate }}
-                </div>
-                }
-            </div>
-            @if (importErrorMsg()) {
-            <div class="dialog__status dialog__status--err" role="alert">
-                {{ importErrorMsg()! | translate }}
-            </div>
-            } @else {
-            <p class="dialog__hint dialog__hint--sm" aria-live="polite">
-                {{ 'LISTS.IMPORT_SHOW_WAITING' | translate }}
-            </p>
-            }
-            }
+    <app-reveal-dialog
+        [show]="showRevealDialog()"
+        (closed)="showRevealDialog.set(false)" />
 
-            @if (importMode() === 'scan') {
-            <p class="dialog__hint">{{ 'LISTS.IMPORT_SCAN_HINT' | translate }}</p>
-
-            @if (scanStep() === 'scanning') {
-            <div class="dialog__scanner" role="region" [attr.aria-label]="'LISTS.IMPORT_SCAN_QR' | translate">
-                <app-qr-scanner (detected)="onExportQrDetected($event)" />
-            </div>
-            }
-
-            @if (scanStep() === 'waiting') {
-            <div class="dialog__status dialog__status--ok" role="status" aria-live="polite">
-                {{ 'LISTS.IMPORT_SCAN_WAITING' | translate }}
-            </div>
-            }
-
-            @if (scanStep() === 'error') {
-            <div class="dialog__status dialog__status--err" role="alert">
-                {{ (importErrorMsg() ?? 'LISTS.IMPORT_SCAN_ERROR') | translate }}
-            </div>
-            <button class="btn btn--ghost btn--sm" (click)="retryScan()">{{ 'COMMON.TRY_AGAIN' | translate }}</button>
-            }
-            }
-
-            @if (importMode() === 'url') {
-            <p class="dialog__hint">{{ 'LISTS.IMPORT_URL_HINT' | translate }}</p>
-            <input class="dialog__input" type="url" [attr.placeholder]="'LISTS.IMPORT_URL_PLACEHOLDER' | translate"
-                [ngModel]="importUrl()" (ngModelChange)="importUrl.set($event)"
-                (keydown.enter)="submitImportUrl()"
-                [attr.aria-label]="'LISTS.IMPORT_URL_PLACEHOLDER' | translate" />
-            @if (importUrlError()) {
-            <p class="dialog__error" role="alert">{{ importUrlError()! | translate }}</p>
-            }
-            }
-
-            <div class="dialog__actions">
-                <button class="btn btn--ghost" (click)="closeImportDialog()">{{ 'COMMON.CANCEL' | translate }}</button>
-                @if (importMode() === 'url') {
-                <button class="btn btn--primary" (click)="submitImportUrl()" [disabled]="!importUrl().trim()">
-                    {{ 'LISTS.IMPORT_URL_BTN' | translate }}
-                </button>
-                }
-            </div>
-        </div>
-    </div>
-    }
-
-    @if (showRevealDialog()) {
-    <div class="dialog-backdrop" (click)="closeRevealDialog()" role="presentation">
-        <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
-            aria-labelledby="reveal-dialog-title" aria-describedby="reveal-dialog-hint">
-            <h2 class="dialog__title" id="reveal-dialog-title">{{ 'LISTS.REVEAL_TITLE' | translate }}</h2>
-            <p class="dialog__hint" id="reveal-dialog-hint">{{ 'LISTS.REVEAL_HINT' | translate }}</p>
-            <input class="dialog__input" type="password" [attr.placeholder]="'LISTS.REVEAL_PLACEHOLDER' | translate"
-                [ngModel]="revealPassword()" (ngModelChange)="revealPassword.set($event)"
-                (keydown.enter)="submitReveal()" autofocus [attr.aria-label]="'LISTS.REVEAL_PLACEHOLDER' | translate"
-                aria-required="true" />
-            @if (revealError()) {
-            <p class="dialog__error" role="alert">{{ 'LISTS.REVEAL_ERROR' | translate }}</p>
-            }
-            <div class="dialog__actions">
-                <button class="btn btn--ghost" (click)="closeRevealDialog()" [disabled]="revealing()">{{ 'COMMON.CANCEL'
-                    | translate }}</button>
-                <button class="btn btn--primary" (click)="submitReveal()" [disabled]="!revealPassword() || revealing()"
-                    [attr.aria-busy]="revealing()">
-                    {{ revealing() ? ('LISTS.REVEAL_CHECKING' | translate) : ('LISTS.REVEAL_BTN' | translate) }}
-                </button>
-            </div>
-        </div>
-    </div>
-    }
-
-    @if (showMarkAllReadDialog()) {
-    <div class="dialog-backdrop" (click)="closeMarkAllReadDialog()" role="presentation">
-        <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
-            aria-labelledby="mark-all-read-dialog-title" aria-describedby="mark-all-read-dialog-hint">
-            <h2 class="dialog__title" id="mark-all-read-dialog-title">{{ 'LISTS.MARK_ALL_READ_TITLE' | translate }}</h2>
-            <p class="dialog__hint" id="mark-all-read-dialog-hint">{{ 'LISTS.MARK_ALL_READ_HINT' | translate }}</p>
-            <div class="dialog__actions">
-                <button class="btn btn--ghost" (click)="closeMarkAllReadDialog()" [disabled]="markingAllRead()">{{
-                    'COMMON.CANCEL' | translate }}</button>
-                <button class="btn btn--primary" (click)="confirmMarkAllRead()" [disabled]="markingAllRead()"
-                    [attr.aria-busy]="markingAllRead()">
-                    {{ markingAllRead() ? ('LISTS.MARK_ALL_READ_MARKING' | translate) : ('LISTS.MARK_ALL_READ_BTN' |
-                    translate) }}
-                </button>
-            </div>
-        </div>
-    </div>
-    }
-
-    @if (showExportDialog()) {
-    <div class="dialog-backdrop" (click)="closeExportDialog()" role="presentation">
-        <div class="dialog dialog--qr" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
-            aria-labelledby="export-dialog-title">
-            <h2 class="dialog__title" id="export-dialog-title">{{ 'LISTS.EXPORT_TITLE' | translate }}</h2>
-
-            @if (exportStep() === 'pick') {
-            <p class="dialog__hint">{{ 'LISTS.EXPORT_PICK_HINT' | translate }}</p>
-            <ul class="pick-list" role="list">
-                @for (list of lists(); track list.id) {
-                <li>
-                    <button class="pick-item" (click)="selectExportList(list.id)">
-                        {{ list.name }}
-                    </button>
-                </li>
-                }
-            </ul>
-            }
-
-            @if (exportStep() === 'qr') {
-            <p class="dialog__hint">{{ 'LISTS.EXPORT_QR_HINT' | translate }}</p>
-            <div class="dialog__qr" role="img" [attr.aria-label]="'LISTS.EXPORT_TITLE' | translate">
-                @if (exportQrData()) {
-                <app-qr-code [data]="exportQrData()!" [size]="200" />
-                } @else {
-                <div class="dialog__qr-loading" role="status" aria-live="polite">{{ 'LISTS.GENERATING' | translate }}
-                </div>
-                }
-            </div>
-            <p class="dialog__hint dialog__hint--sm" aria-live="polite">
-                {{ 'LISTS.EXPORT_QR_WAITING' | translate }}
-            </p>
-            }
-
-            @if (exportStep() === 'done') {
-            <div class="dialog__status dialog__status--ok" role="status" aria-live="polite">
-                {{ 'LISTS.EXPORT_DONE' | translate }}
-            </div>
-            }
-
-            @if (exportStep() === 'error') {
-            <div class="dialog__status dialog__status--err" role="alert">
-                {{ 'LISTS.EXPORT_ERROR' | translate }}
-            </div>
-            }
-
-            <div class="dialog__actions">
-                <button class="btn btn--ghost" (click)="closeExportDialog()">
-                    {{ exportStep() === 'done' ? ('COMMON.CLOSE' | translate) : ('COMMON.CANCEL' | translate) }}
-                </button>
-            </div>
-        </div>
-    </div>
-    }
+    <app-mark-all-read-dialog
+        [show]="showMarkAllReadDialog()"
+        [marking]="markingAllRead()"
+        (confirm)="confirmMarkAllRead()"
+        (cancel)="showMarkAllReadDialog.set(false)" />
 
 </div>

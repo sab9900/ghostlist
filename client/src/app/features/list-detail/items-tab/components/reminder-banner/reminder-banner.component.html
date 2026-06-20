@@ -1,0 +1,10 @@
+@if (banner(); as b) {
+<div class="banner" role="alert" aria-live="assertive">
+    <span class="icon" aria-hidden="true">⏰</span>
+    <span class="text">{{ b.itemText }}</span>
+    <div class="actions">
+        <button class="btn btn--go" type="button" (click)="go.emit()">{{ 'ITEMS.REMINDER_BANNER_GO' | translate }}</button>
+        <button class="btn btn--dismiss" type="button" (click)="dismiss.emit()">{{ 'ITEMS.REMINDER_BANNER_DISMISS' | translate }}</button>
+    </div>
+</div>
+}

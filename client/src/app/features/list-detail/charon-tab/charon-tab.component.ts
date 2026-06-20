@@ -11,6 +11,7 @@ import { UserIdService } from '../../../core/services/user-id.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 import { AudioWaveformPlayerComponent } from '../../../shared/audio-waveform-player/audio-waveform-player.component';
 import { AppStore } from '../../../store/app.store';
+import { ShareHandlerService } from '../../../core/services/share-handler.service';
 
 
 interface CharonMeta {
@@ -88,10 +89,23 @@ export class CharonTabComponent implements OnDestroy {
 
     private readonly blobUrls = new Map<string, string>();
 
+    private readonly shareHandler = inject(ShareHandlerService);
+
     constructor() {
         effect(() => {
             const drops = this.store.charonDrops();
             void this.decryptNewMeta(drops);
+        });
+
+        effect(() => {
+            const payload = this.shareHandler.pendingPayload();
+            if (!payload || !payload.confirmed || payload.target !== 'charon') return;
+            untracked(() => {
+                const files = payload.files;
+                if (files.length > 0) {
+                    void this.sendFiles(files);
+                }
+            });
         });
     }
 
@@ -217,47 +231,52 @@ export class CharonTabComponent implements OnDestroy {
         const file = input.files?.[0];
         input.value = '';
         if (!file) return;
+        await this.sendFiles([file]);
+    }
 
-        if (!isAllowedFile(file)) {
-            this.fileTypeNotAllowed.set(true);
-            setTimeout(() => this.fileTypeNotAllowed.set(false), 4000);
-            return;
-        }
-
-        if (file.size > MAX_FILE_SIZE) {
-            this.fileTooLarge.set(true);
-            setTimeout(() => this.fileTooLarge.set(false), 4000);
-            return;
-        }
-
-        const listId = this.store.currentListId();
+    async sendFiles(files: File[]): Promise<void> {
         const key = this.store.currentEncryptionKey();
-        if (!listId || !key) return;
+        if (!key) return;
 
+        this.shareHandler.consume();
         this.sending.set(true);
         try {
-            const dataUrl = file.type.startsWith('image/')
-                ? await this.compressImage(file)
-                : await this.readAsDataUrl(file);
+            for (const file of files) {
+                if (!isAllowedFile(file)) {
+                    this.fileTypeNotAllowed.set(true);
+                    setTimeout(() => this.fileTypeNotAllowed.set(false), 4000);
+                    continue;
+                }
 
-            const senderName = this.prefs.senderName() || await firstValueFrom(this.translate.get('CHAT.ANONYMOUS'));
-            const meta: CharonMeta = {
-                fileName: file.name,
-                mimeType: file.type || 'application/octet-stream',
-                size: file.size,
-                senderName,
-            };
+                if (file.size > MAX_FILE_SIZE) {
+                    this.fileTooLarge.set(true);
+                    setTimeout(() => this.fileTooLarge.set(false), 4000);
+                    continue;
+                }
 
-            const [content, metadata] = await Promise.all([
-                this.crypto.encrypt(dataUrl, key),
-                this.crypto.encrypt(JSON.stringify(meta), key),
-            ]);
+                const dataUrl = file.type.startsWith('image/')
+                    ? await this.compressImage(file)
+                    : await this.readAsDataUrl(file);
 
-            await this.store.sendCharonDrop(
-                content.ciphertext, content.iv,
-                metadata.ciphertext, metadata.iv,
-            );
-            this.haptics.charonDropSent();
+                const senderName = this.prefs.senderName() || await firstValueFrom(this.translate.get('CHAT.ANONYMOUS'));
+                const meta: CharonMeta = {
+                    fileName: file.name,
+                    mimeType: file.type || 'application/octet-stream',
+                    size: file.size,
+                    senderName,
+                };
+
+                const [content, metadata] = await Promise.all([
+                    this.crypto.encrypt(dataUrl, key),
+                    this.crypto.encrypt(JSON.stringify(meta), key),
+                ]);
+
+                await this.store.sendCharonDrop(
+                    content.ciphertext, content.iv,
+                    metadata.ciphertext, metadata.iv,
+                );
+                this.haptics.charonDropSent();
+            }
         } catch {
         } finally {
             this.sending.set(false);

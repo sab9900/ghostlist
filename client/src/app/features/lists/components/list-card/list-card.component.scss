@@ -1,0 +1,92 @@
+.card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    cursor: pointer;
+    transition:
+        background var(--duration-fast) var(--ease-out),
+        border-color var(--duration-fast) var(--ease-out);
+    -webkit-tap-highlight-color: transparent;
+
+    &:focus-visible {
+        background: var(--color-surface-2);
+        border-color: var(--color-primary);
+        outline: none;
+    }
+
+    @media (hover: hover) {
+        &:hover {
+            background: var(--color-surface-2);
+            border-color: var(--color-primary);
+        }
+    }
+
+    &:active {
+        background: var(--color-surface-3);
+    }
+
+    &--active {
+        border-color: var(--color-primary);
+        background: var(--color-surface-2);
+    }
+}
+
+.body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.name {
+    font-size: var(--text-md);
+    font-weight: var(--weight-medium);
+}
+
+.date {
+    font-size: var(--text-xs);
+    color: var(--color-text-subtle);
+}
+
+.arrow {
+    font-size: var(--text-lg);
+    color: var(--color-text-subtle);
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.avatars {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.avatar {
+    border: 2px solid var(--color-surface);
+    border-radius: var(--radius-full);
+
+    &:not(:first-child) {
+        margin-left: -8px;
+    }
+}
+
+.extra {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    margin-left: -8px;
+    border: 2px solid var(--color-surface);
+    border-radius: var(--radius-full);
+    background: var(--color-surface-3);
+    color: var(--color-text-muted);
+    font-size: 10px;
+    font-weight: var(--weight-semi);
+    flex-shrink: 0;
+}

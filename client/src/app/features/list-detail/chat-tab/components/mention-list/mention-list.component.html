@@ -1,0 +1,13 @@
+@if (candidates().length > 0) {
+<ul class="list" role="listbox" aria-label="Mention suggestions">
+    @for (name of candidates(); track name; let i = $index) {
+    <li class="item" role="option" [class.item--active]="activeIndex() === i"
+        [attr.aria-selected]="activeIndex() === i"
+        (mousedown)="$event.preventDefault()"
+        (click)="select.emit(name)">
+        <app-avatar [name]="name" [size]="20" />
+        {{ name }}
+    </li>
+    }
+</ul>
+}

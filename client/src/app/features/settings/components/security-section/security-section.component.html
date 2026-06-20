@@ -1,0 +1,55 @@
+<section class="section" aria-labelledby="security-heading">
+    <div class="heading">
+        <h2 class="title" id="security-heading">{{ 'SETTINGS.SECURITY.TITLE' | translate }}</h2>
+        <p class="hint">{{ 'SETTINGS.SECURITY.HINT' | translate }}</p>
+    </div>
+    <div class="body">
+        @if (!isSupported()) {
+        <p class="status status--warn" role="status">
+            {{ 'SETTINGS.SECURITY.UNSUPPORTED' | translate }}
+        </p>
+        } @else if (isEnabled()) {
+        <div class="row">
+            <span class="badge">
+                <svg lucideShield [size]="14"></svg>
+                {{ 'SETTINGS.SECURITY.ENABLED' | translate }}
+            </span>
+            <button class="btn btn--ghost btn--sm btn--danger" (click)="disable.emit()" [disabled]="working()">
+                @if (working()) { {{ 'SETTINGS.SECURITY.DISABLING' | translate }} }
+                @else { {{ 'SETTINGS.SECURITY.DISABLE_BTN' | translate }} }
+            </button>
+        </div>
+        } @else {
+        <button class="btn btn--primary btn--sm" (click)="enable.emit()" [disabled]="working()">
+            @if (working()) { {{ 'SETTINGS.SECURITY.ENABLING' | translate }} }
+            @else { {{ 'SETTINGS.SECURITY.ENABLE_BTN' | translate }} }
+        </button>
+        }
+
+        @if (error() === 'unsupported') {
+        <p class="status status--err" role="alert">{{ 'SETTINGS.SECURITY.UNSUPPORTED' | translate }}</p>
+        } @else if (error() === 'failed') {
+        <p class="status status--err" role="alert">{{ 'SETTINGS.SECURITY.ENABLE_ERROR' | translate }}</p>
+        }
+
+        @if (isEnabled()) {
+        <div class="sub" aria-labelledby="auto-lock-heading">
+            <h3 class="sub-title" id="auto-lock-heading">{{ 'SETTINGS.SECURITY.AUTO_LOCK.TITLE' | translate }}</h3>
+            <div class="option-list" role="radiogroup" aria-labelledby="auto-lock-heading">
+                @for (opt of autoLockOptions(); track opt.value) {
+                <button class="option" [class.option--active]="autoLockTimeout() === opt.value"
+                    (click)="autoLockChange.emit(opt.value)" role="radio"
+                    [attr.aria-checked]="autoLockTimeout() === opt.value">
+                    <div class="option-body">
+                        <span class="option-label">{{ opt.labelKey | translate }}</span>
+                    </div>
+                    @if (autoLockTimeout() === opt.value) {
+                    <span class="option-check" aria-hidden="true">✓</span>
+                    }
+                </button>
+                }
+            </div>
+        </div>
+        }
+    </div>
+</section>

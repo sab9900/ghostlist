@@ -1,13 +1,8 @@
-import { Component, effect, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { Capacitor } from '@capacitor/core';
-import { LucideChevronLeft, LucideCopy, LucideLock, LucideRefreshCw, LucideShield } from "@lucide/angular";
+import { LucideChevronLeft } from '@lucide/angular';
 import { TranslatePipe } from '@ngx-translate/core';
-import { environment } from '../../../environments/environment';
 import { SwipeBackDirective } from '../../core/directives/swipe-back.directive';
-import { SyncQrPayload } from '../../core/models';
-import { CryptoService } from '../../core/services/crypto.service';
 import { LanguageService } from '../../core/services/language.service';
 import { LayoutService } from '../../core/services/layout.service';
 import { MasterPasswordService } from '../../core/services/master-password.service';
@@ -16,23 +11,32 @@ import { SensitiveListsService } from '../../core/services/sensitive-lists.servi
 import { Theme, ThemeAccent, ThemeService } from '../../core/services/theme.service';
 import { UserPreferencesService } from '../../core/services/user-preferences.service';
 import { AUTO_LOCK_OPTIONS, WebAuthnService } from '../../core/services/webauthn.service';
-import { QrCodeComponent } from '../../shared/qr-code/qr-code.component';
-import { QrScannerComponent } from '../../shared/qr-scanner/qr-scanner.component';
 import { AppStore } from '../../store/app.store';
+import { AppearanceSectionComponent } from './components/appearance-section/appearance-section.component';
+import { HapticsSectionComponent } from './components/haptics-section/haptics-section.component';
+import { LanguageSectionComponent } from './components/language-section/language-section.component';
+import { MasterPasswordSectionComponent } from './components/master-password-section/master-password-section.component';
+import { NameSectionComponent } from './components/name-section/name-section.component';
+import { NotificationsSectionComponent } from './components/notifications-section/notifications-section.component';
+import { SecuritySectionComponent } from './components/security-section/security-section.component';
+import { SyncDialogComponent } from './components/sync-dialog/sync-dialog.component';
+import { SyncSectionComponent } from './components/sync-section/sync-section.component';
 
 @Component({
     selector: 'app-settings',
     imports: [
         TranslatePipe,
-        FormsModule,
-        QrCodeComponent,
-        QrScannerComponent,
         SwipeBackDirective,
         LucideChevronLeft,
-        LucideShield,
-        LucideLock,
-        LucideRefreshCw,
-        LucideCopy
+        NameSectionComponent,
+        AppearanceSectionComponent,
+        SecuritySectionComponent,
+        MasterPasswordSectionComponent,
+        SyncSectionComponent,
+        NotificationsSectionComponent,
+        HapticsSectionComponent,
+        LanguageSectionComponent,
+        SyncDialogComponent,
     ],
     templateUrl: './settings.component.html',
     styleUrl: './settings.component.scss',
@@ -48,7 +52,6 @@ export class SettingsComponent {
     private readonly push = inject(PushNotificationService);
     private readonly sensitiveLists = inject(SensitiveListsService);
     private readonly router = inject(Router);
-    private readonly crypto = inject(CryptoService);
 
     protected readonly webPushPermission = this.push.webPushPermission;
     protected readonly notificationsEnabled = this.prefs.notificationsEnabled;
@@ -69,39 +72,47 @@ export class SettingsComponent {
     ];
 
     protected readonly supportedLangs = LanguageService.SUPPORTED;
+    protected readonly autoLockOptions = AUTO_LOCK_OPTIONS;
 
-    protected readonly pendingName = signal('');
-    protected readonly nameSaved = signal(false);
+    protected readonly biometricWorking = signal(false);
+    protected readonly biometricError = signal<'unsupported' | 'failed' | null>(null);
 
-    constructor() {
-        effect(() => {
-            const name = this.prefs.senderName();
-            if (name && !this.pendingName()) this.pendingName.set(name);
-        });
+    protected readonly mpMode = signal<'view' | 'set' | 'change' | 'remove'>('view');
+    protected readonly mpError = signal<string | null>(null);
+    protected readonly mpWorking = signal(false);
+    protected readonly mpSaved = signal(false);
+
+    protected readonly showSyncDialog = signal(false);
+    protected readonly syncStep = signal<'idle' | 'qr' | 'scan' | 'waiting' | 'done' | 'error'>('idle');
+    protected readonly syncImportedCount = signal(0);
+
+    setTheme(theme: Theme): void { this.themeService.set(theme); }
+    setAccent(accent: ThemeAccent): void { this.themeService.setAccent(accent); }
+    async setLanguage(code: string): Promise<void> { await this.langService.setLanguage(code); }
+    setHapticsEnabled(enabled: boolean): void { this.prefs.setHapticsEnabled(enabled); }
+
+    saveName(name: string): void { this.prefs.setSenderName(name); }
+
+    goBack(): void { this.router.navigate(['/']); }
+
+    async enableBiometricLock(): Promise<void> {
+        if (!this.webAuthn.isSupported()) { this.biometricError.set('unsupported'); return; }
+        this.biometricWorking.set(true);
+        this.biometricError.set(null);
+        try { await this.webAuthn.register(); }
+        catch { this.biometricError.set('failed'); }
+        finally { this.biometricWorking.set(false); }
     }
 
-    setTheme(theme: Theme): void {
-        this.themeService.set(theme);
-    }
-
-    setAccent(accent: ThemeAccent): void {
-        this.themeService.setAccent(accent);
-    }
-
-    async setLanguage(code: string): Promise<void> {
-        await this.langService.setLanguage(code);
-    }
-
-    setHapticsEnabled(enabled: boolean): void {
-        this.prefs.setHapticsEnabled(enabled);
-    }
-
-    saveName(): void {
-        const name = this.pendingName().trim();
-        if (!name) return;
-        this.prefs.setSenderName(name);
-        this.nameSaved.set(true);
-        setTimeout(() => this.nameSaved.set(false), 2000);
+    async disableBiometricLock(): Promise<void> {
+        this.biometricWorking.set(true);
+        this.biometricError.set(null);
+        try {
+            const ok = await this.webAuthn.authenticate();
+            if (ok) { await this.webAuthn.disable(); }
+            else { this.biometricError.set('failed'); }
+        } catch { this.biometricError.set('failed'); }
+        finally { this.biometricWorking.set(false); }
     }
 
     async toggleNotifications(enabled: boolean): Promise<void> {
@@ -111,285 +122,82 @@ export class SettingsComponent {
             try {
                 const listIds = this.store.knownLists().map(l => l.id);
                 await this.push.enablePush(listIds);
-                // Only persist the preference if permission was actually obtained
-                // (denied → webPushPermission flips to 'denied'; not-granted → pushActive stays false)
                 if (this.push.webPushPermission() !== 'denied') {
                     this.prefs.setNotificationsEnabled(true);
                     this.prefs.markNotifPrompted();
                 }
-            } finally {
-                this.notifEnabling.set(false);
-            }
+            } finally { this.notifEnabling.set(false); }
         } else {
             this.prefs.setNotificationsEnabled(false);
         }
     }
 
-    goBack(): void {
-        this.router.navigate(['/']);
-    }
+    private static readonly MP_MIN_LENGTH = 4;
 
-    protected readonly autoLockOptions = AUTO_LOCK_OPTIONS;
-
-    protected readonly biometricWorking = signal(false);
-    protected readonly biometricError = signal<'unsupported' | 'failed' | null>(null);
-
-    async enableBiometricLock(): Promise<void> {
-        if (!this.webAuthn.isSupported()) {
-            this.biometricError.set('unsupported');
-            return;
-        }
-        this.biometricWorking.set(true);
-        this.biometricError.set(null);
-        try {
-            await this.webAuthn.register();
-        } catch {
-            this.biometricError.set('failed');
-        } finally {
-            this.biometricWorking.set(false);
-        }
-    }
-
-    async disableBiometricLock(): Promise<void> {
-        this.biometricWorking.set(true);
-        this.biometricError.set(null);
-        try {
-            const ok = await this.webAuthn.authenticate();
-            if (ok) {
-                await this.webAuthn.disable();
-            } else {
-                this.biometricError.set('failed');
-            }
-        } catch {
-            this.biometricError.set('failed');
-        } finally {
-            this.biometricWorking.set(false);
-        }
-    }
-
-    protected static readonly MP_MIN_LENGTH = 4;
-
-    protected readonly mpMode = signal<'view' | 'set' | 'change' | 'remove'>('view');
-    protected readonly mpCurrentPassword = signal('');
-    protected readonly mpNewPassword = signal('');
-    protected readonly mpConfirmPassword = signal('');
-    protected readonly mpError = signal<string | null>(null);
-    protected readonly mpWorking = signal(false);
-    protected readonly mpSaved = signal(false);
-
-    startSetMasterPassword(): void {
-        this.resetMpFields();
-        this.mpMode.set('set');
-    }
-
-    startChangeMasterPassword(): void {
-        this.resetMpFields();
-        this.mpMode.set('change');
-    }
-
-    startRemoveMasterPassword(): void {
-        this.resetMpFields();
-        this.mpMode.set('remove');
-    }
-
-    cancelMasterPassword(): void {
-        this.resetMpFields();
-        this.mpMode.set('view');
-    }
-
-    private resetMpFields(): void {
-        this.mpCurrentPassword.set('');
-        this.mpNewPassword.set('');
-        this.mpConfirmPassword.set('');
-        this.mpError.set(null);
-    }
-
-    async submitSetMasterPassword(): Promise<void> {
+    async submitSetMasterPassword(newPassword: string): Promise<void> {
         if (this.mpWorking()) return;
-        const next = this.mpNewPassword();
-        const confirm = this.mpConfirmPassword();
-        if (next.length < SettingsComponent.MP_MIN_LENGTH) {
-            this.mpError.set('SETTINGS.SECURITY.MASTER_PASSWORD.ERROR_TOO_SHORT');
-            return;
-        }
-        if (next !== confirm) {
-            this.mpError.set('SETTINGS.SECURITY.MASTER_PASSWORD.ERROR_MISMATCH');
-            return;
+        if (newPassword.length < SettingsComponent.MP_MIN_LENGTH) {
+            this.mpError.set('SETTINGS.SECURITY.MASTER_PASSWORD.ERROR_TOO_SHORT'); return;
         }
         this.mpWorking.set(true);
         this.mpError.set(null);
         try {
-            await this.masterPassword.setPassword(next);
-            this.resetMpFields();
+            await this.masterPassword.setPassword(newPassword);
             this.mpMode.set('view');
             this.flashMpSaved();
-        } finally {
-            this.mpWorking.set(false);
-        }
+        } finally { this.mpWorking.set(false); }
     }
 
-    async submitChangeMasterPassword(): Promise<void> {
+    async submitChangeMasterPassword(payload: { current: string; next: string }): Promise<void> {
         if (this.mpWorking()) return;
-        const current = this.mpCurrentPassword();
-        const next = this.mpNewPassword();
-        const confirm = this.mpConfirmPassword();
-        if (next.length < SettingsComponent.MP_MIN_LENGTH) {
-            this.mpError.set('SETTINGS.SECURITY.MASTER_PASSWORD.ERROR_TOO_SHORT');
-            return;
-        }
-        if (next !== confirm) {
-            this.mpError.set('SETTINGS.SECURITY.MASTER_PASSWORD.ERROR_MISMATCH');
-            return;
+        if (payload.next.length < SettingsComponent.MP_MIN_LENGTH) {
+            this.mpError.set('SETTINGS.SECURITY.MASTER_PASSWORD.ERROR_TOO_SHORT'); return;
         }
         this.mpWorking.set(true);
         this.mpError.set(null);
         try {
-            const ok = await this.masterPassword.verifyPassword(current);
-            if (!ok) {
-                this.mpError.set('SETTINGS.SECURITY.MASTER_PASSWORD.ERROR_CURRENT_INVALID');
-                return;
-            }
-            await this.masterPassword.setPassword(next);
-            this.resetMpFields();
+            const ok = await this.masterPassword.verifyPassword(payload.current);
+            if (!ok) { this.mpError.set('SETTINGS.SECURITY.MASTER_PASSWORD.ERROR_CURRENT_INVALID'); return; }
+            await this.masterPassword.setPassword(payload.next);
             this.mpMode.set('view');
             this.flashMpSaved();
-        } finally {
-            this.mpWorking.set(false);
-        }
+        } finally { this.mpWorking.set(false); }
     }
 
-    async submitRemoveMasterPassword(): Promise<void> {
+    async submitRemoveMasterPassword(currentPassword: string): Promise<void> {
         if (this.mpWorking()) return;
-        const current = this.mpCurrentPassword();
         this.mpWorking.set(true);
         this.mpError.set(null);
         try {
-            const ok = await this.masterPassword.verifyPassword(current);
-            if (!ok) {
-                this.mpError.set('SETTINGS.SECURITY.MASTER_PASSWORD.ERROR_CURRENT_INVALID');
-                return;
-            }
+            const ok = await this.masterPassword.verifyPassword(currentPassword);
+            if (!ok) { this.mpError.set('SETTINGS.SECURITY.MASTER_PASSWORD.ERROR_CURRENT_INVALID'); return; }
             await this.masterPassword.removePassword();
             this.sensitiveLists.hide();
-
             for (const list of this.store.knownLists()) {
                 if (list.isSensitive) await this.store.setListSensitive(list.id, false);
             }
-            this.resetMpFields();
             this.mpMode.set('view');
             this.flashMpSaved();
-        } finally {
-            this.mpWorking.set(false);
-        }
+        } finally { this.mpWorking.set(false); }
     }
+
+    cancelMasterPassword(): void { this.mpMode.set('view'); this.mpError.set(null); }
 
     private flashMpSaved(): void {
         this.mpSaved.set(true);
         setTimeout(() => this.mpSaved.set(false), 2000);
     }
 
-    private async confirmSyncAuth(): Promise<boolean> {
-        try {
-            return await this.webAuthn.authenticate();
-        } catch {
-            return false;
-        }
-    }
-
-    protected readonly syncStep = signal<
-        'idle' | 'qr' | 'scan' | 'waiting' | 'done' | 'error'
-    >('idle');
-    protected readonly syncQrData = signal<string | null>(null);
-    protected readonly syncImportedCount = signal(0);
-    protected readonly syncLinkCopied = signal(false);
-    private syncPollTimer: ReturnType<typeof setInterval> | null = null;
-    private syncSessionId: string | null = null;
-    private syncPayload: SyncQrPayload | null = null;
-
     async startSync(): Promise<void> {
-        if (!await this.confirmSyncAuth()) return;
-        this.resetSync();
         try {
-            const payload: SyncQrPayload = await this.store.initSyncReceive();
-            this.syncSessionId = payload.sessionId;
-            this.syncPayload = payload;
-            this.syncQrData.set(JSON.stringify(payload));
-            this.syncStep.set('qr');
-            this.startReceivePoll(payload.sessionId);
-        } catch {
-            this.syncStep.set('error');
-        }
+            const ok = await this.webAuthn.authenticate();
+            if (!ok) return;
+        } catch { return; }
+        this.showSyncDialog.set(true);
     }
 
-    showScanner(): void {
-        this.stopSyncPoll();
-        this.syncStep.set('scan');
-    }
-
-    async copySyncLink(): Promise<void> {
-        if (!this.syncPayload) return;
-        const origin = Capacitor.isNativePlatform()
-            ? environment.nativeShareBaseUrl
-            : window.location.origin;
-        const url = `${origin}/sync/${this.syncPayload.sessionId}#${this.crypto.toUrlSafeB64(this.syncPayload.publicKey)}`;
-        try {
-            await navigator.clipboard.writeText(url);
-        } catch { }
-        this.syncLinkCopied.set(true);
-        setTimeout(() => this.syncLinkCopied.set(false), 2000);
-    }
-
-    private startReceivePoll(sessionId: string): void {
-        this.syncPollTimer = setInterval(async () => {
-            try {
-                const count = await this.store.claimSyncBundle(sessionId);
-                if (count === null) return;
-                this.stopSyncPoll();
-                this.syncImportedCount.set(count);
-                this.syncStep.set('done');
-            } catch { }
-        }, 2000);
-    }
-
-    async onSyncQrDetected(raw: string): Promise<void> {
-        try {
-            const payload = JSON.parse(raw) as SyncQrPayload;
-            if (payload.type !== 'sync') throw new Error('Not a sync QR.');
-            await this.store.initSyncSendToReceiver(payload.sessionId, payload.publicKey);
-            this.syncSessionId = payload.sessionId;
-            this.syncStep.set('waiting');
-            this.startSendReplyPoll(payload.sessionId);
-        } catch {
-            this.syncStep.set('error');
-        }
-    }
-
-    private startSendReplyPoll(sessionId: string): void {
-        this.syncPollTimer = setInterval(async () => {
-            try {
-                const count = await this.store.claimSyncReply(sessionId);
-                if (count === null) return;
-                this.stopSyncPoll();
-                this.syncImportedCount.set(count);
-                this.syncStep.set('done');
-            } catch { }
-        }, 2000);
-    }
-
-    private stopSyncPoll(): void {
-        if (this.syncPollTimer !== null) {
-            clearInterval(this.syncPollTimer);
-            this.syncPollTimer = null;
-        }
-    }
-
-    resetSync(): void {
-        this.stopSyncPoll();
-        this.syncQrData.set(null);
-        this.syncLinkCopied.set(false);
-        this.syncSessionId = null;
-        this.syncPayload = null;
-        this.syncImportedCount.set(0);
-        this.syncStep.set('idle');
+    onSyncDone(count: number): void {
+        this.syncImportedCount.set(count);
+        this.syncStep.set('done');
     }
 }

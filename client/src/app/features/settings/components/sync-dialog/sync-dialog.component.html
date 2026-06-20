@@ -1,0 +1,50 @@
+@if (show()) {
+<div class="backdrop" (click)="closeDialog()" role="presentation">
+    <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+        aria-labelledby="sync-dialog-title">
+        <h2 class="title" id="sync-dialog-title">{{ 'SETTINGS.SYNC_MACHINES' | translate }}</h2>
+
+        @if (syncStep() === 'qr') {
+        <p class="hint">{{ 'SETTINGS.SYNC_QR_HINT' | translate }}</p>
+        @if (syncQrData()) {
+        <div class="qr">
+            <app-qr-code [data]="syncQrData()!" [size]="200" />
+        </div>
+        } @else {
+        <div class="qr"><div class="qr-loading" role="status">…</div></div>
+        }
+        <button class="btn btn--ghost btn--sm btn--icon" (click)="copySyncLink()">
+            <svg lucideCopy [size]="14" aria-hidden="true"></svg>
+            {{ syncLinkCopied() ? ('SETTINGS.SYNC_LINK_COPIED' | translate) : ('SETTINGS.SYNC_COPY_LINK' | translate) }}
+        </button>
+        <p class="hint hint--sm" aria-live="polite">{{ 'SETTINGS.SYNC_WAITING' | translate }}</p>
+        <button class="btn btn--ghost btn--sm" (click)="showScanner()">
+            {{ 'SETTINGS.SYNC_SCAN_INSTEAD' | translate }}
+        </button>
+        }
+
+        @if (syncStep() === 'scan') {
+        <p class="hint">{{ 'SETTINGS.SYNC_SCAN_HINT' | translate }}</p>
+        <div class="scanner">
+            <app-qr-scanner (detected)="onSyncQrDetected($event)" />
+        </div>
+        }
+
+        @if (syncStep() === 'waiting') {
+        <p class="hint hint--sm" aria-live="polite">{{ 'SETTINGS.SYNC_WAITING' | translate }}</p>
+        }
+
+        @if (syncStep() === 'done') {
+        <p class="status status--ok" role="status">{{ 'SETTINGS.SYNC_DONE' | translate: { count: syncImportedCount() } }}</p>
+        }
+
+        @if (syncStep() === 'error') {
+        <p class="status status--err" role="alert">{{ 'SETTINGS.SYNC_ERROR' | translate }}</p>
+        }
+
+        <div class="actions">
+            <button class="btn btn--ghost" (click)="closeDialog()">{{ 'COMMON.CANCEL' | translate }}</button>
+        </div>
+    </div>
+</div>
+}

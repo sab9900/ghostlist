@@ -22,5 +22,21 @@
     "background_color": "#0e0e10",
     "display_override": ["standalone"],
     "display": "standalone",
-    "handle_links": "preferred"
+    "handle_links": "preferred",
+    "share_target": {
+        "action": "/share",
+        "method": "POST",
+        "enctype": "multipart/form-data",
+        "params": {
+            "title": "title",
+            "text": "text",
+            "url": "url",
+            "files": [
+                {
+                    "name": "files",
+                    "accept": ["image/*", "video/*", "audio/*", "application/pdf", "*/*"]
+                }
+            ]
+        }
+    }
 }

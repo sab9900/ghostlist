@@ -1,0 +1,75 @@
+@if (show()) {
+<div class="backdrop" (click)="closeDialog()" role="presentation">
+    <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+        aria-labelledby="import-dialog-title">
+        <h2 class="title" id="import-dialog-title">{{ 'LISTS.IMPORT_TITLE' | translate }}</h2>
+
+        <div class="tabs" role="tablist">
+            <button class="tab" [class.tab--active]="importMode() === 'show'"
+                (click)="setImportMode('show')" role="tab" [attr.aria-selected]="importMode() === 'show'">
+                {{ 'LISTS.IMPORT_SHOW_QR' | translate }}
+            </button>
+            <button class="tab" [class.tab--active]="importMode() === 'scan'"
+                (click)="setImportMode('scan')" role="tab" [attr.aria-selected]="importMode() === 'scan'">
+                {{ 'LISTS.IMPORT_SCAN_QR' | translate }}
+            </button>
+            <button class="tab" [class.tab--active]="importMode() === 'url'"
+                (click)="setImportMode('url')" role="tab" [attr.aria-selected]="importMode() === 'url'">
+                {{ 'LISTS.IMPORT_PASTE_URL' | translate }}
+            </button>
+        </div>
+
+        @if (importMode() === 'show') {
+        <p class="hint">{{ 'LISTS.IMPORT_SHOW_HINT' | translate }}</p>
+        <div class="qr" role="img" [attr.aria-label]="'LISTS.IMPORT_TITLE' | translate">
+            @if (importQrData()) {
+            <app-qr-code [data]="importQrData()!" [size]="200" />
+            } @else {
+            <div class="qr-loading" role="status" aria-live="polite">{{ 'LISTS.GENERATING' | translate }}</div>
+            }
+        </div>
+        @if (importErrorMsg()) {
+        <div class="status status--err" role="alert">{{ importErrorMsg()! | translate }}</div>
+        } @else {
+        <p class="hint hint--sm" aria-live="polite">{{ 'LISTS.IMPORT_SHOW_WAITING' | translate }}</p>
+        }
+        }
+
+        @if (importMode() === 'scan') {
+        <p class="hint">{{ 'LISTS.IMPORT_SCAN_HINT' | translate }}</p>
+        @if (scanStep() === 'scanning') {
+        <div class="scanner" role="region" [attr.aria-label]="'LISTS.IMPORT_SCAN_QR' | translate">
+            <app-qr-scanner (detected)="onExportQrDetected($event)" />
+        </div>
+        }
+        @if (scanStep() === 'waiting') {
+        <div class="status status--ok" role="status" aria-live="polite">{{ 'LISTS.IMPORT_SCAN_WAITING' | translate }}</div>
+        }
+        @if (scanStep() === 'error') {
+        <div class="status status--err" role="alert">{{ (importErrorMsg() ?? 'LISTS.IMPORT_SCAN_ERROR') | translate }}</div>
+        <button class="btn btn--ghost btn--sm" (click)="retryScan()">{{ 'COMMON.TRY_AGAIN' | translate }}</button>
+        }
+        }
+
+        @if (importMode() === 'url') {
+        <p class="hint">{{ 'LISTS.IMPORT_URL_HINT' | translate }}</p>
+        <input class="input" type="url" [attr.placeholder]="'LISTS.IMPORT_URL_PLACEHOLDER' | translate"
+            [ngModel]="importUrl()" (ngModelChange)="importUrl.set($event)"
+            (keydown.enter)="submitImportUrl()"
+            [attr.aria-label]="'LISTS.IMPORT_URL_PLACEHOLDER' | translate" />
+        @if (importUrlError()) {
+        <p class="error-msg" role="alert">{{ importUrlError()! | translate }}</p>
+        }
+        }
+
+        <div class="actions">
+            <button class="btn btn--ghost" (click)="closeDialog()">{{ 'COMMON.CANCEL' | translate }}</button>
+            @if (importMode() === 'url') {
+            <button class="btn btn--primary" (click)="submitImportUrl()" [disabled]="!importUrl().trim()">
+                {{ 'LISTS.IMPORT_URL_BTN' | translate }}
+            </button>
+            }
+        </div>
+    </div>
+</div>
+}

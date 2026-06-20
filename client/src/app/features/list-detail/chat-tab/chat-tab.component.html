@@ -6,155 +6,34 @@
     }
 
     @for (msg of decryptedMessages(); track msg.id) {
-    @let mineById = isMineBySenderIds(msg.senderUserId, msg.senderDeviceId);
-    @let mine = mineById !== null
-    ? mineById
-    : msg.senderName === (prefs.senderName() || ('CHAT.ANONYMOUS' | translate));
-    @let preview = replyPreview(msg);
-    @let imgUrl = msg.isImage ? imageDataUrl(msg.id) : null;
-    @let audUrl = msg.isAudio ? audioDataUrl(msg.id) : null;
-
-    <li class="message" role="article" [class.message--mine]="mine"
-        [class.message--highlight]="highlightedId() === msg.id" [class.message--unread]="isUnread(msg.id)" [class.message--open]="openMenuId() === msg.id"
-        [attr.data-message-id]="msg.id"
-        [attr.aria-label]="msg.senderName + ': ' + (msg.isImage ? ('CHAT.IMAGE' | translate) : msg.isAudio ? ('CHAT.VOICE_NOTE' | translate) : msg.text)"
-        (touchstart)="onTouchStart($event, msg)" (touchmove)="onTouchMove($event, msg)" (touchend)="onTouchEnd(msg)"
-        (touchcancel)="onTouchEnd(msg)" [appViewportDwell]="isUnread(msg.id) ? msg.id : ''"
-        (dwellRead)="onMessageDwellRead($event)">
-
-        <div class="message__swipe-hint" aria-hidden="true"
-            [style.opacity]="swipeOffset(msg.id) / swipeTriggerDistance">
-            <svg lucideCornerUpLeft [size]="18" aria-hidden="true"></svg>
-        </div>
-
-        <div class="message__row"
-            [style.transform]="swipeOffset(msg.id) ? 'translateX(' + swipeOffset(msg.id) + 'px)' : null">
-
-            @if (!mine) {
-            <app-avatar class="message__avatar" [name]="msg.senderName" [size]="28" />
-            }
-
-            <div class="message__bubble">
-
-                @if (msg.replyToMessageId) {
-                <button type="button" class="message__quote" [class.message__quote--unavailable]="!preview"
-                    [disabled]="!preview" (click)="scrollToMessage(msg.replyToMessageId)">
-                    @if (preview) {
-                    <span class="message__quote-sender">{{ preview.senderName }}</span>
-                    @if (preview.isImage) {
-                    <span class="message__quote-text message__quote-text--image">
-                        <svg lucideImage [size]="14" aria-hidden="true"></svg>
-                        {{ 'CHAT.IMAGE' | translate }}
-                    </span>
-                    } @else if (preview.isAudio) {
-                    <span class="message__quote-text message__quote-text--audio">
-                        <svg lucideMic [size]="14" aria-hidden="true"></svg>
-                        {{ 'CHAT.VOICE_NOTE' | translate }}
-                    </span>
-                    } @else {
-                    <span class="message__quote-text">{{ preview.text }}</span>
-                    }
-                    } @else {
-                    <span class="message__quote-text message__quote-text--unavailable">{{ 'CHAT.ORIGINAL_UNAVAILABLE' |
-                        translate }}</span>
-                    }
-                </button>
-                }
-
-                @if (msg.isImage) {
-                @if (imgUrl) {
-                @let imgAlt = 'CHAT.IMAGE_ALT' | translate;
-                <img class="message__image" [src]="imgUrl" [attr.alt]="imgAlt" role="button" tabindex="0"
-                    [attr.aria-label]="imgAlt" (click)="openImage(imgUrl, imgAlt)"
-                    (keydown.enter)="openImage(imgUrl, imgAlt)" />
-                } @else {
-                <div class="message__image-placeholder">
-                    <svg lucideImage [size]="22" aria-hidden="true"></svg>
-                    <span>{{ 'CHAT.IMAGE_UNAVAILABLE' | translate }}</span>
-                </div>
-                }
-                } @else if (msg.isAudio) {
-                @if (audUrl) {
-                <app-audio-waveform-player class="message__audio" [src]="audUrl" />
-                } @else {
-                <div class="message__audio-placeholder">
-                    <svg lucideMic [size]="18" aria-hidden="true"></svg>
-                    <span>{{ 'CHAT.VOICE_NOTE' | translate }}</span>
-                </div>
-                }
-                } @else {
-                <p class="message__text">@for (seg of parseText(msg.text); track $index) {
-                    @if (seg.isMention) {<strong class="message__mention">{{ seg.value }}</strong>} @else {{{ seg.value }}}
-                }</p>
-                }
-
-                <div class="message__meta">
-                    <span class="message__sender">{{ msg.senderName }}</span>
-                    <span class="message__time">{{ msg.createdAt | date:'HH:mm' }}</span>
-                    @if (isUnread(msg.id)) {
-                    <span class="message__unread-dot" aria-hidden="true"></span>
-                    }
-                    @if (mine && showReadReceiptCheckmark) {
-                    @let receiptState = readReceiptState(msg);
-                    <span class="message__status" [class.message__status--partial]="receiptState === 'partial'"
-                        [class.message__status--all]="receiptState === 'all'"
-                        [attr.aria-label]="(receiptState === 'all' ? 'CHAT.READ_ALL_ARIA' : receiptState === 'partial' ? 'CHAT.READ_PARTIAL_ARIA' : 'CHAT.SENT_ARIA') | translate">
-                        @if (receiptState === 'all') {
-                        <svg lucideCheckCheck [size]="15" aria-hidden="true"></svg>
-                        } @else if (receiptState === 'partial') {
-                        <svg lucideCheck [size]="15" aria-hidden="true"></svg>
-                        } @else {
-                        <svg lucideCheck [size]="15" aria-hidden="true" style="opacity:0.4"></svg>
-                        }
-                    </span>
-                    }
-                </div>
-            </div>
-
-            <div class="message__actions">
-                <button type="button" class="message__actions-btn" (click)="toggleMenu(msg.id, $event)"
-                    [attr.aria-label]="'CHAT.MESSAGE_ACTIONS_ARIA' | translate" aria-haspopup="menu"
-                    [attr.aria-expanded]="openMenuId() === msg.id">
-                    <svg lucideEllipsisVertical [size]="16" aria-hidden="true"></svg>
-                </button>
-
-                @if (openMenuId() === msg.id) {
-                <div class="message__menu" role="menu" [class.message__menu--below]="menuBelow()" [class.message__menu--left]="menuLeft()"
-                    (click)="$event.stopPropagation()">
-                    <button type="button" role="menuitem" class="message__menu-item" (click)="startReply(msg)">
-                        <svg lucideCornerUpLeft [size]="15" aria-hidden="true"></svg>
-                        {{ 'CHAT.REPLY' | translate }}
-                    </button>
-                    @if (!msg.isImage && !msg.isAudio) {
-                    <button type="button" role="menuitem" class="message__menu-item" (click)="copyMessage(msg)">
-                        <svg lucideCopy [size]="15" aria-hidden="true"></svg>
-                        {{ 'CHAT.COPY' | translate }}
-                    </button>
-                    }
-                    @if (mine) {
-                    <button type="button" role="menuitem" class="message__menu-item message__menu-item--danger"
-                        (click)="deleteMessage(msg.id)">
-                        <svg lucideTrash2 [size]="15" aria-hidden="true"></svg>
-                        {{ 'COMMON.DELETE' | translate }}
-                    </button>
-                    @let readers = readersForMessage(msg);
-                    @if (readers.length > 0) {
-                    <div class="message__menu-readers" role="group" [attr.aria-label]="'CHAT.READ_BY' | translate">
-                        <span class="message__menu-readers-label">{{ 'CHAT.READ_BY' | translate }}</span>
-                        @for (reader of readers; track reader.displayName) {
-                        <span class="message__menu-reader">
-                            <app-avatar [name]="reader.displayName" [size]="16" />
-                            {{ reader.displayName }}
-                        </span>
-                        }
-                    </div>
-                    }
-                    }
-                </div>
-                }
-            </div>
-
-        </div>
+    <li>
+        <app-chat-message
+            [msg]="msg"
+            [mine]="isMineFor(msg)"
+            [isUnread]="isUnread(msg.id)"
+            [isHighlighted]="highlightedId() === msg.id"
+            [isMenuOpen]="openMenuId() === msg.id"
+            [menuBelow]="menuBelow()"
+            [menuLeft]="menuLeft()"
+            [replyPreview]="replyPreviewFor(msg)"
+            [imageUrl]="msg.isImage ? imageDataUrl(msg.id) : null"
+            [audioUrl]="msg.isAudio ? audioDataUrl(msg.id) : null"
+            [readReceiptState]="readReceiptStateFor(msg)"
+            [showReadReceipt]="showReadReceiptCheckmark"
+            [readers]="readersForMessage(msg)"
+            [swipeOffset]="swipeOffset(msg.id)"
+            [swipeTriggerDistance]="swipeTriggerDistance"
+            (menuToggle)="toggleMenu(msg.id, $event)"
+            (reply)="startReply(msg)"
+            (copy)="copyMessage(msg)"
+            (delete)="deleteMessage(msg.id)"
+            (scrollToReply)="scrollToMessage($event)"
+            (dwellRead)="onMessageDwellRead($event)"
+            (touchStart)="onTouchStart($event, msg)"
+            (touchMove)="onTouchMove($event, msg)"
+            (touchEnd)="onTouchEnd(msg)"
+            (imageOpen)="openImage($event.url, $event.alt)"
+        />
     </li>
     }
 
@@ -164,23 +43,7 @@
 <div class="message-menu-backdrop" aria-hidden="true"></div>
 }
 
-@if (replyingTo()) {
-<div class="reply-bar">
-    <svg lucideCornerUpLeft [size]="16" aria-hidden="true"></svg>
-    <div class="reply-bar__content">
-        <span class="reply-bar__sender">{{ replyingTo()!.senderName }}</span>
-        @if (replyingTo()!.isImage) {
-        <span class="reply-bar__text">{{ 'CHAT.IMAGE' | translate }}</span>
-        } @else if (replyingTo()!.isAudio) {
-        <span class="reply-bar__text">{{ 'CHAT.VOICE_NOTE' | translate }}</span>
-        } @else {
-        <span class="reply-bar__text">{{ replyingTo()!.text }}</span>
-        }
-    </div>
-    <button type="button" class="reply-bar__cancel" (click)="cancelReply()"
-        [attr.aria-label]="'CHAT.CANCEL_REPLY_ARIA' | translate">×</button>
-</div>
-}
+<app-reply-bar [replyingTo]="replyingTo()" (cancel)="cancelReply()" />
 
 @if (typingNames().length > 0) {
 <p class="typing-indicator" role="status" aria-live="polite">
@@ -192,71 +55,27 @@
 </p>
 }
 
-@if (mentionQuery() !== null && mentionCandidates().length > 0) {
-<ul class="mention-list" role="listbox" aria-label="Mention suggestions">
-    @for (name of mentionCandidates(); track name; let i = $index) {
-    <li class="mention-list__item" role="option" [class.mention-list__item--active]="mentionIndex() === i"
-        [attr.aria-selected]="mentionIndex() === i" (mousedown)="$event.preventDefault()"
-        (click)="insertMention(name)">
-        <app-avatar [name]="name" [size]="20" />
-        {{ name }}
-    </li>
-    }
-</ul>
-}
+<app-mention-list
+    [candidates]="mentionCandidates()"
+    [activeIndex]="mentionIndex()"
+    (select)="insertMention($event)"
+/>
 
-@if (fileTooLarge()) {
-<p class="upload-error" role="alert">{{ 'CHAT.FILE_TOO_LARGE' | translate }}</p>
-}
-@if (recordingNotSupported()) {
-<p class="upload-error" role="alert">{{ 'CHAT.RECORD_NOT_SUPPORTED' | translate }}</p>
-@if (recordingDebugError()) {
-<p class="upload-error" role="alert" style="font-size:0.7em;opacity:0.7">DBG: {{ recordingDebugError() }}</p>
-}
-}
-@if (recordingPermissionDenied()) {
-<p class="upload-error" role="alert">{{ 'CHAT.RECORD_PERMISSION_DENIED' | translate }}</p>
-}
-@if (sendingAudio()) {
-<p class="compose__sending-audio" role="status">{{ 'CHAT.SENDING_VOICE' | translate }}</p>
-}
-
-<div class="compose" role="form" [attr.aria-label]="'CHAT.MESSAGE_PLACEHOLDER' | translate">
-    @if (recording()) {
-    <div class="compose__recording-row">
-        <span class="compose__recording-dot" aria-hidden="true"></span>
-        <span class="compose__timer" role="timer" [attr.aria-label]="formatRecordingTime(recordingSeconds())">
-            {{ formatRecordingTime(recordingSeconds()) }}
-        </span>
-        <button type="button" class="compose__record compose__record--stop" (click)="toggleRecording()"
-            [attr.aria-label]="'CHAT.STOP_RECORD_ARIA' | translate" aria-pressed="true">
-            <svg lucideSquare [size]="20" aria-hidden="true"></svg>
-        </button>
-    </div>
-    } @else {
-    <div class="compose__row">
-        <input #fileInput type="file" accept="image/*" class="visually-hidden" tabindex="-1"
-            (change)="onFileSelected($event)" />
-        <button type="button" class="compose__attach" (mousedown)="$event.preventDefault()" (click)="pickImage()"
-            [disabled]="sendingImage() || sendingAudio()" [attr.aria-label]="'CHAT.SEND_IMAGE_ARIA' | translate"
-            [attr.aria-busy]="sendingImage()">
-            <svg lucideImage [size]="20" aria-hidden="true"></svg>
-        </button>
-        <textarea #composeInput class="compose__input" rows="1"
-            [attr.placeholder]="'CHAT.MESSAGE_PLACEHOLDER' | translate" [ngModel]="newMessageText()"
-            (ngModelChange)="newMessageText.set($event)" (keydown)="onKeydown($event)" (input)="autoResize($event)"
-            maxlength="2000" [attr.aria-label]="'CHAT.MESSAGE_PLACEHOLDER' | translate"></textarea>
-        @if (newMessageText().trim()) {
-        <button class="compose__send" (mousedown)="$event.preventDefault()" (click)="sendMessage()"
-            [disabled]="sendingMessage()" [attr.aria-label]="'CHAT.MESSAGE_PLACEHOLDER' | translate"
-            [attr.aria-busy]="sendingMessage()">›</button>
-        } @else {
-        <button type="button" class="compose__record" (mousedown)="$event.preventDefault()" (click)="toggleRecording()"
-            [disabled]="sendingAudio() || sendingMessage()" [attr.aria-label]="'CHAT.RECORD_ARIA' | translate"
-            aria-pressed="false">
-            <svg lucideMic [size]="20" aria-hidden="true"></svg>
-        </button>
-        }
-    </div>
-    }
-</div>
+<app-chat-compose
+    #composeRef
+    [text]="newMessageText()"
+    [sendingImage]="sendingImage()"
+    [sendingAudio]="sendingAudio()"
+    [recording]="recording()"
+    [recordingSeconds]="recordingSeconds()"
+    [fileTooLarge]="fileTooLarge()"
+    [recordingNotSupported]="recordingNotSupported()"
+    [recordingPermissionDenied]="recordingPermissionDenied()"
+    [recordingDebugError]="recordingDebugError()"
+    (textChange)="onTextChange($event)"
+    (send)="sendMessage()"
+    (pickImage)="pickImage()"
+    (toggleRecord)="toggleRecording()"
+    (keydown)="onKeydown($event)"
+    (fileSelected)="onFileSelected($event)"
+/>

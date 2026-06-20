@@ -59,6 +59,11 @@ export const routes: Routes = [
             import('./features/about/about.component').then((m) => m.AboutComponent),
     },
     {
+        path: 'share',
+        loadComponent: () =>
+            import('./features/share/share.component').then((m) => m.ShareComponent),
+    },
+    {
         path: '**',
         redirectTo: '',
     },

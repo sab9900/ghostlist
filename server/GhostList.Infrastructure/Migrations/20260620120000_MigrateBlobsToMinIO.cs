@@ -8,11 +8,10 @@ public partial class MigrateBlobsToMinIO : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
     {
-        migrationBuilder.DropTable(name: "GhostMessageImages");
-        migrationBuilder.DropTable(name: "GhostMessageAudios");
-
-        migrationBuilder.DropColumn(name: "EncryptedContent", table: "CharonDrops");
-        migrationBuilder.DropColumn(name: "ContentInitializationVector", table: "CharonDrops");
+        migrationBuilder.Sql("""DROP TABLE IF EXISTS "GhostMessageImages";""");
+        migrationBuilder.Sql("""DROP TABLE IF EXISTS "GhostMessageAudios";""");
+        migrationBuilder.Sql("""ALTER TABLE "CharonDrops" DROP COLUMN IF EXISTS "EncryptedContent";""");
+        migrationBuilder.Sql("""ALTER TABLE "CharonDrops" DROP COLUMN IF EXISTS "ContentInitializationVector";""");
     }
 
     protected override void Down(MigrationBuilder migrationBuilder)

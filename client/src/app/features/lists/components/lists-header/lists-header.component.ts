@@ -1,0 +1,32 @@
+import { Component, input, output, signal } from '@angular/core';
+import { LucideCoffee, LucideDownload, LucideInfo, LucideMenu, LucideSettings, LucideUpload } from '@lucide/angular';
+import { TranslatePipe } from '@ngx-translate/core';
+import { BadgeComponent } from '../../../../shared/badge/badge.component';
+
+@Component({
+    selector: 'app-lists-header',
+    imports: [TranslatePipe, BadgeComponent, LucideMenu, LucideDownload, LucideUpload, LucideSettings, LucideCoffee, LucideInfo],
+    templateUrl: './lists-header.component.html',
+    styleUrl: './lists-header.component.scss',
+})
+export class ListsHeaderComponent {
+    readonly totalUnread = input(0);
+    readonly showCoffeeLink = input(true);
+
+    readonly logoClick = output<void>();
+    readonly markAllReadOpen = output<void>();
+    readonly importOpen = output<void>();
+    readonly exportOpen = output<void>();
+    readonly settingsOpen = output<void>();
+    readonly aboutOpen = output<void>();
+
+    protected readonly showMenu = signal(false);
+
+    toggleMenu(): void { this.showMenu.update(v => !v); }
+    closeMenu(): void { this.showMenu.set(false); }
+
+    onImport(): void { this.closeMenu(); this.importOpen.emit(); }
+    onExport(): void { this.closeMenu(); this.exportOpen.emit(); }
+    onSettings(): void { this.closeMenu(); this.settingsOpen.emit(); }
+    onAbout(): void { this.closeMenu(); this.aboutOpen.emit(); }
+}

@@ -1,0 +1,38 @@
+<section class="section" aria-labelledby="appearance-heading">
+    <div class="heading">
+        <h2 class="title" id="appearance-heading">{{ 'SETTINGS.APPEARANCE_TITLE' | translate }}</h2>
+    </div>
+    <div class="body">
+        <div class="option-list" role="radiogroup" aria-labelledby="appearance-heading">
+            @for (opt of themeOptions(); track opt.value) {
+            <button class="option" [class.option--active]="theme() === opt.value"
+                (click)="themeChange.emit(opt.value)" role="radio"
+                [attr.aria-checked]="theme() === opt.value">
+                <div class="option-body">
+                    <span class="option-label">{{ opt.labelKey | translate }}</span>
+                    <span class="option-desc">{{ opt.descKey | translate }}</span>
+                </div>
+                @if (theme() === opt.value) {
+                <span class="option-check" aria-hidden="true">✓</span>
+                }
+            </button>
+            }
+        </div>
+
+        <div class="sub" aria-labelledby="accent-heading">
+            <h3 class="sub-title" id="accent-heading">{{ 'SETTINGS.ACCENT_TITLE' | translate }}</h3>
+            <div class="swatch-row" role="radiogroup" aria-labelledby="accent-heading">
+                @for (opt of accentOptions(); track opt.value) {
+                <button class="swatch" [class.swatch--active]="accent() === opt.value"
+                    [class.swatch--noir]="opt.value === 'noir'"
+                    [style.--swatch-color]="opt.color" (click)="accentChange.emit(opt.value)"
+                    role="radio" [attr.aria-checked]="accent() === opt.value"
+                    [attr.aria-label]="opt.labelKey | translate">
+                    <span class="swatch-dot" aria-hidden="true"></span>
+                    <span class="swatch-label">{{ opt.labelKey | translate }}</span>
+                </button>
+                }
+            </div>
+        </div>
+    </div>
+</section>

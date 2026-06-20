@@ -1,410 +1,94 @@
 <div class="screen" role="main" appSwipeBack (swipeBack)="goBack()">
 
     <header class="header" role="banner">
-        <button class="header__back" (click)="goBack()" [attr.aria-label]="'LIST_DETAIL.BACK_ARIA' | translate">
+        <button class="back" (click)="goBack()" [attr.aria-label]="'LIST_DETAIL.BACK_ARIA' | translate">
             <svg lucideChevronLeft [size]="20" aria-hidden="true"></svg>
         </button>
-        <h1 class="header__title">{{ 'SETTINGS.TITLE' | translate }}</h1>
+        <h1 class="title">{{ 'SETTINGS.TITLE' | translate }}</h1>
     </header>
 
     <main class="content">
-        <div class="content__inner">
+        <div class="content-inner">
 
-        <section class="section" aria-labelledby="name-heading">
-            <div class="section__desc">
-                <h2 class="section__title" id="name-heading">{{ 'CHAT.NAME_DIALOG_TITLE' | translate }}</h2>
-                <p class="section__hint">{{ 'CHAT.NAME_DIALOG_HINT' | translate }}</p>
-            </div>
-            <div class="section__body">
-                <div class="settings-row">
-                    <input class="settings-input" type="text" [attr.placeholder]="'CHAT.NAME_DIALOG_PLACEHOLDER' | translate"
-                        [ngModel]="pendingName()" (ngModelChange)="pendingName.set($event)"
-                        (keydown.enter)="saveName()" maxlength="40" aria-labelledby="name-heading" />
-                    <div class="save-slot">
-                        <button class="btn btn--primary btn--sm" (click)="saveName()"
-                            [class.save-slot__hidden]="nameSaved()"
-                            [disabled]="!pendingName().trim()">
-                            {{ 'COMMON.SAVE' | translate }}
-                        </button>
-                        @if (nameSaved()) {
-                        <span class="save-feedback save-slot__overlay" role="status" aria-live="polite">{{ 'COMMON.SAVED' | translate }}</span>
-                        }
-                    </div>
+            <div class="settings-grid">
+
+                <div class="settings-col">
+
+                    <app-name-section
+                        [currentName]="prefs.senderName()"
+                        (save)="saveName($event)" />
+
+                    <app-appearance-section
+                        [theme]="themeService.theme()"
+                        [accent]="themeService.accent()"
+                        [themeOptions]="themeOptions"
+                        [accentOptions]="accentOptions"
+                        (themeChange)="setTheme($event)"
+                        (accentChange)="setAccent($event)" />
+
+                    <app-language-section
+                        [currentLang]="langService.currentLang()"
+                        [langs]="supportedLangs"
+                        (change)="setLanguage($event)" />
+
                 </div>
-            </div>
-        </section>
 
-        <div class="settings-grid">
+                <div class="settings-col">
 
-        <div class="settings-col">
+                    <app-security-section
+                        [isSupported]="webAuthn.isSupported()"
+                        [isEnabled]="webAuthn.isEnabled()"
+                        [working]="biometricWorking()"
+                        [error]="biometricError()"
+                        [autoLockTimeout]="webAuthn.autoLockTimeout()"
+                        [autoLockOptions]="autoLockOptions"
+                        (enable)="enableBiometricLock()"
+                        (disable)="disableBiometricLock()"
+                        (autoLockChange)="webAuthn.setAutoLockTimeout($event)" />
 
-        <section class="section" aria-labelledby="theme-heading">
-            <div class="section__desc">
-                <h2 class="section__title" id="theme-heading">{{ 'SETTINGS.APPEARANCE_TITLE' | translate }}</h2>
-            </div>
-            <div class="section__body">
-                <div class="option-list" role="radiogroup" aria-labelledby="theme-heading">
-                    @for (opt of themeOptions; track opt.value) {
-                    <button class="option" [class.option--active]="themeService.theme() === opt.value"
-                        (click)="setTheme(opt.value)" role="radio"
-                        [attr.aria-checked]="themeService.theme() === opt.value">
-                        <div class="option__body">
-                            <span class="option__label">{{ opt.labelKey | translate }}</span>
-                            <span class="option__desc">{{ opt.descKey | translate }}</span>
-                        </div>
-                        @if (themeService.theme() === opt.value) {
-                        <span class="option__check" aria-hidden="true">✓</span>
-                        }
-                    </button>
+                    <app-master-password-section
+                        [hasPassword]="masterPassword.hasPassword()"
+                        [mode]="mpMode()"
+                        [working]="mpWorking()"
+                        [error]="mpError()"
+                        [saved]="mpSaved()"
+                        (startSet)="mpMode.set('set')"
+                        (startChange)="mpMode.set('change')"
+                        (startRemove)="mpMode.set('remove')"
+                        (cancel)="cancelMasterPassword()"
+                        (submitSet)="submitSetMasterPassword($event)"
+                        (submitChange)="submitChangeMasterPassword($event)"
+                        (submitRemove)="submitRemoveMasterPassword($event)" />
+
+                    <app-sync-section
+                        [webAuthnEnabled]="webAuthn.isEnabled()"
+                        [syncStep]="syncStep()"
+                        [syncImportedCount]="syncImportedCount()"
+                        (startSync)="startSync()" />
+
+                    <app-notifications-section
+                        [permission]="webPushPermission()"
+                        [enabled]="notificationsEnabled()"
+                        [enabling]="notifEnabling()"
+                        [pushActive]="pushActive()"
+                        (toggle)="toggleNotifications($event)" />
+
+                    @if (!layout.isDesktop()) {
+                    <app-haptics-section
+                        [enabled]="prefs.hapticsEnabled()"
+                        (toggle)="setHapticsEnabled($event)" />
                     }
+
                 </div>
-            </div>
-        </section>
-
-        <section class="section" aria-labelledby="security-heading">
-            <div class="section__desc">
-                <h2 class="section__title" id="security-heading">{{ 'SETTINGS.SECURITY.TITLE' | translate }}</h2>
-                <p class="section__hint">{{ 'SETTINGS.SECURITY.HINT' | translate }}</p>
-            </div>
-            <div class="section__body">
-                @if (!webAuthn.isSupported()) {
-                <p class="security-status security-status--warn" role="status">
-                    {{ 'SETTINGS.SECURITY.UNSUPPORTED' | translate }}
-                </p>
-                } @else if (webAuthn.isEnabled()) {
-                <div class="security-row">
-                    <span class="security-badge">
-                        <svg lucideShield [size]="14"></svg>
-
-                        {{ 'SETTINGS.SECURITY.ENABLED' | translate }}
-                    </span>
-                    <button class="btn btn--ghost btn--sm btn--danger" (click)="disableBiometricLock()"
-                        [disabled]="biometricWorking()">
-                        @if (biometricWorking()) {
-                            {{ 'SETTINGS.SECURITY.DISABLING' | translate }}
-                        } @else {
-                            {{ 'SETTINGS.SECURITY.DISABLE_BTN' | translate }}
-                        }
-                    </button>
-                </div>
-                } @else {
-                <button class="btn btn--primary btn--sm" (click)="enableBiometricLock()"
-                    [disabled]="biometricWorking()">
-                    @if (biometricWorking()) {
-                        {{ 'SETTINGS.SECURITY.ENABLING' | translate }}
-                    } @else {
-                        {{ 'SETTINGS.SECURITY.ENABLE_BTN' | translate }}
-                    }
-                </button>
-                }
-
-                @if (biometricError() === 'unsupported') {
-                <p class="security-status security-status--err" role="alert">{{ 'SETTINGS.SECURITY.UNSUPPORTED' | translate }}</p>
-                } @else if (biometricError() === 'failed') {
-                <p class="security-status security-status--err" role="alert">{{ 'SETTINGS.SECURITY.ENABLE_ERROR' | translate }}</p>
-                }
-
-                @if (webAuthn.isEnabled()) {
-                <div class="section__sub" aria-labelledby="auto-lock-heading">
-                    <h3 class="section__sub-title" id="auto-lock-heading">{{ 'SETTINGS.SECURITY.AUTO_LOCK.TITLE' | translate }}</h3>
-                    <div class="option-list" role="radiogroup" aria-labelledby="auto-lock-heading">
-                        @for (opt of autoLockOptions; track opt.value) {
-                        <button class="option" [class.option--active]="webAuthn.autoLockTimeout() === opt.value"
-                            (click)="webAuthn.setAutoLockTimeout(opt.value)" role="radio"
-                            [attr.aria-checked]="webAuthn.autoLockTimeout() === opt.value">
-                            <div class="option__body">
-                                <span class="option__label">{{ opt.labelKey | translate }}</span>
-                            </div>
-                            @if (webAuthn.autoLockTimeout() === opt.value) {
-                            <span class="option__check" aria-hidden="true">✓</span>
-                            }
-                        </button>
-                        }
-                    </div>
-                </div>
-                }
-            </div>
-        </section>
-
-        <section class="section" aria-labelledby="master-password-heading">
-            <div class="section__desc">
-                <h2 class="section__title" id="master-password-heading">{{ 'SETTINGS.SECURITY.MASTER_PASSWORD.TITLE' | translate }}</h2>
-                <p class="section__hint">{{ 'SETTINGS.SECURITY.MASTER_PASSWORD.HINT' | translate }}</p>
-            </div>
-            <div class="section__body">
-
-                @if (mpMode() === 'view') {
-                    @if (masterPassword.hasPassword()) {
-                    <div class="security-row">
-                        <span class="security-badge">
-                            <svg lucideLock [size]="14" aria-hidden="true"></svg>
-                            {{ 'SETTINGS.SECURITY.MASTER_PASSWORD.ENABLED' | translate }}
-                        </span>
-                        <button class="btn btn--ghost btn--sm" (click)="startChangeMasterPassword()">
-                            {{ 'SETTINGS.SECURITY.MASTER_PASSWORD.CHANGE_BTN' | translate }}
-                        </button>
-                        <button class="btn btn--ghost btn--sm btn--danger" (click)="startRemoveMasterPassword()">
-                            {{ 'SETTINGS.SECURITY.MASTER_PASSWORD.REMOVE_BTN' | translate }}
-                        </button>
-                    </div>
-                    } @else {
-                    <button class="btn btn--primary btn--sm" (click)="startSetMasterPassword()">
-                        {{ 'SETTINGS.SECURITY.MASTER_PASSWORD.SET_BTN' | translate }}
-                    </button>
-                    }
-
-                    @if (mpSaved()) {
-                    <p class="security-status security-status--ok" role="status">{{ 'SETTINGS.SECURITY.MASTER_PASSWORD.SAVED' | translate }}</p>
-                    }
-                }
-
-                @if (mpMode() === 'set' || mpMode() === 'change') {
-                <div class="section__sub master-password-form">
-                    @if (mpMode() === 'change') {
-                    <input class="settings-input" type="password" autocomplete="off"
-                        [attr.placeholder]="'SETTINGS.SECURITY.MASTER_PASSWORD.CURRENT_PLACEHOLDER' | translate"
-                        [ngModel]="mpCurrentPassword()" (ngModelChange)="mpCurrentPassword.set($event)"
-                        [attr.aria-label]="'SETTINGS.SECURITY.MASTER_PASSWORD.CURRENT_PLACEHOLDER' | translate" />
-                    }
-                    <input class="settings-input" type="password" autocomplete="off"
-                        [attr.placeholder]="'SETTINGS.SECURITY.MASTER_PASSWORD.NEW_PLACEHOLDER' | translate"
-                        [ngModel]="mpNewPassword()" (ngModelChange)="mpNewPassword.set($event)"
-                        [attr.aria-label]="'SETTINGS.SECURITY.MASTER_PASSWORD.NEW_PLACEHOLDER' | translate" />
-                    <input class="settings-input" type="password" autocomplete="off"
-                        [attr.placeholder]="'SETTINGS.SECURITY.MASTER_PASSWORD.CONFIRM_PLACEHOLDER' | translate"
-                        [ngModel]="mpConfirmPassword()" (ngModelChange)="mpConfirmPassword.set($event)"
-                        (keydown.enter)="mpMode() === 'set' ? submitSetMasterPassword() : submitChangeMasterPassword()"
-                        [attr.aria-label]="'SETTINGS.SECURITY.MASTER_PASSWORD.CONFIRM_PLACEHOLDER' | translate" />
-
-                    @if (mpError()) {
-                    <p class="security-status security-status--err" role="alert">{{ mpError()! | translate }}</p>
-                    }
-
-                    <div class="dialog__actions">
-                        <button class="btn btn--ghost" (click)="cancelMasterPassword()" [disabled]="mpWorking()">
-                            {{ 'COMMON.CANCEL' | translate }}
-                        </button>
-                        @if (mpMode() === 'set') {
-                        <button class="btn btn--primary" (click)="submitSetMasterPassword()" [disabled]="mpWorking()" [attr.aria-busy]="mpWorking()">
-                            {{ 'COMMON.SAVE' | translate }}
-                        </button>
-                        } @else {
-                        <button class="btn btn--primary" (click)="submitChangeMasterPassword()" [disabled]="mpWorking()" [attr.aria-busy]="mpWorking()">
-                            {{ 'COMMON.SAVE' | translate }}
-                        </button>
-                        }
-                    </div>
-                </div>
-                }
-
-                @if (mpMode() === 'remove') {
-                <div class="section__sub master-password-form">
-                    <p class="section__hint">{{ 'SETTINGS.SECURITY.MASTER_PASSWORD.REMOVE_HINT' | translate }}</p>
-                    <input class="settings-input" type="password" autocomplete="off"
-                        [attr.placeholder]="'SETTINGS.SECURITY.MASTER_PASSWORD.CURRENT_PLACEHOLDER' | translate"
-                        [ngModel]="mpCurrentPassword()" (ngModelChange)="mpCurrentPassword.set($event)"
-                        (keydown.enter)="submitRemoveMasterPassword()"
-                        [attr.aria-label]="'SETTINGS.SECURITY.MASTER_PASSWORD.CURRENT_PLACEHOLDER' | translate" />
-
-                    @if (mpError()) {
-                    <p class="security-status security-status--err" role="alert">{{ mpError()! | translate }}</p>
-                    }
-
-                    <div class="dialog__actions">
-                        <button class="btn btn--ghost" (click)="cancelMasterPassword()" [disabled]="mpWorking()">
-                            {{ 'COMMON.CANCEL' | translate }}
-                        </button>
-                        <button class="btn btn--ghost btn--danger" (click)="submitRemoveMasterPassword()" [disabled]="mpWorking()" [attr.aria-busy]="mpWorking()">
-                            {{ 'SETTINGS.SECURITY.MASTER_PASSWORD.REMOVE_BTN' | translate }}
-                        </button>
-                    </div>
-                </div>
-                }
 
             </div>
-        </section>
-
-        <section class="section" aria-labelledby="sync-heading">
-            <div class="section__desc">
-                <h2 class="section__title" id="sync-heading">{{ 'SETTINGS.SYNC_TITLE' | translate }}</h2>
-                <p class="section__hint">{{ 'SETTINGS.SYNC_HINT' | translate }}</p>
-            </div>
-            <div class="section__body">
-
-            @if (!webAuthn.isEnabled()) {
-            <p class="security-status security-status--warn" role="status">
-                {{ 'SETTINGS.SYNC_REQUIRES_BIOMETRIC' | translate }}
-            </p>
-            }
-
-            <div class="sync-actions">
-                <button class="btn btn--primary btn--sm btn--icon" (click)="startSync()"
-                    [disabled]="!webAuthn.isEnabled()">
-                    <svg lucideRefreshCw [size]="15" aria-hidden="true"></svg>
-                    {{ 'SETTINGS.SYNC_MACHINES' | translate }}
-                </button>
-            </div>
-
-            @if (syncStep() === 'done') {
-            <p class="sync-status sync-status--ok" role="status" aria-live="polite">
-                {{ 'SETTINGS.SYNC_DONE' | translate: { count: syncImportedCount() } }}
-            </p>
-            }
-            @if (syncStep() === 'error') {
-            <p class="sync-status sync-status--err" role="alert">{{ 'SETTINGS.SYNC_ERROR' | translate }}</p>
-            }
-
-            </div>
-        </section>
-
-        </div>
-
-        <div class="settings-col">
-
-        <section class="section" aria-labelledby="notif-heading">
-            <div class="section__desc">
-                <h2 class="section__title" id="notif-heading">{{ 'SETTINGS.NOTIFICATIONS.TITLE' | translate }}</h2>
-                <p class="section__hint">{{ 'SETTINGS.NOTIFICATIONS.TOGGLE_HINT' | translate }}</p>
-            </div>
-            <div class="section__body">
-                @if (webPushPermission() === 'denied') {
-                <p class="security-status security-status--err" role="alert">
-                    {{ 'SETTINGS.NOTIFICATIONS.DENIED' | translate }}
-                </p>
-                } @else {
-                <div class="toggle-row">
-                    <div>
-                        <p class="toggle-label" id="notif-toggle-label">{{ 'SETTINGS.NOTIFICATIONS.TOGGLE_LABEL' | translate }}</p>
-                    </div>
-                    @if (notifEnabling()) {
-                    <span class="toggle-hint">{{ 'SETTINGS.NOTIFICATIONS.ENABLING' | translate }}</span>
-                    } @else {
-                    <label class="toggle-switch" aria-labelledby="notif-toggle-label">
-                        <input type="checkbox"
-                            [ngModel]="notificationsEnabled()"
-                            (ngModelChange)="toggleNotifications($event)" />
-                        <span class="toggle-switch__track" aria-hidden="true"></span>
-                    </label>
-                    }
-                    @if (notificationsEnabled() && !pushActive()) {
-                    <span class="toggle-hint">{{ 'SETTINGS.NOTIFICATIONS.PENDING' | translate }}</span>
-                    }
-                </div>
-                }
-            </div>
-        </section>
-
-        @if (!layout.isDesktop()) {
-        <section class="section" aria-labelledby="haptics-heading">
-            <div class="section__desc">
-                <h2 class="section__title" id="haptics-heading">{{ 'SETTINGS.HAPTICS_TITLE' | translate }}</h2>
-            </div>
-            <div class="section__body">
-                <div class="toggle-row">
-                    <div>
-                        <p class="toggle-label" id="haptics-enable-label">{{ 'SETTINGS.HAPTICS_ENABLE' | translate }}</p>
-                        <p class="toggle-hint">{{ 'SETTINGS.HAPTICS_HINT' | translate }}</p>
-                    </div>
-                    <label class="toggle-switch" aria-labelledby="haptics-enable-label">
-                        <input type="checkbox" [ngModel]="prefs.hapticsEnabled()" (ngModelChange)="setHapticsEnabled($event)" />
-                        <span class="toggle-switch__track" aria-hidden="true"></span>
-                    </label>
-                </div>
-            </div>
-        </section>
-        }
-
-        <section class="section" aria-labelledby="lang-heading">
-            <div class="section__desc">
-                <h2 class="section__title" id="lang-heading">{{ 'SETTINGS.LANGUAGE_TITLE' | translate }}</h2>
-            </div>
-            <div class="section__body">
-                <div class="option-list" role="radiogroup" aria-labelledby="lang-heading">
-                    @for (lang of supportedLangs; track lang.code) {
-                    <button class="option" [class.option--active]="langService.currentLang() === lang.code"
-                        (click)="setLanguage(lang.code)" role="radio"
-                        [attr.aria-checked]="langService.currentLang() === lang.code">
-                        <div class="option__body">
-                            <span class="option__label">{{ lang.label }}</span>
-                        </div>
-                        @if (langService.currentLang() === lang.code) {
-                        <span class="option__check" aria-hidden="true">✓</span>
-                        }
-                    </button>
-                    }
-                </div>
-            </div>
-        </section>
-
-        <section class="section" aria-labelledby="accent-heading">
-            <div class="section__desc">
-                <h2 class="section__title" id="accent-heading">{{ 'SETTINGS.ACCENT_TITLE' | translate }}</h2>
-            </div>
-            <div class="section__body">
-                <div class="swatch-row" role="radiogroup" aria-labelledby="accent-heading">
-                    @for (opt of accentOptions; track opt.value) {
-                    <button class="swatch" [class.swatch--active]="themeService.accent() === opt.value"
-                        [class.swatch--noir]="opt.value === 'noir'"
-                        [style.--swatch-color]="opt.color" (click)="setAccent(opt.value)"
-                        role="radio" [attr.aria-checked]="themeService.accent() === opt.value"
-                        [attr.aria-label]="opt.labelKey | translate">
-                        <span class="swatch__dot" aria-hidden="true"></span>
-                        <span class="swatch__label">{{ opt.labelKey | translate }}</span>
-                    </button>
-                    }
-                </div>
-            </div>
-        </section>
-
-        </div>
-
-        </div>
 
         </div>
     </main>
 
-@if (syncStep() === 'qr' || syncStep() === 'scan' || syncStep() === 'waiting') {
-<div class="dialog-backdrop" (click)="resetSync()" role="presentation">
-    <div class="dialog dialog--qr" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
-        aria-labelledby="sync-dialog-title">
-
-        <h2 class="dialog__title" id="sync-dialog-title">{{ 'SETTINGS.SYNC_MACHINES' | translate }}</h2>
-
-        @if (syncStep() === 'qr') {
-        <p class="dialog__hint">{{ 'SETTINGS.SYNC_QR_HINT' | translate }}</p>
-        @if (syncQrData()) {
-        <div class="dialog__qr">
-            <app-qr-code [data]="syncQrData()!" [size]="200" />
-        </div>
-        } @else {
-        <div class="dialog__qr"><div class="dialog__qr-loading" role="status">…</div></div>
-        }
-        <button class="btn btn--ghost btn--sm btn--icon" (click)="copySyncLink()">
-            <svg lucideCopy [size]="14" aria-hidden="true"></svg>
-            {{ syncLinkCopied() ? ('SETTINGS.SYNC_LINK_COPIED' | translate) : ('SETTINGS.SYNC_COPY_LINK' | translate) }}
-        </button>
-        <p class="dialog__hint dialog__hint--sm" aria-live="polite">{{ 'SETTINGS.SYNC_WAITING' | translate }}</p>
-        <button class="btn btn--ghost btn--sm" (click)="showScanner()">
-            {{ 'SETTINGS.SYNC_SCAN_INSTEAD' | translate }}
-        </button>
-        }
-
-        @if (syncStep() === 'scan') {
-        <p class="dialog__hint">{{ 'SETTINGS.SYNC_SCAN_HINT' | translate }}</p>
-        <div class="dialog__scanner">
-            <app-qr-scanner (detected)="onSyncQrDetected($event)" />
-        </div>
-        }
-
-        @if (syncStep() === 'waiting') {
-        <p class="dialog__hint dialog__hint--sm" aria-live="polite">{{ 'SETTINGS.SYNC_WAITING' | translate }}</p>
-        }
-
-        <div class="dialog__actions">
-            <button class="btn btn--ghost" (click)="resetSync()">{{ 'COMMON.CANCEL' | translate }}</button>
-        </div>
-    </div>
-</div>
-}
+    <app-sync-dialog
+        [show]="showSyncDialog()"
+        (closed)="showSyncDialog.set(false)"
+        (done)="onSyncDone($event)" />
 
 </div>

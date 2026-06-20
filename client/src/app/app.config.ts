@@ -7,6 +7,8 @@ import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 
 import { routes } from './app.routes';
 import { LanguageService } from './core/services/language.service';
+import { ShareHandlerService } from './core/services/share-handler.service';
+import { SharedListsBridgeService } from './core/services/shared-lists-bridge.service';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -15,12 +17,14 @@ export const appConfig: ApplicationConfig = {
         provideBrowserGlobalErrorListeners(),
         provideRouter(routes),
         provideHttpClient(),
-        provideServiceWorker('ngsw-worker.js', {
+        provideServiceWorker('ghost-sw.js', {
             enabled: !isDevMode(),
             registrationStrategy: 'registerWhenStable:30000',
         }),
         provideTranslateService({ fallbackLang: 'en_US' }),
         provideTranslateHttpLoader({ prefix: '/i18n/', suffix: '.json' }),
         provideAppInitializer(() => inject(LanguageService).init()),
+        provideAppInitializer(() => inject(ShareHandlerService).initialize()),
+        provideAppInitializer(() => inject(SharedListsBridgeService).initialize()),
     ],
 };

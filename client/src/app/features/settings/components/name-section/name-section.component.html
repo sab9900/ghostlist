@@ -1,0 +1,24 @@
+<section class="section" aria-labelledby="name-heading">
+    <div class="heading">
+        <h2 class="title" id="name-heading">{{ 'CHAT.NAME_DIALOG_TITLE' | translate }}</h2>
+        <p class="hint">{{ 'CHAT.NAME_DIALOG_HINT' | translate }}</p>
+    </div>
+    <div class="body">
+        <div class="row">
+            <input class="input" type="text"
+                [attr.placeholder]="'CHAT.NAME_DIALOG_PLACEHOLDER' | translate"
+                [ngModel]="pendingName()" (ngModelChange)="pendingName.set($event)"
+                (keydown.enter)="submit()" maxlength="40" aria-labelledby="name-heading" />
+            <div class="save-slot">
+                <button class="btn btn--primary btn--sm" (click)="submit()"
+                    [class.save-slot--hidden]="nameSaved()"
+                    [disabled]="!pendingName().trim()">
+                    {{ 'COMMON.SAVE' | translate }}
+                </button>
+                @if (nameSaved()) {
+                <span class="save-feedback" role="status" aria-live="polite">{{ 'COMMON.SAVED' | translate }}</span>
+                }
+            </div>
+        </div>
+    </div>
+</section>

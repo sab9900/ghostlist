@@ -1,0 +1,54 @@
+@if (fileTooLarge()) {
+<p class="error" role="alert">{{ 'CHAT.FILE_TOO_LARGE' | translate }}</p>
+}
+@if (recordingNotSupported()) {
+<p class="error" role="alert">{{ 'CHAT.RECORD_NOT_SUPPORTED' | translate }}</p>
+@if (recordingDebugError()) {
+<p class="error" role="alert" style="font-size:0.7em;opacity:0.7">DBG: {{ recordingDebugError() }}</p>
+}
+}
+@if (recordingPermissionDenied()) {
+<p class="error" role="alert">{{ 'CHAT.RECORD_PERMISSION_DENIED' | translate }}</p>
+}
+@if (sendingAudio()) {
+<p class="sending-audio" role="status">{{ 'CHAT.SENDING_VOICE' | translate }}</p>
+}
+
+<div class="compose" role="form" [attr.aria-label]="'CHAT.MESSAGE_PLACEHOLDER' | translate">
+    @if (recording()) {
+    <div class="recording-row">
+        <span class="dot" aria-hidden="true"></span>
+        <span class="timer" role="timer" [attr.aria-label]="formatRecordingTime(recordingSeconds())">
+            {{ formatRecordingTime(recordingSeconds()) }}
+        </span>
+        <button type="button" class="record record--stop" (click)="toggleRecord.emit()"
+            [attr.aria-label]="'CHAT.STOP_RECORD_ARIA' | translate" aria-pressed="true">
+            <svg lucideSquare [size]="20" aria-hidden="true"></svg>
+        </button>
+    </div>
+    } @else {
+    <div class="row">
+        <input #fileInput type="file" accept="image/*" class="visually-hidden" tabindex="-1"
+            (change)="fileSelected.emit($event)" />
+        <button type="button" class="attach" (mousedown)="$event.preventDefault()" (click)="pickImage.emit()"
+            [disabled]="sendingImage() || sendingAudio()" [attr.aria-label]="'CHAT.SEND_IMAGE_ARIA' | translate"
+            [attr.aria-busy]="sendingImage()">
+            <svg lucideImage [size]="20" aria-hidden="true"></svg>
+        </button>
+        <textarea #textarea class="input" rows="1"
+            [attr.placeholder]="'CHAT.MESSAGE_PLACEHOLDER' | translate"
+            [ngModel]="text()" (ngModelChange)="text.set($event)"
+            (keydown)="keydown.emit($event)" (input)="autoResize($event)"
+            maxlength="2000" [attr.aria-label]="'CHAT.MESSAGE_PLACEHOLDER' | translate"></textarea>
+        @if (text().trim()) {
+        <button class="send" (mousedown)="$event.preventDefault()" (click)="send.emit()"
+            [attr.aria-label]="'CHAT.MESSAGE_PLACEHOLDER' | translate">›</button>
+        } @else {
+        <button type="button" class="record" (mousedown)="$event.preventDefault()" (click)="toggleRecord.emit()"
+            [disabled]="sendingAudio()" [attr.aria-label]="'CHAT.RECORD_ARIA' | translate" aria-pressed="false">
+            <svg lucideMic [size]="20" aria-hidden="true"></svg>
+        </button>
+        }
+    </div>
+    }
+</div>

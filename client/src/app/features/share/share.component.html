@@ -1,0 +1,63 @@
+<div class="screen">
+    <header class="header">
+        <h1 class="title">Ghost List</h1>
+        <button class="close" (click)="cancel()" aria-label="Cancel">
+            <svg lucideX [size]="20" aria-hidden="true"></svg>
+        </button>
+    </header>
+
+    @if (fileNames().length > 0) {
+        <div class="files">
+            @for (name of fileNames(); track name) {
+                <span class="file-chip">{{ name }}</span>
+            }
+        </div>
+    }
+
+    @if (shareText()) {
+        <p class="share-text">{{ shareText() }}</p>
+    }
+
+    <section class="section" aria-labelledby="target-heading">
+        <h2 class="section-title" id="target-heading">{{ 'SHARE.TARGET' | translate }}</h2>
+        <div class="targets">
+            <button
+                class="target-btn"
+                [class.target-btn--active]="selectedTarget() === 'charon'"
+                (click)="selectTarget('charon')">
+                <svg lucideSkull [size]="22" aria-hidden="true"></svg>
+                Charon Drop
+            </button>
+            <button
+                class="target-btn"
+                [class.target-btn--active]="selectedTarget() === 'chat'"
+                (click)="selectTarget('chat')">
+                <svg lucideGhost [size]="22" aria-hidden="true"></svg>
+                Ghost Chat
+            </button>
+        </div>
+    </section>
+
+    <section class="section" aria-labelledby="list-heading">
+        <h2 class="section-title" id="list-heading">{{ 'SHARE.LIST' | translate }}</h2>
+        <ul class="lists" role="list">
+            @for (list of knownLists(); track list.id) {
+                <li>
+                    <button
+                        class="list-btn"
+                        [class.list-btn--active]="selectedListId() === list.id"
+                        (click)="selectList(list)">
+                        {{ list.name }}
+                    </button>
+                </li>
+            }
+        </ul>
+    </section>
+
+    <button
+        class="confirm-btn"
+        [disabled]="!selectedListId()"
+        (click)="confirm()">
+        {{ 'SHARE.CONFIRM' | translate }}
+    </button>
+</div>

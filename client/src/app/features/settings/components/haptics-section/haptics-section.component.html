@@ -1,0 +1,17 @@
+<section class="section" aria-labelledby="haptics-heading">
+    <div class="heading">
+        <h2 class="title" id="haptics-heading">{{ 'SETTINGS.HAPTICS_TITLE' | translate }}</h2>
+    </div>
+    <div class="body">
+        <div class="toggle-row">
+            <div>
+                <p class="toggle-label" id="haptics-enable-label">{{ 'SETTINGS.HAPTICS_ENABLE' | translate }}</p>
+                <p class="toggle-hint">{{ 'SETTINGS.HAPTICS_HINT' | translate }}</p>
+            </div>
+            <label class="toggle-switch" aria-labelledby="haptics-enable-label">
+                <input type="checkbox" [ngModel]="enabled()" (ngModelChange)="toggle.emit($event)" />
+                <span class="toggle-track" aria-hidden="true"></span>
+            </label>
+        </div>
+    </div>
+</section>

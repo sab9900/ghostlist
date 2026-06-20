@@ -1,0 +1,47 @@
+<header class="header" role="banner">
+    <img class="logo" src="/ghost-header.svg" [attr.alt]="'Ghost List'" (click)="logoClick.emit()" />
+    <h1 class="title">Ghost List</h1>
+    <div class="actions">
+        @if (totalUnread() > 0) {
+        <button class="badge-btn" (click)="markAllReadOpen.emit()"
+            [attr.aria-label]="totalUnread() + ' unread, tap to mark all read'">
+            <app-badge [count]="totalUnread()" />
+        </button>
+        }
+        <div class="anchor">
+            <button class="action" (click)="toggleMenu()"
+                [attr.aria-label]="'LISTS.MENU_SETTINGS' | translate" [attr.aria-expanded]="showMenu()">
+                <svg lucideMenu [size]="20" aria-hidden="true"></svg>
+            </button>
+
+            @if (showMenu()) {
+            <div class="overlay" (click)="closeMenu()" aria-hidden="true"></div>
+            <nav class="menu" role="menu" [attr.aria-label]="'LISTS.MENU_SETTINGS' | translate">
+                <button class="item" (click)="onImport()" role="menuitem">
+                    <svg lucideDownload [size]="18" aria-hidden="true"></svg>
+                    <span>{{ 'LISTS.MENU_IMPORT' | translate }}</span>
+                </button>
+                <button class="item" (click)="onExport()" role="menuitem">
+                    <svg lucideUpload [size]="18" aria-hidden="true"></svg>
+                    <span>{{ 'LISTS.MENU_EXPORT' | translate }}</span>
+                </button>
+                <button class="item" (click)="onSettings()" role="menuitem">
+                    <svg lucideSettings [size]="18" aria-hidden="true"></svg>
+                    <span>{{ 'LISTS.MENU_SETTINGS' | translate }}</span>
+                </button>
+                @if (showCoffeeLink()) {
+                <a class="item" href="https://buymeacoffee.com/sab.norica.informatics" target="_blank"
+                    rel="noopener noreferrer" role="menuitem">
+                    <svg lucideCoffee [size]="18" aria-hidden="true"></svg>
+                    <span>{{ 'LISTS.MENU_COFFEE' | translate }}</span>
+                </a>
+                }
+                <button class="item" (click)="onAbout()" role="menuitem">
+                    <svg lucideInfo [size]="18" aria-hidden="true"></svg>
+                    <span>{{ 'LISTS.MENU_ABOUT' | translate }}</span>
+                </button>
+            </nav>
+            }
+        </div>
+    </div>
+</header>

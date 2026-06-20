@@ -1,0 +1,17 @@
+@if (replyingTo(); as r) {
+<div class="bar">
+    <svg lucideCornerUpLeft [size]="16" aria-hidden="true"></svg>
+    <div class="content">
+        <span class="sender">{{ r.senderName }}</span>
+        @if (r.isImage) {
+        <span class="text">{{ 'CHAT.IMAGE' | translate }}</span>
+        } @else if (r.isAudio) {
+        <span class="text">{{ 'CHAT.VOICE_NOTE' | translate }}</span>
+        } @else {
+        <span class="text">{{ r.text }}</span>
+        }
+    </div>
+    <button type="button" class="cancel" (click)="cancel.emit()"
+        [attr.aria-label]="'CHAT.CANCEL_REPLY_ARIA' | translate">×</button>
+</div>
+}

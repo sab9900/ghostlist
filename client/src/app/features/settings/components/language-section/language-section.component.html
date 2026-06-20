@@ -1,0 +1,21 @@
+<section class="section" aria-labelledby="lang-heading">
+    <div class="heading">
+        <h2 class="title" id="lang-heading">{{ 'SETTINGS.LANGUAGE_TITLE' | translate }}</h2>
+    </div>
+    <div class="body">
+        <div class="option-list" role="radiogroup" aria-labelledby="lang-heading">
+            @for (lang of langs(); track lang.code) {
+            <button class="option" [class.option--active]="currentLang() === lang.code"
+                (click)="change.emit(lang.code)" role="radio"
+                [attr.aria-checked]="currentLang() === lang.code">
+                <div class="option-body">
+                    <span class="option-label">{{ lang.label }}</span>
+                </div>
+                @if (currentLang() === lang.code) {
+                <span class="option-check" aria-hidden="true">✓</span>
+                }
+            </button>
+            }
+        </div>
+    </div>
+</section>

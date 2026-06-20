@@ -1,125 +1,43 @@
-<div class="add-bar" role="search" [attr.aria-label]="'ITEMS.ADD_PLACEHOLDER' | translate">
-    <input class="add-bar__input" type="text" [attr.placeholder]="'ITEMS.ADD_PLACEHOLDER' | translate"
-        [ngModel]="newItemText()" (ngModelChange)="newItemText.set($event)" (keydown.enter)="addItem()" maxlength="500"
-        [attr.aria-label]="'ITEMS.ADD_PLACEHOLDER' | translate" />
-    <button class="add-bar__btn" (click)="addItem()" [disabled]="!newItemText().trim() || addingItem()"
-        [attr.aria-label]="'ITEMS.ADD_PLACEHOLDER' | translate" [attr.aria-busy]="addingItem()">+</button>
-</div>
+<app-item-add-bar [adding]="addingItem()" (add)="addItem($event)" />
 
 <ul class="item-list" role="list" [attr.aria-label]="'LIST_DETAIL.TAB_ITEMS' | translate" aria-live="polite"
     aria-relevant="additions removals">
 
     @for (item of activeItems(); track item.id) {
-    @let swipeDx = swipeOffset(item.id);
-    @let activeReminder = reminderFor(item.id);
-    <li class="item" [attr.data-item-id]="item.id" [class.item--open]="openMenuId() === item.id"
-        [class.item--highlight]="highlightedItemId() === item.id"
-        [attr.aria-label]="('ITEMS.MARK_DONE_ARIA' | translate:{text: item.text})" tabindex="0" role="button"
-        aria-pressed="false" (keydown.enter)="toggleItem(item.id)"
-        (keydown.space)="$event.preventDefault(); toggleItem(item.id)" [appViewportDwell]="item.isNew ? item.id : ''"
-        (dwellRead)="onItemDwellRead($event)">
-
-        <div class="item__clip" (click)="onItemClick(item.id, $event)" (touchstart)="onTouchStart($event, item.id)"
-            (touchmove)="onTouchMove($event, item.id)" (touchend)="onTouchEnd(item.id)"
-            (touchcancel)="onTouchEnd(item.id)">
-
-            <div class="item__swipe-delete" aria-hidden="true">
-                <svg lucideTrash2 [size]="18" aria-hidden="true"></svg>
-            </div>
-
-            <div class="item__row" [style.transform]="swipeDx ? 'translateX(' + swipeDx + 'px)' : null">
-                <span class="item__check" aria-hidden="true"></span>
-                <span class="item__text">{{ item.text }}</span>
-                @if (item.isNew) {
-                <span class="item__new-dot" aria-hidden="true"></span>
-                }
-                @if (activeReminder) {
-                <span class="item__reminder-badge" aria-hidden="true">
-                    <svg lucideClock [size]="11" [strokeWidth]="2.5"></svg>
-                    {{ formatReminderDate(activeReminder.remindAt) }}
-                </span>
-                }
-                @if (item.creatorName) {
-                <span class="item__meta" aria-hidden="true">{{ item.creatorName }}</span>
-                }
-                <button class="item__actions-btn" (click)="toggleMenu(item.id, $event)"
-                    [attr.aria-label]="'ITEMS.ITEM_ACTIONS_ARIA' | translate" aria-haspopup="menu"
-                    [attr.aria-expanded]="openMenuId() === item.id" tabindex="-1">
-                    <svg lucideEllipsisVertical [size]="16" aria-hidden="true"></svg>
-                </button>
-            </div>
-        </div>
-
-        @if (openMenuId() === item.id) {
-        <div class="item__menu" role="menu" [class.item__menu--above]="menuAbove()" (click)="$event.stopPropagation()">
-            @if (activeReminder) {
-            <button type="button" role="menuitem" class="item__menu-item item__menu-item--warning"
-                (click)="cancelReminder(item.id)">
-                <svg lucideXCircle [size]="15" aria-hidden="true"></svg>
-                {{ 'ITEMS.CANCEL_REMINDER' | translate }}
-            </button>
-            } @else {
-            <button type="button" role="menuitem" class="item__menu-item" (click)="openReminder(item)">
-                <svg lucideClock [size]="15" aria-hidden="true"></svg>
-                {{ 'ITEMS.REMEMBER_ME' | translate }}
-            </button>
-            }
-            <button type="button" role="menuitem" class="item__menu-item item__menu-item--danger"
-                (click)="deleteItem(item.id)">
-                <svg lucideTrash2 [size]="15" aria-hidden="true"></svg>
-                {{ 'COMMON.DELETE' | translate }}
-            </button>
-        </div>
-        }
-    </li>
+    <app-item-row
+        [item]="item"
+        [isMenuOpen]="openMenuId() === item.id"
+        [menuAbove]="menuAbove()"
+        [swipeDx]="swipeOffset(item.id)"
+        [activeReminder]="reminderFor(item.id)"
+        [swipeTriggerDistance]="swipeTriggerDistance"
+        (toggle)="onItemClick(item.id)"
+        (delete)="deleteItem(item.id)"
+        (menuToggle)="toggleMenu(item.id, $event)"
+        (openReminder)="openReminder(item)"
+        (cancelReminder)="cancelReminder(item.id)"
+        (dwellRead)="onItemDwellRead($event)"
+        (touchStart)="onTouchStart($event, item.id)"
+        (touchMove)="onTouchMove($event, item.id)"
+        (touchEnd)="onTouchEnd(item.id)" />
     }
 
     @if (checkedItems().length > 0) {
-    <li class="section-label" role="separator">{{ 'ITEMS.DONE_SECTION' | translate:{count:
-        checkedItems().length.toString()} }}</li>
+    <li class="section-label" role="separator">{{ 'ITEMS.DONE_SECTION' | translate:{count: checkedItems().length.toString()} }}</li>
     @for (item of checkedItems(); track item.id) {
-    @let swipeDx = swipeOffset(item.id);
-    <li class="item item--checked" [attr.data-item-id]="item.id" [class.item--open]="openMenuId() === item.id"
-        [attr.aria-label]="('ITEMS.MARK_UNDONE_ARIA' | translate:{text: item.text})" tabindex="0" role="button"
-        aria-pressed="true" (keydown.enter)="toggleItem(item.id)"
-        (keydown.space)="$event.preventDefault(); toggleItem(item.id)" [appViewportDwell]="item.isNew ? item.id : ''"
-        (dwellRead)="onItemDwellRead($event)">
-
-        <div class="item__clip" (click)="onItemClick(item.id, $event)" (touchstart)="onTouchStart($event, item.id)"
-            (touchmove)="onTouchMove($event, item.id)" (touchend)="onTouchEnd(item.id)"
-            (touchcancel)="onTouchEnd(item.id)">
-
-            <div class="item__swipe-delete" aria-hidden="true">
-                <svg lucideTrash2 [size]="18" aria-hidden="true"></svg>
-            </div>
-
-            <div class="item__row" [style.transform]="swipeDx ? 'translateX(' + swipeDx + 'px)' : null">
-                <span class="item__check item__check--checked" aria-hidden="true">
-                    <svg lucideCheck [size]="12" [strokeWidth]="3" aria-hidden="true"></svg>
-
-                </span>
-                <span class="item__text item__text--checked">{{ item.text }}</span>
-                @if (item.checkedByName) {
-                <span class="item__meta" aria-hidden="true">{{ item.checkedByName }}</span>
-                }
-                <button class="item__actions-btn" (click)="toggleMenu(item.id, $event)"
-                    [attr.aria-label]="'ITEMS.ITEM_ACTIONS_ARIA' | translate" aria-haspopup="menu"
-                    [attr.aria-expanded]="openMenuId() === item.id" tabindex="-1">
-                    <svg lucideEllipsisVertical [size]="16" aria-hidden="true"></svg>
-                </button>
-            </div>
-        </div>
-
-        @if (openMenuId() === item.id) {
-        <div class="item__menu" role="menu" [class.item__menu--above]="menuAbove()" (click)="$event.stopPropagation()">
-            <button type="button" role="menuitem" class="item__menu-item item__menu-item--danger"
-                (click)="deleteItem(item.id)">
-                <svg lucideTrash2 [size]="15" aria-hidden="true"></svg>
-                {{ 'COMMON.DELETE' | translate }}
-            </button>
-        </div>
-        }
-    </li>
+    <app-item-row
+        [item]="item"
+        [isMenuOpen]="openMenuId() === item.id"
+        [menuAbove]="menuAbove()"
+        [swipeDx]="swipeOffset(item.id)"
+        [swipeTriggerDistance]="swipeTriggerDistance"
+        (toggle)="onItemClick(item.id)"
+        (delete)="deleteItem(item.id)"
+        (menuToggle)="toggleMenu(item.id, $event)"
+        (dwellRead)="onItemDwellRead($event)"
+        (touchStart)="onTouchStart($event, item.id)"
+        (touchMove)="onTouchMove($event, item.id)"
+        (touchEnd)="onTouchEnd(item.id)" />
     }
     }
 
@@ -129,61 +47,16 @@
 
 </ul>
 
-@if (openMenuId()) {
-<!-- <div class="item-menu-backdrop" aria-hidden="true"></div> -->
-}
+<app-reminder-banner
+    [banner]="activeBanner()"
+    (go)="dismissBanner(true)"
+    (dismiss)="dismissBanner(false)" />
 
-@if (activeBanner(); as banner) {
-<div class="reminder-banner" role="alert" aria-live="assertive">
-    <span class="reminder-banner__icon" aria-hidden="true">⏰</span>
-    <span class="reminder-banner__text">{{ banner.itemText }}</span>
-    <div class="reminder-banner__actions">
-        <button class="reminder-banner__btn reminder-banner__btn--go" type="button" (click)="dismissBanner(true)">
-            {{ 'ITEMS.REMINDER_BANNER_GO' | translate }}
-        </button>
-        <button class="reminder-banner__btn reminder-banner__btn--dismiss" type="button" (click)="dismissBanner(false)">
-            {{ 'ITEMS.REMINDER_BANNER_DISMISS' | translate }}
-        </button>
-    </div>
-</div>
-}
-
-@if (reminderItem()) {
-<div class="reminder-backdrop" (click)="closeReminder()" role="dialog" aria-modal="true"
-    [attr.aria-label]="'ITEMS.REMINDER_DIALOG_TITLE' | translate">
-    <div class="reminder-dialog" (click)="$event.stopPropagation()">
-        <h3 class="reminder-dialog__title">{{ 'ITEMS.REMINDER_DIALOG_TITLE' | translate }}</h3>
-        <p class="reminder-dialog__item-text">{{ reminderItem()!.text }}</p>
-
-        <div class="reminder-dialog__fields">
-            <label class="reminder-dialog__label">
-                {{ 'ITEMS.REMINDER_DATETIME_LABEL' | translate }}
-                <input class="reminder-dialog__input" type="datetime-local" [(ngModel)]="reminderDateTime"
-                    [min]="reminderMinDateTime()" />
-            </label>
-        </div>
-
-        @if (reminderSaved()) {
-        <p class="reminder-dialog__saved-hint">{{ 'ITEMS.REMINDER_SAVED' | translate }}</p>
-        }
-
-        <div class="reminder-dialog__actions">
-            @if (reminderSaved()) {
-            <button class="reminder-dialog__cancel" type="button" (click)="closeReminder()">
-                {{ 'COMMON.CANCEL' | translate }}
-            </button>
-            <button class="reminder-dialog__save reminder-dialog__save--ical" type="button" (click)="downloadIcal()">
-                {{ 'ITEMS.REMINDER_ADD_TO_CALENDAR' | translate }}
-            </button>
-            } @else {
-            <button class="reminder-dialog__cancel" type="button" (click)="closeReminder()">
-                {{ 'COMMON.CANCEL' | translate }}
-            </button>
-            <button class="reminder-dialog__save" type="button" (click)="saveReminder()" [disabled]="savingReminder()">
-                {{ 'ITEMS.REMINDER_SAVE' | translate }}
-            </button>
-            }
-        </div>
-    </div>
-</div>
-}
+<app-reminder-dialog
+    [item]="reminderItem()"
+    [minDateTime]="reminderMinDateTime()"
+    [saved]="reminderSaved()"
+    [saving]="savingReminder()"
+    (save)="saveReminder($event)"
+    (close)="closeReminder()"
+    (downloadIcal)="downloadIcal()" />

@@ -1,0 +1,15 @@
+@if (show()) {
+<div class="backdrop" (click)="cancel.emit()" role="presentation">
+    <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+        aria-labelledby="mark-all-read-title" aria-describedby="mark-all-read-hint">
+        <h2 class="title" id="mark-all-read-title">{{ 'LISTS.MARK_ALL_READ_TITLE' | translate }}</h2>
+        <p class="hint" id="mark-all-read-hint">{{ 'LISTS.MARK_ALL_READ_HINT' | translate }}</p>
+        <div class="actions">
+            <button class="btn btn--ghost" (click)="cancel.emit()" [disabled]="marking()">{{ 'COMMON.CANCEL' | translate }}</button>
+            <button class="btn btn--primary" (click)="confirm.emit()" [disabled]="marking()" [attr.aria-busy]="marking()">
+                {{ marking() ? ('LISTS.MARK_ALL_READ_MARKING' | translate) : ('LISTS.MARK_ALL_READ_BTN' | translate) }}
+            </button>
+        </div>
+    </div>
+</div>
+}

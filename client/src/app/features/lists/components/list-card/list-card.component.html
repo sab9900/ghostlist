@@ -1,0 +1,24 @@
+<li class="card" (click)="open.emit()" role="button" tabindex="0"
+    [class.card--active]="isActive()"
+    [attr.aria-current]="isActive() ? 'true' : null"
+    [attr.aria-label]="list().name + (unread() > 0 ? ', ' + unread() + ' unread' : '')"
+    (keydown.enter)="open.emit()" (keydown.space)="open.emit()">
+    <div class="body" aria-hidden="true">
+        <span class="name truncate">{{ list().name }}</span>
+        <span class="date">{{ list().addedAt | date:'d MMM yyyy' }}</span>
+    </div>
+    @if (isShared()) {
+    <div class="avatars" aria-hidden="true">
+        @for (member of avatarMembers(); track member.deviceId) {
+        <app-avatar class="avatar" [name]="member.displayName" [size]="22" />
+        }
+        @if (extraCount() > 0) {
+        <span class="extra">+{{ extraCount() }}</span>
+        }
+    </div>
+    }
+    @if (unread() > 0) {
+    <app-badge [count]="unread()" aria-hidden="true" />
+    }
+    <span class="arrow" aria-hidden="true">›</span>
+</li>

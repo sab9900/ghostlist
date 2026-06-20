@@ -1,0 +1,7 @@
+<div class="bar" role="search" [attr.aria-label]="'ITEMS.ADD_PLACEHOLDER' | translate">
+    <input class="input" type="text" [attr.placeholder]="'ITEMS.ADD_PLACEHOLDER' | translate"
+        [ngModel]="text()" (ngModelChange)="text.set($event)" (keydown.enter)="submit()" maxlength="500"
+        [attr.aria-label]="'ITEMS.ADD_PLACEHOLDER' | translate" />
+    <button class="btn" (click)="submit()" [disabled]="!text().trim() || adding()"
+        [attr.aria-label]="'ITEMS.ADD_PLACEHOLDER' | translate" [attr.aria-busy]="adding()">+</button>
+</div>

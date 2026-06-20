@@ -1,0 +1,24 @@
+@if (show()) {
+<div class="backdrop" (click)="close.emit()" role="presentation">
+    <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+        aria-labelledby="create-dialog-title">
+        <h2 class="title" id="create-dialog-title">{{ 'LISTS.CREATE_TITLE' | translate }}</h2>
+        <input #input class="input" type="text"
+            [attr.placeholder]="'LISTS.CREATE_PLACEHOLDER' | translate"
+            [ngModel]="name()" (ngModelChange)="name.set($event)"
+            (keydown.enter)="submit()" maxlength="60"
+            [attr.aria-label]="'LISTS.CREATE_PLACEHOLDER' | translate"
+            aria-required="true" />
+        @if (error()) {
+        <p class="error" role="alert">{{ error() }}</p>
+        }
+        <div class="actions">
+            <button class="btn btn--ghost" (click)="close.emit()" [disabled]="creating()">{{ 'COMMON.CANCEL' | translate }}</button>
+            <button class="btn btn--primary" (click)="submit()" [disabled]="!name().trim() || creating()"
+                [attr.aria-busy]="creating()">
+                {{ creating() ? ('LISTS.CREATING_BTN' | translate) : ('LISTS.CREATE_BTN' | translate) }}
+            </button>
+        </div>
+    </div>
+</div>
+}

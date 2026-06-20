@@ -1,0 +1,30 @@
+<section class="section" aria-labelledby="notif-heading">
+    <div class="heading">
+        <h2 class="title" id="notif-heading">{{ 'SETTINGS.NOTIFICATIONS.TITLE' | translate }}</h2>
+        <p class="hint">{{ 'SETTINGS.NOTIFICATIONS.TOGGLE_HINT' | translate }}</p>
+    </div>
+    <div class="body">
+        @if (permission() === 'denied') {
+        <p class="status status--err" role="alert">
+            {{ 'SETTINGS.NOTIFICATIONS.DENIED' | translate }}
+        </p>
+        } @else {
+        <div class="toggle-row">
+            <div>
+                <p class="toggle-label" id="notif-toggle-label">{{ 'SETTINGS.NOTIFICATIONS.TOGGLE_LABEL' | translate }}</p>
+            </div>
+            @if (enabling()) {
+            <span class="toggle-hint">{{ 'SETTINGS.NOTIFICATIONS.ENABLING' | translate }}</span>
+            } @else {
+            <label class="toggle-switch" aria-labelledby="notif-toggle-label">
+                <input type="checkbox" [ngModel]="enabled()" (ngModelChange)="toggle.emit($event)" />
+                <span class="toggle-track" aria-hidden="true"></span>
+            </label>
+            }
+            @if (enabled() && !pushActive()) {
+            <span class="toggle-hint">{{ 'SETTINGS.NOTIFICATIONS.PENDING' | translate }}</span>
+            }
+        </div>
+        }
+    </div>
+</section>

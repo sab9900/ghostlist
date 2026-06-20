@@ -1,0 +1,81 @@
+@let it = item();
+@let reminder = activeReminder();
+<li class="item" [attr.data-item-id]="it.id"
+    [class.item--checked]="it.isChecked"
+    [class.item--open]="isMenuOpen()"
+    [attr.aria-label]="it.isChecked ? ('ITEMS.MARK_UNDONE_ARIA' | translate:{text: it.text}) : ('ITEMS.MARK_DONE_ARIA' | translate:{text: it.text})"
+    tabindex="0" role="button"
+    [attr.aria-pressed]="it.isChecked"
+    (keydown.enter)="toggle.emit()"
+    (keydown.space)="$event.preventDefault(); toggle.emit()"
+    [appViewportDwell]="it.isNew ? it.id : ''"
+    (dwellRead)="dwellRead.emit($event)">
+
+    <div class="clip" (click)="toggle.emit()"
+        (touchstart)="touchStart.emit($event)"
+        (touchmove)="touchMove.emit($event)"
+        (touchend)="touchEnd.emit()"
+        (touchcancel)="touchEnd.emit()">
+
+        <div class="swipe-delete" aria-hidden="true">
+            <svg lucideTrash2 [size]="18" aria-hidden="true"></svg>
+        </div>
+
+        <div class="row" [style.transform]="swipeDx() ? 'translateX(' + swipeDx() + 'px)' : null">
+            @if (it.isChecked) {
+            <span class="check check--checked" aria-hidden="true">
+                <svg lucideCheck [size]="12" [strokeWidth]="3" aria-hidden="true"></svg>
+            </span>
+            } @else {
+            <span class="check" aria-hidden="true"></span>
+            }
+            @if (it.isChecked) {
+            <span class="text text--checked">{{ it.text }}</span>
+            } @else {
+            <span class="text">{{ it.text }}</span>
+            }
+            @if (it.isNew) {
+            <span class="new-dot" aria-hidden="true"></span>
+            }
+            @if (reminder) {
+            <span class="reminder-badge" aria-hidden="true">
+                <svg lucideClock [size]="11" [strokeWidth]="2.5"></svg>
+                {{ formatReminderDate(reminder.remindAt) }}
+            </span>
+            }
+            @if (!it.isChecked && it.creatorName) {
+            <span class="meta" aria-hidden="true">{{ it.creatorName }}</span>
+            }
+            @if (it.isChecked && it.checkedByName) {
+            <span class="meta" aria-hidden="true">{{ it.checkedByName }}</span>
+            }
+            <button class="actions-btn" (click)="$event.stopPropagation(); menuToggle.emit($event)"
+                [attr.aria-label]="'ITEMS.ITEM_ACTIONS_ARIA' | translate" aria-haspopup="menu"
+                [attr.aria-expanded]="isMenuOpen()" tabindex="-1">
+                <svg lucideEllipsisVertical [size]="16" aria-hidden="true"></svg>
+            </button>
+        </div>
+    </div>
+
+    @if (isMenuOpen()) {
+    <div class="menu" role="menu" [class.menu--above]="menuAbove()" (click)="$event.stopPropagation()">
+        @if (!it.isChecked) {
+            @if (reminder) {
+            <button type="button" role="menuitem" class="menu-item menu-item--warning" (click)="cancelReminder.emit()">
+                <svg lucideCircleX [size]="15" aria-hidden="true"></svg>
+                {{ 'ITEMS.CANCEL_REMINDER' | translate }}
+            </button>
+            } @else {
+            <button type="button" role="menuitem" class="menu-item" (click)="openReminder.emit()">
+                <svg lucideClock [size]="15" aria-hidden="true"></svg>
+                {{ 'ITEMS.REMEMBER_ME' | translate }}
+            </button>
+            }
+        }
+        <button type="button" role="menuitem" class="menu-item menu-item--danger" (click)="delete.emit()">
+            <svg lucideTrash2 [size]="15" aria-hidden="true"></svg>
+            {{ 'COMMON.DELETE' | translate }}
+        </button>
+    </div>
+    }
+</li>

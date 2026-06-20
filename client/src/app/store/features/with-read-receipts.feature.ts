@@ -17,7 +17,6 @@ interface ReadReceiptsState {
 
     othersLastReadMessageAt: Record<string, string | null>;
 
-    /** Decrypted member list per list ID, used for read receipt display. */
     cachedMembers: Record<string, ListMember[]>;
 }
 
@@ -139,14 +138,12 @@ export function withReadReceipts() {
                     const lists = store.knownLists();
                     const devId = deviceId.deviceId;
 
-                    // Snapshot IDs before clearing
                     const toFlush = lists.map(l => ({
                         id: l.id,
                         msgIds: [...(store.unreadMessageIds()[l.id] ?? [])],
                         itemIds: [...(store.unreadItemIds()[l.id] ?? [])],
                     }));
 
-                    // Clear state immediately
                     const clearedCounts: Record<string, number> = {};
                     const clearedIds: Record<string, string[]> = {};
                     for (const l of lists) {
@@ -160,7 +157,6 @@ export function withReadReceipts() {
                         unreadItemIds: { ...store.unreadItemIds(), ...clearedIds },
                     });
 
-                    // Flush to server for each list
                     await Promise.all(toFlush.map(async ({ id, msgIds, itemIds }) => {
                         try {
                             if (msgIds.length > 0) await firstValueFrom(api.markMessagesRead(id, devId, msgIds));
@@ -187,7 +183,6 @@ export function withReadReceipts() {
                     } catch { }
                 },
 
-                /** Called by the SignalR handler when another member updates their read receipt. */
                 _updateMemberReadAt(listId: string, memberDeviceId: string, readAt: string): void {
                     const members = store.cachedMembers()[listId];
                     if (!members) return;

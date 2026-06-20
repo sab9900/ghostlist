@@ -1,0 +1,27 @@
+<section class="section" aria-labelledby="sync-heading">
+    <div class="heading">
+        <h2 class="title" id="sync-heading">{{ 'SETTINGS.SYNC_TITLE' | translate }}</h2>
+        <p class="hint">{{ 'SETTINGS.SYNC_HINT' | translate }}</p>
+    </div>
+    <div class="body">
+        @if (!webAuthnEnabled()) {
+        <p class="status status--warn" role="status">
+            {{ 'SETTINGS.SYNC_REQUIRES_BIOMETRIC' | translate }}
+        </p>
+        }
+        <div class="actions">
+            <button class="btn btn--primary btn--sm" (click)="startSync.emit()" [disabled]="!webAuthnEnabled()">
+                <svg lucideRefreshCw [size]="15" aria-hidden="true"></svg>
+                {{ 'SETTINGS.SYNC_MACHINES' | translate }}
+            </button>
+        </div>
+        @if (syncStep() === 'done') {
+        <p class="status status--ok" role="status" aria-live="polite">
+            {{ 'SETTINGS.SYNC_DONE' | translate: { count: syncImportedCount() } }}
+        </p>
+        }
+        @if (syncStep() === 'error') {
+        <p class="status status--err" role="alert">{{ 'SETTINGS.SYNC_ERROR' | translate }}</p>
+        }
+    </div>
+</section>
