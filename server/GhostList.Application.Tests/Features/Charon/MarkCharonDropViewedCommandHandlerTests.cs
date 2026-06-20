@@ -45,7 +45,7 @@ public class MarkCharonDropViewedCommandHandlerTests
     {
         await using var context = DbContextFactory.Create();
         var list = Domain.Entities.GhostList.Create();
-        var drop = CharonDrop.Create(list.Id, "enc", "civ", "meta", "miv", senderDeviceId: "sender");
+        var drop = CharonDrop.Create(list.Id, "enc", "civ", senderDeviceId: "sender");
 
         context.GhostLists.Add(list);
         context.CharonDrops.Add(drop);
@@ -69,7 +69,7 @@ public class MarkCharonDropViewedCommandHandlerTests
     {
         await using var context = DbContextFactory.Create();
         var list = Domain.Entities.GhostList.Create();
-        var drop = CharonDrop.Create(list.Id, "enc", "civ", "meta", "miv", senderDeviceId: "sender");
+        var drop = CharonDrop.Create(list.Id, "enc", "civ", senderDeviceId: "sender");
 
         context.GhostLists.Add(list);
         context.CharonDrops.Add(drop);
@@ -99,7 +99,7 @@ public class MarkCharonDropViewedCommandHandlerTests
     {
         await using var context = DbContextFactory.Create();
         var list = Domain.Entities.GhostList.Create();
-        var drop = CharonDrop.Create(list.Id, "enc", "civ", "meta", "miv", senderDeviceId: "sender");
+        var drop = CharonDrop.Create(list.Id, "enc", "civ", senderDeviceId: "sender");
 
         context.GhostLists.Add(list);
         context.CharonDrops.Add(drop);
@@ -119,7 +119,7 @@ public class MarkCharonDropViewedCommandHandlerTests
     {
         await using var context = DbContextFactory.Create();
         var list = Domain.Entities.GhostList.Create();
-        var drop = CharonDrop.Create(list.Id, "enc", "civ", "meta", "miv", senderDeviceId: "sender");
+        var drop = CharonDrop.Create(list.Id, "enc", "civ", senderDeviceId: "sender");
 
         context.GhostLists.Add(list);
         context.CharonDrops.Add(drop);
@@ -141,7 +141,7 @@ public class MarkCharonDropViewedCommandHandlerTests
     {
         await using var context = DbContextFactory.Create();
         var list = Domain.Entities.GhostList.Create();
-        var drop = CharonDrop.Create(list.Id, "enc", "civ", "meta", "miv", senderDeviceId: "sender", senderUserId: "sender-user");
+        var drop = CharonDrop.Create(list.Id, "enc", "civ", senderDeviceId: "sender", senderUserId: "sender-user");
 
         context.GhostLists.Add(list);
         context.CharonDrops.Add(drop);
@@ -165,7 +165,7 @@ public class MarkCharonDropViewedCommandHandlerTests
     {
         await using var context = DbContextFactory.Create();
         var list = Domain.Entities.GhostList.Create();
-        var drop = CharonDrop.Create(list.Id, "enc", "civ", "meta", "miv", senderDeviceId: "sender");
+        var drop = CharonDrop.Create(list.Id, "enc", "civ", senderDeviceId: "sender");
 
         context.GhostLists.Add(list);
         context.CharonDrops.Add(drop);

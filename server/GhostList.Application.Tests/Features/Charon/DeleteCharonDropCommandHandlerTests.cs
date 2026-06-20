@@ -18,12 +18,19 @@ public class DeleteCharonDropCommandHandlerTests
         return notifier;
     }
 
+    private static IBlobStorage MockBlobStorage()
+    {
+        var storage = Substitute.For<IBlobStorage>();
+        storage.DeleteAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        return storage;
+    }
+
     [Fact]
     public async Task Handle_ExistingDrop_DeletesDropAndReceipts()
     {
         await using var context = DbContextFactory.Create();
         var list = Domain.Entities.GhostList.Create();
-        var drop = CharonDrop.Create(list.Id, "enc", "civ", "meta", "miv", senderDeviceId: "sender");
+        var drop = CharonDrop.Create(list.Id, "enc", "civ", senderDeviceId: "sender");
 
         context.GhostLists.Add(list);
         context.CharonDrops.Add(drop);
@@ -35,7 +42,7 @@ public class DeleteCharonDropCommandHandlerTests
         });
         await context.SaveChangesAsync();
 
-        var handler = new DeleteCharonDropCommandHandler(context, MockNotifier());
+        var handler = new DeleteCharonDropCommandHandler(context, MockBlobStorage(), MockNotifier());
         await handler.Handle(new DeleteCharonDropCommand(drop.Id), CancellationToken.None);
 
         (await context.CharonDrops.AnyAsync(d => d.Id == drop.Id)).Should().BeFalse();
@@ -47,7 +54,7 @@ public class DeleteCharonDropCommandHandlerTests
     {
         await using var context = DbContextFactory.Create();
         var list = Domain.Entities.GhostList.Create();
-        var drop = CharonDrop.Create(list.Id, "enc", "civ", "meta", "miv");
+        var drop = CharonDrop.Create(list.Id, "enc", "civ");
 
         context.GhostLists.Add(list);
         context.CharonDrops.Add(drop);
@@ -64,7 +71,7 @@ public class DeleteCharonDropCommandHandlerTests
     public async Task Handle_NonExistentDrop_ThrowsNotFoundException()
     {
         await using var context = DbContextFactory.Create();
-        var handler = new DeleteCharonDropCommandHandler(context, MockNotifier());
+        var handler = new DeleteCharonDropCommandHandler(context, MockBlobStorage(), MockNotifier());
 
         var act = () => handler.Handle(new DeleteCharonDropCommand(Guid.NewGuid()), CancellationToken.None);
 

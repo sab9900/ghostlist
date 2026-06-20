@@ -22,8 +22,8 @@ public class DeleteExpiredCharonDropsCommandHandlerTests
     {
         await using var context = DbContextFactory.Create();
         var list = Domain.Entities.GhostList.Create();
-        var freshDrop = CharonDrop.Create(list.Id, "enc_fresh", "civ", "meta", "miv");
-        var staleDrop = CharonDrop.Create(list.Id, "enc_stale", "civ", "meta", "miv");
+        var freshDrop = CharonDrop.Create(list.Id, "enc_fresh", "civ");
+        var staleDrop = CharonDrop.Create(list.Id, "enc_stale", "civ");
 
         context.GhostLists.Add(list);
         context.CharonDrops.AddRange(freshDrop, staleDrop);
@@ -55,7 +55,7 @@ public class DeleteExpiredCharonDropsCommandHandlerTests
     {
         await using var context = DbContextFactory.Create();
         var list = Domain.Entities.GhostList.Create();
-        var drop = CharonDrop.Create(list.Id, "enc", "civ", "meta", "miv");
+        var drop = CharonDrop.Create(list.Id, "enc", "civ");
 
         context.GhostLists.Add(list);
         context.CharonDrops.Add(drop);
