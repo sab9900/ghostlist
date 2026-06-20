@@ -3,7 +3,6 @@ using GhostList.Application.Common.Notifications;
 using GhostList.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 
 namespace GhostList.Application.Features.ListMembers.Commands.MarkMessagesRead;
 
@@ -70,7 +69,7 @@ public class MarkMessagesReadCommandHandler(IApplicationDbContext context, IGhos
         {
             await context.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: "23505" })
+        catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("23505") == true || ex.InnerException?.Message.Contains("unique") == true)
         {
         }
 
