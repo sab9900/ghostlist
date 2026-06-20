@@ -20,6 +20,7 @@ services:
       Admin__Username: "${ADMIN_USERNAME}"
       Admin__Password: "${ADMIN_PASSWORD}"
       Fcm__CredentialsJson: "${FCM_CREDENTIALS_JSON}"
+      Ci__Token: "${CI_API_TOKEN}"
       Minio__Endpoint: "minio:9000"
       Minio__AccessKey: "${MINIO_ROOT_USER}"
       Minio__SecretKey: "${MINIO_ROOT_PASSWORD}"
