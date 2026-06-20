@@ -15,7 +15,7 @@
     @let audUrl = msg.isAudio ? audioDataUrl(msg.id) : null;
 
     <li class="message" role="article" [class.message--mine]="mine"
-        [class.message--highlight]="highlightedId() === msg.id" [class.message--unread]="isUnread(msg.id)"
+        [class.message--highlight]="highlightedId() === msg.id" [class.message--unread]="isUnread(msg.id)" [class.message--open]="openMenuId() === msg.id"
         [attr.data-message-id]="msg.id"
         [attr.aria-label]="msg.senderName + ': ' + (msg.isImage ? ('CHAT.IMAGE' | translate) : msg.isAudio ? ('CHAT.VOICE_NOTE' | translate) : msg.text)"
         (touchstart)="onTouchStart($event, msg)" (touchmove)="onTouchMove($event, msg)" (touchend)="onTouchEnd(msg)"

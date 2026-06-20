@@ -74,6 +74,10 @@
         animation: message-highlight 1.4s var(--ease-out);
     }
 
+    &--open {
+        z-index: 10;
+    }
+
     &__swipe-hint {
         position: absolute;
         left: var(--space-2);
@@ -401,6 +405,7 @@
         inset: 0;
         background: rgba(0, 0, 0, 0.4);
         z-index: 9;
+        pointer-events: none;
     }
 }
 

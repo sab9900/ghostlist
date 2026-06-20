@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -10,15 +12,15 @@ export class IcalService {
 
     download(listId: string, itemId: string, remindAt: string): void {
         const deepLink = `${this.baseUrl}/list/${listId}/items?highlight=${itemId}`;
-        this.trigger(deepLink, remindAt, `${Date.now()}-${itemId}@ghostlist`);
+        void this.trigger(deepLink, remindAt, `${Date.now()}-${itemId}@ghostlist`);
     }
 
     downloadForList(listId: string, remindAt: string): void {
         const deepLink = `${this.baseUrl}/list/${listId}/items`;
-        this.trigger(deepLink, remindAt, `${Date.now()}-list-${listId}@ghostlist`);
+        void this.trigger(deepLink, remindAt, `${Date.now()}-list-${listId}@ghostlist`);
     }
 
-    private trigger(deepLink: string, remindAt: string, uid: string): void {
+    private async trigger(deepLink: string, remindAt: string, uid: string): Promise<void> {
         const start = new Date(remindAt);
         const end = new Date(start.getTime() + 15 * 60 * 1000);
         const startIcal = this.toIcalDate(start);
@@ -44,6 +46,33 @@ export class IcalService {
             'END:VCALENDAR',
         ].join('\r\n');
 
+        if (Capacitor.isNativePlatform()) {
+            await this.shareNative(ics);
+        } else {
+            this.downloadWeb(ics);
+        }
+    }
+
+    private async shareNative(ics: string): Promise<void> {
+        const fileName = 'ghostlist-reminder.ics';
+        await Filesystem.writeFile({
+            path: fileName,
+            data: btoa(unescape(encodeURIComponent(ics))),
+            directory: Directory.Cache,
+        });
+
+        const { uri } = await Filesystem.getUri({
+            path: fileName,
+            directory: Directory.Cache,
+        });
+
+        await Share.share({
+            files: [uri],
+            dialogTitle: 'Add to Calendar',
+        });
+    }
+
+    private downloadWeb(ics: string): void {
         const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
