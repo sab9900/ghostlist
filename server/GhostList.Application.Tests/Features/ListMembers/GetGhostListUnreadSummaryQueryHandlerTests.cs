@@ -6,6 +6,7 @@ using GhostList.Application.Tests.Helpers;
 using GhostList.Domain.Entities;
 using NSubstitute;
 using GhostList.Application.Common.Interfaces;
+using GhostList.Application.Common.Notifications;
 
 namespace GhostList.Application.Tests.Features.ListMembers;
 

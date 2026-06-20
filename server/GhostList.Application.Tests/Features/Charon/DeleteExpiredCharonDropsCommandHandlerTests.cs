@@ -4,6 +4,7 @@ using GhostList.Application.Features.Charon.Commands.DeleteExpiredCharonDrops;
 using GhostList.Application.Tests.Helpers;
 using GhostList.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using GhostList.Application.Common.Interfaces;
 using NSubstitute;
 
 namespace GhostList.Application.Tests.Features.Charon;
@@ -15,6 +16,13 @@ public class DeleteExpiredCharonDropsCommandHandlerTests
         var notifier = Substitute.For<IGhostListNotifier>();
         notifier.NotifyCharonDropDeleted(Arg.Any<Guid>(), Arg.Any<Guid>()).Returns(Task.CompletedTask);
         return notifier;
+    }
+
+    private static IBlobStorage MockBlobStorage()
+    {
+        var storage = Substitute.For<IBlobStorage>();
+        storage.DeleteManyAsync(Arg.Any<IEnumerable<string>>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        return storage;
     }
 
     [Fact]
@@ -40,7 +48,7 @@ public class DeleteExpiredCharonDropsCommandHandlerTests
         await context.SaveChangesAsync();
 
         var notifier = MockNotifier();
-        var handler = new DeleteExpiredCharonDropsCommandHandler(context, notifier);
+        var handler = new DeleteExpiredCharonDropsCommandHandler(context, MockBlobStorage(), notifier);
         var count = await handler.Handle(new DeleteExpiredCharonDropsCommand(), CancellationToken.None);
 
         count.Should().Be(1);
@@ -62,7 +70,7 @@ public class DeleteExpiredCharonDropsCommandHandlerTests
         await context.SaveChangesAsync();
 
         var notifier = MockNotifier();
-        var handler = new DeleteExpiredCharonDropsCommandHandler(context, notifier);
+        var handler = new DeleteExpiredCharonDropsCommandHandler(context, MockBlobStorage(), notifier);
         var count = await handler.Handle(new DeleteExpiredCharonDropsCommand(), CancellationToken.None);
 
         count.Should().Be(0);

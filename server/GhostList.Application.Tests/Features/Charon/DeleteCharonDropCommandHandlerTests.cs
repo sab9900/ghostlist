@@ -61,7 +61,7 @@ public class DeleteCharonDropCommandHandlerTests
         await context.SaveChangesAsync();
 
         var notifier = MockNotifier();
-        var handler = new DeleteCharonDropCommandHandler(context, notifier);
+        var handler = new DeleteCharonDropCommandHandler(context, MockBlobStorage(), notifier);
         await handler.Handle(new DeleteCharonDropCommand(drop.Id), CancellationToken.None);
 
         await notifier.Received(1).NotifyCharonDropDeleted(list.Id, drop.Id);
