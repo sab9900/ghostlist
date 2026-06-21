@@ -1,0 +1,88 @@
+<div class="capture" role="dialog" [attr.aria-label]="'VIDEO_CAPTURE.TITLE_ARIA' | translate">
+    <button type="button" class="capture__close" (click)="close()"
+        [attr.aria-label]="'VIDEO_CAPTURE.CLOSE_ARIA' | translate">
+        <svg lucideX [size]="20" aria-hidden="true"></svg>
+    </button>
+
+    @if (notSupported()) {
+    <div class="capture__message" role="alert">
+        <p>{{ 'VIDEO_CAPTURE.NOT_SUPPORTED' | translate }}</p>
+        @if (debugError()) {
+        <p class="capture__debug">DBG: {{ debugError() }}</p>
+        }
+    </div>
+    } @else if (permissionDenied()) {
+    <div class="capture__message" role="alert">
+        <p>{{ 'VIDEO_CAPTURE.PERMISSION_DENIED' | translate }}</p>
+    </div>
+    } @else {
+
+    @if (phase() !== 'review') {
+    <div class="capture__stage">
+        <video #liveVideo class="capture__live" muted playsinline aria-hidden="true"></video>
+
+        @if (canSwitchCamera()) {
+        <button type="button" class="capture__switch" (click)="switchCamera()"
+            [attr.aria-label]="'VIDEO_CAPTURE.SWITCH_CAMERA_ARIA' | translate">
+            <svg lucideSwitchCamera [size]="18" aria-hidden="true"></svg>
+        </button>
+        }
+
+        @if (phase() === 'recording') {
+        <div class="capture__timer-badge" role="timer" [attr.aria-label]="formatTime(seconds())">
+            <span class="capture__dot" aria-hidden="true"></span>
+            {{ formatTime(seconds()) }}
+        </div>
+        }
+    </div>
+
+    <div class="capture__controls">
+        @if (phase() === 'live') {
+        <button type="button" class="capture__shutter" (click)="startRecording()"
+            [attr.aria-label]="'VIDEO_CAPTURE.START_ARIA' | translate">
+            <svg lucideCircle [size]="28" aria-hidden="true"></svg>
+        </button>
+        } @else {
+        <button type="button" class="capture__shutter capture__shutter--stop" (click)="stopRecording()"
+            [attr.aria-label]="'VIDEO_CAPTURE.STOP_ARIA' | translate">
+            <svg lucideSquare [size]="24" aria-hidden="true"></svg>
+        </button>
+        }
+    </div>
+    } @else {
+
+    <div class="capture__stage">
+        <video #reviewVideo class="capture__review" [src]="reviewUrl()" controls playsinline
+            [attr.aria-label]="'VIDEO_CAPTURE.PREVIEW_ARIA' | translate"></video>
+    </div>
+
+    @if (trimSupported && duration() > 0.4) {
+    <div class="capture__trim">
+        <p class="capture__trim-hint">{{ 'VIDEO_CAPTURE.TRIM_HINT' | translate }}</p>
+        <div class="capture__trim-times">
+            <span>{{ formatTime(trimStart()) }}</span>
+            <span>{{ formatTime(trimEnd()) }}</span>
+        </div>
+        <input type="range" class="capture__trim-slider" min="0" [max]="duration()" step="0.1"
+            [value]="trimStart()" (input)="onTrimStartChange($any($event.target).valueAsNumber)"
+            [attr.aria-label]="'VIDEO_CAPTURE.TRIM_START_ARIA' | translate" />
+        <input type="range" class="capture__trim-slider" min="0" [max]="duration()" step="0.1"
+            [value]="trimEnd()" (input)="onTrimEndChange($any($event.target).valueAsNumber)"
+            [attr.aria-label]="'VIDEO_CAPTURE.TRIM_END_ARIA' | translate" />
+    </div>
+    }
+
+    <div class="capture__review-actions">
+        <button type="button" class="capture__retake" (click)="retake()" [disabled]="processing()"
+            [attr.aria-label]="'VIDEO_CAPTURE.RETAKE_ARIA' | translate">
+            <svg lucideRotateCcw [size]="18" aria-hidden="true"></svg>
+            {{ 'VIDEO_CAPTURE.RETAKE' | translate }}
+        </button>
+        <button type="button" class="capture__confirm" (click)="confirm()" [disabled]="processing()"
+            [attr.aria-busy]="processing()" [attr.aria-label]="'VIDEO_CAPTURE.CONFIRM_ARIA' | translate">
+            {{ processing() ? ('VIDEO_CAPTURE.PROCESSING' | translate) : ('VIDEO_CAPTURE.CONFIRM' | translate) }}
+        </button>
+    </div>
+    }
+    }
+</div>
