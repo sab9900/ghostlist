@@ -30,7 +30,7 @@ public class MainActivity extends BridgeActivity {
     private static final String ALIAS_CHAT   = "com.norica_informatics.ghostlist.GhostChatShareActivity";
 
     @Override
-    protected void onStart() {
+    public void onStart() {
         super.onStart();
         audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
 
