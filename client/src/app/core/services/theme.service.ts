@@ -1,7 +1,7 @@
 import { effect, Injectable, signal } from '@angular/core';
 
 export type Theme = 'dark' | 'light' | 'system';
-export type ThemeAccent = 'violet' | 'cyan' | 'red' | 'noir';
+export type ThemeAccent = 'violet' | 'cyan' | 'blue' | 'red' | 'copper' | 'gold' | 'green' | 'pink' | 'noir';
 
 const ACCENT_KEY = 'gl_accent';
 

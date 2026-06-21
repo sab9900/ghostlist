@@ -272,8 +272,13 @@
         "ACCENT": {
             "VIOLET": "Violeta",
             "CYAN": "Cian",
+            "BLUE": "Azul",
             "RED": "Rojo",
-            "NOIR": "Noir"
+            "NOIR": "Noir",
+            "COPPER": "Cobre",
+            "GOLD": "Oro",
+            "GREEN": "Verde",
+            "PINK": "Rosa"
         },
         "LANGUAGE_TITLE": "Idioma",
         "HAPTICS_TITLE": "Vibración",

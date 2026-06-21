@@ -75,7 +75,12 @@ export class SettingsComponent {
     protected readonly accentOptions: { value: ThemeAccent; labelKey: string; color: string }[] = [
         { value: 'violet', labelKey: 'SETTINGS.ACCENT.VIOLET', color: '#7c6af7' },
         { value: 'cyan', labelKey: 'SETTINGS.ACCENT.CYAN', color: '#06b6d4' },
-        { value: 'red', labelKey: 'SETTINGS.ACCENT.RED', color: '#f87171' },
+        { value: 'blue', labelKey: 'SETTINGS.ACCENT.BLUE', color: '#3b82f6' },
+        { value: 'red', labelKey: 'SETTINGS.ACCENT.RED', color: '#ff0000' },
+        { value: 'copper', labelKey: 'SETTINGS.ACCENT.COPPER', color: '#ff6200' },
+        { value: 'gold', labelKey: 'SETTINGS.ACCENT.GOLD', color: '#ffbb00' },
+        { value: 'green', labelKey: 'SETTINGS.ACCENT.GREEN', color: '#22c55e' },
+        { value: 'pink', labelKey: 'SETTINGS.ACCENT.PINK', color: '#ec4899' },
         { value: 'noir', labelKey: 'SETTINGS.ACCENT.NOIR', color: 'linear-gradient(135deg, #111114 50%, #f0f0f2 50%)' },
     ];
 

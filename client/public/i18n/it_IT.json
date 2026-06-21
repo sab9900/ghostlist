@@ -272,8 +272,13 @@
         "ACCENT": {
             "VIOLET": "Viola",
             "CYAN": "Ciano",
+            "BLUE": "Blu",
             "RED": "Rosso",
-            "NOIR": "Noir"
+            "NOIR": "Noir",
+            "COPPER": "Rame",
+            "GOLD": "Oro",
+            "GREEN": "Verde",
+            "PINK": "Rosa"
         },
         "LANGUAGE_TITLE": "Lingua",
         "HAPTICS_TITLE": "Feedback tattile",

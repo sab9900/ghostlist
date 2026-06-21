@@ -272,8 +272,13 @@
         "ACCENT": {
             "VIOLET": "Violett",
             "CYAN": "Cyan",
+            "BLUE": "Blau",
             "RED": "Rot",
-            "NOIR": "Noir"
+            "NOIR": "Noir",
+            "COPPER": "Kupfer",
+            "GOLD": "Gold",
+            "GREEN": "Grün",
+            "PINK": "Pink"
         },
         "LANGUAGE_TITLE": "Sprache",
         "HAPTICS_TITLE": "Haptik",
