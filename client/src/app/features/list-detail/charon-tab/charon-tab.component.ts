@@ -1,5 +1,5 @@
-import { Component, effect, ElementRef, inject, OnDestroy, signal, untracked, ViewChild } from '@angular/core';
-import { LucideFileText, LucideImage, LucideMic, LucidePaperclip, LucideVideo } from "@lucide/angular";
+import { Component, computed, effect, ElementRef, inject, OnDestroy, signal, untracked, ViewChild } from '@angular/core';
+import { LucideFileText, LucideImage, LucideMic, LucidePaperclip, LucideSwitchCamera, LucideVideo } from "@lucide/angular";
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { CharonDropDto } from '../../../core/models';
@@ -60,7 +60,7 @@ function isAllowedFile(file: File): boolean {
 
 @Component({
     selector: 'app-charon-tab',
-    imports: [TranslatePipe, AudioWaveformPlayerComponent, LucidePaperclip, LucideMic, LucideImage, LucideFileText, LucideVideo],
+    imports: [TranslatePipe, AudioWaveformPlayerComponent, LucidePaperclip, LucideMic, LucideImage, LucideFileText, LucideVideo, LucideSwitchCamera],
     templateUrl: './charon-tab.component.html',
     styleUrl: './charon-tab.component.scss',
 })
@@ -93,6 +93,9 @@ export class CharonTabComponent implements OnDestroy {
     protected readonly videoRecordingNotSupported = signal(false);
     protected readonly videoRecordingPermissionDenied = signal(false);
     protected readonly videoRecordingDebugError = signal<string | null>(null);
+    protected readonly availableCameras = signal<MediaDeviceInfo[]>([]);
+    protected readonly selectedCameraId = signal<string | null>(null);
+    protected readonly canSwitchCamera = computed(() => this.availableCameras().length > 1);
 
     private mediaRecorder: MediaRecorder | null = null;
     private audioChunks: Blob[] = [];
@@ -102,12 +105,14 @@ export class CharonTabComponent implements OnDestroy {
     private videoChunks: Blob[] = [];
     private videoRecordingTimer: ReturnType<typeof setInterval> | null = null;
     private videoStream: MediaStream | null = null;
+    private discardNextVideoStop = false;
 
     private readonly blobUrls = new Map<string, string>();
 
     private readonly shareHandler = inject(ShareHandlerService);
 
     constructor() {
+        void this.refreshAvailableCameras();
         effect(() => {
             const drops = this.store.charonDrops();
             void this.decryptNewMeta(drops);
@@ -471,6 +476,31 @@ export class CharonTabComponent implements OnDestroy {
         return 'audio';
     }
 
+    private async refreshAvailableCameras(): Promise<void> {
+        if (!navigator.mediaDevices?.enumerateDevices) return;
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            this.availableCameras.set(devices.filter(d => d.kind === 'videoinput'));
+        } catch { }
+    }
+
+    async switchCamera(): Promise<void> {
+        const cameras = this.availableCameras();
+        if (cameras.length < 2) return;
+        const current = this.selectedCameraId();
+        const idx = cameras.findIndex(c => c.deviceId === current);
+        const next = cameras[(idx + 1) % cameras.length];
+        this.selectedCameraId.set(next.deviceId);
+        if (this.recordingVideo()) {
+            this.discardNextVideoStop = true;
+            if (this.videoRecordingTimer !== null) { clearInterval(this.videoRecordingTimer); this.videoRecordingTimer = null; }
+            if (this.videoRecorder && this.videoRecorder.state !== 'inactive') this.videoRecorder.stop();
+            else if (this.videoStream) this.videoStream.getTracks().forEach(t => t.stop());
+            this.videoChunks = [];
+            await this.startVideoRecording();
+        }
+    }
+
     async toggleVideoRecording(): Promise<void> {
         if (this.recordingVideo()) {
             this.haptics.charonDropSent();
@@ -493,12 +523,13 @@ export class CharonTabComponent implements OnDestroy {
             return;
         }
 
+        const cameraId = this.selectedCameraId();
+        const videoConstraints: MediaTrackConstraints = cameraId
+            ? { deviceId: { exact: cameraId }, width: { ideal: 640 }, height: { ideal: 480 } }
+            : { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } };
         let stream: MediaStream;
         try {
-            stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-                audio: true,
-            });
+            stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: true });
         } catch (err) {
             if (err instanceof DOMException && err.name === 'NotAllowedError') {
                 this.videoRecordingPermissionDenied.set(true);
@@ -512,6 +543,7 @@ export class CharonTabComponent implements OnDestroy {
             return;
         }
 
+        void this.refreshAvailableCameras();
         this.videoStream = stream;
         this.recordingVideo.set(true);
         this.recordingVideoSeconds.set(0);
@@ -534,6 +566,7 @@ export class CharonTabComponent implements OnDestroy {
         this.videoRecorder.onstop = () => {
             stream.getTracks().forEach(t => t.stop());
             this.videoStream = null;
+            if (this.discardNextVideoStop) { this.discardNextVideoStop = false; return; }
             const actualMime = this.videoRecorder?.mimeType || mimeType || 'video/webm';
             void this.sendVideoRecording(actualMime);
         };

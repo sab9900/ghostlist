@@ -150,15 +150,38 @@
     flex-wrap: wrap;
 }
 
-.video-preview {
+.video-preview-wrap {
+    position: relative;
     flex: 0 0 100%;
     order: -1;
+}
+
+.video-preview {
+    display: block;
     width: 100%;
     max-height: 200px;
     border-radius: var(--radius-sm);
     background: var(--color-surface-2);
     object-fit: cover;
     transform: scaleX(-1);
+}
+
+.video-preview-switch {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: color-mix(in srgb, #000 55%, transparent);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--duration-fast) var(--ease-out);
+    &:hover { background: color-mix(in srgb, #000 70%, transparent); }
 }
 
 .dot {

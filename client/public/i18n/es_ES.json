@@ -108,6 +108,7 @@
         "RECORD_VIDEO_NOT_SUPPORTED": "La grabación de video no está disponible en este dispositivo.",
         "RECORD_VIDEO_PERMISSION_DENIED": "Acceso a la cámara denegado. Permítelo en los ajustes de la app.",
         "SENDING_VIDEO": "Enviando video…",
+        "SWITCH_CAMERA_ARIA": "Cambiar de cámara",
         "READ_PARTIAL_ARIA": "Leído por al menos una persona",
         "READ_ALL_ARIA": "Leído por todos",
         "READ_BY": "Leído por",
@@ -168,7 +169,8 @@
         "RECORD_VIDEO_ARIA": "Grabar un mensaje de video autodestructivo",
         "STOP_VIDEO_RECORD_ARIA": "Detener grabación y enviar",
         "RECORD_VIDEO_NOT_SUPPORTED": "La grabación de video no está disponible en este navegador.",
-        "RECORD_VIDEO_PERMISSION_DENIED": "Acceso a la cámara denegado. Permítelo en los ajustes de la app."
+        "RECORD_VIDEO_PERMISSION_DENIED": "Acceso a la cámara denegado. Permítelo en los ajustes de la app.",
+        "SWITCH_CAMERA_ARIA": "Cambiar de cámara"
     },
     "LIST_SETTINGS": {
         "LIST_NAME_TITLE": "Nombre de la lista",

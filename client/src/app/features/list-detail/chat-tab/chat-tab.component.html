@@ -84,11 +84,13 @@
     [videoRecordingNotSupported]="videoRecordingNotSupported()"
     [videoRecordingPermissionDenied]="videoRecordingPermissionDenied()"
     [videoRecordingDebugError]="videoRecordingDebugError()"
+    [canSwitchCamera]="canSwitchCamera()"
     (textChange)="onTextChange($event)"
     (send)="sendMessage()"
     (pickImage)="pickImage()"
     (toggleRecord)="toggleRecording()"
     (toggleVideoRecord)="toggleVideoRecording()"
+    (switchCamera)="switchCamera()"
     (keydown)="onKeydown($event)"
     (fileSelected)="onFileSelected($event)"
 />

@@ -109,7 +109,15 @@
     }
 
     @if (recordingVideo()) {
-    <video #videoPreview class="charon__video-preview" muted playsinline aria-hidden="true"></video>
+    <div class="charon__video-preview-wrap">
+        <video #videoPreview class="charon__video-preview" muted playsinline aria-hidden="true"></video>
+        @if (canSwitchCamera()) {
+        <button type="button" class="charon__video-preview-switch" (click)="switchCamera()"
+            [attr.aria-label]="'CHARON.SWITCH_CAMERA_ARIA' | translate">
+            <svg lucideSwitchCamera [size]="18" aria-hidden="true"></svg>
+        </button>
+        }
+    </div>
     }
 
     <div class="compose" role="form" [attr.aria-label]="'CHARON.ATTACH_ARIA' | translate">
@@ -132,6 +140,12 @@
             [attr.aria-pressed]="recordingVideo()">
             <svg lucideVideo [size]="20" aria-hidden="true"></svg>
         </button>
+        @if (canSwitchCamera() && !recording() && !recordingVideo()) {
+        <button type="button" class="compose__attach" (click)="switchCamera()" [disabled]="sending()"
+            [attr.aria-label]="'CHARON.SWITCH_CAMERA_ARIA' | translate">
+            <svg lucideSwitchCamera [size]="20" aria-hidden="true"></svg>
+        </button>
+        }
         @if (recording()) {
         <span class="compose__timer" role="timer" [attr.aria-label]="formatRecordingTime(recordingSeconds())">
             {{ formatRecordingTime(recordingSeconds()) }}

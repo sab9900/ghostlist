@@ -72,6 +72,9 @@ export class ChatTabComponent implements OnDestroy {
     protected readonly videoRecordingNotSupported = signal(false);
     protected readonly videoRecordingPermissionDenied = signal(false);
     protected readonly videoRecordingDebugError = signal<string | null>(null);
+    protected readonly availableCameras = signal<MediaDeviceInfo[]>([]);
+    protected readonly selectedCameraId = signal<string | null>(null);
+    protected readonly canSwitchCamera = computed(() => this.availableCameras().length > 1);
     protected readonly decryptedMessages = signal<DecryptedMessage[]>([]);
 
     protected readonly typingNames = signal<string[]>([]);
@@ -89,6 +92,7 @@ export class ChatTabComponent implements OnDestroy {
     private videoChunks: Blob[] = [];
     private videoRecordingTimer: ReturnType<typeof setInterval> | null = null;
     private videoStream: MediaStream | null = null;
+    private discardNextVideoStop = false;
 
     protected readonly replyingTo = signal<DecryptedMessage | null>(null);
     protected readonly openMenuId = signal<string | null>(null);
@@ -194,6 +198,7 @@ export class ChatTabComponent implements OnDestroy {
     protected videoDataUrl(id: string): string | null { return this.store.videoDataUrls()[id] ?? null; }
 
     constructor() {
+        void this.refreshAvailableCameras();
         this.keyboardInset.willShow$.pipe(takeUntilDestroyed()).subscribe(() => {
             this.scrollToBottomDuringTransition();
         });
@@ -647,6 +652,31 @@ export class ChatTabComponent implements OnDestroy {
         return '';
     }
 
+    private async refreshAvailableCameras(): Promise<void> {
+        if (!navigator.mediaDevices?.enumerateDevices) return;
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            this.availableCameras.set(devices.filter(d => d.kind === 'videoinput'));
+        } catch { }
+    }
+
+    async switchCamera(): Promise<void> {
+        const cameras = this.availableCameras();
+        if (cameras.length < 2) return;
+        const current = this.selectedCameraId();
+        const idx = cameras.findIndex(c => c.deviceId === current);
+        const next = cameras[(idx + 1) % cameras.length];
+        this.selectedCameraId.set(next.deviceId);
+        if (this.recordingVideo()) {
+            this.discardNextVideoStop = true;
+            if (this.videoRecordingTimer !== null) { clearInterval(this.videoRecordingTimer); this.videoRecordingTimer = null; }
+            if (this.videoRecorder && this.videoRecorder.state !== 'inactive') this.videoRecorder.stop();
+            else if (this.videoStream) this.videoStream.getTracks().forEach(t => t.stop());
+            this.videoChunks = [];
+            await this.startVideoRecording();
+        }
+    }
+
     async toggleVideoRecording(): Promise<void> {
         if (this.recordingVideo()) { this.haptics.messageSent(); await this.stopVideoRecording(); }
         else await this.startVideoRecording();
@@ -659,12 +689,13 @@ export class ChatTabComponent implements OnDestroy {
             setTimeout(() => { this.videoRecordingNotSupported.set(false); this.videoRecordingDebugError.set(null); }, 8000);
             return;
         }
+        const cameraId = this.selectedCameraId();
+        const videoConstraints: MediaTrackConstraints = cameraId
+            ? { deviceId: { exact: cameraId }, width: { ideal: 640 }, height: { ideal: 480 } }
+            : { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } };
         let stream: MediaStream;
         try {
-            stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-                audio: true,
-            });
+            stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: true });
         } catch (err) {
             if (err instanceof DOMException && err.name === 'NotAllowedError') {
                 this.videoRecordingPermissionDenied.set(true);
@@ -676,6 +707,7 @@ export class ChatTabComponent implements OnDestroy {
             }
             return;
         }
+        void this.refreshAvailableCameras();
         this.videoStream = stream;
         this.recordingVideo.set(true); this.recordingVideoSeconds.set(0);
         requestAnimationFrame(() => {
@@ -692,6 +724,7 @@ export class ChatTabComponent implements OnDestroy {
         this.videoRecorder.onstop = () => {
             stream.getTracks().forEach(t => t.stop());
             this.videoStream = null;
+            if (this.discardNextVideoStop) { this.discardNextVideoStop = false; return; }
             const actualMime = this.videoRecorder?.mimeType || mimeType || 'video/webm';
             void this.sendVideoMessage(actualMime);
         };

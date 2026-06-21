@@ -29,7 +29,15 @@
 <div class="compose" role="form" [attr.aria-label]="'CHAT.MESSAGE_PLACEHOLDER' | translate">
     @if (recordingVideo()) {
     <div class="recording-row recording-row--video">
-        <video #videoPreview class="video-preview" muted playsinline aria-hidden="true"></video>
+        <div class="video-preview-wrap">
+            <video #videoPreview class="video-preview" muted playsinline aria-hidden="true"></video>
+            @if (canSwitchCamera()) {
+            <button type="button" class="video-preview-switch" (click)="switchCamera.emit()"
+                [attr.aria-label]="'CHAT.SWITCH_CAMERA_ARIA' | translate">
+                <svg lucideSwitchCamera [size]="18" aria-hidden="true"></svg>
+            </button>
+            }
+        </div>
         <span class="dot" aria-hidden="true"></span>
         <span class="timer" role="timer" [attr.aria-label]="formatRecordingTime(recordingVideoSeconds())">
             {{ formatRecordingTime(recordingVideoSeconds()) }}
@@ -71,6 +79,13 @@
                     [attr.aria-label]="'CHAT.RECORD_VIDEO_ARIA' | translate" [attr.aria-busy]="sendingVideo()">
                     <svg lucideVideo [size]="20" aria-hidden="true"></svg>
                 </button>
+                @if (canSwitchCamera()) {
+                <button type="button" class="attach" (mousedown)="$event.preventDefault()"
+                    (click)="switchCamera.emit()" [disabled]="sendingImage() || sendingAudio() || sendingVideo()"
+                    [attr.aria-label]="'CHAT.SWITCH_CAMERA_ARIA' | translate">
+                    <svg lucideSwitchCamera [size]="20" aria-hidden="true"></svg>
+                </button>
+                }
                 <button type="button" class="record" (mousedown)="$event.preventDefault()"
                     (click)="toggleRecord.emit()" [disabled]="sendingAudio()"
                     [attr.aria-label]="'CHAT.RECORD_ARIA' | translate" aria-pressed="false">

@@ -44,7 +44,12 @@ builder.Services.AddHealthChecks();
 builder.Services.AddMemoryCache();
 builder.Services.AddSignalR(options =>
 {
-    options.MaximumReceiveMessageSize = 5 * 1024 * 1024;
+    options.MaximumReceiveMessageSize = 32 * 1024 * 1024;
+});
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 35_000_000;
 });
 builder.Services.AddScoped<IGhostListNotifier, GhostListNotifier>();
 builder.Services.AddSingleton<IPresenceTracker, PresenceTracker>();

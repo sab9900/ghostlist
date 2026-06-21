@@ -108,6 +108,7 @@
         "RECORD_VIDEO_NOT_SUPPORTED": "Video recording is not supported on this device.",
         "RECORD_VIDEO_PERMISSION_DENIED": "Camera access denied. Please allow it in app settings.",
         "SENDING_VIDEO": "Sending video…",
+        "SWITCH_CAMERA_ARIA": "Switch camera",
         "READ_PARTIAL_ARIA": "Read by at least one person",
         "READ_ALL_ARIA": "Read by everyone",
         "READ_BY": "Read by",
@@ -168,7 +169,8 @@
         "RECORD_VIDEO_ARIA": "Record a self-destructing video message",
         "STOP_VIDEO_RECORD_ARIA": "Stop recording and send",
         "RECORD_VIDEO_NOT_SUPPORTED": "Video recording isn't supported in this browser.",
-        "RECORD_VIDEO_PERMISSION_DENIED": "Camera access denied. Please allow it in app settings."
+        "RECORD_VIDEO_PERMISSION_DENIED": "Camera access denied. Please allow it in app settings.",
+        "SWITCH_CAMERA_ARIA": "Switch camera"
     },
     "LIST_SETTINGS": {
         "LIST_NAME_TITLE": "List name",

@@ -108,6 +108,7 @@
         "RECORD_VIDEO_NOT_SUPPORTED": "La registrazione video non è supportata su questo dispositivo.",
         "RECORD_VIDEO_PERMISSION_DENIED": "Accesso alla fotocamera negato. Abilitalo nelle impostazioni dell'app.",
         "SENDING_VIDEO": "Invio video…",
+        "SWITCH_CAMERA_ARIA": "Cambia fotocamera",
         "READ_PARTIAL_ARIA": "Letto da almeno una persona",
         "READ_ALL_ARIA": "Letto da tutti",
         "READ_BY": "Letto da",
@@ -168,7 +169,8 @@
         "RECORD_VIDEO_ARIA": "Registra un messaggio video autodistruttivo",
         "STOP_VIDEO_RECORD_ARIA": "Interrompi la registrazione e invia",
         "RECORD_VIDEO_NOT_SUPPORTED": "La registrazione video non è supportata in questo browser.",
-        "RECORD_VIDEO_PERMISSION_DENIED": "Accesso alla fotocamera negato. Abilitalo nelle impostazioni dell'app."
+        "RECORD_VIDEO_PERMISSION_DENIED": "Accesso alla fotocamera negato. Abilitalo nelle impostazioni dell'app.",
+        "SWITCH_CAMERA_ARIA": "Cambia fotocamera"
     },
     "LIST_SETTINGS": {
         "LIST_NAME_TITLE": "Nome lista",

@@ -108,6 +108,7 @@
         "RECORD_VIDEO_NOT_SUPPORTED": "Videoaufnahme wird auf diesem Gerät nicht unterstützt.",
         "RECORD_VIDEO_PERMISSION_DENIED": "Kamerazugriff verweigert. Bitte in den App-Einstellungen erlauben.",
         "SENDING_VIDEO": "Video wird gesendet…",
+        "SWITCH_CAMERA_ARIA": "Kamera wechseln",
         "READ_PARTIAL_ARIA": "Von mindestens einer Person gelesen",
         "READ_ALL_ARIA": "Von allen gelesen",
         "READ_BY": "Gelesen von",
@@ -168,7 +169,8 @@
         "RECORD_VIDEO_ARIA": "Selbstzerstörende Videonachricht aufnehmen",
         "STOP_VIDEO_RECORD_ARIA": "Aufnahme stoppen und senden",
         "RECORD_VIDEO_NOT_SUPPORTED": "Videoaufnahme wird in diesem Browser nicht unterstützt.",
-        "RECORD_VIDEO_PERMISSION_DENIED": "Kamerazugriff verweigert. Bitte in den App-Einstellungen erlauben."
+        "RECORD_VIDEO_PERMISSION_DENIED": "Kamerazugriff verweigert. Bitte in den App-Einstellungen erlauben.",
+        "SWITCH_CAMERA_ARIA": "Kamera wechseln"
     },
     "LIST_SETTINGS": {
         "LIST_NAME_TITLE": "Listenname",
