@@ -1,4 +1,5 @@
 import { DeleteAfterDuration } from './delete-after-duration.enum';
+import { WhisperLifetime } from './whisper-lifetime.enum';
 export interface CreateGhostListItemRequest {
     ghostListId: string;
     encryptedPayload: string;
@@ -15,6 +16,8 @@ export interface CreateGhostMessageRequest {
 }
 
 export type UpdateTtlRequest = DeleteAfterDuration;
+
+export type UpdateWhisperLifetimeRequest = WhisperLifetime;
 
 export interface ReadReceiptRequest {
     lastReadMessageAt?: string | null;
@@ -54,5 +57,15 @@ export interface CreateItemReminderRequest {
 export interface ItemReminderDto {
     id: string;
     itemId: string;
+    remindAt: string; // ISO-8601 UTC
+}
+
+export interface CreateListReminderRequest {
+    ghostListId: string;
+    remindAt: string; // ISO-8601 UTC
+}
+
+export interface ListReminderDto {
+    id: string;
     remindAt: string; // ISO-8601 UTC
 }

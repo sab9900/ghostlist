@@ -27,6 +27,7 @@
         "@angular/router": "^22.0.0",
         "@angular/service-worker": "^22.0.0",
         "@aparajita/capacitor-biometric-auth": "^10.0.0",
+        "@aparajita/capacitor-secure-storage": "^7.1.6",
         "@capacitor/android": "^7.0.0",
         "@capacitor/app": "^7.0.0",
         "@capacitor/clipboard": "^7.0.4",

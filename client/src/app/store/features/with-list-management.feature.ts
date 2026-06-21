@@ -11,6 +11,7 @@ import {
     GhostList,
     GhostListItem,
     KnownList,
+    WhisperLifetime,
 } from '../../core/models';
 import { CryptoService } from '../../core/services/crypto.service';
 import { DeviceIdService } from '../../core/services/device-id.service';
@@ -103,7 +104,14 @@ export function createListManagementMethods(store: ListManagementStoreSlice) {
                 currentListId: id,
                 currentEncryptionKey: encryptionKey,
                 currentList: cached
-                    ? { id: cached.id, ttl: cached.ttl, createdAt: cached.createdAt, items: cached.items, chatMessages: cached.messages }
+                    ? {
+                        id: cached.id,
+                        ttl: cached.ttl,
+                        whisperLifetimeSeconds: cached.whisperLifetimeSeconds,
+                        createdAt: cached.createdAt,
+                        items: cached.items,
+                        chatMessages: cached.messages,
+                    }
                     : null,
                 items: cached?.items ?? [],
                 messages: cached?.messages ?? [],
@@ -247,6 +255,12 @@ export function createListManagementMethods(store: ListManagementStoreSlice) {
             const id = store.currentListId();
             if (!id) return;
             await firstValueFrom(api.updateTtl(id, ttl));
+        },
+
+        async updateWhisperLifetime(lifetime: WhisperLifetime): Promise<void> {
+            const id = store.currentListId();
+            if (!id) return;
+            await firstValueFrom(api.updateWhisperLifetime(id, lifetime));
         },
 
         async refreshCurrentList(): Promise<void> {

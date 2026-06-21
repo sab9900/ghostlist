@@ -25,6 +25,7 @@ public class GetGhostListByIdQueryHandlerTests
         result.Should().NotBeNull();
         result!.Id.Should().Be(list.Id);
         result.Ttl.Should().Be((int)DeleteAfterDuration.SixHours);
+        result.WhisperLifetimeSeconds.Should().Be((int)WhisperLifetime.FiveSeconds);
         result.Items.Should().HaveCount(1);
         result.Items[0].EncryptedPayload.Should().Be("enc_payload");
         result.ChatMessages.Should().HaveCount(1);

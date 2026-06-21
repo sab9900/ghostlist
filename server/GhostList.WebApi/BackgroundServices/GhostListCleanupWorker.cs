@@ -3,7 +3,9 @@ using GhostList.Application.Features.GhostLists.Commands.DeleteExpiredListItems;
 using GhostList.Application.Features.GhostLists.Commands.DeleteStaleLists;
 using GhostList.Application.Features.GhostMessages.Commands.DeleteExpiredAudioBlobs;
 using GhostList.Application.Features.GhostMessages.Commands.DeleteExpiredImageBlobs;
+using GhostList.Application.Features.GhostMessages.Commands.DeleteExpiredVideoBlobs;
 using GhostList.Application.Features.ItemReminders.Commands.TriggerDueItemReminders;
+using GhostList.Application.Features.ListReminders.Commands.TriggerDueListReminders;
 using GhostList.Application.Features.Subscriptions.Commands.DeleteStaleDeviceSubscriptions;
 using MediatR;
 
@@ -34,6 +36,10 @@ public class GhostListCleanupWorker(IServiceScopeFactory scopeFactory, ILogger<G
                 if (firedReminders > 0)
                     logger.LogInformation("Reminders: {Count} item reminder(s) sent.", firedReminders);
 
+                var firedListReminders = await mediator.Send(new TriggerDueListRemindersCommand(), stoppingToken);
+                if (firedListReminders > 0)
+                    logger.LogInformation("Reminders: {Count} list reminder(s) sent.", firedListReminders);
+
                 var expiredItems = await mediator.Send(new DeleteExpiredListItemsCommand(), stoppingToken);
                 if (expiredItems > 0)
                     logger.LogInformation("Cleanup: {Count} expired item(s) deleted.", expiredItems);
@@ -45,6 +51,10 @@ public class GhostListCleanupWorker(IServiceScopeFactory scopeFactory, ILogger<G
                 var expiredAudios = await mediator.Send(new DeleteExpiredAudioBlobsCommand(), stoppingToken);
                 if (expiredAudios > 0)
                     logger.LogInformation("Cleanup: {Count} expired audio blob(s) deleted.", expiredAudios);
+
+                var expiredVideos = await mediator.Send(new DeleteExpiredVideoBlobsCommand(), stoppingToken);
+                if (expiredVideos > 0)
+                    logger.LogInformation("Cleanup: {Count} expired video blob(s) deleted.", expiredVideos);
 
                 var expiredDrops = await mediator.Send(new DeleteExpiredCharonDropsCommand(), stoppingToken);
                 if (expiredDrops > 0)

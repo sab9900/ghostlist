@@ -73,4 +73,10 @@ export class HapticsService {
         setTimeout(() => Haptics.impact({ style: ImpactStyle.Medium }).catch(() => { }), 100);
         setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }).catch(() => { }), 220);
     }
+
+    whisperInviteReceived(): void {
+        if (!this.enabled) return;
+        Haptics.impact({ style: ImpactStyle.Light }).catch(() => { });
+        setTimeout(() => Haptics.impact({ style: ImpactStyle.Light }).catch(() => { }), 90);
+    }
 }

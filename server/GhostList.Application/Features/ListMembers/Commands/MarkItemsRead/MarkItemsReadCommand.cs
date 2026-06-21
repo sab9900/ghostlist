@@ -31,9 +31,7 @@ public class MarkItemsReadCommandHandler(IApplicationDbContext context)
             return;
 
         var alreadyRead = await context.ItemReadReceipts
-            .Where(r => request.UserId != null
-                ? r.UserId == request.UserId
-                : r.DeviceId == request.DeviceId)
+            .Where(r => (request.UserId != null && r.UserId == request.UserId) || r.DeviceId == request.DeviceId)
             .Select(r => r.ItemId)
             .ToListAsync(cancellationToken);
 

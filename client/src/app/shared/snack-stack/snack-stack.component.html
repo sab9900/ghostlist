@@ -1,0 +1,40 @@
+@if (orderedEntries().length > 0) {
+<div class="snack-stack" [class.snack-stack--desktop]="layout.isDesktop()" role="region"
+    [attr.aria-label]="'SNACK.REGION_ARIA' | translate">
+    @for (entry of orderedEntries(); track entry.snack.id) {
+    <div class="snack" [class.snack--closing]="entry.closing" role="alert" aria-live="assertive">
+        <div class="snack__icon" [class.snack__icon--charon]="entry.snack.iconKind === 'charon'" aria-hidden="true">
+            @switch (entry.snack.iconKind) {
+            @case ('item') {
+            <svg lucideListChecks [size]="18" [strokeWidth]="2"></svg>
+            }
+            @case ('chat') {
+            <svg lucideMessageCircle [size]="18" [strokeWidth]="2"></svg>
+            }
+            @case ('lethe') {
+            <svg lucideGhost [size]="18" [strokeWidth]="2"></svg>
+            }
+            @case ('charon') {
+            <svg lucideFlame [size]="18" [strokeWidth]="2"></svg>
+            }
+            @case ('reminder') {
+            <svg lucideAlarmClock [size]="18" [strokeWidth]="2"></svg>
+            }
+            }
+        </div>
+        <span class="snack__text">{{ entry.snack.text }}</span>
+        <div class="snack__actions">
+            @if (entry.snack.goAction) {
+            <button class="snack__btn snack__btn--go" type="button" (click)="onGo(entry.snack.id)">
+                {{ entry.snack.goAction.label }}
+            </button>
+            }
+            <button class="snack__btn snack__btn--dismiss" type="button" (click)="onDismiss(entry.snack.id)"
+                [attr.aria-label]="'SNACK.DISMISS_ARIA' | translate">
+                <svg lucideX [size]="15" [strokeWidth]="2"></svg>
+            </button>
+        </div>
+    </div>
+    }
+</div>
+}

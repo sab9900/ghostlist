@@ -19,6 +19,7 @@ import { ChatComposeComponent } from './components/chat-compose/chat-compose.com
 import { ChatMessageComponent } from './components/chat-message/chat-message.component';
 import { MentionListComponent } from './components/mention-list/mention-list.component';
 import { ReplyBarComponent } from './components/reply-bar/reply-bar.component';
+import { ScrollToBottomButtonComponent } from '../../../shared/scroll-to-bottom-button/scroll-to-bottom-button.component';
 import { DecryptedMessage, ReplyPreview } from './chat-tab.types';
 
 const SWIPE_TRIGGER_DISTANCE = 56;
@@ -26,10 +27,15 @@ const SWIPE_MAX_DISTANCE = 72;
 const SHOW_READ_RECEIPT_CHECKMARK = true;
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const MAX_DATA_URL_LENGTH = 1_800_000;
+const MAX_VIDEO_FILE_SIZE = 14 * 1024 * 1024;
+const MAX_VIDEO_RECORDING_SECONDS = 60;
+const VIDEO_BITS_PER_SECOND = 350_000;
+const VIDEO_AUDIO_BITS_PER_SECOND = 32_000;
+const NEAR_BOTTOM_THRESHOLD = 120;
 
 @Component({
     selector: 'app-chat-tab',
-    imports: [TranslatePipe, ChatMessageComponent, ReplyBarComponent, MentionListComponent, ChatComposeComponent],
+    imports: [TranslatePipe, ChatMessageComponent, ReplyBarComponent, MentionListComponent, ChatComposeComponent, ScrollToBottomButtonComponent],
     templateUrl: './chat-tab.component.html',
     styleUrl: './chat-tab.component.scss',
 })
@@ -54,12 +60,18 @@ export class ChatTabComponent implements OnDestroy {
     protected readonly sendingMessage = signal(false);
     protected readonly sendingImage = signal(false);
     protected readonly sendingAudio = signal(false);
+    protected readonly sendingVideo = signal(false);
     protected readonly fileTooLarge = signal(false);
     protected readonly recording = signal(false);
     protected readonly recordingSeconds = signal(0);
     protected readonly recordingNotSupported = signal(false);
     protected readonly recordingPermissionDenied = signal(false);
     protected readonly recordingDebugError = signal<string | null>(null);
+    protected readonly recordingVideo = signal(false);
+    protected readonly recordingVideoSeconds = signal(0);
+    protected readonly videoRecordingNotSupported = signal(false);
+    protected readonly videoRecordingPermissionDenied = signal(false);
+    protected readonly videoRecordingDebugError = signal<string | null>(null);
     protected readonly decryptedMessages = signal<DecryptedMessage[]>([]);
 
     protected readonly typingNames = signal<string[]>([]);
@@ -73,11 +85,17 @@ export class ChatTabComponent implements OnDestroy {
     private audioChunks: Blob[] = [];
     private recordingTimer: ReturnType<typeof setInterval> | null = null;
 
+    private videoRecorder: MediaRecorder | null = null;
+    private videoChunks: Blob[] = [];
+    private videoRecordingTimer: ReturnType<typeof setInterval> | null = null;
+    private videoStream: MediaStream | null = null;
+
     protected readonly replyingTo = signal<DecryptedMessage | null>(null);
     protected readonly openMenuId = signal<string | null>(null);
     protected readonly menuBelow = signal(false);
     protected readonly menuLeft = signal(false);
     protected readonly highlightedId = signal<string | null>(null);
+    protected readonly showScrollToBottomButton = signal(false);
 
     protected readonly swipeTriggerDistance = SWIPE_TRIGGER_DISTANCE;
     protected readonly showReadReceiptCheckmark = SHOW_READ_RECEIPT_CHECKMARK;
@@ -141,7 +159,7 @@ export class ChatTabComponent implements OnDestroy {
         if (!msg.replyToMessageId) return null;
         const src = this.messagesById().get(msg.replyToMessageId);
         if (!src) return null;
-        return { senderName: src.senderName, text: src.text, isImage: src.isImage, isAudio: src.isAudio };
+        return { senderName: src.senderName, text: src.text, isImage: src.isImage, isAudio: src.isAudio, isVideo: src.isVideo };
     }
 
     protected readReceiptStateFor(msg: DecryptedMessage): 'sent' | 'partial' | 'all' {
@@ -173,6 +191,7 @@ export class ChatTabComponent implements OnDestroy {
 
     protected imageDataUrl(id: string): string | null { return this.store.imageDataUrls()[id] ?? null; }
     protected audioDataUrl(id: string): string | null { return this.store.audioDataUrls()[id] ?? null; }
+    protected videoDataUrl(id: string): string | null { return this.store.videoDataUrls()[id] ?? null; }
 
     constructor() {
         this.keyboardInset.willShow$.pipe(takeUntilDestroyed()).subscribe(() => {
@@ -214,10 +233,31 @@ export class ChatTabComponent implements OnDestroy {
                     this.scrollToFirstUnreadOrBottom();
                     setTimeout(() => { this._fullyOpened = true; }, 1200);
                 } else if (this._fullyOpened) {
-                    this.scrollToBottom();
+                    if (this.isNearBottom()) this.scrollToBottom();
+                    else this.updateScrollButtonVisibility();
                 }
             });
         });
+    }
+
+    protected onMessageListScroll(): void {
+        this.updateScrollButtonVisibility();
+    }
+
+    protected onScrollToBottomClick(): void {
+        const el = this.messageListRef()?.nativeElement;
+        if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+        this.showScrollToBottomButton.set(false);
+    }
+
+    private isNearBottom(): boolean {
+        const el = this.messageListRef()?.nativeElement;
+        if (!el) return true;
+        return el.scrollHeight - el.scrollTop - el.clientHeight <= NEAR_BOTTOM_THRESHOLD;
+    }
+
+    private updateScrollButtonVisibility(): void {
+        this.showScrollToBottomButton.set(!this.isNearBottom());
     }
 
     private scrollToBottom(): void {
@@ -256,19 +296,26 @@ export class ChatTabComponent implements OnDestroy {
             this.store.messages().map(async (msg: GhostChatMessage) => {
                 const text = await this.crypto.decrypt(msg.encryptedMessage, msg.messageInitializationVector, key);
                 const senderName = await this.crypto.decrypt(msg.encryptedSenderName, msg.senderNameInitializationVector, key);
-                let isImage = false; let isAudio = false;
+                let isImage = false; let isAudio = false; let isVideo = false;
                 if (text.length < 100) {
-                    try { const parsed = JSON.parse(text); isImage = parsed?.type === 'image'; isAudio = parsed?.type === 'audio'; } catch { }
+                    try {
+                        const parsed = JSON.parse(text);
+                        isImage = parsed?.type === 'image';
+                        isAudio = parsed?.type === 'audio';
+                        isVideo = parsed?.type === 'video';
+                    } catch { }
                 }
-                return { id: msg.id, text, senderName, createdAt: msg.createdAt, replyToMessageId: msg.replyToMessageId, isImage, isAudio, senderDeviceId: msg.senderDeviceId, senderUserId: msg.senderUserId } satisfies DecryptedMessage;
+                return { id: msg.id, text, senderName, createdAt: msg.createdAt, replyToMessageId: msg.replyToMessageId, isImage, isAudio, isVideo, senderDeviceId: msg.senderDeviceId, senderUserId: msg.senderUserId } satisfies DecryptedMessage;
             }),
         );
         this.decryptedMessages.set(messages);
         const imageDataUrls = this.store.imageDataUrls();
         const audioDataUrls = this.store.audioDataUrls();
+        const videoDataUrls = this.store.videoDataUrls();
         for (const msg of messages) {
             if (msg.isImage && !imageDataUrls[msg.id]) void this.store.fetchAndCacheImage(msg.id);
             if (msg.isAudio && !audioDataUrls[msg.id]) void this.store.fetchAndCacheAudio(msg.id);
+            if (msg.isVideo && !videoDataUrls[msg.id]) void this.store.fetchAndCacheVideo(msg.id);
         }
         return true;
     }
@@ -446,6 +493,8 @@ export class ChatTabComponent implements OnDestroy {
             await this.sendSharedImage(file);
         } else if (file.type.startsWith('audio/')) {
             await this.sendSharedAudio(file);
+        } else if (file.type.startsWith('video/')) {
+            await this.sendSharedVideo(file);
         }
     }
 
@@ -473,6 +522,18 @@ export class ChatTabComponent implements OnDestroy {
             await this.store.shareAudio(dataUrl, sender, null);
         } catch {
         } finally { this.sendingAudio.set(false); }
+    }
+
+    private async sendSharedVideo(file: File): Promise<void> {
+        if (file.size > MAX_VIDEO_FILE_SIZE) { this.showFileTooLarge(); return; }
+        this.sendingVideo.set(true);
+        try {
+            const dataUrl = await this.readAsDataUrl(file);
+            const sender = this.prefs.senderName() || 'Anonymous';
+            this.haptics.messageSent();
+            await this.store.shareVideo(dataUrl, sender, null);
+        } catch {
+        } finally { this.sendingVideo.set(false); }
     }
 
     private readAsDataUrl(file: File): Promise<string> {
@@ -586,9 +647,96 @@ export class ChatTabComponent implements OnDestroy {
         return '';
     }
 
+    async toggleVideoRecording(): Promise<void> {
+        if (this.recordingVideo()) { this.haptics.messageSent(); await this.stopVideoRecording(); }
+        else await this.startVideoRecording();
+    }
+
+    private async startVideoRecording(): Promise<void> {
+        if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+            const reason = !navigator.mediaDevices ? 'mediaDevices undefined' : !navigator.mediaDevices.getUserMedia ? 'getUserMedia undefined' : 'MediaRecorder undefined';
+            this.videoRecordingDebugError.set(reason); this.videoRecordingNotSupported.set(true);
+            setTimeout(() => { this.videoRecordingNotSupported.set(false); this.videoRecordingDebugError.set(null); }, 8000);
+            return;
+        }
+        let stream: MediaStream;
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+                audio: true,
+            });
+        } catch (err) {
+            if (err instanceof DOMException && err.name === 'NotAllowedError') {
+                this.videoRecordingPermissionDenied.set(true);
+                setTimeout(() => this.videoRecordingPermissionDenied.set(false), 5000);
+            } else {
+                const errName = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+                this.videoRecordingDebugError.set(errName); this.videoRecordingNotSupported.set(true);
+                setTimeout(() => { this.videoRecordingNotSupported.set(false); this.videoRecordingDebugError.set(null); }, 8000);
+            }
+            return;
+        }
+        this.videoStream = stream;
+        this.recordingVideo.set(true); this.recordingVideoSeconds.set(0);
+        requestAnimationFrame(() => {
+            const videoEl = this.composeRef()?.videoPreview()?.nativeElement;
+            if (videoEl) { videoEl.srcObject = stream; void videoEl.play().catch(() => { }); }
+        });
+
+        const mimeType = ChatTabComponent.getBestVideoMimeType();
+        const options: MediaRecorderOptions = { videoBitsPerSecond: VIDEO_BITS_PER_SECOND, audioBitsPerSecond: VIDEO_AUDIO_BITS_PER_SECOND };
+        if (mimeType) options.mimeType = mimeType;
+        this.videoRecorder = new MediaRecorder(stream, options);
+        this.videoChunks = [];
+        this.videoRecorder.ondataavailable = (e) => { if (e.data.size > 0) this.videoChunks.push(e.data); };
+        this.videoRecorder.onstop = () => {
+            stream.getTracks().forEach(t => t.stop());
+            this.videoStream = null;
+            const actualMime = this.videoRecorder?.mimeType || mimeType || 'video/webm';
+            void this.sendVideoMessage(actualMime);
+        };
+        this.videoRecorder.start(100);
+        this.videoRecordingTimer = setInterval(() => {
+            const next = this.recordingVideoSeconds() + 1;
+            this.recordingVideoSeconds.set(next);
+            if (next >= MAX_VIDEO_RECORDING_SECONDS) void this.stopVideoRecording();
+        }, 1000);
+    }
+
+    private async stopVideoRecording(): Promise<void> {
+        if (this.videoRecordingTimer !== null) { clearInterval(this.videoRecordingTimer); this.videoRecordingTimer = null; }
+        this.recordingVideo.set(false);
+        if (this.videoRecorder && this.videoRecorder.state !== 'inactive') this.videoRecorder.stop();
+    }
+
+    private async sendVideoMessage(mimeType: string): Promise<void> {
+        const blob = new Blob(this.videoChunks, { type: mimeType }); this.videoChunks = [];
+        if (blob.size > MAX_VIDEO_FILE_SIZE) { this.showFileTooLarge(); return; }
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = () => reject(reader.error ?? new Error('Could not read video blob'));
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+        });
+        const sender = this.prefs.senderName() || 'Anonymous';
+        const replyId = this.replyingTo()?.id ?? null;
+        this.sendingVideo.set(true);
+        try { this.haptics.messageSent(); await this.store.shareVideo(dataUrl, sender, replyId); this.replyingTo.set(null); }
+        catch { } finally { this.sendingVideo.set(false); }
+    }
+
+    private static getBestVideoMimeType(): string {
+        const candidates = ['video/webm;codecs=vp8,opus', 'video/webm;codecs=vp9,opus', 'video/webm', 'video/mp4'];
+        for (const type of candidates) { if (MediaRecorder.isTypeSupported(type)) return type; }
+        return '';
+    }
+
     ngOnDestroy(): void {
         if (this.recordingTimer !== null) clearInterval(this.recordingTimer);
         if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') this.mediaRecorder.stop();
+        if (this.videoRecordingTimer !== null) clearInterval(this.videoRecordingTimer);
+        if (this.videoRecorder && this.videoRecorder.state !== 'inactive') this.videoRecorder.stop();
+        if (this.videoStream) this.videoStream.getTracks().forEach(t => t.stop());
         this.typingClearTimers.forEach(t => clearTimeout(t));
     }
 }

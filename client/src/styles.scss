@@ -90,6 +90,18 @@
     --color-on-primary: #fff;
 }
 
+// iOS Home-Screen PWA (WebClip) only: the WebClip viewport already excludes the
+// home-indicator strip from the usable layout area (it's reserved/painted by the
+// system, not by this page — see index.html and the theme-color sync in
+// theme.service.ts for that). Applying env(safe-area-inset-bottom) padding again
+// on top of that double-subtracts the same ~34px everywhere a component pads for
+// --safe-bottom / --safe-bottom-effective. Capacitor (native WKWebView, full
+// physical viewport) and Android need the real value and are unaffected, since
+// the .ios-webclip class is only ever added when navigator.standalone is true.
+html.ios-webclip {
+    --safe-bottom: 0px;
+}
+
 @mixin light-theme {
     --color-bg: #f4f4f6;
     --color-surface: #ffffff;

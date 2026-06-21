@@ -43,9 +43,8 @@ public class MarkMessagesReadCommandHandler(IApplicationDbContext context, IGhos
 
         var messageIds = messages.Select(m => m.Id).ToList();
         var alreadyReadSet = await context.MessageReadReceipts
-            .Where(r => messageIds.Contains(r.MessageId) && (request.UserId != null
-                ? r.UserId == request.UserId
-                : r.DeviceId == request.DeviceId))
+            .Where(r => messageIds.Contains(r.MessageId) &&
+                ((request.UserId != null && r.UserId == request.UserId) || r.DeviceId == request.DeviceId))
             .Select(r => r.MessageId)
             .ToHashSetAsync(cancellationToken);
 

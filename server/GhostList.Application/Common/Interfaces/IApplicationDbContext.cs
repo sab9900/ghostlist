@@ -22,6 +22,7 @@ public interface IApplicationDbContext
     DbSet<CharonDrop> CharonDrops { get; }
     DbSet<CharonViewReceipt> CharonViewReceipts { get; }
     DbSet<ItemReminder> ItemReminders { get; }
+    DbSet<ListReminder> ListReminders { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 

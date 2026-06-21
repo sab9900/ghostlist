@@ -2,13 +2,14 @@
 @let preview = replyPreview();
 @let imgUrl = imageUrl();
 @let audUrl = audioUrl();
+@let vidUrl = videoUrl();
 <li class="message" role="article"
     [class.message--mine]="mine()"
     [class.message--highlight]="isHighlighted()"
     [class.message--unread]="isUnread()"
     [class.message--open]="isMenuOpen()"
     [attr.data-message-id]="m.id"
-    [attr.aria-label]="m.senderName + ': ' + (m.isImage ? ('CHAT.IMAGE' | translate) : m.isAudio ? ('CHAT.VOICE_NOTE' | translate) : m.text)"
+    [attr.aria-label]="m.senderName + ': ' + (m.isImage ? ('CHAT.IMAGE' | translate) : m.isAudio ? ('CHAT.VOICE_NOTE' | translate) : m.isVideo ? ('CHAT.VIDEO' | translate) : m.text)"
     (touchstart)="touchStart.emit($event)"
     (touchmove)="touchMove.emit($event)"
     (touchend)="touchEnd.emit()"
@@ -45,6 +46,11 @@
                     <svg lucideMic [size]="14" aria-hidden="true"></svg>
                     {{ 'CHAT.VOICE_NOTE' | translate }}
                 </span>
+                } @else if (preview.isVideo) {
+                <span class="quote-text quote-text--video">
+                    <svg lucideVideo [size]="14" aria-hidden="true"></svg>
+                    {{ 'CHAT.VIDEO' | translate }}
+                </span>
                 } @else {
                 <span class="quote-text">{{ preview.text }}</span>
                 }
@@ -74,6 +80,16 @@
             <div class="audio-placeholder">
                 <svg lucideMic [size]="18" aria-hidden="true"></svg>
                 <span>{{ 'CHAT.VOICE_NOTE' | translate }}</span>
+            </div>
+            }
+            } @else if (m.isVideo) {
+            @if (vidUrl) {
+            <video class="video" [src]="vidUrl" controls playsinline preload="metadata"
+                [attr.aria-label]="'CHAT.VIDEO_ALT' | translate"></video>
+            } @else {
+            <div class="video-placeholder">
+                <svg lucideVideo [size]="22" aria-hidden="true"></svg>
+                <span>{{ 'CHAT.VIDEO_UNAVAILABLE' | translate }}</span>
             </div>
             }
             } @else {
@@ -121,7 +137,7 @@
                     <svg lucideCornerUpLeft [size]="15" aria-hidden="true"></svg>
                     {{ 'CHAT.REPLY' | translate }}
                 </button>
-                @if (!m.isImage && !m.isAudio) {
+                @if (!m.isImage && !m.isAudio && !m.isVideo) {
                 <button type="button" role="menuitem" class="menu-item" (click)="copy.emit()">
                     <svg lucideCopy [size]="15" aria-hidden="true"></svg>
                     {{ 'CHAT.COPY' | translate }}

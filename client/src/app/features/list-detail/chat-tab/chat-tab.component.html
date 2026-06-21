@@ -1,43 +1,49 @@
-<ul class="message-list" #messageList role="log" [attr.aria-label]="'LIST_DETAIL.TAB_CHAT' | translate"
-    aria-live="polite" aria-relevant="additions">
+<div class="message-list-wrapper">
+    <ul class="message-list" #messageList role="log" [attr.aria-label]="'LIST_DETAIL.TAB_CHAT' | translate"
+        aria-live="polite" aria-relevant="additions" (scroll)="onMessageListScroll()">
 
-    @if (decryptedMessages().length === 0) {
-    <li class="empty-hint" role="status">{{ 'CHAT.NO_MESSAGES' | translate }}</li>
-    }
+        @if (decryptedMessages().length === 0) {
+        <li class="empty-hint" role="status">{{ 'CHAT.NO_MESSAGES' | translate }}</li>
+        }
 
-    @for (msg of decryptedMessages(); track msg.id) {
-    <li>
-        <app-chat-message
-            [msg]="msg"
-            [mine]="isMineFor(msg)"
-            [isUnread]="isUnread(msg.id)"
-            [isHighlighted]="highlightedId() === msg.id"
-            [isMenuOpen]="openMenuId() === msg.id"
-            [menuBelow]="menuBelow()"
-            [menuLeft]="menuLeft()"
-            [replyPreview]="replyPreviewFor(msg)"
-            [imageUrl]="msg.isImage ? imageDataUrl(msg.id) : null"
-            [audioUrl]="msg.isAudio ? audioDataUrl(msg.id) : null"
-            [readReceiptState]="readReceiptStateFor(msg)"
-            [showReadReceipt]="showReadReceiptCheckmark"
-            [readers]="readersForMessage(msg)"
-            [swipeOffset]="swipeOffset(msg.id)"
-            [swipeTriggerDistance]="swipeTriggerDistance"
-            (menuToggle)="toggleMenu(msg.id, $event)"
-            (reply)="startReply(msg)"
-            (copy)="copyMessage(msg)"
-            (delete)="deleteMessage(msg.id)"
-            (scrollToReply)="scrollToMessage($event)"
-            (dwellRead)="onMessageDwellRead($event)"
-            (touchStart)="onTouchStart($event, msg)"
-            (touchMove)="onTouchMove($event, msg)"
-            (touchEnd)="onTouchEnd(msg)"
-            (imageOpen)="openImage($event.url, $event.alt)"
-        />
-    </li>
-    }
+        @for (msg of decryptedMessages(); track msg.id) {
+        <li>
+            <app-chat-message
+                [msg]="msg"
+                [mine]="isMineFor(msg)"
+                [isUnread]="isUnread(msg.id)"
+                [isHighlighted]="highlightedId() === msg.id"
+                [isMenuOpen]="openMenuId() === msg.id"
+                [menuBelow]="menuBelow()"
+                [menuLeft]="menuLeft()"
+                [replyPreview]="replyPreviewFor(msg)"
+                [imageUrl]="msg.isImage ? imageDataUrl(msg.id) : null"
+                [audioUrl]="msg.isAudio ? audioDataUrl(msg.id) : null"
+                [videoUrl]="msg.isVideo ? videoDataUrl(msg.id) : null"
+                [readReceiptState]="readReceiptStateFor(msg)"
+                [showReadReceipt]="showReadReceiptCheckmark"
+                [readers]="readersForMessage(msg)"
+                [swipeOffset]="swipeOffset(msg.id)"
+                [swipeTriggerDistance]="swipeTriggerDistance"
+                (menuToggle)="toggleMenu(msg.id, $event)"
+                (reply)="startReply(msg)"
+                (copy)="copyMessage(msg)"
+                (delete)="deleteMessage(msg.id)"
+                (scrollToReply)="scrollToMessage($event)"
+                (dwellRead)="onMessageDwellRead($event)"
+                (touchStart)="onTouchStart($event, msg)"
+                (touchMove)="onTouchMove($event, msg)"
+                (touchEnd)="onTouchEnd(msg)"
+                (imageOpen)="openImage($event.url, $event.alt)"
+            />
+        </li>
+        }
 
-</ul>
+    </ul>
+
+    <app-scroll-to-bottom-button class="scroll-to-bottom" [visible]="showScrollToBottomButton()"
+        (clicked)="onScrollToBottomClick()" />
+</div>
 
 @if (openMenuId()) {
 <div class="message-menu-backdrop" aria-hidden="true"></div>
@@ -66,16 +72,23 @@
     [text]="newMessageText()"
     [sendingImage]="sendingImage()"
     [sendingAudio]="sendingAudio()"
+    [sendingVideo]="sendingVideo()"
     [recording]="recording()"
     [recordingSeconds]="recordingSeconds()"
     [fileTooLarge]="fileTooLarge()"
     [recordingNotSupported]="recordingNotSupported()"
     [recordingPermissionDenied]="recordingPermissionDenied()"
     [recordingDebugError]="recordingDebugError()"
+    [recordingVideo]="recordingVideo()"
+    [recordingVideoSeconds]="recordingVideoSeconds()"
+    [videoRecordingNotSupported]="videoRecordingNotSupported()"
+    [videoRecordingPermissionDenied]="videoRecordingPermissionDenied()"
+    [videoRecordingDebugError]="videoRecordingDebugError()"
     (textChange)="onTextChange($event)"
     (send)="sendMessage()"
     (pickImage)="pickImage()"
     (toggleRecord)="toggleRecording()"
+    (toggleVideoRecord)="toggleVideoRecording()"
     (keydown)="onKeydown($event)"
     (fileSelected)="onFileSelected($event)"
 />

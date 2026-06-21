@@ -17,7 +17,7 @@
         (touchend)="touchEnd.emit()"
         (touchcancel)="touchEnd.emit()">
 
-        <div class="swipe-delete" aria-hidden="true">
+        <div class="swipe-delete" aria-hidden="true" [style.opacity]="swipeDx() ? 1 : 0">
             <svg lucideTrash2 [size]="18" aria-hidden="true"></svg>
         </div>
 

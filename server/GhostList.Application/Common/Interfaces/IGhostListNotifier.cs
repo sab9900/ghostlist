@@ -10,6 +10,7 @@ public interface IGhostListNotifier
     Task NotifyMessageCreated(Guid listId, MessageCreatedNotification notification);
     Task NotifyMessageDeleted(Guid listId, Guid messageId);
     Task NotifyTtlUpdated(Guid listId, int newTtl);
+    Task NotifyWhisperLifetimeUpdated(Guid listId, int newLifetimeSeconds);
     Task NotifyListDeleted(Guid listId);
     Task NotifyMemberKicked(Guid listId, string deviceId);
 
@@ -25,6 +26,12 @@ public interface IGhostListNotifier
 
     Task NotifyAudioShared(Guid listId, AudioRelayNotification notification);
 
+    Task NotifyVideoShared(Guid listId, VideoRelayNotification notification);
+
     /// <summary>Sent only to the device that owns the reminder (via device-group).</summary>
     Task NotifyReminderFired(Guid listId, Guid itemId, Guid reminderId, string deviceId);
+
+    Task NotifyWhisperInviteReceived(Guid listId, string? senderDeviceId, IReadOnlyList<string>? targetDeviceIds);
+
+    Task NotifyListReminderFired(Guid listId, Guid reminderId, DateTime remindAt, string deviceId);
 }

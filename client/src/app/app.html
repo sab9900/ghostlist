@@ -11,13 +11,47 @@
         <p class="lock-screen__hint" role="status" aria-live="polite">
             {{ 'SECURITY.UNLOCKING' | translate }}
         </p>
+        } @else if (showPasswordFallback()) {
+        <input class="dialog__input" type="password" [ngModel]="passwordInput()"
+            (ngModelChange)="passwordInput.set($event)" (keydown.enter)="submitPasswordUnlock()"
+            [attr.placeholder]="'SECURITY.PASSWORD_PLACEHOLDER' | translate"
+            [attr.aria-label]="'SECURITY.PASSWORD_PLACEHOLDER' | translate" autofocus />
+        @if (lockError()) {
+        <p class="lock-screen__error" role="alert">{{ 'SECURITY.UNLOCK_ERROR' | translate }}</p>
+        }
+        <button class="btn btn--primary btn--sm" (click)="submitPasswordUnlock()" [disabled]="!passwordInput()">
+            {{ 'COMMON.SUBMIT' | translate }}
+        </button>
+        <button class="btn btn--ghost btn--sm" (click)="useFallbackRecovery()">
+            {{ 'SECURITY.USE_RECOVERY_CODE' | translate }}
+        </button>
+        } @else if (showRecoveryFallback()) {
+        <input class="dialog__input" type="text" [ngModel]="recoveryInput()"
+            (ngModelChange)="recoveryInput.set($event)" (keydown.enter)="submitRecoveryUnlock()"
+            [attr.placeholder]="'SECURITY.RECOVERY_CODE_PLACEHOLDER' | translate"
+            [attr.aria-label]="'SECURITY.RECOVERY_CODE_PLACEHOLDER' | translate" autofocus />
+        @if (lockError()) {
+        <p class="lock-screen__error" role="alert">{{ 'SECURITY.UNLOCK_ERROR' | translate }}</p>
+        }
+        <button class="btn btn--primary btn--sm" (click)="submitRecoveryUnlock()" [disabled]="!recoveryInput()">
+            {{ 'COMMON.SUBMIT' | translate }}
+        </button>
+        <button class="btn btn--ghost btn--sm" (click)="useFallbackPassword()">
+            {{ 'SECURITY.USE_PASSWORD' | translate }}
+        </button>
         } @else if (lockError()) {
         <p class="lock-screen__error" role="alert">{{ 'SECURITY.UNLOCK_ERROR' | translate }}</p>
         <button class="btn btn--ghost btn--sm lock-screen__retry" (click)="triggerBiometric()">
             {{ 'COMMON.TRY_AGAIN' | translate }}
         </button>
+        <button class="btn btn--ghost btn--sm" (click)="useFallbackPassword()">
+            {{ 'SECURITY.USE_PASSWORD' | translate }}
+        </button>
         } @else {
         <p class="lock-screen__hint">{{ 'SECURITY.LOCK_HINT' | translate }}</p>
+        <button class="btn btn--ghost btn--sm" (click)="useFallbackPassword()">
+            {{ 'SECURITY.USE_PASSWORD' | translate }}
+        </button>
         }
     </div>
 </div>
@@ -58,6 +92,7 @@
 
 <app-info-overlay />
 <app-image-viewer />
+<app-snack-stack />
 
 @if (showNameDialog()) {
 <div class="dialog-backdrop" (click)="skipNameDialog()" role="presentation">

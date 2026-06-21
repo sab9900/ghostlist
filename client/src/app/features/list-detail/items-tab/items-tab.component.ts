@@ -1,4 +1,5 @@
-import { Component, HostListener, OnDestroy, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
+import { Component, HostListener, OnDestroy, computed, effect, inject, signal, untracked } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Subscription } from 'rxjs';
@@ -14,20 +15,19 @@ import { UserPreferencesService } from '../../../core/services/user-preferences.
 import { AppStore } from '../../../store/app.store';
 import { ItemAddBarComponent } from './components/item-add-bar/item-add-bar.component';
 import { ItemRowComponent } from './components/item-row/item-row.component';
-import { ReminderBannerComponent } from './components/reminder-banner/reminder-banner.component';
 import { ReminderDialogComponent } from './components/reminder-dialog/reminder-dialog.component';
-import { ActiveReminder, DecryptedItem, ReminderBanner } from './items-tab.types';
+import { ActiveReminder, DecryptedItem } from './items-tab.types';
 
 const SWIPE_TRIGGER_DISTANCE = 64;
 const SWIPE_MAX_DISTANCE = 80;
 
 @Component({
     selector: 'app-items-tab',
-    imports: [TranslatePipe, ItemAddBarComponent, ItemRowComponent, ReminderBannerComponent, ReminderDialogComponent],
+    imports: [TranslatePipe, ItemAddBarComponent, ItemRowComponent, ReminderDialogComponent],
     templateUrl: './items-tab.component.html',
     styleUrl: './items-tab.component.scss',
 })
-export class ItemsTabComponent implements OnInit, OnDestroy {
+export class ItemsTabComponent implements OnDestroy {
     private readonly store = inject(AppStore);
     private readonly crypto = inject(CryptoService);
     private readonly haptics = inject(HapticsService);
@@ -53,9 +53,6 @@ export class ItemsTabComponent implements OnInit, OnDestroy {
     protected readonly swipeState = signal<{ id: string; dx: number } | null>(null);
 
     protected readonly reminders = signal<Map<string, ActiveReminder>>(new Map());
-    protected readonly activeBanner = signal<ReminderBanner | null>(null);
-    private readonly bannerQueue: ReminderBanner[] = [];
-    private readonly banneredIds = new Set<string>();
     private readonly hubSub: Subscription;
 
     protected readonly highlightedItemId = signal<string | null>(null);
@@ -93,23 +90,16 @@ export class ItemsTabComponent implements OnInit, OnDestroy {
             void this.decryptItems();
         });
         this.hubSub = this.hub.reminderFired$.subscribe(event => {
-            const listId = this.store.currentListId();
-            if (listId) this.loadReminders(listId);
-            if (!this.banneredIds.has(event.reminderId)) {
-                this.banneredIds.add(event.reminderId);
-                const item = this.decryptedItems().find(i => i.id === event.itemId);
-                this.enqueueBanner({ reminderId: event.reminderId, itemId: event.itemId, itemText: item?.text ?? '…' });
-            }
+            if (event.listId === this.store.currentListId()) this.loadReminders(event.listId);
         });
-    }
-
-    ngOnInit(): void {
-        const itemId = this.route.snapshot.queryParamMap.get('highlight');
-        if (itemId) {
+        this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(params => {
+            const itemId = params.get('highlight');
+            if (!itemId) return;
             this.pendingHighlightId = itemId;
             this.highlightApplied = false;
             this.highlightedItemId.set(itemId);
-        }
+            this.tryApplyPendingHighlight();
+        });
     }
 
     ngOnDestroy(): void {
@@ -136,42 +126,17 @@ export class ItemsTabComponent implements OnInit, OnDestroy {
                 const map = new Map<string, ActiveReminder>();
                 for (const dto of dtos) map.set(dto.itemId, { id: dto.id, remindAt: dto.remindAt });
                 this.reminders.set(map);
-                if (checkFired) {
+                if (checkFired && listId) {
                     const now = new Date();
                     for (const dto of dtos) {
-                        if (new Date(dto.remindAt) <= now && !this.banneredIds.has(dto.id)) {
-                            this.banneredIds.add(dto.id);
-                            const item = this.decryptedItems().find(i => i.id === dto.itemId);
-                            this.enqueueBanner({ reminderId: dto.id, itemId: dto.itemId, itemText: item?.text ?? '…' });
+                        if (new Date(dto.remindAt) <= now) {
+                            void this.store.fireReminderSnack(listId, dto.itemId, dto.id);
                         }
                     }
                 }
             },
             error: () => { },
         });
-    }
-
-    private enqueueBanner(banner: ReminderBanner): void {
-        if (this.activeBanner()) { this.bannerQueue.push(banner); }
-        else { this.haptics.reminderFired(); this.activeBanner.set(banner); }
-    }
-
-    protected dismissBanner(scrollToItem: boolean): void {
-        const banner = this.activeBanner();
-        if (!banner) return;
-        this.api.acknowledgeItemReminder(banner.reminderId).subscribe({ error: () => { } });
-        const updated = new Map(this.reminders());
-        updated.delete(banner.itemId);
-        this.reminders.set(updated);
-        if (scrollToItem) this.scrollToItem(banner.itemId);
-        this.activeBanner.set(null);
-        if (this.bannerQueue.length > 0) {
-            setTimeout(() => {
-                const next = this.bannerQueue.shift()!;
-                this.haptics.reminderFired();
-                this.activeBanner.set(next);
-            }, 350);
-        }
     }
 
     private applyHighlight(itemId: string): void {
@@ -233,10 +198,14 @@ export class ItemsTabComponent implements OnInit, OnDestroy {
             })),
         );
         this.decryptedItems.set(items);
-        if (this.pendingHighlightId && !this.highlightApplied && items.some(i => i.id === this.pendingHighlightId)) {
-            this.highlightApplied = true;
-            this.applyHighlight(this.pendingHighlightId!);
-        }
+        this.tryApplyPendingHighlight();
+    }
+
+    private tryApplyPendingHighlight(): void {
+        if (!this.pendingHighlightId || this.highlightApplied) return;
+        if (!this.decryptedItems().some(i => i.id === this.pendingHighlightId)) return;
+        this.highlightApplied = true;
+        this.applyHighlight(this.pendingHighlightId);
     }
 
     onItemDwellRead(itemId: string): void { this.store.markItemRead(itemId); }

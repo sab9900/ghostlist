@@ -2,9 +2,11 @@ using GhostList.Application.Features.GhostMessages.Commands.CreateGhostChatMessa
 using GhostList.Application.Features.GhostMessages.Commands.DeleteGhostChatMessage;
 using GhostList.Application.Features.GhostMessages.Commands.SaveGhostMessageAudio;
 using GhostList.Application.Features.GhostMessages.Commands.SaveGhostMessageImage;
+using GhostList.Application.Features.GhostMessages.Commands.SaveGhostMessageVideo;
 using GhostList.Application.Features.GhostMessages.Queries.GetGhostChatMessagesByListId;
 using GhostList.Application.Features.GhostMessages.Queries.GetGhostMessageAudio;
 using GhostList.Application.Features.GhostMessages.Queries.GetGhostMessageImage;
+using GhostList.Application.Features.GhostMessages.Queries.GetGhostMessageVideo;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,6 +14,7 @@ namespace GhostList.WebApi.Controllers;
 
 public record SaveGhostMessageImageRequest(string EncryptedImage, string ImageInitializationVector);
 public record SaveGhostMessageAudioRequest(string EncryptedAudio, string AudioInitializationVector);
+public record SaveGhostMessageVideoRequest(string EncryptedVideo, string VideoInitializationVector);
 
 [ApiController]
 [Route("api/[controller]")]
@@ -66,5 +69,19 @@ public class ChatController(IMediator mediator) : ControllerBase
     {
         var audio = await mediator.Send(new GetGhostMessageAudioQuery(messageId));
         return Ok(audio);
+    }
+
+    [HttpPost("{messageId:guid}/video")]
+    public async Task<ActionResult> SaveVideo(Guid messageId, [FromBody] SaveGhostMessageVideoRequest request)
+    {
+        await mediator.Send(new SaveGhostMessageVideoCommand(messageId, request.EncryptedVideo, request.VideoInitializationVector));
+        return NoContent();
+    }
+
+    [HttpGet("{messageId:guid}/video")]
+    public async Task<ActionResult<GhostMessageVideoDto>> GetVideo(Guid messageId)
+    {
+        var video = await mediator.Send(new GetGhostMessageVideoQuery(messageId));
+        return Ok(video);
     }
 }

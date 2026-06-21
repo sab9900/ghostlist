@@ -47,11 +47,6 @@
 
 </ul>
 
-<app-reminder-banner
-    [banner]="activeBanner()"
-    (go)="dismissBanner(true)"
-    (dismiss)="dismissBanner(false)" />
-
 <app-reminder-dialog
     [item]="reminderItem()"
     [minDateTime]="reminderMinDateTime()"

@@ -1,5 +1,5 @@
 import { Component, effect, ElementRef, inject, OnDestroy, signal, untracked, ViewChild } from '@angular/core';
-import { LucideFileText, LucideImage, LucideMic, LucidePaperclip } from "@lucide/angular";
+import { LucideFileText, LucideImage, LucideMic, LucidePaperclip, LucideVideo } from "@lucide/angular";
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { CharonDropDto } from '../../../core/models';
@@ -30,12 +30,17 @@ interface RevealedDrop {
     senderName: string;
     isImage: boolean;
     isAudio: boolean;
+    isVideo: boolean;
 }
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
 
 const MAX_IMAGE_DIMENSION = 1280;
 const IMAGE_QUALITY = 0.72;
+
+const MAX_VIDEO_RECORDING_SECONDS = 30;
+const VIDEO_BITS_PER_SECOND = 350_000;
+const VIDEO_AUDIO_BITS_PER_SECOND = 32_000;
 
 const ALLOWED_EXTENSIONS = new Set([
 
@@ -55,7 +60,7 @@ function isAllowedFile(file: File): boolean {
 
 @Component({
     selector: 'app-charon-tab',
-    imports: [TranslatePipe, AudioWaveformPlayerComponent, LucidePaperclip, LucideMic, LucideImage, LucideFileText],
+    imports: [TranslatePipe, AudioWaveformPlayerComponent, LucidePaperclip, LucideMic, LucideImage, LucideFileText, LucideVideo],
     templateUrl: './charon-tab.component.html',
     styleUrl: './charon-tab.component.scss',
 })
@@ -70,6 +75,7 @@ export class CharonTabComponent implements OnDestroy {
     private readonly imageViewer = inject(ImageViewerService);
 
     @ViewChild('fileInput') private fileInputRef?: ElementRef<HTMLInputElement>;
+    @ViewChild('videoPreview') private videoPreviewRef?: ElementRef<HTMLVideoElement>;
 
     protected readonly dropMeta = signal<Map<string, CharonMeta>>(new Map());
 
@@ -82,10 +88,20 @@ export class CharonTabComponent implements OnDestroy {
     protected readonly recordingNotSupported = signal(false);
     protected readonly recordingPermissionDenied = signal(false);
     protected readonly recordingDebugError = signal<string | null>(null);
+    protected readonly recordingVideo = signal(false);
+    protected readonly recordingVideoSeconds = signal(0);
+    protected readonly videoRecordingNotSupported = signal(false);
+    protected readonly videoRecordingPermissionDenied = signal(false);
+    protected readonly videoRecordingDebugError = signal<string | null>(null);
 
     private mediaRecorder: MediaRecorder | null = null;
     private audioChunks: Blob[] = [];
     private recordingTimer: ReturnType<typeof setInterval> | null = null;
+
+    private videoRecorder: MediaRecorder | null = null;
+    private videoChunks: Blob[] = [];
+    private videoRecordingTimer: ReturnType<typeof setInterval> | null = null;
+    private videoStream: MediaStream | null = null;
 
     private readonly blobUrls = new Map<string, string>();
 
@@ -150,6 +166,10 @@ export class CharonTabComponent implements OnDestroy {
         return !!mimeType?.startsWith('audio/');
     }
 
+    protected isVideoMime(mimeType: string | undefined): boolean {
+        return !!mimeType?.startsWith('video/');
+    }
+
     protected formatSize(bytes: number): string {
         if (bytes < 1024) return `${bytes} B`;
         if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -176,8 +196,9 @@ export class CharonTabComponent implements OnDestroy {
             const dataUrl = await this.crypto.decrypt(drop.encryptedContent, drop.contentInitializationVector, key);
 
             const isAudio = this.isAudioMime(meta!.mimeType);
+            const isVideo = this.isVideoMime(meta!.mimeType);
             let srcUrl = dataUrl;
-            if (isAudio) {
+            if (isAudio || isVideo) {
                 const blob = CharonTabComponent.dataUrlToBlob(dataUrl);
                 srcUrl = URL.createObjectURL(blob);
                 this.blobUrls.set(drop.id, srcUrl);
@@ -192,6 +213,7 @@ export class CharonTabComponent implements OnDestroy {
                 senderName: meta!.senderName,
                 isImage: this.isImageMime(meta!.mimeType),
                 isAudio,
+                isVideo,
             }]);
         } catch {
             return;
@@ -286,6 +308,9 @@ export class CharonTabComponent implements OnDestroy {
     ngOnDestroy(): void {
         if (this.recordingTimer !== null) clearInterval(this.recordingTimer);
         if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') this.mediaRecorder.stop();
+        if (this.videoRecordingTimer !== null) clearInterval(this.videoRecordingTimer);
+        if (this.videoRecorder && this.videoRecorder.state !== 'inactive') this.videoRecorder.stop();
+        if (this.videoStream) this.videoStream.getTracks().forEach(t => t.stop());
         this.blobUrls.forEach(url => URL.revokeObjectURL(url));
         this.blobUrls.clear();
     }
@@ -444,6 +469,150 @@ export class CharonTabComponent implements OnDestroy {
         if (mimeType.startsWith('audio/mp4')) return 'm4a';
         if (mimeType.startsWith('audio/ogg')) return 'ogg';
         return 'audio';
+    }
+
+    async toggleVideoRecording(): Promise<void> {
+        if (this.recordingVideo()) {
+            this.haptics.charonDropSent();
+            await this.stopVideoRecording();
+        } else {
+            await this.startVideoRecording();
+        }
+    }
+
+    private async startVideoRecording(): Promise<void> {
+        if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+            const reason = !navigator.mediaDevices
+                ? 'mediaDevices undefined'
+                : !navigator.mediaDevices.getUserMedia
+                    ? 'getUserMedia undefined'
+                    : 'MediaRecorder undefined';
+            this.videoRecordingDebugError.set(reason);
+            this.videoRecordingNotSupported.set(true);
+            setTimeout(() => { this.videoRecordingNotSupported.set(false); this.videoRecordingDebugError.set(null); }, 8000);
+            return;
+        }
+
+        let stream: MediaStream;
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+                audio: true,
+            });
+        } catch (err) {
+            if (err instanceof DOMException && err.name === 'NotAllowedError') {
+                this.videoRecordingPermissionDenied.set(true);
+                setTimeout(() => this.videoRecordingPermissionDenied.set(false), 5000);
+            } else {
+                const errName = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+                this.videoRecordingDebugError.set(errName);
+                this.videoRecordingNotSupported.set(true);
+                setTimeout(() => { this.videoRecordingNotSupported.set(false); this.videoRecordingDebugError.set(null); }, 8000);
+            }
+            return;
+        }
+
+        this.videoStream = stream;
+        this.recordingVideo.set(true);
+        this.recordingVideoSeconds.set(0);
+
+        requestAnimationFrame(() => {
+            const videoEl = this.videoPreviewRef?.nativeElement;
+            if (videoEl) { videoEl.srcObject = stream; void videoEl.play().catch(() => { }); }
+        });
+
+        const mimeType = CharonTabComponent.getBestVideoMimeType();
+        const options: MediaRecorderOptions = { videoBitsPerSecond: VIDEO_BITS_PER_SECOND, audioBitsPerSecond: VIDEO_AUDIO_BITS_PER_SECOND };
+        if (mimeType) options.mimeType = mimeType;
+        this.videoRecorder = new MediaRecorder(stream, options);
+        this.videoChunks = [];
+
+        this.videoRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) this.videoChunks.push(e.data);
+        };
+
+        this.videoRecorder.onstop = () => {
+            stream.getTracks().forEach(t => t.stop());
+            this.videoStream = null;
+            const actualMime = this.videoRecorder?.mimeType || mimeType || 'video/webm';
+            void this.sendVideoRecording(actualMime);
+        };
+
+        this.videoRecorder.start(100);
+        this.videoRecordingTimer = setInterval(() => {
+            const next = this.recordingVideoSeconds() + 1;
+            this.recordingVideoSeconds.set(next);
+            if (next >= MAX_VIDEO_RECORDING_SECONDS) void this.stopVideoRecording();
+        }, 1000);
+    }
+
+    private async stopVideoRecording(): Promise<void> {
+        if (this.videoRecordingTimer !== null) {
+            clearInterval(this.videoRecordingTimer);
+            this.videoRecordingTimer = null;
+        }
+        this.recordingVideo.set(false);
+        if (this.videoRecorder && this.videoRecorder.state !== 'inactive') {
+            this.videoRecorder.stop();
+        }
+    }
+
+    private async sendVideoRecording(mimeType: string): Promise<void> {
+        const blob = new Blob(this.videoChunks, { type: mimeType });
+        this.videoChunks = [];
+
+        if (blob.size > MAX_FILE_SIZE) {
+            this.fileTooLarge.set(true);
+            setTimeout(() => this.fileTooLarge.set(false), 4000);
+            return;
+        }
+
+        const listId = this.store.currentListId();
+        const key = this.store.currentEncryptionKey();
+        if (!listId || !key) return;
+
+        const ext = CharonTabComponent.getVideoExtension(mimeType);
+        const fileName = `video-${Date.now()}.${ext}`;
+
+        this.sending.set(true);
+        try {
+            const dataUrl = await this.blobToDataUrl(blob);
+            const senderName = this.prefs.senderName() || await firstValueFrom(this.translate.get('CHAT.ANONYMOUS'));
+            const meta: CharonMeta = { fileName, mimeType, size: blob.size, senderName };
+
+            const [content, metadata] = await Promise.all([
+                this.crypto.encrypt(dataUrl, key),
+                this.crypto.encrypt(JSON.stringify(meta), key),
+            ]);
+
+            await this.store.sendCharonDrop(
+                content.ciphertext, content.iv,
+                metadata.ciphertext, metadata.iv,
+            );
+            this.haptics.charonDropSent();
+        } catch {
+        } finally {
+            this.sending.set(false);
+        }
+    }
+
+    private static getBestVideoMimeType(): string {
+        const candidates = [
+            'video/webm;codecs=vp8,opus',
+            'video/webm;codecs=vp9,opus',
+            'video/webm',
+            'video/mp4',
+        ];
+        for (const type of candidates) {
+            if (MediaRecorder.isTypeSupported(type)) return type;
+        }
+        return '';
+    }
+
+    private static getVideoExtension(mimeType: string): string {
+        if (mimeType.startsWith('video/webm')) return 'webm';
+        if (mimeType.startsWith('video/mp4')) return 'mp4';
+        return 'video';
     }
 
     private compressImage(file: File): Promise<string> {

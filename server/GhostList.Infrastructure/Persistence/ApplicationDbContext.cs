@@ -21,6 +21,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<CharonDrop> CharonDrops => Set<CharonDrop>();
     public DbSet<CharonViewReceipt> CharonViewReceipts => Set<CharonViewReceipt>();
     public DbSet<ItemReminder> ItemReminders => Set<ItemReminder>();
+    public DbSet<ListReminder> ListReminders => Set<ListReminder>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -30,6 +31,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.CompletedItemsTtl).HasConversion<int>();
+            entity.Property(e => e.WhisperLifetimeSeconds).HasConversion<int>().HasDefaultValue(WhisperLifetime.FiveSeconds);
             entity.Property(e => e.OwnerTokenHash).HasMaxLength(64);
             entity.HasMany(e => e.Items)
                   .WithOne()
@@ -172,6 +174,18 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         });
 
         modelBuilder.Entity<ItemReminder>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.DeviceId).HasMaxLength(64).IsRequired();
+            entity.HasIndex(e => new { e.IsSent, e.RemindAt });
+            entity.HasIndex(e => new { e.IsAcknowledged, e.RemindAt });
+            entity.HasOne<Domain.Entities.GhostList>()
+                  .WithMany()
+                  .HasForeignKey(e => e.GhostListId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ListReminder>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.DeviceId).HasMaxLength(64).IsRequired();

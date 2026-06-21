@@ -4,6 +4,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { MasterPasswordService } from '../../../../core/services/master-password.service';
 import { SensitiveListsService } from '../../../../core/services/sensitive-lists.service';
 import { WebAuthnService } from '../../../../core/services/webauthn.service';
+import { AppStore } from '../../../../store/app.store';
 
 @Component({
     selector: 'app-reveal-dialog',
@@ -15,6 +16,7 @@ export class RevealDialogComponent {
     private readonly masterPassword = inject(MasterPasswordService);
     private readonly webAuthn = inject(WebAuthnService);
     private readonly sensitiveLists = inject(SensitiveListsService);
+    private readonly store = inject(AppStore);
 
     readonly show = input(false);
     readonly closed = output<void>();
@@ -46,6 +48,7 @@ export class RevealDialogComponent {
                 const bioOk = await this.webAuthn.authenticate();
                 if (!bioOk) { this.error.set(true); return; }
             }
+            await this.store.unlockKnownLists();
             this.sensitiveLists.reveal();
             this.closed.emit();
         } finally {

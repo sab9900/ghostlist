@@ -110,48 +110,48 @@ export class PushNotificationService {
     private async setupNativePush(listIds: string[]): Promise<void> {
         if (this.platform === 'android') {
             await PushNotifications.createChannel({
-                id: 'ghost_messages',
+                id: 'ghost_messages_v2',
                 name: 'Nachrichten',
                 description: 'Chat-Nachrichten in deinen Listen',
-                importance: 4, 
+                importance: 4,
                 vibration: true,
-                sound: 'default',
-                visibility: 1, 
+                sound: 'sonar_ping',
+                visibility: 1,
             });
             await PushNotifications.createChannel({
-                id: 'ghost_lethe',
+                id: 'ghost_lethe_v2',
                 name: 'Lethe – Flüster-Einladungen',
                 description: 'Einladungen in den Lethe-Flüsterkanal',
-                importance: 5, 
+                importance: 5,
                 vibration: true,
-                sound: 'default',
-                visibility: 1, 
+                sound: 'sonar_ping',
+                visibility: 1,
             });
             await PushNotifications.createChannel({
-                id: 'ghost_charon',
+                id: 'ghost_charon_v2',
                 name: 'Charon – Drops',
                 description: 'Neue Dateien im Charon Dead-Drop',
-                importance: 4, 
+                importance: 4,
                 vibration: true,
-                sound: 'default',
-                visibility: 1, 
+                sound: 'sonar_ping',
+                visibility: 1,
             });
             await PushNotifications.createChannel({
-                id: 'ghost_items',
+                id: 'ghost_items_v2',
                 name: 'Listen-Updates',
                 description: 'Änderungen an deinen Listen',
                 importance: 3,
                 vibration: false,
-                sound: 'default',
+                sound: 'sonar_ping',
                 visibility: 1,
             });
             await PushNotifications.createChannel({
-                id: 'ghost_reminders',
+                id: 'ghost_reminders_v2',
                 name: 'Erinnerungen',
                 description: 'Fälligkeitserinnerungen für Items',
                 importance: 5,
                 vibration: true,
-                sound: 'default',
+                sound: 'sonar_ping',
                 visibility: 1,
             });
         }

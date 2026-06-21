@@ -7,6 +7,8 @@
         <span class="text">{{ 'CHAT.IMAGE' | translate }}</span>
         } @else if (r.isAudio) {
         <span class="text">{{ 'CHAT.VOICE_NOTE' | translate }}</span>
+        } @else if (r.isVideo) {
+        <span class="text">{{ 'CHAT.VIDEO' | translate }}</span>
         } @else {
         <span class="text">{{ r.text }}</span>
         }

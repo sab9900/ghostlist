@@ -1,0 +1,21 @@
+@if (show()) {
+<div class="backdrop" (click)="cancel.emit()" role="presentation">
+    <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+        aria-labelledby="biometric-confirm-title" aria-describedby="biometric-confirm-hint">
+        <h2 class="title" id="biometric-confirm-title">{{ 'SETTINGS.SECURITY.CONFIRM.TITLE' | translate }}</h2>
+        <p class="hint" id="biometric-confirm-hint">{{ 'SETTINGS.SECURITY.CONFIRM.HINT' | translate }}</p>
+        <input class="input" type="password" [ngModel]="password()" (ngModelChange)="password.set($event)"
+            (keydown.enter)="submit()" [attr.placeholder]="'SETTINGS.SECURITY.MASTER_PASSWORD.CURRENT_PLACEHOLDER' | translate"
+            [attr.aria-label]="'SETTINGS.SECURITY.MASTER_PASSWORD.CURRENT_PLACEHOLDER' | translate" autofocus />
+        @if (error()) {
+        <p class="error" role="alert">{{ 'SETTINGS.SECURITY.MASTER_PASSWORD.ERROR_CURRENT_INVALID' | translate }}</p>
+        }
+        <div class="actions">
+            <button class="btn btn--ghost" (click)="cancel.emit()" [disabled]="working()">{{ 'COMMON.CANCEL' | translate }}</button>
+            <button class="btn btn--primary" (click)="submit()" [disabled]="working() || !password()">
+                {{ working() ? ('SETTINGS.SECURITY.ENABLING' | translate) : ('COMMON.SUBMIT' | translate) }}
+            </button>
+        </div>
+    </div>
+</div>
+}

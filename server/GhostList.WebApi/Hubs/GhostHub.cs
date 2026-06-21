@@ -2,6 +2,7 @@ using FluentValidation;
 using GhostList.Application.Common.Interfaces;
 using GhostList.Application.Features.GhostMessages.Commands.RelayEphemeralAudio;
 using GhostList.Application.Features.GhostMessages.Commands.RelayEphemeralImage;
+using GhostList.Application.Features.GhostMessages.Commands.RelayEphemeralVideo;
 using MediatR;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
@@ -102,6 +103,26 @@ public class GhostListHub(IMediator mediator, IPresenceTracker presence, IWhispe
         catch (ValidationException ex)
         {
             logger.LogWarning(ex, "Rejected audio relay for list {ListId}", listGuid);
+        }
+    }
+
+    public async Task RelayVideo(string listId, string messageId, string encryptedVideo, string videoInitializationVector)
+    {
+        if (!Guid.TryParse(listId, out var listGuid) || !Guid.TryParse(messageId, out var messageGuid))
+            return;
+
+        try
+        {
+            await mediator.Send(new RelayEphemeralVideoCommand(
+                listGuid,
+                messageGuid,
+                encryptedVideo,
+                videoInitializationVector,
+                Context.ConnectionId));
+        }
+        catch (ValidationException ex)
+        {
+            logger.LogWarning(ex, "Rejected video relay for list {ListId}", listGuid);
         }
     }
 

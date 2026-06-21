@@ -13,10 +13,20 @@ public enum DeleteAfterDuration
     ThreeMonths = 2160
 }
 
+public enum WhisperLifetime
+{
+    ThreeSeconds = 3,
+    FiveSeconds = 5,
+    EightSeconds = 8,
+    TwelveSeconds = 12,
+    TwentySeconds = 20
+}
+
 public class GhostList
 {
     public Guid Id { get; private set; }
     public DeleteAfterDuration CompletedItemsTtl { get; private set; }
+    public WhisperLifetime WhisperLifetimeSeconds { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
     public string? OwnerTokenHash { get; private set; }
@@ -28,12 +38,14 @@ public class GhostList
 
     public static GhostList Create(
         DeleteAfterDuration ttl = DeleteAfterDuration.OneDay,
-        string? ownerTokenHash = null)
+        string? ownerTokenHash = null,
+        WhisperLifetime whisperLifetime = WhisperLifetime.FiveSeconds)
     {
         return new GhostList
         {
             Id = Guid.NewGuid(),
             CompletedItemsTtl = ttl,
+            WhisperLifetimeSeconds = whisperLifetime,
             CreatedAt = DateTime.UtcNow,
             OwnerTokenHash = ownerTokenHash,
         };
@@ -53,6 +65,11 @@ public class GhostList
     public void UpdateTtl(DeleteAfterDuration ttl)
     {
         CompletedItemsTtl = ttl;
+    }
+
+    public void UpdateWhisperLifetime(WhisperLifetime lifetime)
+    {
+        WhisperLifetimeSeconds = lifetime;
     }
 
     public GhostListItem CreateListItem(string encryptedPayload, string initializationVector, string? senderDeviceId = null, string? senderUserId = null)

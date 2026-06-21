@@ -8,7 +8,8 @@
         "DELETE": "Eliminar",
         "DELETING": "Eliminando…",
         "SKIP": "Omitir",
-        "TRY_AGAIN": "Intentar de nuevo"
+        "TRY_AGAIN": "Intentar de nuevo",
+        "SUBMIT": "Enviar"
     },
     "LISTS": {
         "EMPTY_HEADLINE": "Aún no hay listas",
@@ -69,8 +70,6 @@
         "REMINDER_SAVE": "Establecer recordatorio",
         "REMINDER_SAVED": "✓ Recordatorio establecido",
         "SWIPE_DELETE_HINT": "Eliminar",
-        "REMINDER_BANNER_DISMISS": "OK",
-        "REMINDER_BANNER_GO": "Ver",
         "REMINDER_ADD_TO_CALENDAR": "Añadir al calendario"
     },
     "CHAT": {
@@ -101,9 +100,18 @@
         "RECORD_NOT_SUPPORTED": "La grabación de voz no está disponible en este dispositivo.",
         "RECORD_PERMISSION_DENIED": "Acceso al micrófono denegado. Permítelo en los ajustes de la app.",
         "SENDING_VOICE": "Enviando nota de voz…",
+        "VIDEO": "Video",
+        "VIDEO_ALT": "Video compartido",
+        "VIDEO_UNAVAILABLE": "Video ya no disponible",
+        "RECORD_VIDEO_ARIA": "Grabar un mensaje de video",
+        "STOP_VIDEO_RECORD_ARIA": "Detener grabación y enviar",
+        "RECORD_VIDEO_NOT_SUPPORTED": "La grabación de video no está disponible en este dispositivo.",
+        "RECORD_VIDEO_PERMISSION_DENIED": "Acceso a la cámara denegado. Permítelo en los ajustes de la app.",
+        "SENDING_VIDEO": "Enviando video…",
         "READ_PARTIAL_ARIA": "Leído por al menos una persona",
         "READ_ALL_ARIA": "Leído por todos",
-        "READ_BY": "Leído por"
+        "READ_BY": "Leído por",
+        "SCROLL_TO_BOTTOM_ARIA": "Desplazarse al final"
     },
     "LIST_DETAIL": {
         "BACK_ARIA": "Volver a las listas",
@@ -155,13 +163,20 @@
         "STOP_RECORD_ARIA": "Detener grabación y enviar",
         "RECORD_NOT_SUPPORTED": "La grabación de voz no está disponible en este navegador.",
         "RECORD_PERMISSION_DENIED": "Acceso al micrófono denegado. Permítelo en los ajustes de la app.",
-        "AUDIO_FALLBACK": "Tu navegador no admite la reproducción de audio."
+        "AUDIO_FALLBACK": "Tu navegador no admite la reproducción de audio.",
+        "VIDEO_ALT": "Video compartido",
+        "RECORD_VIDEO_ARIA": "Grabar un mensaje de video autodestructivo",
+        "STOP_VIDEO_RECORD_ARIA": "Detener grabación y enviar",
+        "RECORD_VIDEO_NOT_SUPPORTED": "La grabación de video no está disponible en este navegador.",
+        "RECORD_VIDEO_PERMISSION_DENIED": "Acceso a la cámara denegado. Permítelo en los ajustes de la app."
     },
     "LIST_SETTINGS": {
         "LIST_NAME_TITLE": "Nombre de la lista",
         "LIST_NAME_HINT": "Este nombre es local — solo visible en este dispositivo.",
         "AUTO_DELETE_TITLE": "Eliminar automáticamente los elementos completados",
         "AUTO_DELETE_HINT": "Los elementos completados se eliminan después de esta duración.",
+        "LETHE_LIFETIME_TITLE": "Tiempo de desaparición de los mensajes de Lethe",
+        "LETHE_LIFETIME_HINT": "Cuánto tiempo permanecen visibles los mensajes susurrados antes de desaparecer.",
         "NOTIFICATIONS_TITLE": "Notificaciones",
         "NOTIFICATIONS_HINT": "Controla qué notificaciones push recibe este dispositivo para esta lista.",
         "NOTIFY_ON_MESSAGE": "Nuevos mensajes de chat",
@@ -214,12 +229,21 @@
             "OneMonth": "1 mes",
             "ThreeMonths": "3 meses"
         },
+        "LETHE_LIFETIME": {
+            "ThreeSeconds": "3 segundos",
+            "FiveSeconds": "5 segundos",
+            "EightSeconds": "8 segundos",
+            "TwelveSeconds": "12 segundos",
+            "TwentySeconds": "20 segundos"
+        },
         "NOTIFY_ON_LETHE": "Invitaciones de Lethe",
         "NOTIFY_ON_LETHE_HINT": "Notificar cuando alguien te invite a susurrar en Lethe.",
         "NOTIFY_ON_CHARON": "Drops de Charon",
         "NOTIFY_ON_CHARON_HINT": "Notificar cuando se publique un nuevo drop de Charon en esta lista.",
         "REMINDER_TITLE": "Recuérdamelo",
-        "REMINDER_HINT": "Descarga un evento de calendario que enlaza de vuelta a esta lista.",
+        "REMINDER_HINT": "Recibe una notificación push sobre esta lista, o descarga un evento de calendario que enlaza de vuelta a ella.",
+        "REMINDER_SET": "Configurar recordatorio",
+        "REMINDER_CANCEL": "Quitar",
         "REMINDER_DOWNLOAD": "Añadir al calendario"
     },
     "JOIN": {
@@ -297,6 +321,18 @@
                 "ERROR_TOO_SHORT": "La contraseña debe tener al menos 4 caracteres.",
                 "ERROR_MISMATCH": "Las contraseñas no coinciden.",
                 "ERROR_CURRENT_INVALID": "La contraseña actual es incorrecta."
+            },
+            "CONFIRM": {
+                "TITLE": "Confirma tu contraseña maestra",
+                "HINT": "Introduce tu contraseña maestra una vez para activar el desbloqueo biométrico. Tu contraseña siempre sigue siendo la opción de respaldo — la biometría nunca la sustituye."
+            },
+            "RECOVERY": {
+                "TITLE": "Guarda tu código de recuperación",
+                "HINT": "Este código es la única forma de volver a entrar si olvidas tu contraseña maestra y pierdes acceso a la biometría. No lo guardamos — anótalo en un lugar seguro.",
+                "WARNING": "Nadie, ni siquiera nosotros, puede recuperar tus datos sin este código.",
+                "COPY_BTN": "Copiar código",
+                "CONFIRM_LABEL": "He guardado este código de recuperación en un lugar seguro",
+                "CONTINUE_BTN": "Continuar"
             }
         },
         "SYNC_COPY_LINK": "Copiar enlace",
@@ -321,7 +357,11 @@
         "LOCK_HINT": "Por favor, autentícate con biometría para continuar.",
         "UNLOCK_BTN": "Desbloquear",
         "UNLOCKING": "Desbloqueando…",
-        "UNLOCK_ERROR": "Autenticación fallida. Por favor, inténtalo de nuevo."
+        "UNLOCK_ERROR": "Autenticación fallida. Por favor, inténtalo de nuevo.",
+        "PASSWORD_PLACEHOLDER": "Contraseña maestra",
+        "RECOVERY_CODE_PLACEHOLDER": "Código de recuperación",
+        "USE_PASSWORD": "Usar la contraseña maestra en su lugar",
+        "USE_RECOVERY_CODE": "Usar el código de recuperación en su lugar"
     },
     "INFO_CENTER": {
         "TYPE_INFO": "Información",
@@ -384,5 +424,17 @@
         "TARGET": "¿Dónde enviar?",
         "LIST": "¿En qué lista?",
         "CONFIRM": "Enviar"
+    },
+    "SNACK": {
+        "REGION_ARIA": "Notificaciones",
+        "GO": "Ver",
+        "DISMISS_ARIA": "Cerrar notificación",
+        "ITEM_CHANGED": "Elementos cambiados en «{{listName}}»",
+        "NEW_MESSAGE": "Nuevo mensaje en «{{listName}}»",
+        "LETHE_INVITE": "Invitación a susurrar en «{{listName}}»",
+        "CHARON_DROP": "Nuevo drop de Charon en «{{listName}}»",
+        "REMINDER_GENERIC": "Recordatorio en «{{listName}}»",
+        "LIST_REMINDER": "«{{listName}}» — {{dateTime}}",
+        "REMINDER_GO": "Ver"
     }
 }

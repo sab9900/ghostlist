@@ -7,12 +7,15 @@ import {
     CreateGhostListItemRequest,
     CreateGhostMessageRequest,
     CreateItemReminderRequest,
+    CreateListReminderRequest,
     ItemReminderDto,
+    ListReminderDto,
     GhostChatMessage,
     GhostList,
     GhostListItem,
     GhostMessageAudioDto,
     GhostMessageImageDto,
+    GhostMessageVideoDto,
     InfoMessage,
     ListMember,
     MarkReadRequest,
@@ -21,6 +24,7 @@ import {
     SubscribeRequest,
     UnreadSummary,
     UpdateTtlRequest,
+    UpdateWhisperLifetimeRequest,
 } from '../core/models';
 import { Capacitor } from '@capacitor/core';
 import { environment } from '../../environments/environment';
@@ -75,6 +79,14 @@ export class ApiService {
         return this.http.patch<void>(
             `${this.BASE}/ghostlist/${id}/ttl`,
             JSON.stringify(ttl),
+            { headers: { 'Content-Type': 'application/json' } },
+        );
+    }
+
+    updateWhisperLifetime(id: string, lifetime: UpdateWhisperLifetimeRequest): Observable<void> {
+        return this.http.patch<void>(
+            `${this.BASE}/ghostlist/${id}/whisper-lifetime`,
+            JSON.stringify(lifetime),
             { headers: { 'Content-Type': 'application/json' } },
         );
     }
@@ -135,6 +147,14 @@ export class ApiService {
 
     getMessageAudio(messageId: string): Observable<GhostMessageAudioDto> {
         return this.http.get<GhostMessageAudioDto>(`${this.BASE}/chat/${messageId}/audio`);
+    }
+
+    saveMessageVideo(messageId: string, encryptedVideo: string, videoInitializationVector: string): Observable<void> {
+        return this.http.post<void>(`${this.BASE}/chat/${messageId}/video`, { encryptedVideo, videoInitializationVector });
+    }
+
+    getMessageVideo(messageId: string): Observable<GhostMessageVideoDto> {
+        return this.http.get<GhostMessageVideoDto>(`${this.BASE}/chat/${messageId}/video`);
     }
 
     deliverShare(sessionId: string, delivery: ShareDelivery): Observable<void> {
@@ -266,6 +286,28 @@ export class ApiService {
 
     acknowledgeItemReminder(reminderId: string): Observable<void> {
         return this.http.put<void>(`${this.BASE}/itemreminders/${reminderId}/acknowledge`, null,
+            { headers: this.deviceIdHeaders() });
+    }
+
+    getListReminders(ghostListId: string): Observable<ListReminderDto[]> {
+        return this.http.get<ListReminderDto[]>(`${this.BASE}/listreminders`, {
+            params: { ghostListId },
+            headers: this.deviceIdHeaders(),
+        });
+    }
+
+    createListReminder(request: CreateListReminderRequest): Observable<string> {
+        return this.http.post<string>(`${this.BASE}/listreminders`, request,
+            { headers: this.deviceIdHeaders() });
+    }
+
+    deleteListReminder(reminderId: string): Observable<void> {
+        return this.http.delete<void>(`${this.BASE}/listreminders/${reminderId}`,
+            { headers: this.deviceIdHeaders() });
+    }
+
+    acknowledgeListReminder(reminderId: string): Observable<void> {
+        return this.http.put<void>(`${this.BASE}/listreminders/${reminderId}/acknowledge`, null,
             { headers: this.deviceIdHeaders() });
     }
 }

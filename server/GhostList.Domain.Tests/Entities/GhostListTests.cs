@@ -59,6 +59,32 @@ public class GhostListTests
     }
 
     [Fact]
+    public void Create_SetsDefaultWhisperLifetimeToFiveSeconds()
+    {
+        var list = Domain.Entities.GhostList.Create();
+
+        list.WhisperLifetimeSeconds.Should().Be(WhisperLifetime.FiveSeconds);
+    }
+
+    [Fact]
+    public void Create_WithExplicitWhisperLifetime_SetsWhisperLifetime()
+    {
+        var list = Domain.Entities.GhostList.Create(whisperLifetime: WhisperLifetime.TwelveSeconds);
+
+        list.WhisperLifetimeSeconds.Should().Be(WhisperLifetime.TwelveSeconds);
+    }
+
+    [Fact]
+    public void UpdateWhisperLifetime_ChangesWhisperLifetime()
+    {
+        var list = Domain.Entities.GhostList.Create();
+
+        list.UpdateWhisperLifetime(WhisperLifetime.TwentySeconds);
+
+        list.WhisperLifetimeSeconds.Should().Be(WhisperLifetime.TwentySeconds);
+    }
+
+    [Fact]
     public void CreateListItem_ReturnsItemWithCorrectListId()
     {
         var list = Domain.Entities.GhostList.Create();

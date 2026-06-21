@@ -25,6 +25,9 @@ public class GhostListNotifier(IHubContext<GhostListHub> hubContext) : IGhostLis
     public Task NotifyTtlUpdated(Guid listId, int newTtl) =>
         hubContext.Clients.Group(listId.ToString()).SendAsync("TtlUpdated", newTtl);
 
+    public Task NotifyWhisperLifetimeUpdated(Guid listId, int newLifetimeSeconds) =>
+        hubContext.Clients.Group(listId.ToString()).SendAsync("WhisperLifetimeUpdated", newLifetimeSeconds);
+
     public Task NotifyListDeleted(Guid listId) =>
         hubContext.Clients.Group(listId.ToString()).SendAsync("ListDeleted", listId);
 
@@ -51,7 +54,19 @@ public class GhostListNotifier(IHubContext<GhostListHub> hubContext) : IGhostLis
         hubContext.Clients.GroupExcept(listId.ToString(), notification.SenderConnectionId)
             .SendAsync("AudioShared", notification);
 
+    public Task NotifyVideoShared(Guid listId, VideoRelayNotification notification) =>
+        hubContext.Clients.GroupExcept(listId.ToString(), notification.SenderConnectionId)
+            .SendAsync("VideoShared", notification);
+
     public Task NotifyReminderFired(Guid listId, Guid itemId, Guid reminderId, string deviceId) =>
         hubContext.Clients.Group($"device-{deviceId}")
             .SendAsync("ReminderFired", new { listId, itemId, reminderId });
+
+    public Task NotifyWhisperInviteReceived(Guid listId, string? senderDeviceId, IReadOnlyList<string>? targetDeviceIds) =>
+        hubContext.Clients.Group(listId.ToString())
+            .SendAsync("WhisperInviteReceived", new { listId, senderDeviceId, targetDeviceIds });
+
+    public Task NotifyListReminderFired(Guid listId, Guid reminderId, DateTime remindAt, string deviceId) =>
+        hubContext.Clients.Group($"device-{deviceId}")
+            .SendAsync("ListReminderFired", new { listId, reminderId, remindAt });
 }

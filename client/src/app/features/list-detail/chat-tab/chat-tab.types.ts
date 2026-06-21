@@ -6,6 +6,7 @@ export interface DecryptedMessage {
     replyToMessageId: string | null;
     isImage: boolean;
     isAudio: boolean;
+    isVideo: boolean;
     senderDeviceId: string | null;
     senderUserId: string | null;
 }
@@ -15,4 +16,5 @@ export interface ReplyPreview {
     text: string;
     isImage: boolean;
     isAudio: boolean;
+    isVideo: boolean;
 }

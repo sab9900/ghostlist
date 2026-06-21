@@ -8,12 +8,14 @@ import { dataUrlToBlob } from '../../core/utils/audio-blob.util';
 
 const IMAGE_CACHE_LIMIT = 30;
 const AUDIO_CACHE_LIMIT = 20;
+const VIDEO_CACHE_LIMIT = 10;
 
-export interface MediaStoreSlice extends WritableStateSource<{ imageDataUrls: Record<string, string>; audioDataUrls: Record<string, string> }> {
+export interface MediaStoreSlice extends WritableStateSource<{ imageDataUrls: Record<string, string>; audioDataUrls: Record<string, string>; videoDataUrls: Record<string, string> }> {
     currentListId: () => string | null;
     currentEncryptionKey: () => string | null;
     imageDataUrls: () => Record<string, string>;
     audioDataUrls: () => Record<string, string>;
+    videoDataUrls: () => Record<string, string>;
 }
 
 export function createMediaMethods(store: MediaStoreSlice) {
@@ -23,6 +25,7 @@ export function createMediaMethods(store: MediaStoreSlice) {
 
     const imageCacheOrder: string[] = [];
     const audioCacheOrder: string[] = [];
+    const videoCacheOrder: string[] = [];
 
     function cacheImage(messageId: string, dataUrl: string): void {
         const current = store.imageDataUrls();
@@ -55,6 +58,23 @@ export function createMediaMethods(store: MediaStoreSlice) {
             }
         }
         patchState(store, { audioDataUrls: { ...store.audioDataUrls(), [messageId]: blobUrl } });
+    }
+
+    function cacheVideo(messageId: string, blobUrl: string): void {
+        const current = store.videoDataUrls();
+        if (!(messageId in current)) {
+            videoCacheOrder.push(messageId);
+            if (videoCacheOrder.length > VIDEO_CACHE_LIMIT) {
+                const evict = videoCacheOrder.shift();
+                if (evict && evict in store.videoDataUrls()) {
+                    URL.revokeObjectURL(store.videoDataUrls()[evict]);
+                    const rest = { ...store.videoDataUrls() };
+                    delete rest[evict];
+                    patchState(store, { videoDataUrls: rest });
+                }
+            }
+        }
+        patchState(store, { videoDataUrls: { ...store.videoDataUrls(), [messageId]: blobUrl } });
     }
 
     return {
@@ -152,7 +172,56 @@ export function createMediaMethods(store: MediaStoreSlice) {
             } catch { }
         },
 
+        async shareVideo(dataUrl: string, plainSenderName: string, replyToMessageId?: string | null): Promise<string> {
+            const listId = store.currentListId();
+            const key = store.currentEncryptionKey();
+            if (!listId || !key) throw new Error('No list is currently open.');
+
+            const placeholder = JSON.stringify({ type: 'video' });
+            const [msg, sender, video] = await Promise.all([
+                crypto.encrypt(placeholder, key),
+                crypto.encrypt(plainSenderName, key),
+                crypto.encrypt(dataUrl, key),
+            ]);
+
+            const messageId = await firstValueFrom(
+                api.createMessage({
+                    ghostListId: listId,
+                    encryptedMessage: msg.ciphertext,
+                    messageInitializationVector: msg.iv,
+                    encryptedSenderName: sender.ciphertext,
+                    senderNameInitializationVector: sender.iv,
+                    replyToMessageId: replyToMessageId ?? null,
+                }),
+            );
+
+            const blob = dataUrlToBlob(dataUrl);
+            cacheVideo(messageId, URL.createObjectURL(blob));
+            await firstValueFrom(api.saveMessageVideo(messageId, video.ciphertext, video.iv));
+
+            try {
+                await hub.relayVideo(listId, messageId, video.ciphertext, video.iv);
+            } catch { }
+
+            return messageId;
+        },
+
+        async fetchAndCacheVideo(messageId: string): Promise<void> {
+            if (store.videoDataUrls()[messageId]) return;
+
+            const key = store.currentEncryptionKey();
+            if (!key) return;
+
+            try {
+                const dto = await firstValueFrom(api.getMessageVideo(messageId));
+                const dataUrl = await crypto.decrypt(dto.encryptedVideo, dto.videoInitializationVector, key);
+                const blob = dataUrlToBlob(dataUrl);
+                cacheVideo(messageId, URL.createObjectURL(blob));
+            } catch { }
+        },
+
         _cacheImage: cacheImage,
         _cacheAudio: cacheAudio,
+        _cacheVideo: cacheVideo,
     };
 }

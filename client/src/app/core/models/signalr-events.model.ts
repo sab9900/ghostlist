@@ -64,16 +64,36 @@ export interface AudioSharedEvent {
     senderConnectionId: string;
 }
 
+export interface VideoSharedEvent {
+    messageId: string;
+    ghostListId: string;
+    encryptedVideo: string;
+    videoInitializationVector: string;
+    senderConnectionId: string;
+}
+
 export interface ReminderFiredEvent {
     listId: string;
     itemId: string;
     reminderId: string;
 }
 
+export interface ListReminderFiredEvent {
+    listId: string;
+    reminderId: string;
+    remindAt: string;
+}
+
 export interface TypingIndicatorEvent {
     listId: string;
     encryptedName: string;
     nameIv: string;
+}
+
+export interface WhisperInviteReceivedEvent {
+    listId: string;
+    senderDeviceId: string | null;
+    targetDeviceIds: string[] | null;
 }
 
 export interface CharonDropCreatedEvent {

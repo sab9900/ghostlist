@@ -13,6 +13,9 @@
                 } @else if (isAudioMime(meta(drop.id)?.mimeType)) {
                 <svg lucideMic [size]="22" aria-hidden="true"></svg>
                 <!-- <lucide-icon name="mic" [size]="22" /> -->
+                } @else if (isVideoMime(meta(drop.id)?.mimeType)) {
+                <svg lucideVideo [size]="22" aria-hidden="true"></svg>
+                <!-- <lucide-icon name="video" [size]="22" /> -->
                 } @else {
                 <svg lucideFileText [size]="22" aria-hidden="true"></svg>
                 <!-- <lucide-icon name="file-text" [size]="22" /> -->
@@ -45,7 +48,7 @@
         }
 
         @for (drop of revealedDrops(); track drop.id) {
-        <li class="charon-card charon-card--revealed" [class.charon-card--audio]="drop.isAudio">
+        <li class="charon-card charon-card--revealed" [class.charon-card--audio]="drop.isAudio || drop.isVideo">
             @if (drop.isImage) {
             @let imgAlt = 'CHARON.IMAGE_ALT' | translate;
             <img class="charon-card__preview" [src]="drop.dataUrl" [attr.alt]="imgAlt" role="button" tabindex="0"
@@ -53,6 +56,9 @@
                 (keydown.enter)="openImage(drop.dataUrl, imgAlt)" />
             } @else if (drop.isAudio) {
             <app-audio-waveform-player class="charon-card__audio" [src]="drop.dataUrl" />
+            } @else if (drop.isVideo) {
+            <video class="charon-card__video" [src]="drop.dataUrl" controls playsinline preload="metadata"
+                [attr.aria-label]="'CHARON.VIDEO_ALT' | translate"></video>
             } @else {
             <div class="charon-card__icon" aria-hidden="true">
                 <svg lucideFileText [size]="22" aria-hidden="true"></svg>
@@ -92,24 +98,47 @@
     @if (recordingPermissionDenied()) {
     <p class="charon__error" role="alert">{{ 'CHARON.RECORD_PERMISSION_DENIED' | translate }}</p>
     }
+    @if (videoRecordingNotSupported()) {
+    <p class="charon__error" role="alert">{{ 'CHARON.RECORD_VIDEO_NOT_SUPPORTED' | translate }}</p>
+    @if (videoRecordingDebugError()) {
+    <p class="charon__error" role="alert" style="font-size:0.7em;opacity:0.7">DBG: {{ videoRecordingDebugError() }}</p>
+    }
+    }
+    @if (videoRecordingPermissionDenied()) {
+    <p class="charon__error" role="alert">{{ 'CHARON.RECORD_VIDEO_PERMISSION_DENIED' | translate }}</p>
+    }
+
+    @if (recordingVideo()) {
+    <video #videoPreview class="charon__video-preview" muted playsinline aria-hidden="true"></video>
+    }
 
     <div class="compose" role="form" [attr.aria-label]="'CHARON.ATTACH_ARIA' | translate">
         <input #fileInput type="file" class="visually-hidden" tabindex="-1"
             accept=".jpg,.jpeg,.png,.gif,.webp,.bmp,.svg,.heic,.heif,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.txt,.rtf,.csv,.mp3,.wav,.m4a,.ogg,.flac,.mp4,.mov,.webm,.avi,.zip"
             (change)="onFileSelected($event)" />
-        <button type="button" class="compose__attach" (click)="pickFile()" [disabled]="sending() || recording()"
+        <button type="button" class="compose__attach" (click)="pickFile()" [disabled]="sending() || recording() || recordingVideo()"
             [attr.aria-label]="'CHARON.ATTACH_ARIA' | translate" [attr.aria-busy]="sending()">
             <svg lucidePaperclip [size]="20" aria-hidden="true"></svg>
         </button>
         <button type="button" class="compose__record" [class.compose__record--active]="recording()"
-            (click)="toggleRecording()" [disabled]="sending()"
+            (click)="toggleRecording()" [disabled]="sending() || recordingVideo()"
             [attr.aria-label]="(recording() ? 'CHARON.STOP_RECORD_ARIA' : 'CHARON.RECORD_ARIA') | translate"
             [attr.aria-pressed]="recording()">
             <svg lucideMic [size]="20" aria-hidden="true"></svg>
         </button>
+        <button type="button" class="compose__record" [class.compose__record--active]="recordingVideo()"
+            (click)="toggleVideoRecording()" [disabled]="sending() || recording()"
+            [attr.aria-label]="(recordingVideo() ? 'CHARON.STOP_VIDEO_RECORD_ARIA' : 'CHARON.RECORD_VIDEO_ARIA') | translate"
+            [attr.aria-pressed]="recordingVideo()">
+            <svg lucideVideo [size]="20" aria-hidden="true"></svg>
+        </button>
         @if (recording()) {
         <span class="compose__timer" role="timer" [attr.aria-label]="formatRecordingTime(recordingSeconds())">
             {{ formatRecordingTime(recordingSeconds()) }}
+        </span>
+        } @else if (recordingVideo()) {
+        <span class="compose__timer" role="timer" [attr.aria-label]="formatRecordingTime(recordingVideoSeconds())">
+            {{ formatRecordingTime(recordingVideoSeconds()) }}
         </span>
         } @else {
         <span class="compose__label">{{ 'CHARON.ATTACH' | translate }}</span>

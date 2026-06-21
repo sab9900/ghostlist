@@ -12,6 +12,8 @@ public enum PushNotificationType
     CharonDrop,
 
     ItemReminder,
+
+    ListReminder,
 }
 
 public interface IPushNotificationService

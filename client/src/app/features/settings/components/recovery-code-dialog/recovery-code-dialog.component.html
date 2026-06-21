@@ -1,0 +1,24 @@
+@if (code()) {
+<div class="backdrop" role="presentation">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="recovery-code-title"
+        aria-describedby="recovery-code-hint">
+        <h2 class="title" id="recovery-code-title">{{ 'SETTINGS.SECURITY.RECOVERY.TITLE' | translate }}</h2>
+        <p class="hint" id="recovery-code-hint">{{ 'SETTINGS.SECURITY.RECOVERY.HINT' | translate }}</p>
+        <p class="code" aria-label="Recovery code">{{ code() }}</p>
+        <button class="btn btn--ghost btn--sm copy-btn" (click)="copyCode()"
+            [attr.aria-label]="copied() ? ('LIST_SETTINGS.COPIED' | translate) : ('SETTINGS.SECURITY.RECOVERY.COPY_BTN' | translate)">
+            {{ copied() ? ('LIST_SETTINGS.COPIED' | translate) : ('SETTINGS.SECURITY.RECOVERY.COPY_BTN' | translate) }}
+        </button>
+        <p class="warning">{{ 'SETTINGS.SECURITY.RECOVERY.WARNING' | translate }}</p>
+        <label class="confirm">
+            <input type="checkbox" [ngModel]="confirmed()" (ngModelChange)="setConfirmed($event)" />
+            <span>{{ 'SETTINGS.SECURITY.RECOVERY.CONFIRM_LABEL' | translate }}</span>
+        </label>
+        <div class="actions">
+            <button class="btn btn--primary" (click)="submit()" [disabled]="!confirmed()">
+                {{ 'SETTINGS.SECURITY.RECOVERY.CONTINUE_BTN' | translate }}
+            </button>
+        </div>
+    </div>
+</div>
+}

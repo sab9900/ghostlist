@@ -8,7 +8,8 @@
         "DELETE": "Löschen",
         "DELETING": "Löschen…",
         "SKIP": "Überspringen",
-        "TRY_AGAIN": "Erneut versuchen"
+        "TRY_AGAIN": "Erneut versuchen",
+        "SUBMIT": "Bestätigen"
     },
     "LISTS": {
         "EMPTY_HEADLINE": "Noch keine Listen",
@@ -69,8 +70,6 @@
         "REMINDER_SAVE": "Erinnerung setzen",
         "REMINDER_SAVED": "✓ Erinnerung gesetzt",
         "SWIPE_DELETE_HINT": "Löschen",
-        "REMINDER_BANNER_DISMISS": "OK",
-        "REMINDER_BANNER_GO": "Zeigen",
         "REMINDER_ADD_TO_CALENDAR": "Zum Kalender hinzufügen"
     },
     "CHAT": {
@@ -101,9 +100,18 @@
         "RECORD_NOT_SUPPORTED": "Sprachaufnahme wird auf diesem Gerät nicht unterstützt.",
         "RECORD_PERMISSION_DENIED": "Mikrofonzugriff verweigert. Bitte in den App-Einstellungen erlauben.",
         "SENDING_VOICE": "Sprachnachricht wird gesendet…",
+        "VIDEO": "Video",
+        "VIDEO_ALT": "Geteiltes Video",
+        "VIDEO_UNAVAILABLE": "Video nicht mehr verfügbar",
+        "RECORD_VIDEO_ARIA": "Videonachricht aufnehmen",
+        "STOP_VIDEO_RECORD_ARIA": "Aufnahme stoppen und senden",
+        "RECORD_VIDEO_NOT_SUPPORTED": "Videoaufnahme wird auf diesem Gerät nicht unterstützt.",
+        "RECORD_VIDEO_PERMISSION_DENIED": "Kamerazugriff verweigert. Bitte in den App-Einstellungen erlauben.",
+        "SENDING_VIDEO": "Video wird gesendet…",
         "READ_PARTIAL_ARIA": "Von mindestens einer Person gelesen",
         "READ_ALL_ARIA": "Von allen gelesen",
-        "READ_BY": "Gelesen von"
+        "READ_BY": "Gelesen von",
+        "SCROLL_TO_BOTTOM_ARIA": "Zum Ende scrollen"
     },
     "LIST_DETAIL": {
         "BACK_ARIA": "Zurück zu den Listen",
@@ -155,13 +163,20 @@
         "STOP_RECORD_ARIA": "Aufnahme stoppen und senden",
         "RECORD_NOT_SUPPORTED": "Sprachaufnahme wird in diesem Browser nicht unterstützt.",
         "RECORD_PERMISSION_DENIED": "Mikrofonzugriff verweigert. Bitte in den App-Einstellungen erlauben.",
-        "AUDIO_FALLBACK": "Dein Browser unterstützt keine Audiowiedergabe."
+        "AUDIO_FALLBACK": "Dein Browser unterstützt keine Audiowiedergabe.",
+        "VIDEO_ALT": "Geteiltes Video",
+        "RECORD_VIDEO_ARIA": "Selbstzerstörende Videonachricht aufnehmen",
+        "STOP_VIDEO_RECORD_ARIA": "Aufnahme stoppen und senden",
+        "RECORD_VIDEO_NOT_SUPPORTED": "Videoaufnahme wird in diesem Browser nicht unterstützt.",
+        "RECORD_VIDEO_PERMISSION_DENIED": "Kamerazugriff verweigert. Bitte in den App-Einstellungen erlauben."
     },
     "LIST_SETTINGS": {
         "LIST_NAME_TITLE": "Listenname",
         "LIST_NAME_HINT": "Dieser Name ist lokal — nur auf diesem Gerät sichtbar.",
         "AUTO_DELETE_TITLE": "Erledigte Einträge automatisch löschen",
         "AUTO_DELETE_HINT": "Erledigte Einträge werden nach dieser Dauer entfernt.",
+        "LETHE_LIFETIME_TITLE": "Verschwindezeit der Lethe-Nachrichten",
+        "LETHE_LIFETIME_HINT": "Wie lange Flüster-Nachrichten sichtbar bleiben, bevor sie verschwinden.",
         "NOTIFICATIONS_TITLE": "Benachrichtigungen",
         "NOTIFICATIONS_HINT": "Steuere, welche Push-Benachrichtigungen dieses Gerät für diese Liste erhält.",
         "NOTIFY_ON_MESSAGE": "Neue Chat-Nachrichten",
@@ -214,12 +229,21 @@
             "OneMonth": "1 Monat",
             "ThreeMonths": "3 Monate"
         },
+        "LETHE_LIFETIME": {
+            "ThreeSeconds": "3 Sekunden",
+            "FiveSeconds": "5 Sekunden",
+            "EightSeconds": "8 Sekunden",
+            "TwelveSeconds": "12 Sekunden",
+            "TwentySeconds": "20 Sekunden"
+        },
         "NOTIFY_ON_LETHE": "Lethe-Einladungen",
         "NOTIFY_ON_LETHE_HINT": "Benachrichtigen, wenn jemand dich einlädt, in Lethe zu flüstern.",
         "NOTIFY_ON_CHARON": "Charon-Drops",
         "NOTIFY_ON_CHARON_HINT": "Benachrichtigen, wenn ein neuer Charon-Drop in dieser Liste erscheint.",
         "REMINDER_TITLE": "Erinnere mich",
-        "REMINDER_HINT": "Kalender-Event herunterladen, das zurück zu dieser Liste verlinkt.",
+        "REMINDER_HINT": "Lässt dich per Push an diese Liste erinnern, oder lade ein Kalender-Event herunter, das zurück zu dieser Liste verlinkt.",
+        "REMINDER_SET": "Erinnerung setzen",
+        "REMINDER_CANCEL": "Entfernen",
         "REMINDER_DOWNLOAD": "Zum Kalender hinzufügen"
     },
     "JOIN": {
@@ -299,6 +323,18 @@
                 "ERROR_TOO_SHORT": "Das Passwort muss mindestens 4 Zeichen lang sein.",
                 "ERROR_MISMATCH": "Die Passwörter stimmen nicht überein.",
                 "ERROR_CURRENT_INVALID": "Das aktuelle Passwort ist falsch."
+            },
+            "CONFIRM": {
+                "TITLE": "Master-Passwort bestätigen",
+                "HINT": "Gib dein Master-Passwort einmal ein, um die biometrische Entsperrung zu aktivieren. Dein Passwort bleibt immer als Rückfalloption bestehen — Biometrie ersetzt es nie."
+            },
+            "RECOVERY": {
+                "TITLE": "Recovery-Code speichern",
+                "HINT": "Dieser Code ist der einzige Weg zurück, falls du dein Master-Passwort vergisst und keinen Zugriff mehr auf die Biometrie hast. Wir speichern ihn nicht — schreib ihn dir an einem sicheren Ort auf.",
+                "WARNING": "Niemand, auch wir nicht, kann deine Daten ohne diesen Code wiederherstellen.",
+                "COPY_BTN": "Code kopieren",
+                "CONFIRM_LABEL": "Ich habe diesen Recovery-Code sicher aufbewahrt",
+                "CONTINUE_BTN": "Weiter"
             }
         },
         "SYNC_REQUIRES_BIOMETRIC": "Aktiviere die biometrische Sperre (oben), um die Sync-Maschine zu verwenden.",
@@ -321,7 +357,11 @@
         "LOCK_HINT": "Bitte mit Biometrie entsperren, um fortzufahren.",
         "UNLOCK_BTN": "Entsperren",
         "UNLOCKING": "Entsperre…",
-        "UNLOCK_ERROR": "Entsperren fehlgeschlagen. Bitte erneut versuchen."
+        "UNLOCK_ERROR": "Entsperren fehlgeschlagen. Bitte erneut versuchen.",
+        "PASSWORD_PLACEHOLDER": "Master-Passwort",
+        "RECOVERY_CODE_PLACEHOLDER": "Recovery-Code",
+        "USE_PASSWORD": "Stattdessen Master-Passwort verwenden",
+        "USE_RECOVERY_CODE": "Stattdessen Recovery-Code verwenden"
     },
     "INFO_CENTER": {
         "TYPE_INFO": "Info",
@@ -384,5 +424,17 @@
         "TARGET": "Wohin senden?",
         "LIST": "In welche Liste?",
         "CONFIRM": "Senden"
+    },
+    "SNACK": {
+        "REGION_ARIA": "Benachrichtigungen",
+        "GO": "Zeigen",
+        "DISMISS_ARIA": "Benachrichtigung schließen",
+        "ITEM_CHANGED": "Einträge geändert in „{{listName}}“",
+        "NEW_MESSAGE": "Neue Nachricht in „{{listName}}“",
+        "LETHE_INVITE": "Einladung zum Flüstern in „{{listName}}“",
+        "CHARON_DROP": "Neuer Charon-Drop in „{{listName}}“",
+        "REMINDER_GENERIC": "Erinnerung in „{{listName}}“",
+        "LIST_REMINDER": "„{{listName}}“ — {{dateTime}}",
+        "REMINDER_GO": "Zeigen"
     }
 }

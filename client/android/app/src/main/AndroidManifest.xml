@@ -54,6 +54,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="image/*" />
                 <data android:mimeType="audio/*" />
+                <data android:mimeType="video/*" />
             </intent-filter>
         </activity-alias>
 
@@ -79,11 +80,11 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Required on Android 13+ (API 33) to show push notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- Required for getUserMedia({ audio: true }) / MediaRecorder voice messages -->
+    <!-- Required for getUserMedia({ audio: true }) / MediaRecorder voice and video messages -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <!-- Required for getUserMedia({ audio: true }) / MediaRecorder voice messages -->
+    <!-- Required for getUserMedia({ audio: true }) / MediaRecorder voice and video messages -->
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-    <!-- Required for QR code scanning (list sharing/import) and getUserMedia({ video: true }) -->
+    <!-- Required for QR code scanning (list sharing/import) and getUserMedia({ video: true }) video messages -->
     <uses-permission android:name="android.permission.CAMERA" />
-    
+
 </manifest>

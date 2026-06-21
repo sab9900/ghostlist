@@ -8,7 +8,8 @@
         "DELETE": "Delete",
         "DELETING": "Deleting…",
         "SKIP": "Skip",
-        "TRY_AGAIN": "Try again"
+        "TRY_AGAIN": "Try again",
+        "SUBMIT": "Submit"
     },
     "LISTS": {
         "EMPTY_HEADLINE": "No lists yet",
@@ -69,8 +70,6 @@
         "REMINDER_SAVE": "Set reminder",
         "REMINDER_SAVED": "✓ Reminder set",
         "SWIPE_DELETE_HINT": "Delete",
-        "REMINDER_BANNER_DISMISS": "OK",
-        "REMINDER_BANNER_GO": "Show",
         "REMINDER_ADD_TO_CALENDAR": "Add to Calendar"
     },
     "CHAT": {
@@ -101,9 +100,18 @@
         "RECORD_NOT_SUPPORTED": "Voice recording is not supported on this device.",
         "RECORD_PERMISSION_DENIED": "Microphone access denied. Please allow it in app settings.",
         "SENDING_VOICE": "Sending voice note…",
+        "VIDEO": "Video",
+        "VIDEO_ALT": "Shared video",
+        "VIDEO_UNAVAILABLE": "Video no longer available",
+        "RECORD_VIDEO_ARIA": "Record a video message",
+        "STOP_VIDEO_RECORD_ARIA": "Stop recording and send",
+        "RECORD_VIDEO_NOT_SUPPORTED": "Video recording is not supported on this device.",
+        "RECORD_VIDEO_PERMISSION_DENIED": "Camera access denied. Please allow it in app settings.",
+        "SENDING_VIDEO": "Sending video…",
         "READ_PARTIAL_ARIA": "Read by at least one person",
         "READ_ALL_ARIA": "Read by everyone",
-        "READ_BY": "Read by"
+        "READ_BY": "Read by",
+        "SCROLL_TO_BOTTOM_ARIA": "Scroll to bottom"
     },
     "LIST_DETAIL": {
         "BACK_ARIA": "Back to lists",
@@ -155,13 +163,20 @@
         "STOP_RECORD_ARIA": "Stop recording and send",
         "RECORD_NOT_SUPPORTED": "Voice recording isn't supported in this browser.",
         "RECORD_PERMISSION_DENIED": "Microphone access denied. Please allow it in app settings.",
-        "AUDIO_FALLBACK": "Your browser does not support audio playback."
+        "AUDIO_FALLBACK": "Your browser does not support audio playback.",
+        "VIDEO_ALT": "Shared video",
+        "RECORD_VIDEO_ARIA": "Record a self-destructing video message",
+        "STOP_VIDEO_RECORD_ARIA": "Stop recording and send",
+        "RECORD_VIDEO_NOT_SUPPORTED": "Video recording isn't supported in this browser.",
+        "RECORD_VIDEO_PERMISSION_DENIED": "Camera access denied. Please allow it in app settings."
     },
     "LIST_SETTINGS": {
         "LIST_NAME_TITLE": "List name",
         "LIST_NAME_HINT": "This name is local — only visible on this device.",
         "AUTO_DELETE_TITLE": "Auto-delete checked items",
         "AUTO_DELETE_HINT": "Checked items are removed after this duration.",
+        "LETHE_LIFETIME_TITLE": "Lethe message lifetime",
+        "LETHE_LIFETIME_HINT": "How long whisper messages stay visible before they vanish.",
         "NOTIFICATIONS_TITLE": "Notifications",
         "NOTIFICATIONS_HINT": "Control which push notifications this device receives for this list.",
         "NOTIFY_ON_MESSAGE": "New chat messages",
@@ -214,12 +229,21 @@
             "OneMonth": "1 month",
             "ThreeMonths": "3 months"
         },
+        "LETHE_LIFETIME": {
+            "ThreeSeconds": "3 seconds",
+            "FiveSeconds": "5 seconds",
+            "EightSeconds": "8 seconds",
+            "TwelveSeconds": "12 seconds",
+            "TwentySeconds": "20 seconds"
+        },
         "NOTIFY_ON_LETHE": "Lethe invitations",
         "NOTIFY_ON_LETHE_HINT": "Notify when someone invites you to whisper in Lethe.",
         "NOTIFY_ON_CHARON": "Charon drops",
         "NOTIFY_ON_CHARON_HINT": "Notify when a new Charon dead-drop is posted to this list.",
         "REMINDER_TITLE": "Remind me",
-        "REMINDER_HINT": "Download a calendar event that links back to this list.",
+        "REMINDER_HINT": "Get a push notification about this list, or download a calendar event that links back to it.",
+        "REMINDER_SET": "Set reminder",
+        "REMINDER_CANCEL": "Remove",
         "REMINDER_DOWNLOAD": "Add to Calendar"
     },
     "JOIN": {
@@ -297,6 +321,18 @@
                 "ERROR_TOO_SHORT": "Password must be at least 4 characters long.",
                 "ERROR_MISMATCH": "Passwords don't match.",
                 "ERROR_CURRENT_INVALID": "Current password is incorrect."
+            },
+            "CONFIRM": {
+                "TITLE": "Confirm your master password",
+                "HINT": "Enter your master password once to enable biometric unlock. Your password always stays as a fallback — biometrics never replace it."
+            },
+            "RECOVERY": {
+                "TITLE": "Save your recovery code",
+                "HINT": "This code is the only way back in if you forget your master password and lose access to biometrics. We don't store it — write it down somewhere safe.",
+                "WARNING": "Nobody, including us, can recover your data without this code.",
+                "COPY_BTN": "Copy code",
+                "CONFIRM_LABEL": "I've saved this recovery code somewhere safe",
+                "CONTINUE_BTN": "Continue"
             }
         },
         "SYNC_COPY_LINK": "Copy link",
@@ -321,7 +357,11 @@
         "LOCK_HINT": "Please authenticate with biometrics to continue.",
         "UNLOCK_BTN": "Unlock",
         "UNLOCKING": "Unlocking…",
-        "UNLOCK_ERROR": "Authentication failed. Please try again."
+        "UNLOCK_ERROR": "Authentication failed. Please try again.",
+        "PASSWORD_PLACEHOLDER": "Master password",
+        "RECOVERY_CODE_PLACEHOLDER": "Recovery code",
+        "USE_PASSWORD": "Use master password instead",
+        "USE_RECOVERY_CODE": "Use recovery code instead"
     },
     "INFO_CENTER": {
         "TYPE_INFO": "Info",
@@ -384,5 +424,17 @@
         "TARGET": "Where to send?",
         "LIST": "Which list?",
         "CONFIRM": "Send"
+    },
+    "SNACK": {
+        "REGION_ARIA": "Notifications",
+        "GO": "Show",
+        "DISMISS_ARIA": "Dismiss notification",
+        "ITEM_CHANGED": "Items changed in \"{{listName}}\"",
+        "NEW_MESSAGE": "New message in \"{{listName}}\"",
+        "LETHE_INVITE": "Whisper invite in \"{{listName}}\"",
+        "CHARON_DROP": "New Charon drop in \"{{listName}}\"",
+        "REMINDER_GENERIC": "Reminder in \"{{listName}}\"",
+        "LIST_REMINDER": "\"{{listName}}\" — {{dateTime}}",
+        "REMINDER_GO": "Show"
     }
 }

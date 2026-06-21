@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, input, output } from '@angular/core';
-import { LucideCheck, LucideCheckCheck, LucideCopy, LucideCornerUpLeft, LucideEllipsisVertical, LucideImage, LucideMic, LucideTrash2 } from '@lucide/angular';
+import { LucideCheck, LucideCheckCheck, LucideCopy, LucideCornerUpLeft, LucideEllipsisVertical, LucideImage, LucideMic, LucideTrash2, LucideVideo } from '@lucide/angular';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ViewportDwellDirective } from '../../../../../core/directives/viewport-dwell.directive';
 import { AudioWaveformPlayerComponent } from '../../../../../shared/audio-waveform-player/audio-waveform-player.component';
@@ -23,6 +23,7 @@ import { DecryptedMessage, ReplyPreview } from '../../chat-tab.types';
         LucideEllipsisVertical,
         LucideCopy,
         LucideTrash2,
+        LucideVideo,
     ],
     templateUrl: './chat-message.component.html',
     styleUrl: './chat-message.component.scss',
@@ -38,6 +39,7 @@ export class ChatMessageComponent {
     readonly replyPreview = input<ReplyPreview | null>(null);
     readonly imageUrl = input<string | null>(null);
     readonly audioUrl = input<string | null>(null);
+    readonly videoUrl = input<string | null>(null);
     readonly readReceiptState = input<'sent' | 'partial' | 'all'>('sent');
     readonly showReadReceipt = input(true);
     readonly readers = input<{ displayName: string }[]>([]);

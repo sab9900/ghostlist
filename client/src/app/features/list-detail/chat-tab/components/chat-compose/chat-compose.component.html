@@ -13,9 +13,33 @@
 @if (sendingAudio()) {
 <p class="sending-audio" role="status">{{ 'CHAT.SENDING_VOICE' | translate }}</p>
 }
+@if (videoRecordingNotSupported()) {
+<p class="error" role="alert">{{ 'CHAT.RECORD_VIDEO_NOT_SUPPORTED' | translate }}</p>
+@if (videoRecordingDebugError()) {
+<p class="error" role="alert" style="font-size:0.7em;opacity:0.7">DBG: {{ videoRecordingDebugError() }}</p>
+}
+}
+@if (videoRecordingPermissionDenied()) {
+<p class="error" role="alert">{{ 'CHAT.RECORD_VIDEO_PERMISSION_DENIED' | translate }}</p>
+}
+@if (sendingVideo()) {
+<p class="sending-audio" role="status">{{ 'CHAT.SENDING_VIDEO' | translate }}</p>
+}
 
 <div class="compose" role="form" [attr.aria-label]="'CHAT.MESSAGE_PLACEHOLDER' | translate">
-    @if (recording()) {
+    @if (recordingVideo()) {
+    <div class="recording-row recording-row--video">
+        <video #videoPreview class="video-preview" muted playsinline aria-hidden="true"></video>
+        <span class="dot" aria-hidden="true"></span>
+        <span class="timer" role="timer" [attr.aria-label]="formatRecordingTime(recordingVideoSeconds())">
+            {{ formatRecordingTime(recordingVideoSeconds()) }}
+        </span>
+        <button type="button" class="record record--stop" (click)="toggleVideoRecord.emit()"
+            [attr.aria-label]="'CHAT.STOP_VIDEO_RECORD_ARIA' | translate" aria-pressed="true">
+            <svg lucideSquare [size]="20" aria-hidden="true"></svg>
+        </button>
+    </div>
+    } @else if (recording()) {
     <div class="recording-row">
         <span class="dot" aria-hidden="true"></span>
         <span class="timer" role="timer" [attr.aria-label]="formatRecordingTime(recordingSeconds())">
@@ -31,24 +55,32 @@
         <input #fileInput type="file" accept="image/*" class="visually-hidden" tabindex="-1"
             (change)="fileSelected.emit($event)" />
         <button type="button" class="attach" (mousedown)="$event.preventDefault()" (click)="pickImage.emit()"
-            [disabled]="sendingImage() || sendingAudio()" [attr.aria-label]="'CHAT.SEND_IMAGE_ARIA' | translate"
-            [attr.aria-busy]="sendingImage()">
+            [disabled]="sendingImage() || sendingAudio() || sendingVideo()"
+            [attr.aria-label]="'CHAT.SEND_IMAGE_ARIA' | translate" [attr.aria-busy]="sendingImage()">
             <svg lucideImage [size]="20" aria-hidden="true"></svg>
         </button>
-        <textarea #textarea class="input" rows="1"
-            [attr.placeholder]="'CHAT.MESSAGE_PLACEHOLDER' | translate"
-            [ngModel]="text()" (ngModelChange)="text.set($event)"
-            (keydown)="keydown.emit($event)" (input)="autoResize($event)"
-            maxlength="2000" [attr.aria-label]="'CHAT.MESSAGE_PLACEHOLDER' | translate"></textarea>
-        @if (text().trim()) {
-        <button class="send" (mousedown)="$event.preventDefault()" (click)="send.emit()"
-            [attr.aria-label]="'CHAT.MESSAGE_PLACEHOLDER' | translate">›</button>
-        } @else {
-        <button type="button" class="record" (mousedown)="$event.preventDefault()" (click)="toggleRecord.emit()"
-            [disabled]="sendingAudio()" [attr.aria-label]="'CHAT.RECORD_ARIA' | translate" aria-pressed="false">
-            <svg lucideMic [size]="20" aria-hidden="true"></svg>
-        </button>
-        }
+        <textarea #textarea class="input" rows="1" [attr.placeholder]="'CHAT.MESSAGE_PLACEHOLDER' | translate"
+            [ngModel]="text()" (ngModelChange)="text.set($event)" (keydown)="keydown.emit($event)"
+            (input)="autoResize($event)" maxlength="2000"
+            [attr.aria-label]="'CHAT.MESSAGE_PLACEHOLDER' | translate"></textarea>
+        <div class="actions" [class.actions--text]="hasText()">
+            <div class="actions__media" [attr.inert]="hasText() ? true : null">
+                <button type="button" class="attach" (mousedown)="$event.preventDefault()"
+                    (click)="toggleVideoRecord.emit()"
+                    [disabled]="sendingImage() || sendingAudio() || sendingVideo()"
+                    [attr.aria-label]="'CHAT.RECORD_VIDEO_ARIA' | translate" [attr.aria-busy]="sendingVideo()">
+                    <svg lucideVideo [size]="20" aria-hidden="true"></svg>
+                </button>
+                <button type="button" class="record" (mousedown)="$event.preventDefault()"
+                    (click)="toggleRecord.emit()" [disabled]="sendingAudio()"
+                    [attr.aria-label]="'CHAT.RECORD_ARIA' | translate" aria-pressed="false">
+                    <svg lucideMic [size]="20" aria-hidden="true"></svg>
+                </button>
+            </div>
+            <button type="button" class="send" [attr.inert]="hasText() ? null : true"
+                (mousedown)="$event.preventDefault()" (click)="send.emit()"
+                [attr.aria-label]="'CHAT.MESSAGE_PLACEHOLDER' | translate">›</button>
+        </div>
     </div>
     }
 </div>

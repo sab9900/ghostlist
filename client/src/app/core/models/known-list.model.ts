@@ -1,6 +1,12 @@
+export interface WrappedListKey {
+    iv: string;
+    ciphertext: string;
+}
+
 export interface KnownList {
     id: string;
     encryptionKey: string;
+    encryptionKeyWrapped?: WrappedListKey;
     name: string;
     addedAt: string;
     ownerToken?: string;

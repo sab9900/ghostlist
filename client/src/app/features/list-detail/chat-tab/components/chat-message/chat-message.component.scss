@@ -111,6 +111,8 @@
     .image-placeholder { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); padding: var(--space-4); color: var(--msg-placeholder-color); font-size: var(--text-xs); min-width: 140px; text-align: center; }
     .audio { display: block; width: min(260px, 55vw); }
     .audio-placeholder { display: flex; align-items: center; gap: var(--space-2); color: var(--msg-placeholder-color); font-size: var(--text-xs); padding: var(--space-1) 0; }
+    .video { display: block; max-width: 100%; max-height: 320px; width: min(280px, 65vw); border-radius: var(--radius-sm); background: #000; }
+    .video-placeholder { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); padding: var(--space-4); color: var(--msg-placeholder-color); font-size: var(--text-xs); min-width: 140px; text-align: center; }
     .text { font-size: var(--text-base); line-height: var(--leading-normal); word-break: break-word; white-space: pre-wrap; color: var(--msg-text-color); }
     .mention { font-weight: var(--weight-semibold, 600); }
     .meta { display: flex; align-items: center; gap: var(--space-2); }

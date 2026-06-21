@@ -60,3 +60,10 @@ public record AudioRelayNotification(
     string EncryptedAudio,
     string AudioInitializationVector,
     string SenderConnectionId);
+
+public record VideoRelayNotification(
+    Guid MessageId,
+    Guid GhostListId,
+    string EncryptedVideo,
+    string VideoInitializationVector,
+    string SenderConnectionId);

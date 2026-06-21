@@ -22,3 +22,9 @@ export interface GhostMessageAudioDto {
     encryptedAudio: string;
     audioInitializationVector: string;
 }
+
+export interface GhostMessageVideoDto {
+    messageId: string;
+    encryptedVideo: string;
+    videoInitializationVector: string;
+}

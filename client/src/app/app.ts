@@ -12,15 +12,19 @@ import { BadgeService } from './core/services/badge.service';
 import { InfoCenterService } from './core/services/info-center.service';
 import { KeyboardInsetService } from './core/services/keyboard-inset.service';
 import { LayoutService } from './core/services/layout.service';
+import { MasterPasswordService } from './core/services/master-password.service';
 import { PushNotificationService } from './core/services/push-notification.service';
 import { SensitiveListsService } from './core/services/sensitive-lists.service';
 import { UserPreferencesService } from './core/services/user-preferences.service';
+import { VaultKeyService } from './core/services/vault-key.service';
 import { WebAuthnService } from './core/services/webauthn.service';
+import { AppStore } from './store/app.store';
 import { ListsComponent } from './features/lists/lists.component';
 import { ImageViewerComponent } from './shared/image-viewer/image-viewer.component';
 import { InfoOverlayComponent } from './shared/info-overlay/info-overlay.component';
 import { OfflineBannerComponent } from './shared/offline-banner/offline-banner.component';
 import { PwaInstallBannerComponent } from './shared/pwa-install-banner/pwa-install-banner.component';
+import { SnackStackComponent } from './shared/snack-stack/snack-stack.component';
 
 const SIDEBAR_WIDTH_KEY = 'gl_sidebar_width';
 const SIDEBAR_MIN = 280;
@@ -41,7 +45,7 @@ function loadSidebarWidth(): number {
 
 @Component({
     selector: 'app-root',
-    imports: [LucideBell, LucideLock, RouterOutlet, ListsComponent, TranslatePipe, FormsModule, PwaInstallBannerComponent, OfflineBannerComponent, InfoOverlayComponent, ImageViewerComponent],
+    imports: [LucideBell, LucideLock, RouterOutlet, ListsComponent, TranslatePipe, FormsModule, PwaInstallBannerComponent, OfflineBannerComponent, InfoOverlayComponent, ImageViewerComponent, SnackStackComponent],
     templateUrl: './app.html',
     styleUrl: './app.scss',
 })
@@ -56,12 +60,19 @@ export class App {
     private readonly push = inject(PushNotificationService);
     private readonly sensitiveLists = inject(SensitiveListsService);
     private readonly router = inject(Router);
+    private readonly masterPassword = inject(MasterPasswordService);
+    private readonly vaultKey = inject(VaultKeyService);
+    private readonly store = inject(AppStore);
 
     protected readonly isWebPlatform = Capacitor.getPlatform() === 'web';
 
     protected readonly locked = signal(false);
     protected readonly unlocking = signal(false);
     protected readonly lockError = signal(false);
+    protected readonly showPasswordFallback = signal(false);
+    protected readonly passwordInput = signal('');
+    protected readonly showRecoveryFallback = signal(false);
+    protected readonly recoveryInput = signal('');
 
     protected readonly showNameDialog = computed(() => this.prefs.hydrated() && !this.prefs.onboarded());
     protected readonly pendingName = signal('');
@@ -124,9 +135,25 @@ export class App {
 
     engageLock(): void {
         this.sensitiveLists.hide();
+        this.vaultKey.lock();
+        this.store.lockKnownLists();
+        this.showPasswordFallback.set(false);
+        this.showRecoveryFallback.set(false);
+        this.passwordInput.set('');
+        this.recoveryInput.set('');
         if (this.locked()) return;
         this.locked.set(true);
         void this.triggerBiometric();
+    }
+
+    private async finishUnlock(): Promise<void> {
+        await this.store.unlockKnownLists();
+        this.locked.set(false);
+        this.showPasswordFallback.set(false);
+        this.showRecoveryFallback.set(false);
+        this.passwordInput.set('');
+        this.recoveryInput.set('');
+        this.scheduleInactivityTimer();
     }
 
     async triggerBiometric(): Promise<void> {
@@ -135,8 +162,57 @@ export class App {
         try {
             const ok = await this.webAuthn.authenticate();
             if (ok) {
-                this.locked.set(false);
-                this.scheduleInactivityTimer();
+                await this.finishUnlock();
+            } else {
+                this.lockError.set(true);
+            }
+        } catch {
+            this.lockError.set(true);
+        } finally {
+            this.unlocking.set(false);
+        }
+    }
+
+    useFallbackPassword(): void {
+        this.lockError.set(false);
+        this.showPasswordFallback.set(true);
+        this.showRecoveryFallback.set(false);
+    }
+
+    useFallbackRecovery(): void {
+        this.lockError.set(false);
+        this.showRecoveryFallback.set(true);
+        this.showPasswordFallback.set(false);
+    }
+
+    async submitPasswordUnlock(): Promise<void> {
+        const password = this.passwordInput();
+        if (!password || this.unlocking()) return;
+        this.unlocking.set(true);
+        this.lockError.set(false);
+        try {
+            const ok = await this.masterPassword.verifyPassword(password);
+            if (ok) {
+                await this.finishUnlock();
+            } else {
+                this.lockError.set(true);
+            }
+        } catch {
+            this.lockError.set(true);
+        } finally {
+            this.unlocking.set(false);
+        }
+    }
+
+    async submitRecoveryUnlock(): Promise<void> {
+        const code = this.recoveryInput();
+        if (!code || this.unlocking()) return;
+        this.unlocking.set(true);
+        this.lockError.set(false);
+        try {
+            const ok = await this.masterPassword.unlockWithRecoveryCode(code);
+            if (ok) {
+                await this.finishUnlock();
             } else {
                 this.lockError.set(true);
             }

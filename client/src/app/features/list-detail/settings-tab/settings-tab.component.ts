@@ -3,16 +3,30 @@ import { Component, computed, effect, inject, signal, untracked } from '@angular
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
+import { LucideAlarmClock } from '@lucide/angular';
+import { ApiService } from '../../../api/api.service';
 import { IcalService } from '../../../core/services/ical.service';
-import { DeleteAfterDuration, ListMember, TTL_LABELS, TTL_VALUE_TO_ENUM } from '../../../core/models';
+import {
+    DeleteAfterDuration,
+    ListMember,
+    ListReminderDto,
+    TTL_LABELS,
+    TTL_VALUE_TO_ENUM,
+    WHISPER_LIFETIME_LABELS,
+    WHISPER_LIFETIME_VALUE_TO_ENUM,
+    WhisperLifetime,
+} from '../../../core/models';
 import { CryptoService } from '../../../core/services/crypto.service';
 import { MasterPasswordService } from '../../../core/services/master-password.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
+import { VaultKeyService } from '../../../core/services/vault-key.service';
+import { formatReminderDate } from '../../../core/utils/reminder-date.util';
 import { QrScannerComponent } from '../../../shared/qr-scanner/qr-scanner.component';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { AppStore } from '../../../store/app.store';
 import { environment } from '../../../../environments/environment';
+import { BiometricConfirmDialogComponent } from '../../settings/components/biometric-confirm-dialog/biometric-confirm-dialog.component';
 
 interface MemberGroup {
     key: string;
@@ -24,7 +38,7 @@ interface MemberGroup {
 
 @Component({
     selector: 'app-settings-tab',
-    imports: [DatePipe, FormsModule, QrScannerComponent, TranslatePipe],
+    imports: [DatePipe, FormsModule, QrScannerComponent, TranslatePipe, LucideAlarmClock, BiometricConfirmDialogComponent],
     templateUrl: './settings-tab.component.html',
     styleUrl: './settings-tab.component.scss',
 })
@@ -32,10 +46,16 @@ export class SettingsTabComponent {
     protected readonly store = inject(AppStore);
     protected readonly prefs = inject(UserPreferencesService);
     protected readonly masterPassword = inject(MasterPasswordService);
+    private readonly vaultKey = inject(VaultKeyService);
     private readonly router = inject(Router);
     private readonly crypto = inject(CryptoService);
     private readonly translate = inject(TranslateService);
     private readonly ical = inject(IcalService);
+    private readonly api = inject(ApiService);
+
+    protected readonly showSensitiveUnlockPrompt = signal(false);
+    protected readonly sensitiveUnlockWorking = signal(false);
+    protected readonly sensitiveUnlockError = signal(false);
 
     protected readonly ttlOptions = Object.values(DeleteAfterDuration).map(v => ({
         value: v,
@@ -45,6 +65,15 @@ export class SettingsTabComponent {
     protected readonly selectedTtl = signal<DeleteAfterDuration>(DeleteAfterDuration.OneWeek);
     protected readonly savingTtl = signal(false);
     protected readonly ttlSaved = signal(false);
+
+    protected readonly whisperLifetimeOptions = Object.values(WhisperLifetime).map(v => ({
+        value: v,
+        label: WHISPER_LIFETIME_LABELS[v],
+    }));
+
+    protected readonly selectedWhisperLifetime = signal<WhisperLifetime>(WhisperLifetime.FiveSeconds);
+    protected readonly savingWhisperLifetime = signal(false);
+    protected readonly whisperLifetimeSaved = signal(false);
     protected readonly deletingList = signal(false);
     protected readonly linkCopied = signal(false);
 
@@ -54,6 +83,9 @@ export class SettingsTabComponent {
         const pad = (n: number) => String(n).padStart(2, '0');
         return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     });
+    protected readonly listReminders = signal<ListReminderDto[]>([]);
+    protected readonly settingListReminder = signal(false);
+    protected readonly cancelingListReminderId = signal<string | null>(null);
 
     protected readonly listName = signal('');
     protected readonly renamingList = signal(false);
@@ -111,8 +143,11 @@ export class SettingsTabComponent {
         this.scannedJson.set('');
         this.nameSaved.set(false);
         this.ttlSaved.set(false);
+        this.whisperLifetimeSaved.set(false);
         this.linkCopied.set(false);
         this.members.set([]);
+        this.listReminders.set([]);
+        this.listReminderDateTime.set('');
 
         if (!id) return;
 
@@ -120,6 +155,10 @@ export class SettingsTabComponent {
         if (list?.ttl != null) {
             const mapped = TTL_VALUE_TO_ENUM[list.ttl];
             if (mapped) this.selectedTtl.set(mapped);
+        }
+        if (list?.whisperLifetimeSeconds != null) {
+            const mapped = WHISPER_LIFETIME_VALUE_TO_ENUM[list.whisperLifetimeSeconds];
+            if (mapped) this.selectedWhisperLifetime.set(mapped);
         }
 
         const known = this.store.knownLists().find(l => l.id === id);
@@ -131,7 +170,19 @@ export class SettingsTabComponent {
             this.notifyOnCharon.set(known.notifyOnCharon ?? true);
             this.isSensitive.set(known.isSensitive ?? false);
             void this.loadMembers(known.id, known.encryptionKey);
+            void this.loadListReminders(known.id);
         }
+    }
+
+    private loadListReminders(listId: string): void {
+        this.api.getListReminders(listId).subscribe({
+            next: reminders => this.listReminders.set(reminders),
+            error: () => { },
+        });
+    }
+
+    protected formatReminderDate(isoStr: string): string {
+        return formatReminderDate(isoStr);
     }
 
     private async loadMembers(listId: string, encryptionKey: string): Promise<void> {
@@ -163,6 +214,17 @@ export class SettingsTabComponent {
         }
     }
 
+    async saveWhisperLifetime(): Promise<void> {
+        this.savingWhisperLifetime.set(true);
+        try {
+            await this.store.updateWhisperLifetime(this.selectedWhisperLifetime());
+            this.whisperLifetimeSaved.set(true);
+            setTimeout(() => this.whisperLifetimeSaved.set(false), 2000);
+        } finally {
+            this.savingWhisperLifetime.set(false);
+        }
+    }
+
     async saveListName(): Promise<void> {
         const name = this.listName().trim();
         const id = this.store.currentListId();
@@ -180,7 +242,7 @@ export class SettingsTabComponent {
     async copyShareLink(): Promise<void> {
         const id = this.store.currentListId();
         const known = this.store.knownLists().find(l => l.id === id);
-        if (!id || !known) return;
+        if (!id || !known || !known.encryptionKey) return;
         const origin = Capacitor.isNativePlatform()
             ? environment.nativeShareBaseUrl
             : window.location.origin;
@@ -220,6 +282,33 @@ export class SettingsTabComponent {
         const dt = this.listReminderDateTime();
         if (!id || !dt) return;
         this.ical.downloadForList(id, new Date(dt).toISOString());
+    }
+
+    async setListReminder(): Promise<void> {
+        const id = this.store.currentListId();
+        const dt = this.listReminderDateTime();
+        if (!id || !dt) return;
+        this.settingListReminder.set(true);
+        try {
+            const remindAt = new Date(dt).toISOString();
+            const reminderId = await firstValueFrom(this.api.createListReminder({ ghostListId: id, remindAt }));
+            this.listReminders.update(list => [...list, { id: reminderId, remindAt }].sort((a, b) => a.remindAt.localeCompare(b.remindAt)));
+            this.listReminderDateTime.set('');
+        } catch {
+        } finally {
+            this.settingListReminder.set(false);
+        }
+    }
+
+    async cancelListReminder(reminderId: string): Promise<void> {
+        this.cancelingListReminderId.set(reminderId);
+        try {
+            await firstValueFrom(this.api.deleteListReminder(reminderId));
+            this.listReminders.update(list => list.filter(r => r.id !== reminderId));
+        } catch {
+        } finally {
+            this.cancelingListReminderId.set(null);
+        }
     }
 
     async deleteList(): Promise<void> {
@@ -280,8 +369,36 @@ export class SettingsTabComponent {
             return;
         }
 
+        if (value && !this.vaultKey.isUnlocked()) {
+            this.sensitiveUnlockError.set(false);
+            this.showSensitiveUnlockPrompt.set(true);
+            return;
+        }
+
         this.isSensitive.set(value);
         await this.store.setListSensitive(id, value);
+    }
+
+    async confirmSensitiveUnlock(password: string): Promise<void> {
+        const id = this.store.currentListId();
+        if (!id) return;
+        this.sensitiveUnlockWorking.set(true);
+        this.sensitiveUnlockError.set(false);
+        try {
+            const ok = await this.masterPassword.verifyPassword(password);
+            if (!ok) { this.sensitiveUnlockError.set(true); return; }
+            this.showSensitiveUnlockPrompt.set(false);
+            this.isSensitive.set(true);
+            await this.store.setListSensitive(id, true);
+            await this.store.unlockKnownLists();
+        } finally {
+            this.sensitiveUnlockWorking.set(false);
+        }
+    }
+
+    cancelSensitiveUnlock(): void {
+        this.showSensitiveUnlockPrompt.set(false);
+        this.sensitiveUnlockError.set(false);
     }
 
     async kickMember(targetDeviceId: string): Promise<void> {

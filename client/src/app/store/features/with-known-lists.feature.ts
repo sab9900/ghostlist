@@ -10,6 +10,12 @@ import { UserIdService } from '../../core/services/user-id.service';
 import { ListStorageService } from '../../core/services/list-storage.service';
 import { PushNotificationService } from '../../core/services/push-notification.service';
 import { UserPreferencesService } from '../../core/services/user-preferences.service';
+import { VaultKeyService } from '../../core/services/vault-key.service';
+import { VaultMigrationService } from '../../core/services/vault-migration.service';
+
+function stripPlaintextIfWrapped(list: KnownList): KnownList {
+    return list.encryptionKeyWrapped ? { ...list, encryptionKey: '' } : list;
+}
 
 export function withKnownLists() {
     return signalStoreFeature(
@@ -28,6 +34,8 @@ export function withKnownLists() {
             const userId = inject(UserIdService);
             const prefs = inject(UserPreferencesService);
             const push = inject(PushNotificationService);
+            const vaultKey = inject(VaultKeyService);
+            const vaultMigration = inject(VaultMigrationService);
 
             const registeredThisSession = new Set<string>();
 
@@ -40,11 +48,19 @@ export function withKnownLists() {
                         patchState(store, { listsLoaded: true });
                         return;
                     }
-                    patchState(store, { knownLists, listsLoaded: true });
 
-                    if (knownLists.length === 0) return;
+                    const hasWrapped = knownLists.some(l => l.encryptionKeyWrapped);
+                    const resolved = !hasWrapped
+                        ? knownLists
+                        : vaultKey.isUnlocked()
+                            ? await vaultMigration.unwrapAll()
+                            : vaultMigration.redactWrapped(knownLists);
+
+                    patchState(store, { knownLists: resolved, listsLoaded: true });
+
+                    if (resolved.length === 0) return;
                     const checks = await Promise.all(
-                        knownLists.map(async (l) => ({
+                        resolved.map(async (l) => ({
                             id: l.id,
                             alive: await firstValueFrom(api.checkList(l.id))
                                 .then(() => true)
@@ -59,8 +75,19 @@ export function withKnownLists() {
                     patchState(store, { knownLists: store.knownLists().filter(l => !deadIds.includes(l.id)) });
                 },
 
+                async unlockKnownLists(): Promise<void> {
+                    const resolved = await vaultMigration.unwrapAll();
+                    patchState(store, { knownLists: resolved });
+                },
+
+                lockKnownLists(): void {
+                    patchState(store, {
+                        knownLists: store.knownLists().map(l => l.encryptionKeyWrapped ? { ...l, encryptionKey: '' } : l),
+                    });
+                },
+
                 async _persistAndTrack(entry: KnownList): Promise<void> {
-                    await storage.upsert(entry);
+                    await storage.upsert(stripPlaintextIfWrapped(entry));
                     patchState(store, {
                         knownLists: [...store.knownLists().filter((l) => l.id !== entry.id), entry],
                     });
@@ -81,7 +108,7 @@ export function withKnownLists() {
                     const known = store.knownLists().find(l => l.id === listId);
                     if (!known) return;
                     const updated: KnownList = { ...known, notifyOnMessage, notifyOnItemsChanged, notifyOnLethe, notifyOnCharon };
-                    await storage.upsert(updated);
+                    await storage.upsert(stripPlaintextIfWrapped(updated));
                     patchState(store, {
                         knownLists: store.knownLists().map(l => l.id === listId ? updated : l),
                     });
@@ -91,8 +118,15 @@ export function withKnownLists() {
                 async setListSensitive(listId: string, isSensitive: boolean): Promise<void> {
                     const known = store.knownLists().find(l => l.id === listId);
                     if (!known) return;
-                    const updated: KnownList = { ...known, isSensitive };
-                    await storage.upsert(updated);
+
+                    if (isSensitive && !known.encryptionKeyWrapped && vaultKey.isUnlocked()) {
+                        await vaultMigration.wrapSingleList(listId);
+                    }
+
+                    const persisted = await storage.getAll();
+                    const fresh = persisted.find(l => l.id === listId) ?? known;
+                    const updated: KnownList = { ...fresh, isSensitive, encryptionKey: known.encryptionKey };
+                    await storage.upsert(stripPlaintextIfWrapped(updated));
                     patchState(store, {
                         knownLists: store.knownLists().map(l => l.id === listId ? updated : l),
                     });

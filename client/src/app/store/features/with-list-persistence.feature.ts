@@ -25,6 +25,7 @@ export function withListPersistence() {
                     await storage.putListCache({
                         id,
                         ttl: list?.ttl ?? 0,
+                        whisperLifetimeSeconds: list?.whisperLifetimeSeconds ?? 5,
                         createdAt: list?.createdAt ?? new Date().toISOString(),
                         items: store.items(),
                         messages: store.messages(),

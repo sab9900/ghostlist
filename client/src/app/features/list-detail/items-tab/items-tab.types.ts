@@ -13,9 +13,3 @@ export interface ActiveReminder {
     id: string;
     remindAt: string;
 }
-
-export interface ReminderBanner {
-    reminderId: string;
-    itemId: string;
-    itemText: string;
-}

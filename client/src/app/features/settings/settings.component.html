@@ -91,4 +91,15 @@
         (closed)="showSyncDialog.set(false)"
         (done)="onSyncDone($event)" />
 
+    <app-biometric-confirm-dialog
+        [show]="showBiometricConfirm()"
+        [working]="biometricWorking()"
+        [error]="biometricConfirmError()"
+        (submitPassword)="confirmBiometricPassword($event)"
+        (cancel)="cancelBiometricConfirm()" />
+
+    <app-recovery-code-dialog
+        [code]="masterPassword.pendingRecoveryCode()"
+        (acknowledge)="acknowledgeRecoveryCode()" />
+
 </div>

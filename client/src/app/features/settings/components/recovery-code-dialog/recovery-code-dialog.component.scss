@@ -1,0 +1,81 @@
+.backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+    z-index: 100;
+
+    @media (min-width: 900px) { position: absolute; }
+}
+
+.dialog {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    width: 100%;
+    max-width: 440px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    box-shadow: var(--shadow-lg);
+}
+
+.title { font-size: var(--text-lg); font-weight: var(--weight-semi); }
+.hint { font-size: var(--text-sm); color: var(--color-text-muted); line-height: var(--leading-normal); }
+
+.code {
+    font-family: var(--font-mono);
+    font-size: var(--text-lg);
+    letter-spacing: 0.05em;
+    text-align: center;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-4);
+    word-break: break-all;
+    user-select: all;
+}
+
+.copy-btn { align-self: center; }
+
+.warning {
+    font-size: var(--text-sm);
+    color: var(--color-danger);
+    line-height: var(--leading-normal);
+}
+
+.confirm {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--color-text);
+    cursor: pointer;
+
+    input[type='checkbox'] {
+        accent-color: var(--color-primary);
+        margin-top: 0.2em;
+    }
+}
+
+.actions { display: flex; gap: var(--space-3); justify-content: flex-end; }
+
+.btn {
+    padding: var(--space-2) var(--space-5);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-base);
+    font-weight: var(--weight-medium);
+    font-family: var(--font-sans);
+    cursor: pointer;
+    border: none;
+    transition: background var(--duration-fast) var(--ease-out), opacity var(--duration-fast) var(--ease-out);
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+    &--primary { background: var(--color-primary); color: var(--color-on-primary); &:hover:not(:disabled) { background: var(--color-primary-hover); } }
+    &--ghost { background: transparent; color: var(--color-text-muted); &:hover:not(:disabled) { background: var(--color-surface-2); color: var(--color-text); } }
+    &--sm { padding: var(--space-1) var(--space-4); font-size: var(--text-sm); }
+}

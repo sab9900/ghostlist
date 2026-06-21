@@ -10,14 +10,18 @@ import { PushNotificationService } from '../../core/services/push-notification.s
 import { SensitiveListsService } from '../../core/services/sensitive-lists.service';
 import { Theme, ThemeAccent, ThemeService } from '../../core/services/theme.service';
 import { UserPreferencesService } from '../../core/services/user-preferences.service';
-import { AUTO_LOCK_OPTIONS, WebAuthnService } from '../../core/services/webauthn.service';
+import { VaultKeyService } from '../../core/services/vault-key.service';
+import { VaultMigrationService } from '../../core/services/vault-migration.service';
+import { AUTO_LOCK_OPTIONS, PrfUnsupportedError, WebAuthnService } from '../../core/services/webauthn.service';
 import { AppStore } from '../../store/app.store';
 import { AppearanceSectionComponent } from './components/appearance-section/appearance-section.component';
+import { BiometricConfirmDialogComponent } from './components/biometric-confirm-dialog/biometric-confirm-dialog.component';
 import { HapticsSectionComponent } from './components/haptics-section/haptics-section.component';
 import { LanguageSectionComponent } from './components/language-section/language-section.component';
 import { MasterPasswordSectionComponent } from './components/master-password-section/master-password-section.component';
 import { NameSectionComponent } from './components/name-section/name-section.component';
 import { NotificationsSectionComponent } from './components/notifications-section/notifications-section.component';
+import { RecoveryCodeDialogComponent } from './components/recovery-code-dialog/recovery-code-dialog.component';
 import { SecuritySectionComponent } from './components/security-section/security-section.component';
 import { SyncDialogComponent } from './components/sync-dialog/sync-dialog.component';
 import { SyncSectionComponent } from './components/sync-section/sync-section.component';
@@ -37,6 +41,8 @@ import { SyncSectionComponent } from './components/sync-section/sync-section.com
         HapticsSectionComponent,
         LanguageSectionComponent,
         SyncDialogComponent,
+        RecoveryCodeDialogComponent,
+        BiometricConfirmDialogComponent,
     ],
     templateUrl: './settings.component.html',
     styleUrl: './settings.component.scss',
@@ -49,6 +55,8 @@ export class SettingsComponent {
     protected readonly store = inject(AppStore);
     protected readonly webAuthn = inject(WebAuthnService);
     protected readonly masterPassword = inject(MasterPasswordService);
+    private readonly vaultKey = inject(VaultKeyService);
+    private readonly vaultMigration = inject(VaultMigrationService);
     private readonly push = inject(PushNotificationService);
     private readonly sensitiveLists = inject(SensitiveListsService);
     private readonly router = inject(Router);
@@ -76,6 +84,8 @@ export class SettingsComponent {
 
     protected readonly biometricWorking = signal(false);
     protected readonly biometricError = signal<'unsupported' | 'failed' | null>(null);
+    protected readonly showBiometricConfirm = signal(false);
+    protected readonly biometricConfirmError = signal(false);
 
     protected readonly mpMode = signal<'view' | 'set' | 'change' | 'remove'>('view');
     protected readonly mpError = signal<string | null>(null);
@@ -97,11 +107,51 @@ export class SettingsComponent {
 
     async enableBiometricLock(): Promise<void> {
         if (!this.webAuthn.isSupported()) { this.biometricError.set('unsupported'); return; }
+
+        if (!this.masterPassword.hasPassword()) {
+            this.mpMode.set('set');
+            return;
+        }
+
+        if (!this.vaultKey.isUnlocked()) {
+            this.biometricConfirmError.set(false);
+            this.showBiometricConfirm.set(true);
+            return;
+        }
+
+        await this.finishEnableBiometric();
+    }
+
+    async confirmBiometricPassword(password: string): Promise<void> {
+        this.biometricWorking.set(true);
+        this.biometricConfirmError.set(false);
+        try {
+            const ok = await this.masterPassword.verifyPassword(password);
+            if (!ok) { this.biometricConfirmError.set(true); return; }
+            this.showBiometricConfirm.set(false);
+            await this.finishEnableBiometric();
+        } finally {
+            this.biometricWorking.set(false);
+        }
+    }
+
+    cancelBiometricConfirm(): void {
+        this.showBiometricConfirm.set(false);
+        this.biometricConfirmError.set(false);
+    }
+
+    private async finishEnableBiometric(): Promise<void> {
         this.biometricWorking.set(true);
         this.biometricError.set(null);
-        try { await this.webAuthn.register(); }
-        catch { this.biometricError.set('failed'); }
-        finally { this.biometricWorking.set(false); }
+        try {
+            await this.webAuthn.register();
+            await this.vaultMigration.wrapLists('all');
+            await this.store.unlockKnownLists();
+        } catch (e) {
+            this.biometricError.set(e instanceof PrfUnsupportedError ? 'unsupported' : 'failed');
+        } finally {
+            this.biometricWorking.set(false);
+        }
     }
 
     async disableBiometricLock(): Promise<void> {
@@ -109,7 +159,11 @@ export class SettingsComponent {
         this.biometricError.set(null);
         try {
             const ok = await this.webAuthn.authenticate();
-            if (ok) { await this.webAuthn.disable(); }
+            if (ok) {
+                await this.webAuthn.disable();
+                await this.vaultMigration.shrinkScopeToSensitive();
+                await this.store.unlockKnownLists();
+            }
             else { this.biometricError.set('failed'); }
         } catch { this.biometricError.set('failed'); }
         finally { this.biometricWorking.set(false); }
@@ -171,17 +225,29 @@ export class SettingsComponent {
         try {
             const ok = await this.masterPassword.verifyPassword(currentPassword);
             if (!ok) { this.mpError.set('SETTINGS.SECURITY.MASTER_PASSWORD.ERROR_CURRENT_INVALID'); return; }
-            await this.masterPassword.removePassword();
+
+            if (this.webAuthn.isEnabled()) {
+                await this.webAuthn.disable();
+            }
+            await this.vaultMigration.unwrapAllToPlaintext();
+            await this.store.unlockKnownLists();
+
             this.sensitiveLists.hide();
             for (const list of this.store.knownLists()) {
                 if (list.isSensitive) await this.store.setListSensitive(list.id, false);
             }
+
+            await this.masterPassword.removePassword();
             this.mpMode.set('view');
             this.flashMpSaved();
         } finally { this.mpWorking.set(false); }
     }
 
     cancelMasterPassword(): void { this.mpMode.set('view'); this.mpError.set(null); }
+
+    acknowledgeRecoveryCode(): void {
+        this.masterPassword.acknowledgeRecoveryCode();
+    }
 
     private flashMpSaved(): void {
         this.mpSaved.set(true);

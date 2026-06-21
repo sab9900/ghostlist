@@ -5,7 +5,7 @@ namespace GhostList.Application.Features.Whisper.Commands.SendWhisperInvite;
 
 public record SendWhisperInviteCommand(Guid ListId, string SenderDeviceId, IReadOnlyList<string>? TargetDeviceIds) : IRequest;
 
-public class SendWhisperInviteCommandHandler(IPushNotificationService push) : IRequestHandler<SendWhisperInviteCommand>
+public class SendWhisperInviteCommandHandler(IPushNotificationService push, IGhostListNotifier notifier) : IRequestHandler<SendWhisperInviteCommand>
 {
     public async Task Handle(SendWhisperInviteCommand request, CancellationToken cancellationToken)
     {
@@ -15,5 +15,7 @@ public class SendWhisperInviteCommandHandler(IPushNotificationService push) : IR
             request.SenderDeviceId,
             cancellationToken,
             request.TargetDeviceIds);
+
+        await notifier.NotifyWhisperInviteReceived(request.ListId, request.SenderDeviceId, request.TargetDeviceIds);
     }
 }

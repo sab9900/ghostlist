@@ -29,7 +29,7 @@ public class MarkCharonDropViewedCommandHandler(IApplicationDbContext context, I
 
         var alreadyViewed = await context.CharonViewReceipts
             .AnyAsync(r => r.DropId == drop.Id &&
-                (request.UserId != null ? r.UserId == request.UserId : r.DeviceId == request.DeviceId),
+                ((request.UserId != null && r.UserId == request.UserId) || r.DeviceId == request.DeviceId),
                 cancellationToken);
 
         if (!alreadyViewed)

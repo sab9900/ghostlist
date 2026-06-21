@@ -1,0 +1,6 @@
+@if (visible()) {
+<button type="button" class="scroll-to-bottom-button" (click)="clicked.emit()"
+    [attr.aria-label]="'CHAT.SCROLL_TO_BOTTOM_ARIA' | translate">
+    <svg lucideChevronDown [size]="20" aria-hidden="true"></svg>
+</button>
+}

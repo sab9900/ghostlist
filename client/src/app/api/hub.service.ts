@@ -9,10 +9,13 @@ import {
     ImageSharedEvent,
     ItemCreatedEvent,
     ItemToggledEvent,
+    ListReminderFiredEvent,
     MessageCreatedEvent,
     ReadReceiptUpdatedEvent,
     ReminderFiredEvent,
     TypingIndicatorEvent,
+    VideoSharedEvent,
+    WhisperInviteReceivedEvent,
     WhisperPresenceEntry,
     WhisperReceivedEvent,
 } from '../core/models';
@@ -32,6 +35,7 @@ export class HubService implements OnDestroy {
     private readonly _messageReceived$ = new Subject<MessageCreatedEvent>();
     private readonly _messageDeleted$ = new Subject<string>();
     private readonly _ttlUpdated$ = new Subject<number>();
+    private readonly _whisperLifetimeUpdated$ = new Subject<number>();
     private readonly _listDeleted$ = new Subject<string>();
     private readonly _memberKicked$ = new Subject<{ listId: string; deviceId: string }>();
     private readonly _memberJoined$ = new Subject<{ listId: string; deviceId: string }>();
@@ -42,8 +46,11 @@ export class HubService implements OnDestroy {
     private readonly _charonDropCreated$ = new Subject<CharonDropCreatedEvent>();
     private readonly _charonDropDeleted$ = new Subject<string>();
     private readonly _audioShared$ = new Subject<AudioSharedEvent>();
+    private readonly _videoShared$ = new Subject<VideoSharedEvent>();
     private readonly _reminderFired$ = new Subject<ReminderFiredEvent>();
+    private readonly _listReminderFired$ = new Subject<ListReminderFiredEvent>();
     private readonly _typingIndicator$ = new Subject<TypingIndicatorEvent>();
+    private readonly _whisperInviteReceived$ = new Subject<WhisperInviteReceivedEvent>();
     private readonly _reconnected$ = new Subject<void>();
 
     readonly itemCreated$ = this._itemCreated$.asObservable();
@@ -52,6 +59,7 @@ export class HubService implements OnDestroy {
     readonly messageReceived$ = this._messageReceived$.asObservable();
     readonly messageDeleted$ = this._messageDeleted$.asObservable();
     readonly ttlUpdated$ = this._ttlUpdated$.asObservable();
+    readonly whisperLifetimeUpdated$ = this._whisperLifetimeUpdated$.asObservable();
     readonly listDeleted$ = this._listDeleted$.asObservable();
     readonly memberKicked$ = this._memberKicked$.asObservable();
     readonly memberJoined$ = this._memberJoined$.asObservable();
@@ -62,9 +70,12 @@ export class HubService implements OnDestroy {
     readonly charonDropCreated$ = this._charonDropCreated$.asObservable();
     readonly charonDropDeleted$ = this._charonDropDeleted$.asObservable();
     readonly audioShared$ = this._audioShared$.asObservable();
+    readonly videoShared$ = this._videoShared$.asObservable();
     readonly reminderFired$ = this._reminderFired$.asObservable();
+    readonly listReminderFired$ = this._listReminderFired$.asObservable();
 
     readonly typingIndicator$ = this._typingIndicator$.asObservable();
+    readonly whisperInviteReceived$ = this._whisperInviteReceived$.asObservable();
     readonly reconnected$ = this._reconnected$.asObservable();
 
     private readonly connection = new signalR.HubConnectionBuilder()
@@ -79,6 +90,7 @@ export class HubService implements OnDestroy {
         this.connection.on('MessageReceived', (e: MessageCreatedEvent) => this._messageReceived$.next(e));
         this.connection.on('MessageDeleted', (id: string) => this._messageDeleted$.next(id));
         this.connection.on('TtlUpdated', (ttl: number) => this._ttlUpdated$.next(ttl));
+        this.connection.on('WhisperLifetimeUpdated', (lifetime: number) => this._whisperLifetimeUpdated$.next(lifetime));
         this.connection.on('ListDeleted', (id: string) => this._listDeleted$.next(id));
         this.connection.on('MemberKicked', (listId: string, deviceId: string) => this._memberKicked$.next({ listId, deviceId }));
         this.connection.on('MemberJoined', (listId: string, deviceId: string) => this._memberJoined$.next({ listId, deviceId }));
@@ -91,10 +103,13 @@ export class HubService implements OnDestroy {
         this.connection.on('CharonDropCreated', (e: CharonDropCreatedEvent) => this._charonDropCreated$.next(e));
         this.connection.on('CharonDropDeleted', (id: string) => this._charonDropDeleted$.next(id));
         this.connection.on('AudioShared', (e: AudioSharedEvent) => this._audioShared$.next(e));
+        this.connection.on('VideoShared', (e: VideoSharedEvent) => this._videoShared$.next(e));
         this.connection.on('ReminderFired', (e: ReminderFiredEvent) => this._reminderFired$.next(e));
+        this.connection.on('ListReminderFired', (e: ListReminderFiredEvent) => this._listReminderFired$.next(e));
         this.connection.on('TypingIndicator', (listId: string, encryptedName: string, nameIv: string) =>
             this._typingIndicator$.next({ listId, encryptedName, nameIv }),
         );
+        this.connection.on('WhisperInviteReceived', (e: WhisperInviteReceivedEvent) => this._whisperInviteReceived$.next(e));
 
         this.connection.onreconnecting(() =>
             this.connectionState.set(signalR.HubConnectionState.Reconnecting),
@@ -148,6 +163,10 @@ export class HubService implements OnDestroy {
 
     async relayAudio(listId: string, messageId: string, encryptedAudio: string, audioInitializationVector: string): Promise<void> {
         await this.connection.invoke('RelayAudio', listId, messageId, encryptedAudio, audioInitializationVector);
+    }
+
+    async relayVideo(listId: string, messageId: string, encryptedVideo: string, videoInitializationVector: string): Promise<void> {
+        await this.connection.invoke('RelayVideo', listId, messageId, encryptedVideo, videoInitializationVector);
     }
 
     async joinWhisperRoom(listId: string, displayName: string): Promise<void> {

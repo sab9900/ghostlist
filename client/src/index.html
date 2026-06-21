@@ -25,6 +25,25 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <script>
+        // iOS Home-Screen PWA ("WebClip"): the system reserves the home-indicator
+        // strip at the bottom and paints it independently of the page, using the
+        // <meta name="theme-color"> content as its fill. That meta tag was static
+        // (#0e0e10) while the app itself switches between dark and light via
+        // data-theme — so on light theme/light system mode the reserved strip
+        // stayed dark, showing up as a visible mismatched "chin". Keep it synced
+        // with the resolved theme before first paint; theme.service.ts keeps it
+        // in sync afterwards for runtime theme changes.
+        function syncThemeColorMeta() {
+            var stored = null;
+            try { stored = localStorage.getItem('theme'); } catch (e) { }
+            var resolved = stored === 'light' || stored === 'dark'
+                ? stored
+                : (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+            var meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.setAttribute('content', resolved === 'light' ? '#f4f4f6' : '#0e0e10');
+        }
+        syncThemeColorMeta();
+
         function updateAppHeight() {
             document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
         }
@@ -37,6 +56,16 @@
         if (navigator.standalone) {
             requestAnimationFrame(updateAppHeight);
             setTimeout(updateAppHeight, 300);
+            // iOS Home-Screen PWA only (WebClip): the WebClip already claims back
+            // the bottom safe-area from the usable layout viewport itself (this is
+            // why --app-height has to be sourced from window.innerHeight instead of
+            // 100%/100dvh in the first place — see above). Padding components for
+            // env(safe-area-inset-bottom) *on top of* that already-shrunk viewport
+            // double-subtracts the home-indicator height. Capacitor's native
+            // WKWebView and Android (PWA or not) don't pre-shrink the viewport, so
+            // they still need the real safe-area padding — only this WebClip case
+            // doesn't. See --safe-bottom override in styles.scss.
+            document.documentElement.classList.add('ios-webclip');
         }
     </script>
 </head>

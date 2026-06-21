@@ -6,7 +6,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { filter, from, map, of, switchMap, take } from 'rxjs';
 import { HubService } from '../../api/hub.service';
 import { SwipeBackDirective } from '../../core/directives/swipe-back.directive';
-import { ListMember } from '../../core/models';
+import { ListMember, ListSubTab } from '../../core/models';
 import { LayoutService } from '../../core/services/layout.service';
 import { BadgeComponent } from '../../shared/badge/badge.component';
 import { AppStore } from '../../store/app.store';
@@ -110,6 +110,16 @@ export class ListDetailComponent implements OnDestroy {
         return keys.size > 1;
     });
 
+    private readonly visibleListTabs = computed<ListSubTab[]>(() => {
+        if (this.layout.isDesktop()) {
+            const tabs: ListSubTab[] = ['items'];
+            if (this.isMultiMember()) tabs.push(this.desktopChatView());
+            return tabs;
+        }
+        const tab = this.routeTab();
+        return tab === null || tab === 'settings' ? ['items'] : [tab];
+    });
+
     constructor() {
 
         const listsLoaded$ = toObservable(this.store.listsLoaded).pipe(filter(v => v));
@@ -165,6 +175,8 @@ export class ListDetailComponent implements OnDestroy {
             filter(({ listId }) => listId === this.store.currentListId()),
         ).subscribe(() => this.refreshMembers());
 
+        effect(() => this.store.setVisibleListTabs(this.visibleListTabs()));
+
         effect(() => {
             if (this.layout.isDesktop()) return;
             const tab = this.routeTab();
@@ -208,6 +220,7 @@ export class ListDetailComponent implements OnDestroy {
     }
 
     async ngOnDestroy(): Promise<void> {
+        this.store.setVisibleListTabs([]);
         await this.store.leaveCurrentList();
     }
 

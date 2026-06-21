@@ -11,7 +11,7 @@
     overflow-y: auto;
     list-style: none;
     padding: 0 var(--space-4);
-    padding-bottom: var(--safe-bottom-effective);
+    padding-bottom: calc(var(--space-3) + var(--safe-bottom-effective));
     -webkit-overflow-scrolling: touch;
 }
 

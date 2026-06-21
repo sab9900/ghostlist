@@ -1,15 +1,37 @@
 <section class="settings-section" aria-labelledby="reminder-heading">
     <h3 class="settings-section__title" id="reminder-heading">{{ 'LIST_SETTINGS.REMINDER_TITLE' | translate }}</h3>
     <p class="settings-section__hint">{{ 'LIST_SETTINGS.REMINDER_HINT' | translate }}</p>
+
+    @if (listReminders().length > 0) {
+    <ul class="reminder-list" role="list">
+        @for (reminder of listReminders(); track reminder.id) {
+        <li class="reminder-list__item">
+            <svg class="reminder-list__icon" lucideAlarmClock [size]="14" [strokeWidth]="2" aria-hidden="true"></svg>
+            <span class="reminder-list__date">{{ formatReminderDate(reminder.remindAt) }}</span>
+            <button class="btn btn--ghost btn--sm reminder-list__cancel" (click)="cancelListReminder(reminder.id)"
+                [disabled]="cancelingListReminderId() === reminder.id"
+                [attr.aria-busy]="cancelingListReminderId() === reminder.id">
+                {{ 'LIST_SETTINGS.REMINDER_CANCEL' | translate }}
+            </button>
+        </li>
+        }
+    </ul>
+    }
+
     <div class="settings-row">
         <input class="settings-input settings-input--datetime" type="datetime-local"
             [ngModel]="listReminderDateTime()" (ngModelChange)="listReminderDateTime.set($event)"
             [min]="listReminderMinDateTime()" aria-labelledby="reminder-heading" />
-        <button class="btn btn--primary btn--sm" (click)="downloadListReminder()"
-            [disabled]="!listReminderDateTime()">
-            {{ 'LIST_SETTINGS.REMINDER_DOWNLOAD' | translate }}
+        <button class="btn btn--primary btn--sm" (click)="setListReminder()"
+            [disabled]="!listReminderDateTime() || settingListReminder()"
+            [attr.aria-busy]="settingListReminder()">
+            {{ 'LIST_SETTINGS.REMINDER_SET' | translate }}
         </button>
     </div>
+    <button class="btn btn--ghost btn--sm reminder-ical-btn" (click)="downloadListReminder()"
+        [disabled]="!listReminderDateTime()">
+        {{ 'LIST_SETTINGS.REMINDER_DOWNLOAD' | translate }}
+    </button>
 </section>
 
 <section class="settings-section" aria-labelledby="rename-heading">
@@ -48,6 +70,29 @@
                 {{ savingTtl() ? ('COMMON.SAVING' | translate) : ('COMMON.SAVE' | translate) }}
             </button>
             @if (ttlSaved()) {
+            <span class="save-feedback save-slot__overlay" role="status" aria-live="polite">{{ 'COMMON.SAVED' | translate }}</span>
+            }
+        </div>
+    </div>
+</section>
+
+<section class="settings-section" aria-labelledby="whisper-lifetime-heading">
+    <h3 class="settings-section__title" id="whisper-lifetime-heading">{{ 'LIST_SETTINGS.LETHE_LIFETIME_TITLE' | translate }}</h3>
+    <p class="settings-section__hint" id="whisper-lifetime-hint">{{ 'LIST_SETTINGS.LETHE_LIFETIME_HINT' | translate }}</p>
+    <div class="settings-row">
+        <select class="settings-select" [ngModel]="selectedWhisperLifetime()" (ngModelChange)="selectedWhisperLifetime.set($event)"
+            aria-labelledby="whisper-lifetime-heading" aria-describedby="whisper-lifetime-hint">
+            @for (opt of whisperLifetimeOptions; track opt.value) {
+            <option [value]="opt.value">{{ ('LIST_SETTINGS.LETHE_LIFETIME.' + opt.value) | translate }}</option>
+            }
+        </select>
+        <div class="save-slot">
+            <button class="btn btn--primary btn--sm" (click)="saveWhisperLifetime()"
+                [class.save-slot__hidden]="whisperLifetimeSaved()"
+                [disabled]="savingWhisperLifetime()" [attr.aria-busy]="savingWhisperLifetime()">
+                {{ savingWhisperLifetime() ? ('COMMON.SAVING' | translate) : ('COMMON.SAVE' | translate) }}
+            </button>
+            @if (whisperLifetimeSaved()) {
             <span class="save-feedback save-slot__overlay" role="status" aria-live="polite">{{ 'COMMON.SAVED' | translate }}</span>
             }
         </div>
@@ -275,3 +320,10 @@
     </div>
     }
 </section>
+
+<app-biometric-confirm-dialog
+    [show]="showSensitiveUnlockPrompt()"
+    [working]="sensitiveUnlockWorking()"
+    [error]="sensitiveUnlockError()"
+    (submitPassword)="confirmSensitiveUnlock($event)"
+    (cancel)="cancelSensitiveUnlock()" />

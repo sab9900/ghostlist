@@ -24,7 +24,7 @@ interface Whisper {
     fading: boolean;
 }
 
-const WHISPER_LIFETIME_MS = 12_000;
+const DEFAULT_WHISPER_LIFETIME_MS = 5_000;
 
 const WHISPER_FADE_MS = 600;
 
@@ -190,21 +190,27 @@ export class WhisperTabComponent {
         });
     }
 
+    private whisperLifetimeMs(): number {
+        const seconds = this.store.currentList()?.whisperLifetimeSeconds;
+        return seconds ? seconds * 1000 : DEFAULT_WHISPER_LIFETIME_MS;
+    }
+
     private pushWhisper(text: string, senderName: string, mine: boolean): void {
         const id = crypto.randomUUID();
+        const lifetimeMs = this.whisperLifetimeMs();
         this.whispers.update(list => [...list, { id, text, senderName, mine, fading: false }]);
         this.scrollToBottom();
 
         const fadeTimer = setTimeout(() => {
             this.whispers.update(list => list.map(w => w.id === id ? { ...w, fading: true } : w));
             this.timers.delete(fadeTimer);
-        }, WHISPER_LIFETIME_MS - WHISPER_FADE_MS);
+        }, Math.max(lifetimeMs - WHISPER_FADE_MS, 0));
         this.timers.add(fadeTimer);
 
         const removeTimer = setTimeout(() => {
             this.whispers.update(list => list.filter(w => w.id !== id));
             this.timers.delete(removeTimer);
-        }, WHISPER_LIFETIME_MS);
+        }, lifetimeMs);
         this.timers.add(removeTimer);
     }
 

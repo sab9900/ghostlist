@@ -4,6 +4,7 @@ import { GhostListItem } from './ghost-list-item.model';
 export interface GhostList {
     id: string;
     ttl: number;
+    whisperLifetimeSeconds: number;
     createdAt: string;
     items: GhostListItem[];
     chatMessages: GhostChatMessage[];

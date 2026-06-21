@@ -5,6 +5,7 @@ import { CreateGhostListItemRequest, CreateGhostMessageRequest } from './request
 export interface CachedList {
     id: string;
     ttl: number;
+    whisperLifetimeSeconds: number;
     createdAt: string;
     items: GhostListItem[];
     messages: GhostChatMessage[];

@@ -94,7 +94,7 @@ public class FcmNotificationService(
     {
         var key = locale is not null && Texts.ContainsKey(locale) ? locale : FallbackLocale;
 
-        if (type == PushNotificationType.ItemReminder)
+        if (type is PushNotificationType.ItemReminder or PushNotificationType.ListReminder)
             return ReminderTexts.TryGetValue(key, out var rt) ? rt : ReminderTexts[FallbackLocale];
 
         var byType = Texts[key];
@@ -125,6 +125,7 @@ public class FcmNotificationService(
             PushNotificationType.WhisperInvite => query.Where(s => s.NotifyOnLethe),
             PushNotificationType.CharonDrop => query.Where(s => s.NotifyOnCharon),
             PushNotificationType.ItemReminder => query, // user explicitly set this reminder — no preference filter
+            PushNotificationType.ListReminder => query,
             _ => query,
         };
 
@@ -268,6 +269,7 @@ public class FcmNotificationService(
                 PushNotificationType.WhisperInvite => "whisper_invite",
                 PushNotificationType.CharonDrop => "charon_drop",
                 PushNotificationType.ItemReminder => "item_reminder",
+                PushNotificationType.ListReminder => "list_reminder",
                 _ => "update",
             },
         };
@@ -290,13 +292,14 @@ public class FcmNotificationService(
                         ["apns-priority"] = type is PushNotificationType.Message
                             or PushNotificationType.WhisperInvite
                             or PushNotificationType.CharonDrop
-                            or PushNotificationType.ItemReminder ? "10" : "5",
+                            or PushNotificationType.ItemReminder
+                            or PushNotificationType.ListReminder ? "10" : "5",
                         // required when showing a visible alert
                         ["apns-push-type"] = "alert",
                     },
                     Aps = new Aps
                     {
-                        Sound = "default",
+                        Sound = "sonar_ping.wav",
                         ContentAvailable = true,
                         Badge = badgeCount,
                     },
@@ -310,14 +313,15 @@ public class FcmNotificationService(
                     Priority = Priority.High,
                     Notification = new AndroidNotification
                     {
-
+                        Sound = "sonar_ping",
                         ChannelId = type switch
                         {
-                            PushNotificationType.WhisperInvite => "ghost_lethe",
-                            PushNotificationType.CharonDrop => "ghost_charon",
-                            PushNotificationType.Message => "ghost_messages",
-                            PushNotificationType.ItemReminder => "ghost_reminders",
-                            _ => "ghost_items",
+                            PushNotificationType.WhisperInvite => "ghost_lethe_v2",
+                            PushNotificationType.CharonDrop => "ghost_charon_v2",
+                            PushNotificationType.Message => "ghost_messages_v2",
+                            PushNotificationType.ItemReminder => "ghost_reminders_v2",
+                            PushNotificationType.ListReminder => "ghost_reminders_v2",
+                            _ => "ghost_items_v2",
                         },
                     },
                 };
@@ -332,7 +336,8 @@ public class FcmNotificationService(
                         ["Urgency"] = type is PushNotificationType.Message
                             or PushNotificationType.WhisperInvite
                             or PushNotificationType.CharonDrop
-                            or PushNotificationType.ItemReminder ? "high" : "normal",
+                            or PushNotificationType.ItemReminder
+                            or PushNotificationType.ListReminder ? "high" : "normal",
                     },
                     Notification = new WebpushNotification
                     {

@@ -6,7 +6,7 @@ namespace GhostList.Application.Features.GhostLists.Queries.GetGhostListById;
 
 public record GetGhostListByIdQuery(Guid Id) : IRequest<GhostListDto?>;
 
-public record GhostListDto(Guid Id, int Ttl, DateTime CreatedAt, List<GhostListItemDto> Items, List<GhostChatMessageDto> ChatMessages);
+public record GhostListDto(Guid Id, int Ttl, int WhisperLifetimeSeconds, DateTime CreatedAt, List<GhostListItemDto> Items, List<GhostChatMessageDto> ChatMessages);
 public record GhostListItemDto(Guid Id, string EncryptedPayload, string InitializationVector, bool IsChecked, DateTime? CheckedAt, DateTime CreatedAt, string? SenderDeviceId, string? SenderUserId);
 public record GhostChatMessageDto(Guid Id, string EncryptedMessage, string MessageInitializationVector, string EncryptedSenderName, string SenderNameInitializationVector, Guid? ReplyToMessageId, DateTime CreatedAt, string? SenderDeviceId, string? SenderUserId);
 
@@ -24,6 +24,7 @@ public class GetGhostListByIdQueryHandler(IApplicationDbContext context) : IRequ
         return new GhostListDto(
             list.Id,
             (int)list.CompletedItemsTtl,
+            (int)list.WhisperLifetimeSeconds,
             list.CreatedAt,
             list.Items
                 .Select(i => new GhostListItemDto(i.Id, i.EncryptedPayload, i.InitializationVector, i.IsChecked, i.CheckedAt, i.CreatedAt, i.SenderDeviceId, i.SenderUserId))
