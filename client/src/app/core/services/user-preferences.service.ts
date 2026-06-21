@@ -9,6 +9,7 @@ const LS_ONBOARDED_KEY = 'gl_name_onboarded';
 const LS_HAPTICS_KEY  = 'gl_haptics_enabled';
 const LS_NOTIF_ENABLED_KEY = 'gl_notif_enabled';
 const LS_NOTIF_PROMPTED_KEY = 'gl_notif_prompted';
+const LS_CAMERA_FACING_KEY = 'gl_video_camera_facing';
 
 const DEFAULT_HAPTICS_ENABLED = Capacitor.getPlatform() === 'ios';
 
@@ -90,6 +91,17 @@ export class UserPreferencesService {
     markNotifPrompted(): void {
         this.notifPrompted.set(true);
         localStorage.setItem(LS_NOTIF_PROMPTED_KEY, '1');
+    }
+
+    /** Which camera (front/back) video recording should default to next time. */
+    readonly preferredCameraFacing = signal<'user' | 'environment'>(
+        localStorage.getItem(LS_CAMERA_FACING_KEY) === 'environment' ? 'environment' : 'user',
+    );
+
+    setPreferredCameraFacing(facing: 'user' | 'environment'): void {
+        if (this.preferredCameraFacing() === facing) return;
+        this.preferredCameraFacing.set(facing);
+        localStorage.setItem(LS_CAMERA_FACING_KEY, facing);
     }
 
     private async loadFromIdb(): Promise<void> {

@@ -84,6 +84,7 @@
         "NAME_DIALOG_PLACEHOLDER": "p. ej. Simón",
         "REPLY": "Responder",
         "COPY": "Copiar",
+        "DOWNLOAD": "Descargar",
         "CANCEL_REPLY_ARIA": "Cancelar respuesta",
         "MESSAGE_ACTIONS_ARIA": "Acciones del mensaje",
         "ORIGINAL_UNAVAILABLE": "Mensaje original no disponible",

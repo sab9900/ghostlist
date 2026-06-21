@@ -11,6 +11,7 @@ import { DeviceIdService } from '../../../core/services/device-id.service';
 import { HapticsService } from '../../../core/services/haptics.service';
 import { ImageViewerService } from '../../../core/services/image-viewer.service';
 import { KeyboardInsetService } from '../../../core/services/keyboard-inset.service';
+import { NativeDownloadService } from '../../../core/services/native-download.service';
 import { UserIdService } from '../../../core/services/user-id.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 import { AppStore } from '../../../store/app.store';
@@ -46,6 +47,7 @@ export class ChatTabComponent implements OnDestroy {
     protected readonly userId = inject(UserIdService);
     private readonly imageViewer = inject(ImageViewerService);
     private readonly keyboardInset = inject(KeyboardInsetService);
+    private readonly nativeDownload = inject(NativeDownloadService);
     private readonly hub = inject(HubService);
     private readonly shareHandler = inject(ShareHandlerService);
 
@@ -454,6 +456,16 @@ export class ChatTabComponent implements OnDestroy {
     async deleteMessage(id: string): Promise<void> {
         this.openMenuId.set(null);
         await this.store.deleteMessage(id);
+    }
+
+    async downloadMedia(msg: DecryptedMessage): Promise<void> {
+        this.openMenuId.set(null);
+        const url = msg.isAudio ? this.audioDataUrl(msg.id) : msg.isVideo ? this.videoDataUrl(msg.id) : null;
+        if (!url) return;
+        const fileName = msg.isAudio ? `ghostlist-voice-${msg.id}` : `ghostlist-video-${msg.id}`;
+        try {
+            await this.nativeDownload.downloadUrl(url, fileName);
+        } catch { }
     }
 
     openImage(url: string, alt: string): void { this.imageViewer.open(url, alt); }

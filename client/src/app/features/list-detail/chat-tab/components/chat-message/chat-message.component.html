@@ -143,6 +143,12 @@
                     {{ 'CHAT.COPY' | translate }}
                 </button>
                 }
+                @if ((m.isAudio && audUrl) || (m.isVideo && vidUrl)) {
+                <button type="button" role="menuitem" class="menu-item" (click)="download.emit()">
+                    <svg lucideDownload [size]="15" aria-hidden="true"></svg>
+                    {{ 'CHAT.DOWNLOAD' | translate }}
+                </button>
+                }
                 @if (mine()) {
                 <button type="button" role="menuitem" class="menu-item menu-item--danger" (click)="delete.emit()">
                     <svg lucideTrash2 [size]="15" aria-hidden="true"></svg>

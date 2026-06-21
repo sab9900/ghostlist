@@ -5,11 +5,36 @@ export function isVideoTrimSupported(): boolean {
         && typeof MediaRecorder !== 'undefined';
 }
 
+/**
+ * MediaRecorder-produced webm blobs (the default on Chrome/Android) have no
+ * duration field in the container — `video.duration` reads as `Infinity`
+ * until the browser is forced to seek near the end and recompute it. This
+ * resolves with the real, finite duration once that's done.
+ */
+function resolveFiniteDuration(video: HTMLVideoElement): Promise<number> {
+    return new Promise((resolve) => {
+        if (Number.isFinite(video.duration)) { resolve(video.duration); return; }
+        const onTimeUpdate = () => {
+            video.removeEventListener('timeupdate', onTimeUpdate);
+            const dur = Number.isFinite(video.duration) ? video.duration : 0;
+            video.currentTime = 0;
+            resolve(dur);
+        };
+        video.addEventListener('timeupdate', onTimeUpdate);
+        video.currentTime = Number.MAX_SAFE_INTEGER;
+        setTimeout(() => {
+            video.removeEventListener('timeupdate', onTimeUpdate);
+            resolve(Number.isFinite(video.duration) ? video.duration : 0);
+        }, 2000);
+    });
+}
+
 export function getVideoDuration(blobUrl: string): Promise<number> {
     return new Promise((resolve, reject) => {
         const video = document.createElement('video');
         video.preload = 'metadata';
-        video.onloadedmetadata = () => resolve(Number.isFinite(video.duration) ? video.duration : 0);
+        video.muted = true;
+        video.onloadedmetadata = () => { void resolveFiniteDuration(video).then(resolve); };
         video.onerror = () => reject(new Error('Could not read video duration'));
         video.src = blobUrl;
     });
@@ -26,8 +51,8 @@ export async function trimVideoBlob(blob: Blob, startSec: number, endSec: number
         video.playsInline = true;
         video.src = url;
 
-        await new Promise<void>((resolve, reject) => {
-            video.onloadedmetadata = () => resolve();
+        const realDuration = await new Promise<number>((resolve, reject) => {
+            video.onloadedmetadata = () => { void resolveFiniteDuration(video).then(resolve); };
             video.onerror = () => reject(new Error('Could not load video for trimming'));
         });
 
@@ -58,7 +83,7 @@ export async function trimVideoBlob(blob: Blob, startSec: number, endSec: number
         video.currentTime = startSec;
         await new Promise<void>((resolve) => { video.onseeked = () => resolve(); });
 
-        const clampedEnd = Math.min(endSec, video.duration || endSec);
+        const clampedEnd = Math.min(endSec, realDuration || endSec);
         const draw = () => {
             ctx.drawImage(video, 0, 0, width, height);
             if (video.currentTime < clampedEnd && !video.ended) {

@@ -7,6 +7,7 @@ import { CryptoService } from '../../../core/services/crypto.service';
 import { DeviceIdService } from '../../../core/services/device-id.service';
 import { HapticsService } from '../../../core/services/haptics.service';
 import { ImageViewerService } from '../../../core/services/image-viewer.service';
+import { NativeDownloadService } from '../../../core/services/native-download.service';
 import { UserIdService } from '../../../core/services/user-id.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 import { AudioWaveformPlayerComponent } from '../../../shared/audio-waveform-player/audio-waveform-player.component';
@@ -70,6 +71,7 @@ export class CharonTabComponent implements OnDestroy {
     private readonly haptics = inject(HapticsService);
     private readonly translate = inject(TranslateService);
     private readonly imageViewer = inject(ImageViewerService);
+    private readonly nativeDownload = inject(NativeDownloadService);
 
     @ViewChild('fileInput') private fileInputRef?: ElementRef<HTMLInputElement>;
 
@@ -226,11 +228,10 @@ export class CharonTabComponent implements OnDestroy {
         await this.store.recallCharonDrop(drop.id);
     }
 
-    download(drop: RevealedDrop): void {
-        const a = document.createElement('a');
-        a.href = drop.dataUrl;
-        a.download = drop.fileName;
-        a.click();
+    async download(drop: RevealedDrop): Promise<void> {
+        try {
+            await this.nativeDownload.downloadUrl(drop.dataUrl, drop.fileName);
+        } catch { }
     }
 
     pickFile(): void {

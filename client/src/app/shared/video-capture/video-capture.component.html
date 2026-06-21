@@ -19,7 +19,8 @@
 
     @if (phase() !== 'review') {
     <div class="capture__stage">
-        <video #liveVideo class="capture__live" muted playsinline aria-hidden="true"></video>
+        <video #liveVideo class="capture__live" [class.capture__live--mirrored]="isFrontFacing()" muted
+            playsinline aria-hidden="true"></video>
 
         @if (canSwitchCamera()) {
         <button type="button" class="capture__switch" (click)="switchCamera()"

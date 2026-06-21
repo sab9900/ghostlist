@@ -1,7 +1,8 @@
-import { Component, ElementRef, OnDestroy, computed, input, output, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, computed, inject, input, output, signal, viewChild } from '@angular/core';
 import { LucideCircle, LucideRotateCcw, LucideSquare, LucideSwitchCamera, LucideX } from '@lucide/angular';
 import { TranslatePipe } from '@ngx-translate/core';
 import { getVideoDuration, isVideoTrimSupported, trimVideoBlob } from '../../core/utils/video-trim.util';
+import { UserPreferencesService } from '../../core/services/user-preferences.service';
 
 export interface VideoCaptureResult {
     blob: Blob;
@@ -17,6 +18,8 @@ type CapturePhase = 'live' | 'recording' | 'review';
     styleUrl: './video-capture.component.scss',
 })
 export class VideoCaptureComponent implements OnDestroy {
+    private readonly prefs = inject(UserPreferencesService);
+
     readonly maxSeconds = input(60);
     readonly videoBitsPerSecond = input(350_000);
     readonly audioBitsPerSecond = input(32_000);
@@ -29,6 +32,7 @@ export class VideoCaptureComponent implements OnDestroy {
     protected readonly availableCameras = signal<MediaDeviceInfo[]>([]);
     protected readonly selectedCameraId = signal<string | null>(null);
     protected readonly canSwitchCamera = computed(() => this.availableCameras().length > 1);
+    protected readonly isFrontFacing = signal(true);
     protected readonly notSupported = signal(false);
     protected readonly permissionDenied = signal(false);
     protected readonly debugError = signal<string | null>(null);
@@ -78,14 +82,29 @@ export class VideoCaptureComponent implements OnDestroy {
         const cameraId = this.selectedCameraId();
         const videoConstraints: MediaTrackConstraints = cameraId
             ? { deviceId: { exact: cameraId }, width: { ideal: 640 }, height: { ideal: 480 } }
-            : { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } };
+            : { facingMode: this.prefs.preferredCameraFacing(), width: { ideal: 640 }, height: { ideal: 480 } };
         const stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: true });
         this.stream = stream;
         this.phase.set('live');
+        this.updateFacingMode(stream, cameraId);
         requestAnimationFrame(() => {
             const el = this.liveVideo()?.nativeElement;
             if (el) { el.srcObject = stream; void el.play().catch(() => { }); }
         });
+    }
+
+    private updateFacingMode(stream: MediaStream, cameraId: string | null): void {
+        const track = stream.getVideoTracks()[0];
+        const facingMode = track?.getSettings?.().facingMode;
+        if (facingMode === 'user' || facingMode === 'environment') {
+            this.isFrontFacing.set(facingMode === 'user');
+        } else {
+            const label = this.availableCameras().find(c => c.deviceId === cameraId)?.label?.toLowerCase() ?? '';
+            if (/back|rear|environment/.test(label)) this.isFrontFacing.set(false);
+            else if (/front|user|face/.test(label)) this.isFrontFacing.set(true);
+            else this.isFrontFacing.set(!cameraId);
+        }
+        this.prefs.setPreferredCameraFacing(this.isFrontFacing() ? 'user' : 'environment');
     }
 
     private async refreshCameras(): Promise<void> {

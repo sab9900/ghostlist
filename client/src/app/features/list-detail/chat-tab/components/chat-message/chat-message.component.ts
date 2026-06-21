@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, input, output } from '@angular/core';
-import { LucideCheck, LucideCheckCheck, LucideCopy, LucideCornerUpLeft, LucideEllipsisVertical, LucideImage, LucideMic, LucideTrash2, LucideVideo } from '@lucide/angular';
+import { LucideCheck, LucideCheckCheck, LucideCopy, LucideCornerUpLeft, LucideDownload, LucideEllipsisVertical, LucideImage, LucideMic, LucideTrash2, LucideVideo } from '@lucide/angular';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ViewportDwellDirective } from '../../../../../core/directives/viewport-dwell.directive';
 import { AudioWaveformPlayerComponent } from '../../../../../shared/audio-waveform-player/audio-waveform-player.component';
@@ -24,6 +24,7 @@ import { DecryptedMessage, ReplyPreview } from '../../chat-tab.types';
         LucideCopy,
         LucideTrash2,
         LucideVideo,
+        LucideDownload,
     ],
     templateUrl: './chat-message.component.html',
     styleUrl: './chat-message.component.scss',
@@ -49,6 +50,7 @@ export class ChatMessageComponent {
     readonly menuToggle = output<MouseEvent>();
     readonly reply = output<void>();
     readonly copy = output<void>();
+    readonly download = output<void>();
     readonly delete = output<void>();
     readonly scrollToReply = output<string>();
     readonly dwellRead = output<string>();
