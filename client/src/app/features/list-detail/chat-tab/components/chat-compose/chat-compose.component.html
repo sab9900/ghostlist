@@ -19,35 +19,12 @@
 <p class="error" role="alert" style="font-size:0.7em;opacity:0.7">DBG: {{ videoRecordingDebugError() }}</p>
 }
 }
-@if (videoRecordingPermissionDenied()) {
-<p class="error" role="alert">{{ 'CHAT.RECORD_VIDEO_PERMISSION_DENIED' | translate }}</p>
-}
 @if (sendingVideo()) {
 <p class="sending-audio" role="status">{{ 'CHAT.SENDING_VIDEO' | translate }}</p>
 }
 
 <div class="compose" role="form" [attr.aria-label]="'CHAT.MESSAGE_PLACEHOLDER' | translate">
-    @if (recordingVideo()) {
-    <div class="recording-row recording-row--video">
-        <div class="video-preview-wrap">
-            <video #videoPreview class="video-preview" muted playsinline aria-hidden="true"></video>
-            @if (canSwitchCamera()) {
-            <button type="button" class="video-preview-switch" (click)="switchCamera.emit()"
-                [attr.aria-label]="'CHAT.SWITCH_CAMERA_ARIA' | translate">
-                <svg lucideSwitchCamera [size]="18" aria-hidden="true"></svg>
-            </button>
-            }
-        </div>
-        <span class="dot" aria-hidden="true"></span>
-        <span class="timer" role="timer" [attr.aria-label]="formatRecordingTime(recordingVideoSeconds())">
-            {{ formatRecordingTime(recordingVideoSeconds()) }}
-        </span>
-        <button type="button" class="record record--stop" (click)="toggleVideoRecord.emit()"
-            [attr.aria-label]="'CHAT.STOP_VIDEO_RECORD_ARIA' | translate" aria-pressed="true">
-            <svg lucideSquare [size]="20" aria-hidden="true"></svg>
-        </button>
-    </div>
-    } @else if (recording()) {
+    @if (recording()) {
     <div class="recording-row">
         <span class="dot" aria-hidden="true"></span>
         <span class="timer" role="timer" [attr.aria-label]="formatRecordingTime(recordingSeconds())">
@@ -79,13 +56,6 @@
                     [attr.aria-label]="'CHAT.RECORD_VIDEO_ARIA' | translate" [attr.aria-busy]="sendingVideo()">
                     <svg lucideVideo [size]="20" aria-hidden="true"></svg>
                 </button>
-                @if (canSwitchCamera()) {
-                <button type="button" class="attach" (mousedown)="$event.preventDefault()"
-                    (click)="switchCamera.emit()" [disabled]="sendingImage() || sendingAudio() || sendingVideo()"
-                    [attr.aria-label]="'CHAT.SWITCH_CAMERA_ARIA' | translate">
-                    <svg lucideSwitchCamera [size]="20" aria-hidden="true"></svg>
-                </button>
-                }
                 <button type="button" class="record" (mousedown)="$event.preventDefault()"
                     (click)="toggleRecord.emit()" [disabled]="sendingAudio()"
                     [attr.aria-label]="'CHAT.RECORD_ARIA' | translate" aria-pressed="false">

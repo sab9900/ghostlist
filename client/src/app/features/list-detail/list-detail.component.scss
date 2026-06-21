@@ -249,7 +249,7 @@
 }
 
 .drawer-backdrop {
-    position: fixed;
+    position: absolute;
     inset: 0;
     background: rgba(0, 0, 0, 0.35);
     backdrop-filter: blur(2px);
@@ -266,7 +266,7 @@
 }
 
 .settings-drawer {
-    position: fixed;
+    position: absolute;
     top: 0;
     right: 0;
     bottom: 0;

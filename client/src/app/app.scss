@@ -1,5 +1,16 @@
 :host {
-    position: fixed;
+    // `position: absolute`, not `fixed`. iOS 26 Safari (pre-26.1) clips
+    // `position: fixed` elements to a shorter "inner" viewport that excludes
+    // the home-indicator safe area — even when given an explicit larger
+    // height — and only paints the leftover strip using its own (currently
+    // broken/black) chrome. That's the actual "chin", and it explains why no
+    // height/unit change ever fixed it: the clipping happens regardless of
+    // the declared height. `position: absolute` is positioned against the
+    // nearest positioned ancestor's box (body, see styles.scss) using normal
+    // layout sizing instead of this fixed-viewport clipping, so it isn't
+    // affected. Apple fixed this WebKit bug in Safari 26.1, but this needs to
+    // keep working on 26.0 too.
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
@@ -83,7 +94,10 @@
 }
 
 .lock-screen {
-    position: fixed;
+    // position: absolute, not fixed — same iOS Safari fixed-viewport-clipping
+    // bug as :host above. Resolves against app-root's box (the nearest
+    // positioned ancestor), which already has the correct full height.
+    position: absolute;
     inset: 0;
     display: flex;
     align-items: center;
@@ -132,7 +146,9 @@
 }
 
 .dialog-backdrop {
-    position: fixed;
+    // position: absolute, not fixed — same reasoning as :host/.lock-screen
+    // above.
+    position: absolute;
     inset: 0;
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(4px);

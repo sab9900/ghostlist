@@ -20,7 +20,13 @@ export class KeyboardInsetService {
         if (this.started || typeof window === 'undefined') return;
         this.started = true;
 
-        if (Capacitor.isNativePlatform()) {
+        // iOS only. Android now resizes the WebView/viewport for real
+        // (windowSoftInputMode="adjustResize" + resizeOnFullScreen, and
+        // interactive-widget=resizes-content for the PWA — see index.html),
+        // so window.innerHeight/visualViewport already shrink on their own.
+        // Feeding capacitorHeight into --keyboard-height on Android too would
+        // pad the already-shrunk layout a second time.
+        if (Capacitor.getPlatform() === 'ios') {
             Keyboard.addListener('keyboardWillShow', ({ keyboardHeight }) => {
                 this.capacitorHeight = keyboardHeight;
                 this.recompute();

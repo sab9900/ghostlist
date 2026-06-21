@@ -138,7 +138,19 @@ export class AudioWaveformPlayerComponent implements OnDestroy {
     protected onLoadedMetadata(): void {
         const el = this.audioElRef?.nativeElement;
         if (!el) return;
-        this.duration.set(isFinite(el.duration) ? el.duration : 0);
+
+        if (isFinite(el.duration)) {
+            this.duration.set(el.duration);
+            return;
+        }
+
+        const onDurationChange = () => {
+            el.removeEventListener('durationchange', onDurationChange);
+            if (isFinite(el.duration)) this.duration.set(el.duration);
+            el.currentTime = 0;
+        };
+        el.addEventListener('durationchange', onDurationChange);
+        el.currentTime = Number.MAX_SAFE_INTEGER;
     }
 
     protected onTimeUpdate(): void {

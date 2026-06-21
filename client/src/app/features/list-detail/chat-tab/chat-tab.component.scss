@@ -42,7 +42,7 @@
 }
 
 .message-menu-backdrop {
-    position: fixed;
+    position: absolute;
     inset: 0;
     z-index: 9;
     pointer-events: none;

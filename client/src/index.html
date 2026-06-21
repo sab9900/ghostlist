@@ -25,14 +25,34 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <script>
-        // iOS Home-Screen PWA ("WebClip"): the system reserves the home-indicator
-        // strip at the bottom and paints it independently of the page, using the
-        // <meta name="theme-color"> content as its fill. That meta tag was static
-        // (#0e0e10) while the app itself switches between dark and light via
-        // data-theme — so on light theme/light system mode the reserved strip
-        // stayed dark, showing up as a visible mismatched "chin". Keep it synced
-        // with the resolved theme before first paint; theme.service.ts keeps it
-        // in sync afterwards for runtime theme changes.
+        // Android (native WebView and PWA/Chrome alike): interactive-widget=overlays-content
+        // is what iOS handles well (manual padding via VisualViewport, see
+        // KeyboardInsetService) but Chromium-on-Android implements it unreliably —
+        // the visual viewport's resize/scroll deltas don't line up cleanly with the
+        // keyboard inset, so the page either gains a phantom scrollable region the
+        // height of the keyboard (native) or never gets padded at all, leaving the
+        // keyboard covering the focused input (PWA). Android has long had solid
+        // support for the older "real resize" model instead, so force that mode
+        // there by rewriting the meta tag before first paint. iOS keeps
+        // overlays-content untouched.
+        if (/Android/i.test(navigator.userAgent)) {
+            var viewportMeta = document.querySelector('meta[name="viewport"]');
+            if (viewportMeta) {
+                viewportMeta.setAttribute(
+                    'content',
+                    viewportMeta.getAttribute('content').replace('interactive-widget=overlays-content', 'interactive-widget=resizes-content')
+                );
+            }
+        }
+
+        // Keep <meta name="theme-color"> synced with the resolved theme before
+        // first paint (theme.service.ts keeps it in sync afterwards for runtime
+        // theme changes). Note: iOS 26 dropped support for this meta tag for
+        // standalone home-screen apps — Safari now tints the top/bottom bars
+        // from the actual background-color of the page (or, due to a WebKit
+        // bug, of whatever fixed-position element it picks instead — see the
+        // ios-webclip removal below). Keeping this in sync still helps on
+        // older iOS/Android and costs nothing.
         function syncThemeColorMeta() {
             var stored = null;
             try { stored = localStorage.getItem('theme'); } catch (e) { }
@@ -49,23 +69,37 @@
         }
         updateAppHeight();
         window.addEventListener('resize', updateAppHeight);
-        // iOS PWA: window.innerHeight is not final on first synchronous execution
-        // in standalone mode — the WebView finishes layout asynchronously. A single
-        // rAF is enough on most devices; the 300ms fallback covers edge cases where
-        // the first rAF still fires before the safe-area geometry is committed.
+
+        // iOS Home-Screen PWA (WebClip) only: window.innerHeight is correct
+        // (the full physical screen height) once the WebView's safe-area-aware
+        // layout has committed, but on the very first synchronous read here —
+        // before first paint — it can still report a shorter, pre-commit value.
+        // A single rAF plus a fixed 300ms guess isn't reliable enough across
+        // devices/iOS versions: when it's too short, --app-height gets stuck at
+        // that smaller value (nothing ever re-triggers a recheck), app-root
+        // compresses to fit it, and the real safe-area strip is left over below
+        // as dead, unstyled space — the "squished app + foreign chin" the user
+        // actually sees. Re-measure every frame instead of guessing a delay,
+        // and stop once the value has held steady for a few frames in a row
+        // (capped so a device that never truly settles can't loop forever).
         if (navigator.standalone) {
-            requestAnimationFrame(updateAppHeight);
-            setTimeout(updateAppHeight, 300);
-            // iOS Home-Screen PWA only (WebClip): the WebClip already claims back
-            // the bottom safe-area from the usable layout viewport itself (this is
-            // why --app-height has to be sourced from window.innerHeight instead of
-            // 100%/100dvh in the first place — see above). Padding components for
-            // env(safe-area-inset-bottom) *on top of* that already-shrunk viewport
-            // double-subtracts the home-indicator height. Capacitor's native
-            // WKWebView and Android (PWA or not) don't pre-shrink the viewport, so
-            // they still need the real safe-area padding — only this WebClip case
-            // doesn't. See --safe-bottom override in styles.scss.
-            document.documentElement.classList.add('ios-webclip');
+            (function settleAppHeight() {
+                var lastHeight = -1;
+                var stableFrames = 0;
+                var startedAt = Date.now();
+                function tick() {
+                    updateAppHeight();
+                    var stable = window.innerHeight === lastHeight;
+                    lastHeight = window.innerHeight;
+                    stableFrames = stable ? stableFrames + 1 : 0;
+                    if (stableFrames >= 5 || Date.now() - startedAt > 2000) return;
+                    requestAnimationFrame(tick);
+                }
+                requestAnimationFrame(tick);
+            })();
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', updateAppHeight);
+            }
         }
     </script>
 </head>

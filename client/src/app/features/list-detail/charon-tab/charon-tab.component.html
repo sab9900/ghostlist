@@ -104,55 +104,27 @@
     <p class="charon__error" role="alert" style="font-size:0.7em;opacity:0.7">DBG: {{ videoRecordingDebugError() }}</p>
     }
     }
-    @if (videoRecordingPermissionDenied()) {
-    <p class="charon__error" role="alert">{{ 'CHARON.RECORD_VIDEO_PERMISSION_DENIED' | translate }}</p>
-    }
-
-    @if (recordingVideo()) {
-    <div class="charon__video-preview-wrap">
-        <video #videoPreview class="charon__video-preview" muted playsinline aria-hidden="true"></video>
-        @if (canSwitchCamera()) {
-        <button type="button" class="charon__video-preview-switch" (click)="switchCamera()"
-            [attr.aria-label]="'CHARON.SWITCH_CAMERA_ARIA' | translate">
-            <svg lucideSwitchCamera [size]="18" aria-hidden="true"></svg>
-        </button>
-        }
-    </div>
-    }
-
     <div class="compose" role="form" [attr.aria-label]="'CHARON.ATTACH_ARIA' | translate">
         <input #fileInput type="file" class="visually-hidden" tabindex="-1"
             accept=".jpg,.jpeg,.png,.gif,.webp,.bmp,.svg,.heic,.heif,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.txt,.rtf,.csv,.mp3,.wav,.m4a,.ogg,.flac,.mp4,.mov,.webm,.avi,.zip"
             (change)="onFileSelected($event)" />
-        <button type="button" class="compose__attach" (click)="pickFile()" [disabled]="sending() || recording() || recordingVideo()"
+        <button type="button" class="compose__attach" (click)="pickFile()" [disabled]="sending() || recording()"
             [attr.aria-label]="'CHARON.ATTACH_ARIA' | translate" [attr.aria-busy]="sending()">
             <svg lucidePaperclip [size]="20" aria-hidden="true"></svg>
         </button>
         <button type="button" class="compose__record" [class.compose__record--active]="recording()"
-            (click)="toggleRecording()" [disabled]="sending() || recordingVideo()"
+            (click)="toggleRecording()" [disabled]="sending()"
             [attr.aria-label]="(recording() ? 'CHARON.STOP_RECORD_ARIA' : 'CHARON.RECORD_ARIA') | translate"
             [attr.aria-pressed]="recording()">
             <svg lucideMic [size]="20" aria-hidden="true"></svg>
         </button>
-        <button type="button" class="compose__record" [class.compose__record--active]="recordingVideo()"
-            (click)="toggleVideoRecording()" [disabled]="sending() || recording()"
-            [attr.aria-label]="(recordingVideo() ? 'CHARON.STOP_VIDEO_RECORD_ARIA' : 'CHARON.RECORD_VIDEO_ARIA') | translate"
-            [attr.aria-pressed]="recordingVideo()">
+        <button type="button" class="compose__record" (click)="openVideoCapture()" [disabled]="sending() || recording()"
+            [attr.aria-label]="'CHARON.RECORD_VIDEO_ARIA' | translate">
             <svg lucideVideo [size]="20" aria-hidden="true"></svg>
         </button>
-        @if (canSwitchCamera() && !recording() && !recordingVideo()) {
-        <button type="button" class="compose__attach" (click)="switchCamera()" [disabled]="sending()"
-            [attr.aria-label]="'CHARON.SWITCH_CAMERA_ARIA' | translate">
-            <svg lucideSwitchCamera [size]="20" aria-hidden="true"></svg>
-        </button>
-        }
         @if (recording()) {
         <span class="compose__timer" role="timer" [attr.aria-label]="formatRecordingTime(recordingSeconds())">
             {{ formatRecordingTime(recordingSeconds()) }}
-        </span>
-        } @else if (recordingVideo()) {
-        <span class="compose__timer" role="timer" [attr.aria-label]="formatRecordingTime(recordingVideoSeconds())">
-            {{ formatRecordingTime(recordingVideoSeconds()) }}
         </span>
         } @else {
         <span class="compose__label">{{ 'CHARON.ATTACH' | translate }}</span>
@@ -161,4 +133,8 @@
         <span class="compose__status" role="status">{{ 'CHARON.SENDING' | translate }}</span>
         }
     </div>
+
+    @if (showVideoCapture()) {
+    <app-video-capture [maxSeconds]="30" (captured)="onVideoCaptured($event)" (closed)="closeVideoCapture()" />
+    }
 </div>

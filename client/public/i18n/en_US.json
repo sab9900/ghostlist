@@ -114,6 +114,24 @@
         "READ_BY": "Read by",
         "SCROLL_TO_BOTTOM_ARIA": "Scroll to bottom"
     },
+    "VIDEO_CAPTURE": {
+        "TITLE_ARIA": "Record a video",
+        "CLOSE_ARIA": "Close camera",
+        "START_ARIA": "Start recording",
+        "STOP_ARIA": "Stop recording",
+        "SWITCH_CAMERA_ARIA": "Switch camera",
+        "PREVIEW_ARIA": "Recorded video preview",
+        "TRIM_HINT": "Drag the handles to trim the clip",
+        "TRIM_START_ARIA": "Trim start",
+        "TRIM_END_ARIA": "Trim end",
+        "RETAKE": "Retake",
+        "RETAKE_ARIA": "Discard and record again",
+        "CONFIRM": "Send",
+        "CONFIRM_ARIA": "Send this video",
+        "PROCESSING": "Processing…",
+        "NOT_SUPPORTED": "Video recording is not supported on this device.",
+        "PERMISSION_DENIED": "Camera access denied. Please allow it in app settings."
+    },
     "LIST_DETAIL": {
         "BACK_ARIA": "Back to lists",
         "SETTINGS_ARIA": "Open settings",

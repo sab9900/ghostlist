@@ -114,6 +114,24 @@
         "READ_BY": "Letto da",
         "SCROLL_TO_BOTTOM_ARIA": "Scorri in fondo"
     },
+    "VIDEO_CAPTURE": {
+        "TITLE_ARIA": "Registra un video",
+        "CLOSE_ARIA": "Chiudi fotocamera",
+        "START_ARIA": "Avvia registrazione",
+        "STOP_ARIA": "Interrompi registrazione",
+        "SWITCH_CAMERA_ARIA": "Cambia fotocamera",
+        "PREVIEW_ARIA": "Anteprima del video registrato",
+        "TRIM_HINT": "Trascina le maniglie per tagliare la clip",
+        "TRIM_START_ARIA": "Taglia inizio",
+        "TRIM_END_ARIA": "Taglia fine",
+        "RETAKE": "Registra di nuovo",
+        "RETAKE_ARIA": "Scarta e registra di nuovo",
+        "CONFIRM": "Invia",
+        "CONFIRM_ARIA": "Invia questo video",
+        "PROCESSING": "Elaborazione…",
+        "NOT_SUPPORTED": "La registrazione video non è supportata su questo dispositivo.",
+        "PERMISSION_DENIED": "Accesso alla fotocamera negato. Consentilo nelle impostazioni dell'app."
+    },
     "LIST_DETAIL": {
         "BACK_ARIA": "Torna alle liste",
         "SETTINGS_ARIA": "Apri impostazioni",

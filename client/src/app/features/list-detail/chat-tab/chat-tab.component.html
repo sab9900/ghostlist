@@ -79,18 +79,17 @@
     [recordingNotSupported]="recordingNotSupported()"
     [recordingPermissionDenied]="recordingPermissionDenied()"
     [recordingDebugError]="recordingDebugError()"
-    [recordingVideo]="recordingVideo()"
-    [recordingVideoSeconds]="recordingVideoSeconds()"
     [videoRecordingNotSupported]="videoRecordingNotSupported()"
-    [videoRecordingPermissionDenied]="videoRecordingPermissionDenied()"
     [videoRecordingDebugError]="videoRecordingDebugError()"
-    [canSwitchCamera]="canSwitchCamera()"
     (textChange)="onTextChange($event)"
     (send)="sendMessage()"
     (pickImage)="pickImage()"
     (toggleRecord)="toggleRecording()"
-    (toggleVideoRecord)="toggleVideoRecording()"
-    (switchCamera)="switchCamera()"
+    (toggleVideoRecord)="openVideoCapture()"
     (keydown)="onKeydown($event)"
     (fileSelected)="onFileSelected($event)"
 />
+
+@if (showVideoCapture()) {
+<app-video-capture (captured)="onVideoCaptured($event)" (closed)="closeVideoCapture()" />
+}

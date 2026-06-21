@@ -114,6 +114,24 @@
         "READ_BY": "Gelesen von",
         "SCROLL_TO_BOTTOM_ARIA": "Zum Ende scrollen"
     },
+    "VIDEO_CAPTURE": {
+        "TITLE_ARIA": "Video aufnehmen",
+        "CLOSE_ARIA": "Kamera schließen",
+        "START_ARIA": "Aufnahme starten",
+        "STOP_ARIA": "Aufnahme beenden",
+        "SWITCH_CAMERA_ARIA": "Kamera wechseln",
+        "PREVIEW_ARIA": "Vorschau der Aufnahme",
+        "TRIM_HINT": "Ziehe die Griffe, um den Clip zu beschneiden",
+        "TRIM_START_ARIA": "Anfang beschneiden",
+        "TRIM_END_ARIA": "Ende beschneiden",
+        "RETAKE": "Neu aufnehmen",
+        "RETAKE_ARIA": "Verwerfen und neu aufnehmen",
+        "CONFIRM": "Senden",
+        "CONFIRM_ARIA": "Dieses Video senden",
+        "PROCESSING": "Verarbeite…",
+        "NOT_SUPPORTED": "Videoaufnahme wird auf diesem Gerät nicht unterstützt.",
+        "PERMISSION_DENIED": "Kamerazugriff verweigert. Bitte in den App-Einstellungen erlauben."
+    },
     "LIST_DETAIL": {
         "BACK_ARIA": "Zurück zu den Listen",
         "SETTINGS_ARIA": "Einstellungen öffnen",

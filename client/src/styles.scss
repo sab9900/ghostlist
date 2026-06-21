@@ -90,18 +90,6 @@
     --color-on-primary: #fff;
 }
 
-// iOS Home-Screen PWA (WebClip) only: the WebClip viewport already excludes the
-// home-indicator strip from the usable layout area (it's reserved/painted by the
-// system, not by this page — see index.html and the theme-color sync in
-// theme.service.ts for that). Applying env(safe-area-inset-bottom) padding again
-// on top of that double-subtracts the same ~34px everywhere a component pads for
-// --safe-bottom / --safe-bottom-effective. Capacitor (native WKWebView, full
-// physical viewport) and Android need the real value and are unaffected, since
-// the .ios-webclip class is only ever added when navigator.standalone is true.
-html.ios-webclip {
-    --safe-bottom: 0px;
-}
-
 @mixin light-theme {
     --color-bg: #f4f4f6;
     --color-surface: #ffffff;
@@ -188,6 +176,12 @@ body {
     user-select: none;
     -webkit-user-select: none;
     background: var(--color-bg);
+    /* Establishes body as the containing block for app-root's
+       position: absolute (see app.scss :host) — required so app-root sizes
+       against body's own (correctly full-height) box instead of the
+       viewport, which is what triggers iOS Safari's position: fixed
+       inner-viewport clipping bug in the first place. */
+    position: relative;
 }
 
 body {
@@ -212,11 +206,14 @@ textarea,
 }
 
 app-root {
-    /* Use --app-height (set by inline JS from window.innerHeight) instead of
-       height:100% or 100dvh. On iOS PWA, CSS viewport height excludes the
-       home-indicator safe-area and leaves a black strip; window.innerHeight
-       always returns the real physical screen height. Falls back to 100dvh
-       (and then 100%) for the rare case the script hasn't run yet. */
+    /* --app-height is set by inline JS from window.innerHeight (see
+       index.html), falling back to 100dvh (then 100%) before the script has
+       run. The actual iOS-PWA "chin"/squish bug was unrelated to which height
+       value/unit is used here — it was app-root's `position: fixed` (see
+       app.scss :host) getting clipped by iOS Safari to a shorter inner
+       viewport regardless of its declared height. Keeping the JS measurement
+       as the primary source is still slightly more precise across browser
+       chrome states, it just wasn't the fix for that bug. */
     height: 100%;
     height: 100dvh;
     height: var(--app-height, 100dvh);
@@ -252,7 +249,7 @@ app-root {
 @media screen and (orientation: landscape) and (max-width: 1024px) {
     body::before {
         content: '';
-        position: fixed;
+        position: absolute;
         inset: 0;
         background: var(--color-bg);
         z-index: 9999;
@@ -260,7 +257,7 @@ app-root {
 
     body::after {
         content: 'Bitte drehe dein Gerät';
-        position: fixed;
+        position: absolute;
         inset: 0;
         display: flex;
         align-items: center;
