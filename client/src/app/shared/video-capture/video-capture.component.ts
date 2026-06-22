@@ -1,7 +1,7 @@
 import { Component, ElementRef, OnDestroy, computed, inject, input, output, signal, viewChild } from '@angular/core';
 import { LucideCircle, LucideRotateCcw, LucideSquare, LucideSwitchCamera, LucideX } from '@lucide/angular';
 import { TranslatePipe } from '@ngx-translate/core';
-import { generateThumbnails, getVideoDuration, isPlayableVideoBlob, isVideoTrimSupported, trimVideoBlob, withTimeout } from '../../core/utils/video-trim.util';
+import { generateThumbnails, getVideoDuration, isPlayableVideoBlob, trimVideoBlob, withTimeout } from '../../core/utils/video-trim.util';
 import { UserPreferencesService } from '../../core/services/user-preferences.service';
 import { VideoTrimStripComponent } from '../video-trim-strip/video-trim-strip.component';
 
@@ -39,7 +39,6 @@ export class VideoCaptureComponent implements OnDestroy {
     protected readonly debugError = signal<string | null>(null);
     protected readonly processing = signal(false);
 
-    protected readonly trimSupported = isVideoTrimSupported();
     protected readonly duration = signal(0);
     protected readonly trimStart = signal(0);
     protected readonly trimEnd = signal(0);
@@ -217,7 +216,7 @@ export class VideoCaptureComponent implements OnDestroy {
             this.duration.set(dur);
             this.trimStart.set(0);
             this.trimEnd.set(dur);
-            if (this.trimSupported && dur > 0.4 && this.rawUrl) {
+            if (dur > 0.4 && this.rawUrl) {
                 this.thumbnails.set(await generateThumbnails(this.rawUrl, dur, VideoCaptureComponent.THUMBNAIL_COUNT).catch(() => []));
             }
         } catch {
@@ -279,7 +278,7 @@ export class VideoCaptureComponent implements OnDestroy {
     async confirm(): Promise<void> {
         if (!this.rawBlob) return;
         const isTrimmed = this.trimStart() > 0.05 || this.trimEnd() < this.duration() - 0.05;
-        if (isTrimmed && this.trimSupported) {
+        if (isTrimmed) {
             this.processing.set(true);
             try {
                 const trimmed = await withTimeout(
@@ -294,7 +293,8 @@ export class VideoCaptureComponent implements OnDestroy {
                 // instead of an obvious failure here, so both are caught
                 // and treated the same as a thrown error: fall back to the
                 // untrimmed original.
-                if (trimmed.size < VideoCaptureComponent.MIN_VALID_TRIM_BYTES || !(await isPlayableVideoBlob(trimmed))) {
+                const expectedDuration = this.trimEnd() - this.trimStart();
+                if (trimmed.size < VideoCaptureComponent.MIN_VALID_TRIM_BYTES || !(await isPlayableVideoBlob(trimmed, expectedDuration))) {
                     throw new Error('Trimmed output failed validation');
                 }
                 // trimVideoBlob always outputs MP4 regardless of the

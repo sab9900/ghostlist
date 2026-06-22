@@ -246,12 +246,11 @@ export class ChatTabComponent implements OnDestroy {
                 if (!ok) return;
                 if (!this._fullyOpened) {
                     this.startSettleLoop();
-                } else if (this.justSentOwnMessage || this.isNearBottom()) {
+                } else if (this.justSentOwnMessage) {
                     this.justSentOwnMessage = false;
                     if (this.userTouchingList) this.pendingScrollToBottomAfterTouch = true;
-                    else this.scrollToBottom();
+                    else this.scrollToBottom('smooth');
                 } else {
-                    this.pendingScrollToBottomAfterTouch = false;
                     this.updateScrollButtonVisibility();
                 }
             });
@@ -315,8 +314,7 @@ export class ChatTabComponent implements OnDestroy {
         this.userTouchingList = false;
         if (this.pendingScrollToBottomAfterTouch) {
             this.pendingScrollToBottomAfterTouch = false;
-            if (this.isNearBottom()) this.scrollToBottom();
-            else this.updateScrollButtonVisibility();
+            this.scrollToBottom('smooth');
         }
     }
 
@@ -344,10 +342,10 @@ export class ChatTabComponent implements OnDestroy {
         this.showScrollToBottomButton.set(!this.isNearBottom());
     }
 
-    private scrollToBottom(): void {
+    private scrollToBottom(behavior: ScrollBehavior = 'auto'): void {
         requestAnimationFrame(() => {
             const el = this.messageListRef()?.nativeElement;
-            if (el) el.scrollTop = el.scrollHeight;
+            if (el) el.scrollTo({ top: el.scrollHeight, behavior });
         });
     }
 

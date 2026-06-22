@@ -20,6 +20,8 @@ import { ListStorageService } from '../../core/services/list-storage.service';
 import { PushNotificationService } from '../../core/services/push-notification.service';
 import { mergeRecentMessagesPage } from '../store-utils';
 
+const RECENT_MESSAGES_DISPLAY_LIMIT = 50;
+
 interface ManagedState {
     currentListId: string | null;
     currentEncryptionKey: string | null;
@@ -104,6 +106,9 @@ export function createListManagementMethods(store: ListManagementStoreSlice) {
             if (store.currentListId() === id) return;
 
             const cached = await storage.getListCache(id).catch(() => undefined);
+            const cachedMessages = cached?.messages ?? [];
+            const initialMessages = cachedMessages.slice(-RECENT_MESSAGES_DISPLAY_LIMIT);
+            const initialMessagesHasMore = cached?.hasMoreMessages ?? cachedMessages.length > initialMessages.length;
 
             patchState(store, {
                 currentListId: id,
@@ -115,13 +120,13 @@ export function createListManagementMethods(store: ListManagementStoreSlice) {
                         whisperLifetimeSeconds: cached.whisperLifetimeSeconds,
                         createdAt: cached.createdAt,
                         items: cached.items,
-                        chatMessages: cached.messages,
-                        hasMoreMessages: cached.hasMoreMessages ?? true,
+                        chatMessages: initialMessages,
+                        hasMoreMessages: initialMessagesHasMore,
                     }
                     : null,
                 items: cached?.items ?? [],
-                messages: cached?.messages ?? [],
-                messagesHasMore: cached?.hasMoreMessages ?? true,
+                messages: initialMessages,
+                messagesHasMore: initialMessagesHasMore,
                 charonDrops: [],
                 audioDataUrls: {},
                 error: null,
@@ -154,7 +159,7 @@ export function createListManagementMethods(store: ListManagementStoreSlice) {
                     patchState(store, {
                         currentList: list,
                         items: list.items,
-                        messages: mergeRecentMessagesPage(store.messages(), list.chatMessages),
+                        messages: list.chatMessages,
                         messagesHasMore: list.hasMoreMessages,
                         loading: false,
                         currentListSynced: true,

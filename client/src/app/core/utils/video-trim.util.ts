@@ -1,9 +1,5 @@
 import { ALL_FORMATS, BlobSource, BufferTarget, Conversion, Input, Mp4OutputFormat, Output } from 'mediabunny';
 
-export function isVideoTrimSupported(): boolean {
-    return typeof VideoEncoder !== 'undefined' && typeof VideoDecoder !== 'undefined';
-}
-
 /**
  * Races a promise against a hard deadline. The trim pipeline below has
  * turned out to be unreliable on some devices/browsers — sometimes it never
@@ -59,14 +55,23 @@ export function getVideoDuration(blobUrl: string): Promise<number> {
 
 /**
  * Last line of defense before a trimmed clip gets sent anywhere: loads the
- * blob, confirms it actually has real video dimensions, and samples a
- * frame to rule out the specific failure mode this pipeline keeps
- * producing on some platforms (confirmed on iOS Safari) — a container that
- * looks structurally fine but decodes to nothing but black. A blob this
- * function rejects should be treated exactly like a thrown error: fall
- * back to the untrimmed original instead of sending it.
+ * blob, confirms it actually has real video dimensions and a sane
+ * duration, and samples a frame to rule out the specific failure mode
+ * this pipeline keeps producing on some platforms (confirmed on iOS
+ * Safari) — a container that looks structurally fine but decodes to
+ * nothing but black. A blob this function rejects should be treated
+ * exactly like a thrown error: fall back to the untrimmed original
+ * instead of sending it.
+ *
+ * `expectedDurationSec`, when given, catches a second failure mode that's
+ * easy to miss: `video.duration` reading as `-1` (the classic "duration
+ * unknown" sentinel some WebKit versions use instead of `NaN`/`Infinity`)
+ * — which is finite as far as `Number.isFinite` is concerned, so it slips
+ * straight past a naive finiteness check. This showed up as a broken
+ * scrubber/duration display once a trimmed clip was actually sent and
+ * played back natively in chat.
  */
-export async function isPlayableVideoBlob(blob: Blob): Promise<boolean> {
+export async function isPlayableVideoBlob(blob: Blob, expectedDurationSec?: number): Promise<boolean> {
     const url = URL.createObjectURL(blob);
     const video = document.createElement('video');
     try {
@@ -82,10 +87,20 @@ export async function isPlayableVideoBlob(blob: Blob): Promise<boolean> {
 
         if (!video.videoWidth || !video.videoHeight) return false;
 
+        const hasSaneDuration = Number.isFinite(video.duration) && video.duration > 0;
+        if (!hasSaneDuration) return false;
+        if (expectedDurationSec !== undefined && expectedDurationSec > 0.4) {
+            // Allow generous slack (half the expected length or 1.5s,
+            // whichever is bigger) — this only needs to catch "wildly
+            // wrong" (near-zero, or way too long), not be frame-accurate.
+            const tolerance = Math.max(1.5, expectedDurationSec * 0.5);
+            if (Math.abs(video.duration - expectedDurationSec) > tolerance) return false;
+        }
+
         await new Promise<void>(resolve => {
             const onSeeked = () => { video.removeEventListener('seeked', onSeeked); resolve(); };
             video.addEventListener('seeked', onSeeked);
-            video.currentTime = Math.min(0.1, (Number.isFinite(video.duration) ? video.duration : 1) / 2);
+            video.currentTime = Math.min(0.1, video.duration / 2);
             setTimeout(resolve, 1000);
         });
 

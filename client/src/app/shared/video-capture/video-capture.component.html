@@ -59,7 +59,7 @@
             [attr.aria-label]="'VIDEO_CAPTURE.PREVIEW_ARIA' | translate"></video>
     </div>
 
-    @if (trimSupported && duration() > 0.4) {
+    @if (duration() > 0.4) {
     <div class="capture__trim">
         <p class="capture__trim-hint">{{ 'VIDEO_CAPTURE.TRIM_HINT' | translate }}</p>
         <div class="capture__trim-times">
