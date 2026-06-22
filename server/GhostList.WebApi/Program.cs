@@ -41,28 +41,51 @@ builder.Services.AddRateLimiter(options =>
         ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
     options.AddPolicy("create-list", ctx =>
-        RateLimitPartition.GetFixedWindowLimiter(IpKey(ctx), _ => new FixedWindowRateLimiterOptions
+        RateLimitPartition.GetSlidingWindowLimiter(IpKey(ctx), _ => new SlidingWindowRateLimiterOptions
         {
-            PermitLimit = 5,
+            PermitLimit = 20,
             Window = TimeSpan.FromHours(1),
+            SegmentsPerWindow = 6,
             QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
             QueueLimit = 0,
         }));
 
     options.AddPolicy("write-content", ctx =>
-        RateLimitPartition.GetFixedWindowLimiter(IpKey(ctx), _ => new FixedWindowRateLimiterOptions
+        RateLimitPartition.GetSlidingWindowLimiter(IpKey(ctx), _ => new SlidingWindowRateLimiterOptions
         {
-            PermitLimit = 60,
+            PermitLimit = 600,
             Window = TimeSpan.FromHours(1),
+            SegmentsPerWindow = 12,
             QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
             QueueLimit = 0,
         }));
 
     options.AddPolicy("media-upload", ctx =>
-        RateLimitPartition.GetFixedWindowLimiter(IpKey(ctx), _ => new FixedWindowRateLimiterOptions
+        RateLimitPartition.GetSlidingWindowLimiter(IpKey(ctx), _ => new SlidingWindowRateLimiterOptions
         {
-            PermitLimit = 10,
+            PermitLimit = 40,
             Window = TimeSpan.FromHours(1),
+            SegmentsPerWindow = 6,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 0,
+        }));
+
+    options.AddPolicy("share-relay", ctx =>
+        RateLimitPartition.GetSlidingWindowLimiter(IpKey(ctx), _ => new SlidingWindowRateLimiterOptions
+        {
+            PermitLimit = 60,
+            Window = TimeSpan.FromHours(1),
+            SegmentsPerWindow = 6,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 0,
+        }));
+
+    options.AddPolicy("read-receipt", ctx =>
+        RateLimitPartition.GetSlidingWindowLimiter(IpKey(ctx), _ => new SlidingWindowRateLimiterOptions
+        {
+            PermitLimit = 1200,
+            Window = TimeSpan.FromHours(1),
+            SegmentsPerWindow = 12,
             QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
             QueueLimit = 0,
         }));
@@ -81,7 +104,9 @@ builder.Services.AddMemoryCache();
 builder.Services.AddSignalR(options =>
 {
     options.MaximumReceiveMessageSize = 32 * 1024 * 1024;
+    options.AddFilter<SignalRRateLimitFilter>();
 });
+builder.Services.AddSingleton<SignalRRateLimitFilter>();
 
 builder.WebHost.ConfigureKestrel(options =>
 {
@@ -98,6 +123,7 @@ var app = builder.Build();
 
 await app.Services.MigrateDatabaseAsync();
 
+app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseMiddleware<ExceptionHandlerMiddleware>();
 app.UseMiddleware<AcceptLanguageTrackingMiddleware>();
 

@@ -7,6 +7,7 @@ using GhostList.Application.Features.ListMembers.Commands.UpsertListMember;
 using GhostList.Application.Features.ListMembers.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace GhostList.WebApi.Controllers;
 
@@ -28,6 +29,7 @@ public class MembersController(IMediator mediator) : ControllerBase
     }
 
     [HttpPut("{listId:guid}/{deviceId}")]
+    [EnableRateLimiting("write-content")]
     public async Task<IActionResult> UpsertMember(Guid listId, string deviceId, [FromBody] UpsertMemberRequest request, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(deviceId) || deviceId.Length > 64) return BadRequest();
@@ -37,6 +39,7 @@ public class MembersController(IMediator mediator) : ControllerBase
     }
 
     [HttpDelete("{listId:guid}/{deviceId}")]
+    [EnableRateLimiting("write-content")]
     public async Task<IActionResult> DeleteMember(Guid listId, string deviceId, CancellationToken ct)
     {
         var requestingDeviceId = Request.Headers["X-Device-Id"].FirstOrDefault();
@@ -46,6 +49,7 @@ public class MembersController(IMediator mediator) : ControllerBase
     }
 
     [HttpDelete("{listId:guid}/{deviceId}/kick")]
+    [EnableRateLimiting("write-content")]
     public async Task<IActionResult> KickMember(Guid listId, string deviceId, [FromQuery] string? ownerToken, CancellationToken ct)
     {
         await mediator.Send(new KickListMemberCommand(listId, deviceId, ownerToken), ct);
@@ -53,6 +57,7 @@ public class MembersController(IMediator mediator) : ControllerBase
     }
 
     [HttpPut("{listId:guid}/{deviceId}/read-receipt")]
+    [EnableRateLimiting("read-receipt")]
     public async Task<IActionResult> UpdateReadReceipt(Guid listId, string deviceId, [FromBody] ReadReceiptRequest request, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(deviceId) || deviceId.Length > 64) return BadRequest();
@@ -69,6 +74,7 @@ public class MembersController(IMediator mediator) : ControllerBase
     }
 
     [HttpPost("{listId:guid}/{deviceId}/read-receipts/messages")]
+    [EnableRateLimiting("read-receipt")]
     public async Task<IActionResult> MarkMessagesRead(Guid listId, string deviceId, [FromBody] MarkReadRequest request, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(deviceId) || deviceId.Length > 64) return BadRequest();
@@ -78,6 +84,7 @@ public class MembersController(IMediator mediator) : ControllerBase
     }
 
     [HttpPost("{listId:guid}/{deviceId}/read-receipts/items")]
+    [EnableRateLimiting("read-receipt")]
     public async Task<IActionResult> MarkItemsRead(Guid listId, string deviceId, [FromBody] MarkReadRequest request, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(deviceId) || deviceId.Length > 64) return BadRequest();

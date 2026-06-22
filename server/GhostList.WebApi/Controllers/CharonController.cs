@@ -35,6 +35,7 @@ public class CharonController(IMediator mediator) : ControllerBase
     }
 
     [HttpPost("{id:guid}/view")]
+    [EnableRateLimiting("write-content")]
     public async Task<ActionResult> MarkViewed(Guid id)
     {
         var deviceId = Request.Headers["X-Device-Id"].FirstOrDefault();
@@ -47,6 +48,7 @@ public class CharonController(IMediator mediator) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [EnableRateLimiting("write-content")]
     public async Task<ActionResult> Delete(Guid id)
     {
         await mediator.Send(new DeleteCharonDropCommand(id));

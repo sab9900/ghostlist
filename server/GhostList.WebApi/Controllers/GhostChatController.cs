@@ -39,6 +39,7 @@ public class ChatController(IMediator mediator) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [EnableRateLimiting("write-content")]
     public async Task<ActionResult> DeleteMessage(Guid id)
     {
         await mediator.Send(new DeleteGhostChatMessageCommand(id));

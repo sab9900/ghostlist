@@ -1,8 +1,8 @@
 # 👻 Ghost List
 
-> Shared lists that vanish into thin air. The server knows nothing.
+> Shared lists that vanish into thin air. The server never sees your content.
 
-Ghost List is an end-to-end encrypted, real-time shared list and chat app. Lists are encrypted on-device before they ever touch the server — no accounts, no plaintext, no metadata. Just ciphertext the server can never read.
+Ghost List is an end-to-end encrypted, real-time shared list and chat app. Lists are encrypted on-device before they ever touch the server — no accounts, no plaintext. The server stores only ciphertext it can never read, plus the minimal structural metadata needed to route and expire data (list IDs, TTLs, anonymous device identifiers).
 
 ---
 
@@ -26,7 +26,7 @@ Your device                    Server                    Their device
 
 ## Features
 
-- **Zero-knowledge** — server stores only encrypted blobs, no auth, no user data
+- **Zero-knowledge** — server stores only encrypted blobs; content is never readable by the server
 - **Real-time sync** — changes appear instantly via SignalR WebSockets
 - **Shared lists** — invite others by sharing a link or scanning a QR code
 - **Chat per list** — every list has a built-in encrypted chat

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace GhostList.WebApi.Controllers;
@@ -15,6 +16,7 @@ public class ShareController(IMemoryCache cache) : ControllerBase
         .SetAbsoluteExpiration(TimeSpan.FromMinutes(5));
 
     [HttpPut("{sessionId}")]
+    [EnableRateLimiting("share-relay")]
     public IActionResult Deliver(string sessionId, [FromBody] ShareDeliveryDto dto)
     {
         if (string.IsNullOrWhiteSpace(sessionId)) return BadRequest();
@@ -33,6 +35,7 @@ public class ShareController(IMemoryCache cache) : ControllerBase
     }
 
     [HttpPut("{sessionId}/handshake")]
+    [EnableRateLimiting("share-relay")]
     public IActionResult PostHandshake(string sessionId, [FromBody] HandshakeDto dto)
     {
         if (string.IsNullOrWhiteSpace(sessionId)) return BadRequest();
@@ -51,6 +54,7 @@ public class ShareController(IMemoryCache cache) : ControllerBase
     }
 
     [HttpPut("{sessionId}/sync-bundle")]
+    [EnableRateLimiting("share-relay")]
     public IActionResult PutSyncBundle(string sessionId, [FromBody] SyncBundleDto dto)
     {
         if (string.IsNullOrWhiteSpace(sessionId)) return BadRequest();
@@ -69,6 +73,7 @@ public class ShareController(IMemoryCache cache) : ControllerBase
     }
 
     [HttpPut("{sessionId}/sync-bundle-reply")]
+    [EnableRateLimiting("share-relay")]
     public IActionResult PutSyncBundleReply(string sessionId, [FromBody] SyncBundleDto dto)
     {
         if (string.IsNullOrWhiteSpace(sessionId)) return BadRequest();

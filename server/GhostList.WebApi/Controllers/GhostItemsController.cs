@@ -30,6 +30,7 @@ public class GhostItemsController(IMediator mediator) : ControllerBase
     }
 
     [HttpPut("{id:guid}/toggle")]
+    [EnableRateLimiting("write-content")]
     public async Task<ActionResult> Toggle(Guid id)
     {
         var deviceId = Request.Headers["X-Device-Id"].FirstOrDefault();
@@ -39,6 +40,7 @@ public class GhostItemsController(IMediator mediator) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [EnableRateLimiting("write-content")]
     public async Task<ActionResult> DeleteItem(Guid id)
     {
         var deviceId = Request.Headers["X-Device-Id"].FirstOrDefault();

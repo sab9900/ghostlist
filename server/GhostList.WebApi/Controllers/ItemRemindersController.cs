@@ -4,6 +4,7 @@ using GhostList.Application.Features.ItemReminders.Commands.DeleteItemReminder;
 using GhostList.Application.Features.ItemReminders.Queries.GetItemReminders;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace GhostList.WebApi.Controllers;
 
@@ -30,6 +31,7 @@ public class ItemRemindersController(IMediator mediator) : ControllerBase
     }
 
     [HttpPost]
+    [EnableRateLimiting("write-content")]
     public async Task<ActionResult<Guid>> Create([FromBody] CreateItemReminderRequest request)
     {
         var deviceId = Request.Headers["X-Device-Id"].FirstOrDefault();
@@ -46,6 +48,7 @@ public class ItemRemindersController(IMediator mediator) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [EnableRateLimiting("write-content")]
     public async Task<ActionResult> Delete(Guid id)
     {
         var deviceId = Request.Headers["X-Device-Id"].FirstOrDefault();
@@ -57,6 +60,7 @@ public class ItemRemindersController(IMediator mediator) : ControllerBase
     }
 
     [HttpPut("{id:guid}/acknowledge")]
+    [EnableRateLimiting("write-content")]
     public async Task<ActionResult> Acknowledge(Guid id)
     {
         var deviceId = Request.Headers["X-Device-Id"].FirstOrDefault();
