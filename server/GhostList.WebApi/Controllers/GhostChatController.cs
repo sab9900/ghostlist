@@ -21,10 +21,10 @@ public record SaveGhostMessageVideoRequest(string EncryptedVideo, string VideoIn
 public class ChatController(IMediator mediator) : ControllerBase
 {
     [HttpGet("{listId:guid}")]
-    public async Task<ActionResult<List<GhostChatMessageDto>>> GetByListId(Guid listId)
+    public async Task<ActionResult<GhostChatMessagePageDto>> GetByListId(Guid listId, [FromQuery] DateTime? before, [FromQuery] int take = ChatMessagePaging.DefaultPageSize)
     {
-        var messages = await mediator.Send(new GetGhostChatMessagesByListIdQuery(listId));
-        return Ok(messages);
+        var page = await mediator.Send(new GetGhostChatMessagesByListIdQuery(listId, before, take));
+        return Ok(page);
     }
 
     [HttpPost]

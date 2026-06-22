@@ -1,63 +1,84 @@
-<div class="screen">
-    <header class="header">
+<div class="screen" role="main">
+
+    <header class="header" role="banner">
         <h1 class="title">Ghost List</h1>
-        <button class="close" (click)="cancel()" aria-label="Cancel">
+        <button class="close" (click)="cancel()" [attr.aria-label]="'COMMON.CANCEL' | translate">
             <svg lucideX [size]="20" aria-hidden="true"></svg>
         </button>
     </header>
 
-    @if (fileNames().length > 0) {
-        <div class="files">
-            @for (name of fileNames(); track name) {
-                <span class="file-chip">{{ name }}</span>
-            }
-        </div>
-    }
+    <div class="content">
 
-    @if (shareText()) {
-        <p class="share-text">{{ shareText() }}</p>
-    }
+        @if (fileNames().length > 0) {
+            <div class="files">
+                @for (name of fileNames(); track name) {
+                    <span class="file-chip">{{ name }}</span>
+                }
+            </div>
+        }
 
-    <section class="section" aria-labelledby="target-heading">
-        <h2 class="section-title" id="target-heading">{{ 'SHARE.TARGET' | translate }}</h2>
-        <div class="targets">
-            <button
-                class="target-btn"
-                [class.target-btn--active]="selectedTarget() === 'charon'"
-                (click)="selectTarget('charon')">
-                <svg lucideSkull [size]="22" aria-hidden="true"></svg>
-                Charon Drop
-            </button>
-            <button
-                class="target-btn"
-                [class.target-btn--active]="selectedTarget() === 'chat'"
-                (click)="selectTarget('chat')">
-                <svg lucideGhost [size]="22" aria-hidden="true"></svg>
-                Ghost Chat
-            </button>
-        </div>
-    </section>
+        @if (shareText()) {
+            <p class="share-text">{{ shareText() }}</p>
+        }
 
-    <section class="section" aria-labelledby="list-heading">
-        <h2 class="section-title" id="list-heading">{{ 'SHARE.LIST' | translate }}</h2>
-        <ul class="lists" role="list">
-            @for (list of knownLists(); track list.id) {
-                <li>
+        <section class="section" aria-labelledby="target-heading">
+            <h2 class="section-title" id="target-heading">{{ 'SHARE.TARGET' | translate }}</h2>
+            <div class="option-list" role="radiogroup" aria-labelledby="target-heading">
+                <button
+                    class="option"
+                    [class.option--active]="selectedTarget() === 'charon'"
+                    role="radio"
+                    [attr.aria-checked]="selectedTarget() === 'charon'"
+                    (click)="selectTarget('charon')">
+                    <svg lucideSkull [size]="18" aria-hidden="true" class="option-icon"></svg>
+                    <span class="option-label">Charon Drop</span>
+                    @if (selectedTarget() === 'charon') {
+                        <span class="option-check" aria-hidden="true">✓</span>
+                    }
+                </button>
+                <button
+                    class="option"
+                    [class.option--active]="selectedTarget() === 'chat'"
+                    role="radio"
+                    [attr.aria-checked]="selectedTarget() === 'chat'"
+                    (click)="selectTarget('chat')">
+                    <svg lucideGhost [size]="18" aria-hidden="true" class="option-icon"></svg>
+                    <span class="option-label">Ghost Chat</span>
+                    @if (selectedTarget() === 'chat') {
+                        <span class="option-check" aria-hidden="true">✓</span>
+                    }
+                </button>
+            </div>
+        </section>
+
+        <section class="section" aria-labelledby="list-heading">
+            <h2 class="section-title" id="list-heading">{{ 'SHARE.LIST' | translate }}</h2>
+            <div class="option-list" role="radiogroup" aria-labelledby="list-heading">
+                @for (list of knownLists(); track list.id) {
                     <button
-                        class="list-btn"
-                        [class.list-btn--active]="selectedListId() === list.id"
+                        class="option"
+                        [class.option--active]="selectedListId() === list.id"
+                        role="radio"
+                        [attr.aria-checked]="selectedListId() === list.id"
                         (click)="selectList(list)">
-                        {{ list.name }}
+                        <span class="option-label">{{ list.name }}</span>
+                        @if (selectedListId() === list.id) {
+                            <span class="option-check" aria-hidden="true">✓</span>
+                        }
                     </button>
-                </li>
-            }
-        </ul>
-    </section>
+                }
+            </div>
+        </section>
 
-    <button
-        class="confirm-btn"
-        [disabled]="!selectedListId()"
-        (click)="confirm()">
-        {{ 'SHARE.CONFIRM' | translate }}
-    </button>
+    </div>
+
+    <div class="footer">
+        <button
+            class="btn btn--primary btn--block"
+            [disabled]="!selectedListId()"
+            (click)="confirm()">
+            {{ 'SHARE.CONFIRM' | translate }}
+        </button>
+    </div>
+
 </div>

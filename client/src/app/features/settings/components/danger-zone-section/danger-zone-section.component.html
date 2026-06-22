@@ -1,0 +1,14 @@
+<section class="section section--danger" aria-labelledby="erinyes-heading">
+    <div class="heading">
+        <h2 class="title title--danger" id="erinyes-heading">
+            <svg lucideFlame [size]="16" aria-hidden="true"></svg>
+            {{ 'SETTINGS.ERINYES.TITLE' | translate }}
+        </h2>
+        <p class="hint">{{ 'SETTINGS.ERINYES.HINT' | translate }}</p>
+    </div>
+    <div class="body">
+        <button class="btn btn--danger-solid" (click)="activate.emit()">
+            {{ 'SETTINGS.ERINYES.ACTIVATE_BTN' | translate }}
+        </button>
+    </div>
+</section>

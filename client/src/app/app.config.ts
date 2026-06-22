@@ -7,6 +7,7 @@ import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 
 import { routes } from './app.routes';
 import { LanguageService } from './core/services/language.service';
+import { PrefsCacheService } from './core/services/prefs-cache.service';
 import { ShareHandlerService } from './core/services/share-handler.service';
 import { SharedListsBridgeService } from './core/services/shared-lists-bridge.service';
 
@@ -23,6 +24,12 @@ export const appConfig: ApplicationConfig = {
         }),
         provideTranslateService({ fallbackLang: 'en_US' }),
         provideTranslateHttpLoader({ prefix: '/i18n/', suffix: '.json' }),
+        // Warms the IndexedDB preference cache and runs the one-time
+        // localStorage migration (see PrefsCacheService). Registering it as
+        // an app initializer guarantees the root component — and therefore
+        // every service/component constructed as part of it — only ever
+        // sees an already-warm cache.
+        provideAppInitializer(() => inject(PrefsCacheService).warmUp()),
         provideAppInitializer(() => inject(LanguageService).init()),
         provideAppInitializer(() => inject(ShareHandlerService).initialize()),
         provideAppInitializer(() => inject(SharedListsBridgeService).initialize()),

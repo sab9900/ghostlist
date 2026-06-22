@@ -1,0 +1,113 @@
+:host {
+    display: block;
+    --trim-handle-width: 30px;
+}
+
+.trim-strip {
+    position: relative;
+    height: 64px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: #161616;
+    touch-action: none;
+    user-select: none;
+}
+
+.trim-strip__track {
+    position: absolute;
+    inset: 0;
+    display: flex;
+}
+
+.trim-strip__thumb {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    pointer-events: none;
+}
+
+.trim-strip__shutter {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: color-mix(in srgb, #000 65%, transparent);
+    pointer-events: none;
+    transition: width var(--duration-fast) var(--ease-out);
+}
+
+.trim-strip__shutter--left {
+    left: 0;
+}
+
+.trim-strip__shutter--right {
+    right: 0;
+}
+
+.trim-strip__frame {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-top: 3px solid var(--color-primary);
+    border-bottom: 3px solid var(--color-primary);
+    box-sizing: border-box;
+    pointer-events: none;
+}
+
+.trim-strip__playhead {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #fff;
+    box-shadow: 0 0 4px color-mix(in srgb, #000 70%, transparent);
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.trim-strip__handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: var(--trim-handle-width);
+    background: var(--color-primary);
+    border: none;
+    padding: 0;
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+    z-index: 2;
+
+    &:active {
+        cursor: grabbing;
+    }
+}
+
+/*
+ * Handles are the end-caps of the selection bracket itself — flush with
+ * the boundary and extending inward, never centered on it. Centering them
+ * on the boundary (translateX(-50%)) used to put half of each handle
+ * outside the strip's [0, 100%] range, where the strip's own
+ * `overflow: hidden` clipped it away — making it both invisible and
+ * unclickable whenever the clip was untrimmed on that side.
+ */
+.trim-strip__handle--start {
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.trim-strip__handle--end {
+    transform: translateX(-100%);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.trim-strip__grip {
+    width: 4px;
+    height: 22px;
+    border-radius: var(--radius-full, 999px);
+    background: color-mix(in srgb, #fff 85%, transparent);
+}

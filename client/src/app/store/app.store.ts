@@ -44,6 +44,8 @@ interface AppState {
     visibleListTabs: ListSubTab[];
     items: GhostListItem[];
     messages: GhostChatMessage[];
+    messagesHasMore: boolean;
+    loadingOlderMessages: boolean;
     charonDrops: CharonDropDto[];
     imageDataUrls: Record<string, string>;
     audioDataUrls: Record<string, string>;
@@ -51,6 +53,7 @@ interface AppState {
     listsLoaded: boolean;
     pendingOpsCount: number;
     loading: boolean;
+    currentListSynced: boolean;
     error: string | null;
 }
 
@@ -62,6 +65,8 @@ const initialState: AppState = {
     visibleListTabs: [],
     items: [],
     messages: [],
+    messagesHasMore: true,
+    loadingOlderMessages: false,
     charonDrops: [],
     imageDataUrls: {},
     audioDataUrls: {},
@@ -69,6 +74,7 @@ const initialState: AppState = {
     listsLoaded: false,
     pendingOpsCount: 0,
     loading: false,
+    currentListSynced: false,
     error: null,
 };
 
@@ -172,6 +178,8 @@ export const AppStore = signalStore(
                 } catch { }
 
                 hub.itemCreated$.subscribe((event) => {
+                    store._bumpListActivity(event.ghostListId, event.createdAt);
+
                     if (event.ghostListId !== store.currentListId()) {
                         if (!isOwnSender(event.senderUserId, event.senderDeviceId)) {
                             store._addUnreadItem(event.ghostListId, event.id);
@@ -250,6 +258,8 @@ export const AppStore = signalStore(
                 });
 
                 hub.messageReceived$.subscribe((event) => {
+                    store._bumpListActivity(event.ghostListId, event.createdAt);
+
                     if (event.ghostListId !== store.currentListId()) {
                         if (!isOwnSender(event.senderUserId, event.senderDeviceId)) {
                             haptics.messageReceived();
@@ -348,6 +358,8 @@ export const AppStore = signalStore(
                 });
 
                 hub.charonDropCreated$.subscribe((event) => {
+                    store._bumpListActivity(event.ghostListId, event.createdAt);
+
                     const isOwn = isOwnSender(event.senderUserId, event.senderDeviceId);
 
                     if (event.ghostListId !== store.currentListId()) {

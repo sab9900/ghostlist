@@ -10,6 +10,7 @@ import { ApiService } from '../../api/api.service';
 import { DevicePlatformDto } from '../models';
 import { DeviceTokenService } from './device-token.service';
 import { LanguageService } from './language.service';
+import { PrefsCacheService } from './prefs-cache.service';
 
 @Injectable({ providedIn: 'root' })
 export class PushNotificationService {
@@ -18,6 +19,7 @@ export class PushNotificationService {
     private readonly api = inject(ApiService);
     private readonly router = inject(Router);
     private readonly languageService = inject(LanguageService);
+    private readonly prefsCache = inject(PrefsCacheService);
 
     private firebaseApp: FirebaseApp | null = null;
     private messaging: Messaging | null = null;
@@ -246,11 +248,11 @@ export class PushNotificationService {
             });
             if (!token) return false;
 
-            const previousToken = localStorage.getItem(this.WEB_TOKEN_STORAGE_KEY);
+            const previousToken = this.prefsCache.get<string | null>(this.WEB_TOKEN_STORAGE_KEY, null);
             if (previousToken && previousToken !== token) {
                 console.info('[Push] FCM token rotated – re-subscribing with new token.');
             }
-            localStorage.setItem(this.WEB_TOKEN_STORAGE_KEY, token);
+            this.prefsCache.set(this.WEB_TOKEN_STORAGE_KEY, token);
 
             this.setToken(token);
             this.pushActive.set(true);

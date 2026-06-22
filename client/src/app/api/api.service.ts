@@ -10,7 +10,7 @@ import {
     CreateListReminderRequest,
     ItemReminderDto,
     ListReminderDto,
-    GhostChatMessage,
+    GhostChatMessagePage,
     GhostList,
     GhostListItem,
     GhostMessageAudioDto,
@@ -110,8 +110,10 @@ export class ApiService {
             { headers: this.deviceIdHeaders() });
     }
 
-    getMessages(listId: string): Observable<GhostChatMessage[]> {
-        return this.http.get<GhostChatMessage[]>(`${this.BASE}/chat/${listId}`);
+    getMessages(listId: string, before?: string, take = 50): Observable<GhostChatMessagePage> {
+        const params: Record<string, string> = { take: String(take) };
+        if (before) params['before'] = before;
+        return this.http.get<GhostChatMessagePage>(`${this.BASE}/chat/${listId}`, { params });
     }
 
     createMessage(request: CreateGhostMessageRequest): Observable<string> {

@@ -1,0 +1,29 @@
+@if (show()) {
+<div class="backdrop" (click)="closed.emit()" role="presentation">
+    <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+        aria-labelledby="filter-dialog-title">
+        <h2 class="title" id="filter-dialog-title">{{ 'LISTS.FILTER_TITLE' | translate }}</h2>
+
+        <input #input class="input" type="search"
+            [attr.placeholder]="'LISTS.FILTER_SEARCH_PLACEHOLDER' | translate"
+            [ngModel]="query()" (ngModelChange)="onQueryChange($event)"
+            [attr.aria-label]="'LISTS.FILTER_SEARCH_PLACEHOLDER' | translate" />
+
+        <div class="sort">
+            <span class="sort__label">{{ 'LISTS.FILTER_SORT_LABEL' | translate }}</span>
+            <div class="sort__options" role="radiogroup" [attr.aria-label]="'LISTS.FILTER_SORT_LABEL' | translate">
+                <button type="button" class="sort__option" [class.is-active]="sortOrder() === 'name'"
+                    role="radio" [attr.aria-checked]="sortOrder() === 'name'"
+                    (click)="onSortChange('name')">{{ 'LISTS.SORT_NAME' | translate }}</button>
+                <button type="button" class="sort__option" [class.is-active]="sortOrder() === 'recent'"
+                    role="radio" [attr.aria-checked]="sortOrder() === 'recent'"
+                    (click)="onSortChange('recent')">{{ 'LISTS.SORT_RECENT' | translate }}</button>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn--primary" (click)="closed.emit()">{{ 'COMMON.CLOSE' | translate }}</button>
+        </div>
+    </div>
+</div>
+}

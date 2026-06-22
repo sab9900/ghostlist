@@ -34,7 +34,7 @@
 .label { display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--text-sm); color: var(--color-text-subtle); }
 
 .input {
-    color-scheme: dark;
+    color-scheme: var(--color-scheme);
     background: var(--color-surface-2);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
@@ -53,38 +53,41 @@
 }
 
 .saved { margin: 0; font-size: var(--text-sm); font-weight: var(--weight-semi); color: var(--color-success, #4caf50); text-align: center; }
-.actions { display: flex; gap: var(--space-3); padding-top: var(--space-2); }
+.actions { display: flex; gap: var(--space-3); justify-content: flex-end; padding-top: var(--space-2); }
 
-.cancel {
-    flex: 1;
-    background: none;
-    border: 1px solid var(--color-border);
+.btn {
+    padding: var(--space-2) var(--space-5);
     border-radius: var(--radius-sm);
-    color: var(--color-text-subtle);
-    font-size: var(--text-sm);
+    font-size: var(--text-base);
+    font-weight: var(--weight-medium);
     font-family: var(--font-sans);
-    padding: var(--space-3) var(--space-4);
     cursor: pointer;
-    transition: background var(--duration-fast) var(--ease-out);
-    &:hover { background: var(--color-surface-2); }
-}
-
-.save {
-    flex: 2;
-    background: var(--color-primary);
     border: none;
-    border-radius: var(--radius-sm);
-    color: var(--color-on-primary);
-    font-size: var(--text-sm);
-    font-family: var(--font-sans);
-    font-weight: var(--weight-semi);
-    padding: var(--space-3) var(--space-4);
-    cursor: pointer;
-    transition: background var(--duration-fast) var(--ease-out);
-    white-space: nowrap;
-    &:hover:not(:disabled) { background: var(--color-primary-hover); }
-    &:disabled { opacity: 0.5; cursor: not-allowed; }
-    &--ical { background: none; border: 1px solid var(--color-primary); color: var(--color-primary); &:hover { background: rgba(var(--color-primary-rgb, 255 111 60), 0.1); } }
+    transition:
+        background var(--duration-fast) var(--ease-out),
+        opacity var(--duration-fast) var(--ease-out);
+
+    &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    &--primary {
+        background: var(--color-primary);
+        color: var(--color-on-primary);
+        &:hover:not(:disabled) {
+            background: var(--color-primary-hover);
+        }
+    }
+
+    &--ghost {
+        background: transparent;
+        color: var(--color-text-muted);
+        &:hover:not(:disabled) {
+            background: var(--color-surface-2);
+            color: var(--color-text);
+        }
+    }
 }
 
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }

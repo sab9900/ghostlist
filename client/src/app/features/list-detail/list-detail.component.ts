@@ -6,8 +6,10 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { filter, from, map, of, switchMap, take } from 'rxjs';
 import { HubService } from '../../api/hub.service';
 import { SwipeBackDirective } from '../../core/directives/swipe-back.directive';
+import { TabTransitionDirective } from '../../core/directives/tab-transition.directive';
 import { ListMember, ListSubTab } from '../../core/models';
 import { LayoutService } from '../../core/services/layout.service';
+import { PrefsCacheService } from '../../core/services/prefs-cache.service';
 import { BadgeComponent } from '../../shared/badge/badge.component';
 import { AppStore } from '../../store/app.store';
 import { CharonTabComponent } from './charon-tab/charon-tab.component';
@@ -25,14 +27,16 @@ const PANE_MIN = 20;
 const PANE_MAX = 70;
 const PANE_DEFAULT = 40;
 
-function loadPaneWidth(): number {
-    try {
-        const stored = localStorage.getItem(PANE_WIDTH_KEY);
-        if (stored) {
-            const n = parseFloat(stored);
-            if (!isNaN(n)) return Math.min(PANE_MAX, Math.max(PANE_MIN, n));
-        }
-    } catch { }
+// Reads synchronously from PrefsCacheService's in-memory cache rather than
+// IndexedDB directly: by the time any routed component like this one is
+// constructed, the app has long since bootstrapped, and the cache's
+// warm-up app initializer has resolved (see app.config.ts) — so the value
+// is already available without an async round-trip.
+function loadPaneWidth(prefsCache: PrefsCacheService): number {
+    const stored = prefsCache.get<number | null>(PANE_WIDTH_KEY, null);
+    if (stored !== null && !isNaN(stored)) {
+        return Math.min(PANE_MAX, Math.max(PANE_MIN, stored));
+    }
     return PANE_DEFAULT;
 }
 
@@ -45,7 +49,7 @@ function loadPaneWidth(): number {
         WhisperTabComponent,
         CharonTabComponent,
         SettingsTabComponent,
-        RouterOutlet, TranslatePipe, SwipeBackDirective, LucideSettings],
+        RouterOutlet, TranslatePipe, SwipeBackDirective, TabTransitionDirective, LucideSettings],
     templateUrl: './list-detail.component.html',
     styleUrl: './list-detail.component.scss',
 })
@@ -55,6 +59,7 @@ export class ListDetailComponent implements OnDestroy {
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
     protected readonly layout = inject(LayoutService);
+    private readonly prefsCache = inject(PrefsCacheService);
 
     private readonly currentUrl = toSignal(
         this.router.events.pipe(
@@ -81,7 +86,7 @@ export class ListDetailComponent implements OnDestroy {
 
     protected readonly desktopChatView = signal<DesktopChatView>('chat');
 
-    protected readonly paneWidth = signal(loadPaneWidth());
+    protected readonly paneWidth = signal(loadPaneWidth(this.prefsCache));
     protected readonly paneResizing = signal(false);
 
     protected readonly listName = computed(() => {
@@ -162,6 +167,7 @@ export class ListDetailComponent implements OnDestroy {
                 this.membersLoaded.set(false);
                 return;
             }
+            this.members.set(this.store.peekCachedMembers(id));
             this.refreshMembers();
         });
 
@@ -185,7 +191,7 @@ export class ListDetailComponent implements OnDestroy {
             if (tab === null) {
                 const url = this.currentUrl().split(/[?#]/)[0];
                 if (url === `/list/${id}` || url === `/list/${id}/`) {
-                    void this.router.navigate(['/list', id, 'items'], { replaceUrl: true });
+                    void this.router.navigate(['/list', id, this.defaultTabFor(id)], { replaceUrl: true });
                 }
                 return;
             }
@@ -199,6 +205,13 @@ export class ListDetailComponent implements OnDestroy {
                 void this.router.navigate(['/list', id, 'items'], { replaceUrl: true });
             }
         });
+    }
+
+    /** Lands on the first tab (in display order) that has unread news for the given list, falling back to items. */
+    private defaultTabFor(id: string): Tab {
+        if ((this.store.unreadItemCounts()[id] ?? 0) > 0) return 'items';
+        if ((this.store.unreadCounts()[id] ?? 0) > 0) return 'chat';
+        return 'items';
     }
 
     private refreshMembers(): void {
@@ -264,9 +277,7 @@ export class ListDetailComponent implements OnDestroy {
             document.removeEventListener('mousemove', onMove);
             document.removeEventListener('mouseup', onUp);
             this.paneResizing.set(false);
-            try {
-                localStorage.setItem(PANE_WIDTH_KEY, String(this.paneWidth()));
-            } catch { }
+            this.prefsCache.set(PANE_WIDTH_KEY, this.paneWidth());
         };
 
         document.addEventListener('mousemove', onMove);

@@ -98,6 +98,25 @@ export function withKnownLists() {
                     patchState(store, { knownLists: store.knownLists().filter((l) => l.id !== listId) });
                 },
 
+                /**
+                 * Bumps a list's "last activity" timestamp (new item, message,
+                 * or Charon drop) so the lists screen can offer a
+                 * most-recent-first sort. Out-of-order events (e.g. a delayed
+                 * push arriving after a newer one already landed) never move
+                 * the timestamp backwards.
+                 */
+                _bumpListActivity(listId: string, at?: string): void {
+                    const known = store.knownLists().find((l) => l.id === listId);
+                    if (!known) return;
+                    const timestamp = at ?? new Date().toISOString();
+                    if (known.lastActivityAt && known.lastActivityAt >= timestamp) return;
+                    const updated: KnownList = { ...known, lastActivityAt: timestamp };
+                    patchState(store, {
+                        knownLists: store.knownLists().map((l) => l.id === listId ? updated : l),
+                    });
+                    void storage.upsert(stripPlaintextIfWrapped(updated)).catch(() => { });
+                },
+
                 async updateNotificationPreferences(
                     listId: string,
                     notifyOnMessage: boolean,

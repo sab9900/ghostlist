@@ -51,6 +51,15 @@ export function withPairing() {
             const pendingSyncReplyReceives = new Map<string, CryptoKey>();
             const syncBundleClaimed = new Map<string, number>();
 
+            // Lives as long as the (root-provided) store does, i.e. the whole
+            // app session — unlike the components that read it, which get
+            // destroyed and recreated on every navigation. Lets a remounted
+            // lists/list-detail page paint members (and their avatars)
+            // immediately from the last known fetch instead of a blank/empty
+            // state while fetchMembersForList's network round-trip + decrypt
+            // is in flight again.
+            const membersCache = new Map<string, ListMember[]>();
+
             const buildSyncPayload = (): string => {
                 const lists = store.knownLists();
                 const payload: SyncBundlePayload = {
@@ -252,7 +261,12 @@ export function withPairing() {
                             });
                         } catch { }
                     }
+                    membersCache.set(listId, members);
                     return members;
+                },
+
+                peekCachedMembers(listId: string): ListMember[] {
+                    return membersCache.get(listId) ?? [];
                 },
 
                 async initSyncReceive(): Promise<SyncQrPayload> {

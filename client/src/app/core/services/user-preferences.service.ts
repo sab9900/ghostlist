@@ -1,29 +1,36 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { Capacitor } from '@capacitor/core';
 import { ListStorageService, PREFS_STORE } from './list-storage.service';
+import { PrefsCacheService } from './prefs-cache.service';
 
 const KEY_CRYPTO_KEY  = 'prefs-crypto-key';
 const KEY_SENDER_NAME = 'sender-name';
-const LS_KEY          = 'gl_sender_name';
-const LS_ONBOARDED_KEY = 'gl_name_onboarded';
-const LS_HAPTICS_KEY  = 'gl_haptics_enabled';
-const LS_NOTIF_ENABLED_KEY = 'gl_notif_enabled';
-const LS_NOTIF_PROMPTED_KEY = 'gl_notif_prompted';
-const LS_CAMERA_FACING_KEY = 'gl_video_camera_facing';
+const LEGACY_SENDER_NAME_KEY = 'gl_sender_name';
+const ONBOARDED_KEY       = 'gl_name_onboarded';
+const HAPTICS_KEY         = 'gl_haptics_enabled';
+const NOTIF_ENABLED_KEY   = 'gl_notif_enabled';
+const NOTIF_PROMPTED_KEY  = 'gl_notif_prompted';
+const CAMERA_FACING_KEY   = 'gl_video_camera_facing';
+const GHOST_MIST_KEY      = 'gl_ghost_mist_mode';
+const LIST_SORT_KEY       = 'gl_list_sort_order';
 
 const DEFAULT_HAPTICS_ENABLED = Capacitor.getPlatform() === 'ios';
+
+export type GhostMistMode = 'off' | 'idle-3s' | 'idle-10s' | 'always';
+export type ListSortOrder = 'name' | 'recent';
 
 interface EncryptedEntry { key: string; ciphertext: string; iv: string; }
 
 @Injectable({ providedIn: 'root' })
 export class UserPreferencesService {
     private readonly storage = inject(ListStorageService);
+    private readonly prefsCache = inject(PrefsCacheService);
 
-    readonly senderName = signal<string>(localStorage.getItem(LS_KEY) ?? '');
+    readonly senderName = signal<string>('');
 
     readonly hydrated = signal(false);
 
-    readonly onboarded = signal<boolean>(localStorage.getItem(LS_ONBOARDED_KEY) === '1');
+    readonly onboarded = signal<boolean>(this.prefsCache.get(ONBOARDED_KEY, false));
 
     private hydratedResolve!: () => void;
     private readonly hydratedPromise = new Promise<void>(resolve => { this.hydratedResolve = resolve; });
@@ -48,7 +55,7 @@ export class UserPreferencesService {
     markOnboarded(): void {
         if (this.onboarded()) return;
         this.onboarded.set(true);
-        localStorage.setItem(LS_ONBOARDED_KEY, '1');
+        this.prefsCache.set(ONBOARDED_KEY, true);
         this.onboardedResolve?.();
         this.onboardedResolve = null;
     }
@@ -56,52 +63,69 @@ export class UserPreferencesService {
     setSenderName(name: string): void {
         const trimmed = name.trim();
         this.senderName.set(trimmed);
-        localStorage.setItem(LS_KEY, trimmed);
         void this.saveToIdb(trimmed);
         if (trimmed) this.markOnboarded();
     }
 
     readonly hapticsEnabled = signal<boolean>(
-        ((): boolean => {
-            const stored = localStorage.getItem(LS_HAPTICS_KEY);
-            return stored !== null ? stored === '1' : DEFAULT_HAPTICS_ENABLED;
-        })(),
+        this.prefsCache.get(HAPTICS_KEY, DEFAULT_HAPTICS_ENABLED),
     );
 
     setHapticsEnabled(enabled: boolean): void {
         this.hapticsEnabled.set(enabled);
-        localStorage.setItem(LS_HAPTICS_KEY, enabled ? '1' : '0');
+        this.prefsCache.set(HAPTICS_KEY, enabled);
     }
 
     /** Whether the user has opted in to push notifications (soft toggle, independent of browser permission). */
     readonly notificationsEnabled = signal<boolean>(
-        localStorage.getItem(LS_NOTIF_ENABLED_KEY) === '1',
+        this.prefsCache.get(NOTIF_ENABLED_KEY, false),
     );
 
     setNotificationsEnabled(enabled: boolean): void {
         this.notificationsEnabled.set(enabled);
-        localStorage.setItem(LS_NOTIF_ENABLED_KEY, enabled ? '1' : '0');
+        this.prefsCache.set(NOTIF_ENABLED_KEY, enabled);
     }
 
     /** Whether we've already shown the notification onboarding dialog once. */
     readonly notifPrompted = signal<boolean>(
-        localStorage.getItem(LS_NOTIF_PROMPTED_KEY) === '1',
+        this.prefsCache.get(NOTIF_PROMPTED_KEY, false),
     );
 
     markNotifPrompted(): void {
         this.notifPrompted.set(true);
-        localStorage.setItem(LS_NOTIF_PROMPTED_KEY, '1');
+        this.prefsCache.set(NOTIF_PROMPTED_KEY, true);
     }
 
     /** Which camera (front/back) video recording should default to next time. */
     readonly preferredCameraFacing = signal<'user' | 'environment'>(
-        localStorage.getItem(LS_CAMERA_FACING_KEY) === 'environment' ? 'environment' : 'user',
+        this.prefsCache.get<'user' | 'environment'>(CAMERA_FACING_KEY, 'user'),
     );
 
     setPreferredCameraFacing(facing: 'user' | 'environment'): void {
         if (this.preferredCameraFacing() === facing) return;
         this.preferredCameraFacing.set(facing);
-        localStorage.setItem(LS_CAMERA_FACING_KEY, facing);
+        this.prefsCache.set(CAMERA_FACING_KEY, facing);
+    }
+
+    /** When/how the drifting ghost-mist background animation shows on the lists page. 'idle-3s' by default. */
+    readonly ghostMistMode = signal<GhostMistMode>(
+        this.prefsCache.get<GhostMistMode>(GHOST_MIST_KEY, 'idle-3s'),
+    );
+
+    setGhostMistMode(mode: GhostMistMode): void {
+        this.ghostMistMode.set(mode);
+        this.prefsCache.set(GHOST_MIST_KEY, mode);
+    }
+
+    /** How the lists screen orders the list cards. 'name' by default. */
+    readonly listSortOrder = signal<ListSortOrder>(
+        this.prefsCache.get<ListSortOrder>(LIST_SORT_KEY, 'name'),
+    );
+
+    setListSortOrder(order: ListSortOrder): void {
+        if (this.listSortOrder() === order) return;
+        this.listSortOrder.set(order);
+        this.prefsCache.set(LIST_SORT_KEY, order);
     }
 
     private async loadFromIdb(): Promise<void> {
@@ -110,13 +134,15 @@ export class UserPreferencesService {
             const encKey = await this.getOrCreateKey(db);
             const stored = await this.idbGet<EncryptedEntry>(db, KEY_SENDER_NAME);
             if (!stored) {
-                const existing = localStorage.getItem(LS_KEY);
-                if (existing) await this.saveToIdb(existing);
+                const existing = this.readLegacySenderName();
+                if (existing) {
+                    this.senderName.set(existing);
+                    await this.saveToIdb(existing);
+                }
                 return;
             }
             const plain = await this.decrypt(stored.ciphertext, stored.iv, encKey);
             this.senderName.set(plain);
-            localStorage.setItem(LS_KEY, plain);
         } catch { }
         finally {
 
@@ -125,6 +151,22 @@ export class UserPreferencesService {
             }
             this.hydrated.set(true);
             this.hydratedResolve();
+        }
+    }
+
+    /**
+     * One-time migration: the sender name used to be mirrored in
+     * localStorage as plaintext alongside its encrypted IndexedDB copy.
+     * That mirror is gone now — this only reads it on a fresh load when no
+     * encrypted entry exists yet, then removes the legacy key for good.
+     */
+    private readLegacySenderName(): string | null {
+        try {
+            const value = localStorage.getItem(LEGACY_SENDER_NAME_KEY);
+            if (value !== null) localStorage.removeItem(LEGACY_SENDER_NAME_KEY);
+            return value;
+        } catch {
+            return null;
         }
     }
 

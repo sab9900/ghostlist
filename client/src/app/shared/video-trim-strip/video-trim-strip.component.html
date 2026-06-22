@@ -1,0 +1,33 @@
+<div class="trim-strip">
+    <div #track class="trim-strip__track">
+        @for (thumb of thumbnails(); track $index) {
+        <img class="trim-strip__thumb" [src]="thumb" alt="" aria-hidden="true" />
+        }
+    </div>
+
+    <div class="trim-strip__shutter trim-strip__shutter--left" [style.width.%]="leftPercent()"></div>
+    <div class="trim-strip__shutter trim-strip__shutter--right" [style.width.%]="100 - rightPercent()"></div>
+
+    @if (showPlayhead()) {
+    <div class="trim-strip__playhead" [style.left.%]="playheadPercent()" aria-hidden="true"></div>
+    }
+
+    <div class="trim-strip__frame" [style.left.%]="leftPercent()" [style.width.%]="framePercentWidth()"
+        aria-hidden="true"></div>
+
+    <button type="button" class="trim-strip__handle trim-strip__handle--start" [style.left.%]="leftPercent()"
+        (pointerdown)="onHandlePointerDown($event, 'start')" (pointermove)="onHandlePointerMove($event)"
+        (pointerup)="onHandlePointerUp($event)" (pointercancel)="onHandlePointerUp($event)"
+        (keydown)="onHandleKeydown($event, 'start')" role="slider" aria-orientation="horizontal" [attr.aria-valuemin]="0"
+        [attr.aria-valuemax]="duration()" [attr.aria-valuenow]="trimStart()" [attr.aria-label]="startAriaLabel()">
+        <span class="trim-strip__grip" aria-hidden="true"></span>
+    </button>
+
+    <button type="button" class="trim-strip__handle trim-strip__handle--end" [style.left.%]="rightPercent()"
+        (pointerdown)="onHandlePointerDown($event, 'end')" (pointermove)="onHandlePointerMove($event)"
+        (pointerup)="onHandlePointerUp($event)" (pointercancel)="onHandlePointerUp($event)"
+        (keydown)="onHandleKeydown($event, 'end')" role="slider" aria-orientation="horizontal" [attr.aria-valuemin]="0"
+        [attr.aria-valuemax]="duration()" [attr.aria-valuenow]="trimEnd()" [attr.aria-label]="endAriaLabel()">
+        <span class="trim-strip__grip" aria-hidden="true"></span>
+    </button>
+</div>

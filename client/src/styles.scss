@@ -88,9 +88,11 @@
     --safe-bottom-effective: max(0px, calc(var(--safe-bottom) - var(--keyboard-height)));
 
     --color-on-primary: #fff;
+    --color-scheme: dark;
 }
 
 @mixin light-theme {
+    --color-scheme: light;
     --color-bg: #f4f4f6;
     --color-surface: #ffffff;
     --color-surface-2: #f0f0f3;
@@ -114,6 +116,7 @@
 }
 
 @mixin dark-theme {
+    --color-scheme: dark;
     --color-bg: #0e0e10;
     --color-surface: #1a1a1e;
     --color-surface-2: #242428;

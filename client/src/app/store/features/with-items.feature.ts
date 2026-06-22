@@ -18,6 +18,7 @@ export interface ItemsStoreSlice extends WritableStateSource<{ items: GhostListI
     _persistCurrentList: () => Promise<void>;
     _enqueueOp: (op: Parameters<ListStorageService['addPendingOp']>[0]) => Promise<void>;
     _upsertToggleOp: (listId: string, itemId: string, desiredChecked: boolean, createdAt: string) => Promise<void>;
+    _bumpListActivity: (listId: string, at?: string) => void;
 }
 
 export function createItemsMethods(store: ItemsStoreSlice) {
@@ -57,6 +58,7 @@ export function createItemsMethods(store: ItemsStoreSlice) {
             };
             patchState(store, { items: [...store.items(), optimisticItem] });
             void store._persistCurrentList();
+            store._bumpListActivity(listId, optimisticItem.createdAt);
 
             try {
                 const realId = await firstValueFrom(api.createItem(payload));

@@ -22,3 +22,11 @@ export function resolveCreatedMessageId(messages: GhostChatMessage[], tempMessag
     }
     return messages.map(m => m.id === tempMessageId ? { ...m, id: realId } : m);
 }
+
+export function mergeRecentMessagesPage(existing: GhostChatMessage[], recentPage: GhostChatMessage[]): GhostChatMessage[] {
+    if (recentPage.length === 0) return [];
+    const recentIds = new Set(recentPage.map(m => m.id));
+    const oldestRecentCreatedAt = recentPage[0].createdAt;
+    const olderRetained = existing.filter(m => !recentIds.has(m.id) && m.createdAt < oldestRecentCreatedAt);
+    return [...olderRetained, ...recentPage];
+}

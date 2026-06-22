@@ -9,7 +9,8 @@
         "DELETING": "Deleting…",
         "SKIP": "Skip",
         "TRY_AGAIN": "Try again",
-        "SUBMIT": "Submit"
+        "SUBMIT": "Submit",
+        "LOADING": "Loading…"
     },
     "LISTS": {
         "EMPTY_HEADLINE": "No lists yet",
@@ -19,6 +20,12 @@
         "MENU_SETTINGS": "Settings",
         "MENU_COFFEE": "Buy me a coffee",
         "MENU_ABOUT": "About",
+        "FILTER_TITLE": "Search & Sort",
+        "FILTER_SEARCH_PLACEHOLDER": "Search lists…",
+        "FILTER_SORT_LABEL": "Sort by",
+        "SORT_NAME": "Name",
+        "SORT_RECENT": "Recent activity",
+        "SEARCH_NO_RESULTS": "No lists found.",
         "CREATE_TITLE": "New list",
         "CREATE_PLACEHOLDER": "List name…",
         "CREATE_BTN": "Create",
@@ -74,6 +81,7 @@
     },
     "CHAT": {
         "NO_MESSAGES": "No messages yet.",
+        "LOADING_OLDER": "Loading older messages…",
         "ANONYMOUS": "Anonymous",
         "EDIT_NAME": "Edit name",
         "MESSAGE_PLACEHOLDER": "Message…",
@@ -305,6 +313,14 @@
         "HAPTICS_TITLE": "Haptics",
         "HAPTICS_ENABLE": "Enable haptics",
         "HAPTICS_HINT": "Vibrate on taps and actions like adding or checking off items.",
+        "GHOST_MIST_TITLE": "Ghost Mist",
+        "GHOST_MIST_HINT": "Faint streaks drift upward across the lists page in your accent color after a moment of inactivity.",
+        "GHOST_MIST_MODE": {
+            "OFF": "Off",
+            "IDLE_3S": "After 3 seconds",
+            "IDLE_10S": "After 10 seconds",
+            "ALWAYS": "Always on"
+        },
         "SYNC_TITLE": "Sync Machine",
         "SYNC_HINT": "Merge all your lists with another device, in either direction.",
         "SYNC_MACHINES": "Sync machines",
@@ -376,6 +392,29 @@
             "TITLE": "Notifications",
             "HINT": "Notifications must be enabled with a tap – iOS only shows the permission dialog on a direct user action.",
             "PENDING": "Registering…"
+        },
+        "ERINYES": {
+            "TITLE": "Erinyes Protocol",
+            "HINT": "The Furies are waiting to cast this device into Tartarus — for good.",
+            "ACTIVATE_BTN": "Activate Erinyes Protocol",
+            "INTRO_TITLE": "Erinyes Protocol",
+            "INTRO_BODY": "This device will immediately leave every list, and all local data — vault, settings, cache — will be permanently deleted. This only affects this device; your lists remain intact for every other member. There is no undo.",
+            "CONFIRM_TITLE": "Are you sure?",
+            "CONFIRM_BODY": "This action is final and cannot be undone on this device.",
+            "CONFIRM_YES": "Yes, cast it all into Tartarus",
+            "PASSWORD_HINT": "Enter your master password to continue.",
+            "BIOMETRIC_HINT": "Confirm with biometrics now.",
+            "BIOMETRIC_WORKING": "Waiting for biometrics…",
+            "BIOMETRIC_ERROR": "Biometric confirmation failed.",
+            "FINAL_BTN": "Cast into Tartarus",
+            "STEP_LEAVING": "Leaving every list…",
+            "STEP_VAULT": "Emptying the vault…",
+            "STEP_SHRED": "Shredding local data…",
+            "STEP_TARTAROS": "Casting the rest into Tartarus…",
+            "DONE_TITLE": "It is done.",
+            "DONE_BODY": "This device now rests in Tartarus. Thank you for using Ghost List.",
+            "RESTART_BTN": "Start over",
+            "ERROR": "Something went wrong. Some steps may not have completed fully."
         }
     },
     "SECURITY": {
@@ -422,6 +461,9 @@
         "FEATURE_HIDDEN_DESC": "Mark lists as sensitive to keep them hidden – visible only after three taps on the logo and your master password.",
         "BUILT_TITLE": "Built with",
         "BUILT_TEXT": "Angular 22 · .NET 10 · PostgreSQL · SignalR · Web Crypto API · Capacitor",
+        "LEGAL_TITLE": "Legal",
+        "LEGAL_PRIVACY": "Privacy Policy",
+        "LEGAL_TERMS": "Terms & Conditions",
         "FOOTER": "Made with care by"
     },
     "SYNC_SEND": {

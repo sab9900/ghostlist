@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { BiometricAuth } from '@aparajita/capacitor-biometric-auth';
 import { SecureStorage } from '@aparajita/capacitor-secure-storage';
 import { RawWrappedVaultKey, VaultKeyService } from './vault-key.service';
+import { PrefsCacheService } from './prefs-cache.service';
 
 const DB_NAME        = 'ghostlist';
 const DB_VERSION     = 1;
@@ -39,13 +40,17 @@ interface PrfExtensionResults {
 @Injectable({ providedIn: 'root' })
 export class WebAuthnService {
     private readonly vaultKey = inject(VaultKeyService);
+    private readonly prefsCache = inject(PrefsCacheService);
 
     readonly isEnabled = signal<boolean>(false);
 
     readonly isSupported = signal<boolean>(false);
 
+    /** Flips true once init() has resolved isEnabled/isSupported from IndexedDB — lets callers (e.g. the loading overlay) wait out the same async read the lock screen depends on. */
+    readonly ready = signal<boolean>(false);
+
     readonly autoLockTimeout = signal<AutoLockTimeout>(
-        (localStorage.getItem(AUTO_LOCK_KEY) as AutoLockTimeout | null) ?? 'never',
+        this.prefsCache.get<AutoLockTimeout>(AUTO_LOCK_KEY, 'never'),
     );
 
     private get isNative(): boolean {
@@ -92,45 +97,49 @@ export class WebAuthnService {
     }
 
     async init(): Promise<void> {
-        if (this.isNative) {
-            try {
-                const { isAvailable } = await BiometricAuth.checkBiometry();
-                this.isSupported.set(isAvailable);
-            } catch {
-                this.isSupported.set(false);
-            }
-        } else {
-            this.isSupported.set(
-                typeof window !== 'undefined' &&
-                !!window.PublicKeyCredential &&
-                typeof window.PublicKeyCredential === 'function' &&
-                !!navigator.credentials,
-            );
-        }
-
         try {
-            const db  = await this.openDb();
-            const val = await this.idbGet(db, CREDENTIAL_KEY);
-            if (!val) {
-                this.isEnabled.set(false);
-                return;
+            if (this.isNative) {
+                try {
+                    const { isAvailable } = await BiometricAuth.checkBiometry();
+                    this.isSupported.set(isAvailable);
+                } catch {
+                    this.isSupported.set(false);
+                }
+            } else {
+                this.isSupported.set(
+                    typeof window !== 'undefined' &&
+                    !!window.PublicKeyCredential &&
+                    typeof window.PublicKeyCredential === 'function' &&
+                    !!navigator.credentials,
+                );
             }
 
-            const wrap = await this.idbGet(db, VAULT_WRAP_KEY);
-            if (!wrap) {
-                // Biometric lock was enabled by a version of the app that had no real
-                // key material behind it (the original cosmetic-only lock). There is
-                // nothing for it to unlock, so disable it rather than leaving the
-                // person stuck behind a biometric prompt that can never succeed.
-                await this.idbDelete(db, CREDENTIAL_KEY).catch(() => { });
-                await this.idbDelete(db, PRF_SALT_KEY).catch(() => { });
-                this.isEnabled.set(false);
-                return;
-            }
+            try {
+                const db  = await this.openDb();
+                const val = await this.idbGet(db, CREDENTIAL_KEY);
+                if (!val) {
+                    this.isEnabled.set(false);
+                    return;
+                }
 
-            this.isEnabled.set(true);
-        } catch {
-            this.isEnabled.set(false);
+                const wrap = await this.idbGet(db, VAULT_WRAP_KEY);
+                if (!wrap) {
+                    // Biometric lock was enabled by a version of the app that had no real
+                    // key material behind it (the original cosmetic-only lock). There is
+                    // nothing for it to unlock, so disable it rather than leaving the
+                    // person stuck behind a biometric prompt that can never succeed.
+                    await this.idbDelete(db, CREDENTIAL_KEY).catch(() => { });
+                    await this.idbDelete(db, PRF_SALT_KEY).catch(() => { });
+                    this.isEnabled.set(false);
+                    return;
+                }
+
+                this.isEnabled.set(true);
+            } catch {
+                this.isEnabled.set(false);
+            }
+        } finally {
+            this.ready.set(true);
         }
     }
 
@@ -145,7 +154,7 @@ export class WebAuthnService {
     }
 
     setAutoLockTimeout(t: AutoLockTimeout): void {
-        localStorage.setItem(AUTO_LOCK_KEY, t);
+        this.prefsCache.set(AUTO_LOCK_KEY, t);
         this.autoLockTimeout.set(t);
     }
 

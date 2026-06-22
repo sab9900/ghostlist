@@ -14,12 +14,6 @@
     background: var(--color-bg);
     padding-top: var(--safe-top);
     overflow: hidden;
-    transform: translateX(calc(var(--swipe-progress, 0) * 24px));
-    opacity: calc(1 - var(--swipe-progress, 0) * 0.35);
-
-    &.is-swiping-back {
-        transition: none;
-    }
 
     &--desktop {
         padding-top: 0;

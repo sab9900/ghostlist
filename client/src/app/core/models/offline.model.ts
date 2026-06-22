@@ -9,6 +9,7 @@ export interface CachedList {
     createdAt: string;
     items: GhostListItem[];
     messages: GhostChatMessage[];
+    hasMoreMessages: boolean;
     cachedAt: string;
 }
 

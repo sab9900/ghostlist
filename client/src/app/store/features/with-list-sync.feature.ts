@@ -17,6 +17,7 @@ export function withListSync() {
                 listsLoaded: boolean;
                 items: GhostListItem[];
                 messages: GhostChatMessage[];
+                messagesHasMore: boolean;
                 pendingOpsCount: number;
             };
         }>(),

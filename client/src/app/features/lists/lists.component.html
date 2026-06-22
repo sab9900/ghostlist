@@ -1,9 +1,12 @@
 <div class="screen" role="main">
 
+    <app-ghost-mist [mode]="prefs.ghostMistMode()" />
+
     <app-lists-header
         [totalUnread]="totalUnread()"
         [showCoffeeLink]="showCoffeeLink"
         (logoClick)="onLogoClick()"
+        (titleClick)="showFilterDialog.set(true)"
         (markAllReadOpen)="showMarkAllReadDialog.set(true)"
         (importOpen)="showImportDialog.set(true)"
         (exportOpen)="showExportDialog.set(true)"
@@ -14,8 +17,12 @@
 
         @if (lists().length === 0) {
         <div class="empty" role="status" aria-live="polite">
+            @if (searchQuery().trim() && visibleLists().length > 0) {
+            <p class="empty__headline">{{ 'LISTS.SEARCH_NO_RESULTS' | translate }}</p>
+            } @else {
             <p class="empty__headline">{{ 'LISTS.EMPTY_HEADLINE' | translate }}</p>
             <p class="empty__sub">{{ 'LISTS.EMPTY_SUB' | translate }}</p>
+            }
         </div>
         }
 
@@ -49,9 +56,17 @@
 
     <app-export-dialog
         [show]="showExportDialog()"
-        [lists]="lists()"
+        [lists]="visibleLists()"
         [activeListId]="activeListId()"
         (closed)="showExportDialog.set(false)" />
+
+    <app-list-filter-dialog
+        [show]="showFilterDialog()"
+        [query]="searchQuery()"
+        [sortOrder]="prefs.listSortOrder()"
+        (queryChange)="searchQuery.set($event)"
+        (sortOrderChange)="prefs.setListSortOrder($event)"
+        (closed)="showFilterDialog.set(false)" />
 
     <app-reveal-dialog
         [show]="showRevealDialog()"

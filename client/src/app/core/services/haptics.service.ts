@@ -79,4 +79,14 @@ export class HapticsService {
         Haptics.impact({ style: ImpactStyle.Light }).catch(() => { });
         setTimeout(() => Haptics.impact({ style: ImpactStyle.Light }).catch(() => { }), 90);
     }
+
+    scrollToBottom(): void {
+        if (!this.enabled) return;
+        Haptics.impact({ style: ImpactStyle.Light }).catch(() => { });
+    }
+
+    swipeBackThresholdCross(): void {
+        if (!this.enabled) return;
+        Haptics.impact({ style: ImpactStyle.Light }).catch(() => { });
+    }
 }

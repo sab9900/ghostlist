@@ -1,0 +1,82 @@
+.loading-overlay {
+    // position: absolute, not fixed — same iOS Safari fixed-viewport-clipping
+    // bug noted in app.scss's :host/.lock-screen. Resolves against app-root's
+    // box instead, which already has the correct full height.
+    position: absolute;
+    inset: 0;
+    z-index: 10000;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    animation: loading-overlay-fade-in var(--duration-normal) var(--ease-out);
+
+    &__ghost {
+        // Above the ghost-mist streaks (z-index: 5 within this same stacking
+        // context — see ghost-mist.component.scss) so they drift behind the
+        // logo instead of washing over it.
+        position: relative;
+        z-index: 10;
+
+        // Scales with the viewport's smaller dimension so it reads at a
+        // sensible size on phones in either orientation, never clips off the
+        // (centered, padding-free) overlay, and is capped so it doesn't
+        // balloon on desktop/tablet screens.
+        width: clamp(48px, 14vmin, 80px);
+        height: clamp(48px, 14vmin, 80px);
+        object-fit: contain;
+        filter: invert(1);
+        animation: loading-overlay-float 1.6s ease-in-out infinite;
+
+        @media (prefers-color-scheme: light) {
+            filter: none;
+        }
+
+        :host-context(html[data-theme='light']) & {
+            filter: none;
+        }
+
+        :host-context(html[data-theme='dark']) & {
+            filter: invert(1);
+        }
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .loading-overlay {
+        animation: none;
+
+        &__ghost {
+            animation: none;
+        }
+    }
+}
+
+@keyframes loading-overlay-fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes loading-overlay-float {
+
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+        opacity: 0.85;
+    }
+
+    50% {
+        transform: translateY(-10px) scale(1.05);
+        opacity: 1;
+    }
+}

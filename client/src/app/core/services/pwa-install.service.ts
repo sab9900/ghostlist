@@ -1,7 +1,8 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { Capacitor } from '@capacitor/core';
+import { PrefsCacheService } from './prefs-cache.service';
 
-const LS_DISMISSED_KEY = 'gl_pwa_install_dismissed';
+const DISMISSED_KEY = 'gl_pwa_install_dismissed';
 
 interface BeforeInstallPromptEvent extends Event {
     prompt(): Promise<void>;
@@ -16,8 +17,9 @@ function isStandalone(): boolean {
 
 @Injectable({ providedIn: 'root' })
 export class PwaInstallService {
+    private readonly prefsCache = inject(PrefsCacheService);
     private readonly deferredPrompt = signal<BeforeInstallPromptEvent | null>(null);
-    private readonly dismissed = signal(localStorage.getItem(LS_DISMISSED_KEY) === '1');
+    private readonly dismissed = signal(this.prefsCache.get(DISMISSED_KEY, false));
 
     readonly canInstall = computed(() =>
         this.deferredPrompt() !== null &&
@@ -56,8 +58,6 @@ export class PwaInstallService {
 
     private setDismissed(): void {
         this.dismissed.set(true);
-        try {
-            localStorage.setItem(LS_DISMISSED_KEY, '1');
-        } catch { }
+        this.prefsCache.set(DISMISSED_KEY, true);
     }
 }

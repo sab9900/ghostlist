@@ -1,0 +1,7 @@
+@if (mode() !== 'off' && !reducedMotion) {
+<div class="ghost-mist" [class.ghost-mist--active]="idle()" aria-hidden="true">
+    @for (streak of streaks; track streak) {
+    <span class="ghost-mist__streak"></span>
+    }
+</div>
+}

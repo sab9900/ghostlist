@@ -9,7 +9,8 @@
         "DELETING": "Eliminazione…",
         "SKIP": "Salta",
         "TRY_AGAIN": "Riprova",
-        "SUBMIT": "Invia"
+        "SUBMIT": "Invia",
+        "LOADING": "Caricamento…"
     },
     "LISTS": {
         "EMPTY_HEADLINE": "Nessuna lista ancora",
@@ -19,6 +20,12 @@
         "MENU_SETTINGS": "Impostazioni",
         "MENU_COFFEE": "Buy me a coffee",
         "MENU_ABOUT": "Informazioni",
+        "FILTER_TITLE": "Cerca e ordina",
+        "FILTER_SEARCH_PLACEHOLDER": "Cerca liste…",
+        "FILTER_SORT_LABEL": "Ordina per",
+        "SORT_NAME": "Nome",
+        "SORT_RECENT": "Attività recente",
+        "SEARCH_NO_RESULTS": "Nessuna lista trovata.",
         "CREATE_TITLE": "Nuova lista",
         "CREATE_PLACEHOLDER": "Nome lista…",
         "CREATE_BTN": "Crea",
@@ -74,6 +81,7 @@
     },
     "CHAT": {
         "NO_MESSAGES": "Nessun messaggio ancora.",
+        "LOADING_OLDER": "Caricamento messaggi precedenti…",
         "ANONYMOUS": "Anonimo",
         "EDIT_NAME": "Modifica nome",
         "MESSAGE_PLACEHOLDER": "Messaggio…",
@@ -305,6 +313,14 @@
         "HAPTICS_TITLE": "Feedback tattile",
         "HAPTICS_ENABLE": "Attiva feedback tattile",
         "HAPTICS_HINT": "Vibra al tocco e per azioni come aggiungere o spuntare elementi.",
+        "GHOST_MIST_TITLE": "Nebbia fantasma",
+        "GHOST_MIST_HINT": "Dopo un momento di inattività, sottili scie salgono sulla pagina delle liste nel tuo colore d'accento.",
+        "GHOST_MIST_MODE": {
+            "OFF": "Disattivata",
+            "IDLE_3S": "Dopo 3 secondi",
+            "IDLE_10S": "Dopo 10 secondi",
+            "ALWAYS": "Sempre attiva"
+        },
         "SYNC_TITLE": "Macchina di Sincronizzazione",
         "SYNC_HINT": "Unisci le tue liste con un altro dispositivo, in entrambe le direzioni.",
         "SYNC_MACHINES": "Sincronizza dispositivi",
@@ -359,6 +375,29 @@
             "TITLE": "Notifiche",
             "HINT": "Le notifiche devono essere attivate con un tap – iOS mostra il dialogo solo in risposta a un'azione diretta.",
             "PENDING": "Registrazione in corso…"
+        },
+        "ERINYES": {
+            "TITLE": "Protocollo delle Erinni",
+            "HINT": "Le Erinni attendono di gettare questo dispositivo nel Tartaro — per sempre.",
+            "ACTIVATE_BTN": "Attiva il Protocollo delle Erinni",
+            "INTRO_TITLE": "Protocollo delle Erinni",
+            "INTRO_BODY": "Questo dispositivo abbandonerà immediatamente tutte le liste e tutti i dati locali — vault, impostazioni, cache — verranno eliminati definitivamente. Questo riguarda solo questo dispositivo; le tue liste resteranno intatte per tutti gli altri membri. Non c'è modo di tornare indietro.",
+            "CONFIRM_TITLE": "Sei sicuro?",
+            "CONFIRM_BODY": "Questa azione è definitiva e non può essere annullata su questo dispositivo.",
+            "CONFIRM_YES": "Sì, gettalo tutto nel Tartaro",
+            "PASSWORD_HINT": "Inserisci la tua master password per continuare.",
+            "BIOMETRIC_HINT": "Confermare ora con la biometria.",
+            "BIOMETRIC_WORKING": "Attesa della biometria…",
+            "BIOMETRIC_ERROR": "Conferma biometrica non riuscita.",
+            "FINAL_BTN": "Gettare nel Tartaro",
+            "STEP_LEAVING": "Abbandono di tutte le liste…",
+            "STEP_VAULT": "Svuotamento del vault…",
+            "STEP_SHRED": "Distruzione dei dati locali…",
+            "STEP_TARTAROS": "Getto del resto nel Tartaro…",
+            "DONE_TITLE": "Fatto.",
+            "DONE_BODY": "Questo dispositivo riposa ora nel Tartaro. Grazie per aver usato Ghost List.",
+            "RESTART_BTN": "Ricomincia",
+            "ERROR": "Qualcosa è andato storto. Alcuni passaggi potrebbero non essere stati completati."
         }
     },
     "SECURITY": {
@@ -405,6 +444,9 @@
         "FEATURE_HIDDEN_DESC": "Contrassegna le liste come sensibili per tenerle nascoste: visibili solo dopo tre tocchi sul logo e la password master.",
         "BUILT_TITLE": "Realizzato con",
         "BUILT_TEXT": "Angular 22 · .NET 10 · PostgreSQL · SignalR · Web Crypto API · Capacitor",
+        "LEGAL_TITLE": "Note legali",
+        "LEGAL_PRIVACY": "Informativa sulla privacy",
+        "LEGAL_TERMS": "Termini e condizioni",
         "FOOTER": "Realizzato con cura da"
     },
     "SYNC_SEND": {

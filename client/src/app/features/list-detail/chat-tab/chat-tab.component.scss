@@ -24,6 +24,23 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    opacity: 1;
+    filter: blur(0);
+    transition: opacity 160ms ease, filter 160ms ease;
+}
+
+.message-list-wrapper--settling {
+    .message-list {
+        opacity: 0;
+        filter: blur(16px);
+        transition: none;
+        pointer-events: none;
+    }
+
+    .scroll-to-bottom {
+        opacity: 0;
+        pointer-events: none;
+    }
 }
 
 .scroll-to-bottom {
@@ -39,6 +56,13 @@
     font-size: 0.875rem;
     margin: auto;
     padding: 2rem 1rem;
+}
+
+.older-messages-loading {
+    text-align: center;
+    color: var(--color-muted);
+    font-size: 0.75rem;
+    padding: 0.5rem 0;
 }
 
 .message-menu-backdrop {

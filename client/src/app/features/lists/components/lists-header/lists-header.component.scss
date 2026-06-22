@@ -35,6 +35,11 @@
     letter-spacing: 0.5px;
     flex: 1;
     min-width: 0;
+    cursor: pointer;
+    transition: opacity var(--duration-fast) var(--ease-out);
+
+    @media (hover: hover) { &:hover { opacity: 0.85; } }
+    &:active { opacity: 0.7; }
 }
 
 .actions {

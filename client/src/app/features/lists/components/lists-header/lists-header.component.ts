@@ -14,6 +14,7 @@ export class ListsHeaderComponent {
     readonly showCoffeeLink = input(true);
 
     readonly logoClick = output<void>();
+    readonly titleClick = output<void>();
     readonly markAllReadOpen = output<void>();
     readonly importOpen = output<void>();
     readonly exportOpen = output<void>();
@@ -25,8 +26,8 @@ export class ListsHeaderComponent {
     toggleMenu(): void { this.showMenu.update(v => !v); }
     closeMenu(): void { this.showMenu.set(false); }
 
-    onImport(): void { this.closeMenu(); this.importOpen.emit(); }
-    onExport(): void { this.closeMenu(); this.exportOpen.emit(); }
-    onSettings(): void { this.closeMenu(); this.settingsOpen.emit(); }
-    onAbout(): void { this.closeMenu(); this.aboutOpen.emit(); }
+    onImport(): void { this.closeMenu(); setTimeout(() => this.importOpen.emit(), 0); }
+    onExport(): void { this.closeMenu(); setTimeout(() => this.exportOpen.emit(), 0); }
+    onSettings(): void { this.closeMenu(); setTimeout(() => this.settingsOpen.emit(), 0); }
+    onAbout(): void { this.closeMenu(); setTimeout(() => this.aboutOpen.emit(), 0); }
 }

@@ -11,6 +11,7 @@ export function withListPersistence() {
                 currentList: GhostList | null;
                 items: GhostListItem[];
                 messages: GhostChatMessage[];
+                messagesHasMore: boolean;
             };
         }>(),
 
@@ -29,6 +30,7 @@ export function withListPersistence() {
                         createdAt: list?.createdAt ?? new Date().toISOString(),
                         items: store.items(),
                         messages: store.messages(),
+                        hasMoreMessages: store.messagesHasMore(),
                         cachedAt: new Date().toISOString(),
                     }).catch(() => { });
                 },

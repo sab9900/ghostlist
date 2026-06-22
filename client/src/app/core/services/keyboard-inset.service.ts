@@ -26,6 +26,8 @@ export class KeyboardInsetService {
         // so window.innerHeight/visualViewport already shrink on their own.
         // Feeding capacitorHeight into --keyboard-height on Android too would
         // pad the already-shrunk layout a second time.
+        const isIOS = Capacitor.getPlatform() === 'ios' || /iPad|iPhone|iPod/.test(navigator.userAgent);
+
         if (Capacitor.getPlatform() === 'ios') {
             Keyboard.addListener('keyboardWillShow', ({ keyboardHeight }) => {
                 this.capacitorHeight = keyboardHeight;
@@ -43,9 +45,19 @@ export class KeyboardInsetService {
                 const overlap = window.innerHeight - vv.height - vv.offsetTop;
                 // On iOS PWA, visualViewport.height is permanently smaller than
                 // window.innerHeight by the safe-area-inset-bottom (≈34px), even
-                // with no keyboard open.  Treat anything below 120px as viewport
-                // noise rather than a real software keyboard.
-                this.viewportHeight = overlap >= 120 ? Math.round(overlap) : 0;
+                // with no keyboard open. Treat anything below 120px as viewport
+                // noise rather than a real software keyboard — iOS only.
+                // Android's forced "resizes-content" viewport mode (see
+                // index.html) only shrinks window.innerHeight reliably in the
+                // native WebView; in an installed Android PWA it often only
+                // shrinks it partially, leaving a smaller-but-real leftover
+                // keyboard overlap for us to pad here. That leftover can be
+                // well under 120px, so the iOS noise floor must not eat it —
+                // doing so is what left the keyboard covering the input on
+                // Android PWA.
+                this.viewportHeight = isIOS
+                    ? (overlap >= 120 ? Math.round(overlap) : 0)
+                    : Math.max(0, Math.round(overlap));
                 this.recompute();
             };
             vv.addEventListener('resize', onViewportChange);

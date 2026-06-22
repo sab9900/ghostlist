@@ -9,13 +9,16 @@ import { MasterPasswordService } from '../../core/services/master-password.servi
 import { PushNotificationService } from '../../core/services/push-notification.service';
 import { SensitiveListsService } from '../../core/services/sensitive-lists.service';
 import { Theme, ThemeAccent, ThemeService } from '../../core/services/theme.service';
-import { UserPreferencesService } from '../../core/services/user-preferences.service';
+import { GhostMistMode, UserPreferencesService } from '../../core/services/user-preferences.service';
 import { VaultKeyService } from '../../core/services/vault-key.service';
 import { VaultMigrationService } from '../../core/services/vault-migration.service';
 import { AUTO_LOCK_OPTIONS, PrfUnsupportedError, WebAuthnService } from '../../core/services/webauthn.service';
 import { AppStore } from '../../store/app.store';
 import { AppearanceSectionComponent } from './components/appearance-section/appearance-section.component';
 import { BiometricConfirmDialogComponent } from './components/biometric-confirm-dialog/biometric-confirm-dialog.component';
+import { DangerZoneSectionComponent } from './components/danger-zone-section/danger-zone-section.component';
+import { ErinyesProtocolDialogComponent } from './components/erinyes-protocol-dialog/erinyes-protocol-dialog.component';
+import { GhostMistSectionComponent } from './components/ghost-mist-section/ghost-mist-section.component';
 import { HapticsSectionComponent } from './components/haptics-section/haptics-section.component';
 import { LanguageSectionComponent } from './components/language-section/language-section.component';
 import { MasterPasswordSectionComponent } from './components/master-password-section/master-password-section.component';
@@ -34,6 +37,7 @@ import { SyncSectionComponent } from './components/sync-section/sync-section.com
         LucideChevronLeft,
         NameSectionComponent,
         AppearanceSectionComponent,
+        GhostMistSectionComponent,
         SecuritySectionComponent,
         MasterPasswordSectionComponent,
         SyncSectionComponent,
@@ -43,6 +47,8 @@ import { SyncSectionComponent } from './components/sync-section/sync-section.com
         SyncDialogComponent,
         RecoveryCodeDialogComponent,
         BiometricConfirmDialogComponent,
+        DangerZoneSectionComponent,
+        ErinyesProtocolDialogComponent,
     ],
     templateUrl: './settings.component.html',
     styleUrl: './settings.component.scss',
@@ -84,6 +90,13 @@ export class SettingsComponent {
         { value: 'noir', labelKey: 'SETTINGS.ACCENT.NOIR', color: 'linear-gradient(135deg, #111114 50%, #f0f0f2 50%)' },
     ];
 
+    protected readonly ghostMistModeOptions: { value: GhostMistMode; labelKey: string }[] = [
+        { value: 'off', labelKey: 'SETTINGS.GHOST_MIST_MODE.OFF' },
+        { value: 'idle-3s', labelKey: 'SETTINGS.GHOST_MIST_MODE.IDLE_3S' },
+        { value: 'idle-10s', labelKey: 'SETTINGS.GHOST_MIST_MODE.IDLE_10S' },
+        { value: 'always', labelKey: 'SETTINGS.GHOST_MIST_MODE.ALWAYS' },
+    ];
+
     protected readonly supportedLangs = LanguageService.SUPPORTED;
     protected readonly autoLockOptions = AUTO_LOCK_OPTIONS;
 
@@ -101,10 +114,13 @@ export class SettingsComponent {
     protected readonly syncStep = signal<'idle' | 'qr' | 'scan' | 'waiting' | 'done' | 'error'>('idle');
     protected readonly syncImportedCount = signal(0);
 
+    protected readonly showErinyesDialog = signal(false);
+
     setTheme(theme: Theme): void { this.themeService.set(theme); }
     setAccent(accent: ThemeAccent): void { this.themeService.setAccent(accent); }
     async setLanguage(code: string): Promise<void> { await this.langService.setLanguage(code); }
     setHapticsEnabled(enabled: boolean): void { this.prefs.setHapticsEnabled(enabled); }
+    setGhostMistMode(mode: GhostMistMode): void { this.prefs.setGhostMistMode(mode); }
 
     saveName(name: string): void { this.prefs.setSenderName(name); }
 
@@ -270,5 +286,9 @@ export class SettingsComponent {
     onSyncDone(count: number): void {
         this.syncImportedCount.set(count);
         this.syncStep.set('done');
+    }
+
+    openErinyesDialog(): void {
+        this.showErinyesDialog.set(true);
     }
 }

@@ -30,6 +30,7 @@ public class GetGhostListByIdQueryHandlerTests
         result.Items[0].EncryptedPayload.Should().Be("enc_payload");
         result.ChatMessages.Should().HaveCount(1);
         result.ChatMessages[0].EncryptedMessage.Should().Be("enc_msg");
+        result.HasMoreMessages.Should().BeFalse();
     }
 
     [Fact]
@@ -56,5 +57,25 @@ public class GetGhostListByIdQueryHandlerTests
 
         result!.Items.Should().BeEmpty();
         result.ChatMessages.Should().BeEmpty();
+        result.HasMoreMessages.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Handle_MoreThanFiftyMessages_ReturnsOnlyLatestFiftyAndHasMoreTrue()
+    {
+        await using var context = DbContextFactory.Create();
+        var list = Domain.Entities.GhostList.Create();
+        context.GhostLists.Add(list);
+        for (var i = 0; i < 55; i++)
+        {
+            context.GhostChatMessages.Add(GhostChatMessage.Create(list.Id, $"msg_{i}", "iv", "sender", "siv"));
+        }
+        await context.SaveChangesAsync();
+
+        var handler = new GetGhostListByIdQueryHandler(context);
+        var result = await handler.Handle(new GetGhostListByIdQuery(list.Id), CancellationToken.None);
+
+        result!.ChatMessages.Should().HaveCount(50);
+        result.HasMoreMessages.Should().BeTrue();
     }
 }

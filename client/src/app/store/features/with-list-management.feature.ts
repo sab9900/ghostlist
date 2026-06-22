@@ -18,6 +18,7 @@ import { DeviceIdService } from '../../core/services/device-id.service';
 import { ForegroundService } from '../../core/services/foreground.service';
 import { ListStorageService } from '../../core/services/list-storage.service';
 import { PushNotificationService } from '../../core/services/push-notification.service';
+import { mergeRecentMessagesPage } from '../store-utils';
 
 interface ManagedState {
     currentListId: string | null;
@@ -26,9 +27,11 @@ interface ManagedState {
     knownLists: KnownList[];
     items: GhostListItem[];
     messages: GhostChatMessage[];
+    messagesHasMore: boolean;
     charonDrops: CharonDropDto[];
     audioDataUrls: Record<string, string>;
     loading: boolean;
+    currentListSynced: boolean;
     error: string | null;
 }
 
@@ -39,9 +42,11 @@ export interface ListManagementStoreSlice extends WritableStateSource<ManagedSta
     knownLists: () => KnownList[];
     items: () => GhostListItem[];
     messages: () => GhostChatMessage[];
+    messagesHasMore: () => boolean;
     charonDrops: () => CharonDropDto[];
     audioDataUrls: () => Record<string, string>;
     loading: () => boolean;
+    currentListSynced: () => boolean;
     error: () => string | null;
     _persistAndTrack: (entry: KnownList) => Promise<void>;
     _registerAsMember: (listId: string, encryptionKey: string) => Promise<void>;
@@ -111,14 +116,17 @@ export function createListManagementMethods(store: ListManagementStoreSlice) {
                         createdAt: cached.createdAt,
                         items: cached.items,
                         chatMessages: cached.messages,
+                        hasMoreMessages: cached.hasMoreMessages ?? true,
                     }
                     : null,
                 items: cached?.items ?? [],
                 messages: cached?.messages ?? [],
+                messagesHasMore: cached?.hasMoreMessages ?? true,
                 charonDrops: [],
                 audioDataUrls: {},
                 error: null,
                 loading: !cached,
+                currentListSynced: false,
             });
 
             try {
@@ -126,7 +134,7 @@ export function createListManagementMethods(store: ListManagementStoreSlice) {
                 await hub.joinList(id);
                 foreground.start();
             } catch (e: unknown) {
-                patchState(store, { loading: false });
+                if (store.currentListId() === id) patchState(store, { loading: false, currentListSynced: true });
                 if (cached) return;
                 setError(e instanceof Error ? e.message : 'Failed to open list');
                 throw e;
@@ -146,8 +154,10 @@ export function createListManagementMethods(store: ListManagementStoreSlice) {
                     patchState(store, {
                         currentList: list,
                         items: list.items,
-                        messages: list.chatMessages,
+                        messages: mergeRecentMessagesPage(store.messages(), list.chatMessages),
+                        messagesHasMore: list.hasMoreMessages,
                         loading: false,
+                        currentListSynced: true,
                     });
                     void store._persistCurrentList();
                 }
@@ -156,7 +166,7 @@ export function createListManagementMethods(store: ListManagementStoreSlice) {
                 await store.ensureUnreadSeeded(id);
                 if (store.currentListId() === id) void store.refreshOthersReadReceipt(id);
             } catch (e: unknown) {
-                if (store.currentListId() === id) patchState(store, { loading: false });
+                if (store.currentListId() === id) patchState(store, { loading: false, currentListSynced: true });
                 if (cached) return;
                 setError(e instanceof Error ? e.message : 'Failed to open list');
                 throw e;
@@ -170,9 +180,11 @@ export function createListManagementMethods(store: ListManagementStoreSlice) {
                 currentList: null,
                 items: [],
                 messages: [],
+                messagesHasMore: true,
                 charonDrops: [],
                 audioDataUrls: {},
                 error: null,
+                currentListSynced: false,
             });
         },
 
@@ -199,7 +211,9 @@ export function createListManagementMethods(store: ListManagementStoreSlice) {
                         currentList: null,
                         items: [],
                         messages: [],
+                        messagesHasMore: true,
                         charonDrops: [],
+                        currentListSynced: false,
                     } : {}),
                 });
             } catch (e: unknown) {
@@ -236,7 +250,9 @@ export function createListManagementMethods(store: ListManagementStoreSlice) {
                     currentList: null,
                     items: [],
                     messages: [],
+                    messagesHasMore: true,
                     charonDrops: [],
+                    currentListSynced: false,
                 } : {}),
             });
         },
@@ -274,7 +290,8 @@ export function createListManagementMethods(store: ListManagementStoreSlice) {
                     patchState(store, {
                         currentList: list,
                         items: list.items,
-                        messages: list.chatMessages,
+                        messages: mergeRecentMessagesPage(store.messages(), list.chatMessages),
+                        messagesHasMore: list.hasMoreMessages,
                     });
                     void store._persistCurrentList();
                 }

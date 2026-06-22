@@ -9,6 +9,7 @@ export interface KnownList {
     encryptionKeyWrapped?: WrappedListKey;
     name: string;
     addedAt: string;
+    lastActivityAt?: string;
     ownerToken?: string;
     notifyOnMessage?: boolean;
     notifyOnItemsChanged?: boolean;

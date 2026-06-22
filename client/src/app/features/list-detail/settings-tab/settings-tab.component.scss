@@ -92,7 +92,7 @@
     }
 
     &--datetime {
-        color-scheme: dark;
+        color-scheme: var(--color-scheme);
         font-size: var(--text-sm);
         -webkit-appearance: none;
         appearance: none;

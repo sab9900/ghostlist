@@ -1,3 +1,5 @@
+<app-loading-overlay />
+
 @if (locked()) {
 
 <div class="lock-screen" role="main" aria-label="Locked">
@@ -86,7 +88,7 @@
 
 } @else {
 
-<router-outlet />
+<router-outlet appPageTransition />
 
 }
 

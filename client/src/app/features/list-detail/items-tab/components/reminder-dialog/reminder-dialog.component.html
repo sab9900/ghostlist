@@ -18,11 +18,11 @@
 
         <div class="actions">
             @if (saved()) {
-            <button class="cancel" type="button" (click)="close.emit()">{{ 'COMMON.CANCEL' | translate }}</button>
-            <button class="save save--ical" type="button" (click)="downloadIcal.emit()">{{ 'ITEMS.REMINDER_ADD_TO_CALENDAR' | translate }}</button>
+            <button class="btn btn--ghost" type="button" (click)="close.emit()">{{ 'COMMON.CANCEL' | translate }}</button>
+            <button class="btn btn--primary" type="button" (click)="downloadIcal.emit()">{{ 'ITEMS.REMINDER_ADD_TO_CALENDAR' | translate }}</button>
             } @else {
-            <button class="cancel" type="button" (click)="close.emit()">{{ 'COMMON.CANCEL' | translate }}</button>
-            <button class="save" type="button" (click)="submit()" [disabled]="saving()">{{ 'ITEMS.REMINDER_SAVE' | translate }}</button>
+            <button class="btn btn--ghost" type="button" (click)="close.emit()">{{ 'COMMON.CANCEL' | translate }}</button>
+            <button class="btn btn--primary" type="button" (click)="submit()" [disabled]="saving()">{{ 'ITEMS.REMINDER_SAVE' | translate }}</button>
             }
         </div>
     </div>

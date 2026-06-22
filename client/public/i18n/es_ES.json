@@ -9,7 +9,8 @@
         "DELETING": "Eliminando…",
         "SKIP": "Omitir",
         "TRY_AGAIN": "Intentar de nuevo",
-        "SUBMIT": "Enviar"
+        "SUBMIT": "Enviar",
+        "LOADING": "Cargando…"
     },
     "LISTS": {
         "EMPTY_HEADLINE": "Aún no hay listas",
@@ -19,6 +20,12 @@
         "MENU_SETTINGS": "Ajustes",
         "MENU_COFFEE": "Buy me a coffee",
         "MENU_ABOUT": "Acerca de",
+        "FILTER_TITLE": "Buscar y ordenar",
+        "FILTER_SEARCH_PLACEHOLDER": "Buscar listas…",
+        "FILTER_SORT_LABEL": "Ordenar por",
+        "SORT_NAME": "Nombre",
+        "SORT_RECENT": "Actividad reciente",
+        "SEARCH_NO_RESULTS": "No se encontraron listas.",
         "CREATE_TITLE": "Nueva lista",
         "CREATE_PLACEHOLDER": "Nombre de la lista…",
         "CREATE_BTN": "Crear",
@@ -74,6 +81,7 @@
     },
     "CHAT": {
         "NO_MESSAGES": "Aún no hay mensajes.",
+        "LOADING_OLDER": "Cargando mensajes anteriores…",
         "ANONYMOUS": "Anónimo",
         "EDIT_NAME": "Editar nombre",
         "MESSAGE_PLACEHOLDER": "Mensaje…",
@@ -305,6 +313,14 @@
         "HAPTICS_TITLE": "Vibración",
         "HAPTICS_ENABLE": "Activar vibración háptica",
         "HAPTICS_HINT": "Vibra al tocar y al realizar acciones como añadir o marcar elementos.",
+        "GHOST_MIST_TITLE": "Niebla fantasma",
+        "GHOST_MIST_HINT": "Tras un momento de inactividad, unas tenues vetas ascienden por la página de listas con tu color de acento.",
+        "GHOST_MIST_MODE": {
+            "OFF": "Desactivada",
+            "IDLE_3S": "Tras 3 segundos",
+            "IDLE_10S": "Tras 10 segundos",
+            "ALWAYS": "Siempre activa"
+        },
         "SYNC_TITLE": "Máquina de Sincronización",
         "SYNC_HINT": "Combina tus listas con otro dispositivo, en cualquier dirección.",
         "SYNC_MACHINES": "Sincronizar dispositivos",
@@ -376,6 +392,29 @@
             "TITLE": "Notificaciones",
             "HINT": "Las notificaciones deben activarse con un toque – iOS solo muestra el diálogo ante una acción directa del usuario.",
             "PENDING": "Registrando…"
+        },
+        "ERINYES": {
+            "TITLE": "Protocolo de las Erinias",
+            "HINT": "Las Erinias esperan para arrojar este dispositivo al Tártaro — para siempre.",
+            "ACTIVATE_BTN": "Activar el Protocolo de las Erinias",
+            "INTRO_TITLE": "Protocolo de las Erinias",
+            "INTRO_BODY": "Este dispositivo abandonará de inmediato todas las listas, y todos los datos locales — bóveda, ajustes, caché — se eliminarán de forma permanente. Esto solo afecta a este dispositivo; tus listas permanecen intactas para los demás miembros. No hay vuelta atrás.",
+            "CONFIRM_TITLE": "¿Estás seguro?",
+            "CONFIRM_BODY": "Esta acción es definitiva y no se puede deshacer en este dispositivo.",
+            "CONFIRM_YES": "Sí, arrójalo todo al Tártaro",
+            "PASSWORD_HINT": "Introduce tu contraseña maestra para continuar.",
+            "BIOMETRIC_HINT": "Confirma ahora con biometría.",
+            "BIOMETRIC_WORKING": "Esperando biometría…",
+            "BIOMETRIC_ERROR": "La confirmación biométrica falló.",
+            "FINAL_BTN": "Arrojar al Tártaro",
+            "STEP_LEAVING": "Abandonando todas las listas…",
+            "STEP_VAULT": "Vaciando la bóveda…",
+            "STEP_SHRED": "Destruyendo datos locales…",
+            "STEP_TARTAROS": "Arrojando el resto al Tártaro…",
+            "DONE_TITLE": "Hecho.",
+            "DONE_BODY": "Este dispositivo ahora descansa en el Tártaro. Gracias por usar Ghost List.",
+            "RESTART_BTN": "Empezar de nuevo",
+            "ERROR": "Algo salió mal. Algunos pasos podrían no haberse completado del todo."
         }
     },
     "SECURITY": {
@@ -422,6 +461,9 @@
         "FEATURE_HIDDEN_DESC": "Marca listas como sensibles para mantenerlas ocultas: visibles solo tras tres toques en el logo y tu contraseña maestra.",
         "BUILT_TITLE": "Construido con",
         "BUILT_TEXT": "Angular 22 · .NET 10 · PostgreSQL · SignalR · Web Crypto API · Capacitor",
+        "LEGAL_TITLE": "Legal",
+        "LEGAL_PRIVACY": "Política de privacidad",
+        "LEGAL_TERMS": "Términos y condiciones",
         "FOOTER": "Hecho con cariño por"
     },
     "SYNC_SEND": {

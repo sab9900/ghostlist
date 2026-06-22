@@ -4,7 +4,7 @@ import { KnownList, ListMember } from '../../../../core/models';
 import { AvatarComponent } from '../../../../shared/avatar/avatar.component';
 import { BadgeComponent } from '../../../../shared/badge/badge.component';
 
-const MAX_VISIBLE_AVATARS = 3;
+const MAX_VISIBLE_AVATARS = 10;
 
 @Component({
     selector: 'app-list-card',

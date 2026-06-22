@@ -1,0 +1,130 @@
+@if (show()) {
+@if (showMist) {
+<div class="erinyes-mist" aria-hidden="true">
+    <app-ghost-mist mode="always" />
+</div>
+}
+<div class="backdrop" (click)="cancel()" role="presentation">
+    <div class="dialog" [class.dialog--wide]="step() === 'running' || step() === 'done'"
+        (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="erinyes-title">
+
+        @if (step() === 'intro') {
+        <h2 class="title title--danger" id="erinyes-title">
+            <svg lucideFlame [size]="18" aria-hidden="true"></svg>
+            {{ 'SETTINGS.ERINYES.INTRO_TITLE' | translate }}
+        </h2>
+        <p class="body-text">{{ 'SETTINGS.ERINYES.INTRO_BODY' | translate }}</p>
+        <div class="actions">
+            <button class="btn btn--ghost" (click)="cancel()">{{ 'COMMON.CANCEL' | translate }}</button>
+            <button class="btn btn--danger-solid" (click)="activate()">{{ 'SETTINGS.ERINYES.ACTIVATE_BTN' | translate }}</button>
+        </div>
+        }
+
+        @if (step() === 'confirm') {
+        <h2 class="title title--danger" id="erinyes-title">{{ 'SETTINGS.ERINYES.CONFIRM_TITLE' | translate }}</h2>
+        <p class="body-text">{{ 'SETTINGS.ERINYES.CONFIRM_BODY' | translate }}</p>
+        <div class="actions">
+            <button class="btn btn--ghost" (click)="cancel()">{{ 'COMMON.CANCEL' | translate }}</button>
+            <button class="btn btn--danger-solid" (click)="confirmSimple()">{{ 'SETTINGS.ERINYES.CONFIRM_YES' | translate }}</button>
+        </div>
+        }
+
+        @if (step() === 'password') {
+        <h2 class="title title--danger" id="erinyes-title">{{ 'SETTINGS.ERINYES.INTRO_TITLE' | translate }}</h2>
+        <p class="body-text">{{ 'SETTINGS.ERINYES.PASSWORD_HINT' | translate }}</p>
+        <input class="input" type="password" autocomplete="off" [ngModel]="password()" (ngModelChange)="password.set($event)"
+            (keydown.enter)="submitPassword()" [attr.placeholder]="'SETTINGS.SECURITY.MASTER_PASSWORD.CURRENT_PLACEHOLDER' | translate"
+            [attr.aria-label]="'SETTINGS.SECURITY.MASTER_PASSWORD.CURRENT_PLACEHOLDER' | translate" autofocus />
+        @if (passwordError()) {
+        <p class="error" role="alert">{{ 'SETTINGS.SECURITY.MASTER_PASSWORD.ERROR_CURRENT_INVALID' | translate }}</p>
+        }
+        <div class="actions">
+            <button class="btn btn--ghost" (click)="cancel()" [disabled]="working()">{{ 'COMMON.CANCEL' | translate }}</button>
+            <button class="btn btn--danger-solid" (click)="submitPassword()" [disabled]="working() || !password()" [attr.aria-busy]="working()">
+                {{ 'COMMON.SUBMIT' | translate }}
+            </button>
+        </div>
+        }
+
+        @if (step() === 'biometric') {
+        <h2 class="title title--danger" id="erinyes-title">{{ 'SETTINGS.ERINYES.INTRO_TITLE' | translate }}</h2>
+        @if (working()) {
+        <div class="biometric-wait" role="status" aria-live="polite">
+            <svg lucideLoaderCircle [size]="22" class="spin" aria-hidden="true"></svg>
+            <p class="body-text">{{ 'SETTINGS.ERINYES.BIOMETRIC_WORKING' | translate }}</p>
+        </div>
+        } @else {
+        <p class="body-text">{{ 'SETTINGS.ERINYES.BIOMETRIC_HINT' | translate }}</p>
+        @if (biometricError()) {
+        <p class="error" role="alert">{{ 'SETTINGS.ERINYES.BIOMETRIC_ERROR' | translate }}</p>
+        }
+        <div class="actions">
+            <button class="btn btn--ghost" (click)="cancel()">{{ 'COMMON.CANCEL' | translate }}</button>
+            <button class="btn btn--danger-solid" (click)="runBiometricCheck()">{{ 'COMMON.TRY_AGAIN' | translate }}</button>
+        </div>
+        }
+        }
+
+        @if (step() === 'running') {
+        <h2 class="title title--danger" id="erinyes-title">
+            <svg lucideFlame [size]="18" aria-hidden="true"></svg>
+            {{ 'SETTINGS.ERINYES.INTRO_TITLE' | translate }}
+        </h2>
+        <ul class="run-steps" role="status" aria-live="polite">
+            <li class="run-step" [class.run-step--active]="isStepActive('leaving')" [class.run-step--done]="isStepDone('leaving')">
+                @if (isStepDone('leaving')) {
+                <svg lucideCircleCheckBig [size]="18" aria-hidden="true"></svg>
+                } @else if (isStepActive('leaving')) {
+                <svg lucideLoaderCircle [size]="18" class="spin" aria-hidden="true"></svg>
+                } @else {
+                <svg lucideDoorOpen [size]="18" aria-hidden="true"></svg>
+                }
+                <span>{{ 'SETTINGS.ERINYES.STEP_LEAVING' | translate }}</span>
+            </li>
+            <li class="run-step" [class.run-step--active]="isStepActive('vault')" [class.run-step--done]="isStepDone('vault')">
+                @if (isStepDone('vault')) {
+                <svg lucideCircleCheckBig [size]="18" aria-hidden="true"></svg>
+                } @else if (isStepActive('vault')) {
+                <svg lucideLoaderCircle [size]="18" class="spin" aria-hidden="true"></svg>
+                } @else {
+                <svg lucideShieldOff [size]="18" aria-hidden="true"></svg>
+                }
+                <span>{{ 'SETTINGS.ERINYES.STEP_VAULT' | translate }}</span>
+            </li>
+            <li class="run-step" [class.run-step--active]="isStepActive('shredding')" [class.run-step--done]="isStepDone('shredding')">
+                @if (isStepDone('shredding')) {
+                <svg lucideCircleCheckBig [size]="18" aria-hidden="true"></svg>
+                } @else if (isStepActive('shredding')) {
+                <svg lucideLoaderCircle [size]="18" class="spin" aria-hidden="true"></svg>
+                } @else {
+                <svg lucideTrash2 [size]="18" aria-hidden="true"></svg>
+                }
+                <span>{{ 'SETTINGS.ERINYES.STEP_SHRED' | translate }}</span>
+            </li>
+            <li class="run-step" [class.run-step--active]="isStepActive('tartaros')" [class.run-step--done]="isStepDone('tartaros')">
+                @if (isStepDone('tartaros')) {
+                <svg lucideCircleCheckBig [size]="18" aria-hidden="true"></svg>
+                } @else if (isStepActive('tartaros')) {
+                <svg lucideLoaderCircle [size]="18" class="spin run-step__flame" aria-hidden="true"></svg>
+                } @else {
+                <svg lucideFlame [size]="18" aria-hidden="true"></svg>
+                }
+                <span>{{ 'SETTINGS.ERINYES.STEP_TARTAROS' | translate }}</span>
+            </li>
+        </ul>
+        }
+
+        @if (step() === 'done') {
+        <div class="done">
+            <svg lucideFlame [size]="32" class="done__icon" aria-hidden="true"></svg>
+            <h2 class="title" id="erinyes-title">{{ 'SETTINGS.ERINYES.DONE_TITLE' | translate }}</h2>
+            <p class="body-text">{{ 'SETTINGS.ERINYES.DONE_BODY' | translate }}</p>
+        </div>
+        <div class="actions">
+            <button class="btn btn--danger-solid" (click)="restart()">{{ 'SETTINGS.ERINYES.RESTART_BTN' | translate }}</button>
+        </div>
+        }
+
+    </div>
+</div>
+}

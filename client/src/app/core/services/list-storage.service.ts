@@ -151,6 +151,15 @@ export class ListStorageService {
         });
     }
 
+    async getAllPrefsRaw(): Promise<{ key: string; value: unknown }[]> {
+        const db = await this.getDb();
+        return new Promise((resolve, reject) => {
+            const req = db.transaction(PREFS_STORE, 'readonly').objectStore(PREFS_STORE).getAll();
+            req.onsuccess = () => resolve(req.result as { key: string; value: unknown }[]);
+            req.onerror = () => reject(req.error);
+        });
+    }
+
     async getPref<T>(key: string): Promise<T | undefined> {
         const db = await this.getDb();
         return new Promise((resolve, reject) => {
@@ -180,6 +189,28 @@ export class ListStorageService {
             tx.objectStore(PREFS_STORE).delete(key);
             tx.oncomplete = () => resolve();
             tx.onerror = () => reject(tx.error);
+        });
+    }
+
+    /**
+     * Closes the cached connection (if any) and deletes the whole database.
+     * `indexedDB.deleteDatabase` only resolves once every open connection to
+     * it is closed — without explicitly closing our own cached one first,
+     * this would hang in "blocked" state forever.
+     */
+    async deleteDatabase(): Promise<void> {
+        if (this.dbPromise) {
+            try {
+                const db = await this.dbPromise;
+                db.close();
+            } catch { }
+            this.dbPromise = null;
+        }
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.deleteDatabase(DB_NAME);
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+            req.onblocked = () => resolve();
         });
     }
 }

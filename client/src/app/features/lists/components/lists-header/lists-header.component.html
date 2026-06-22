@@ -1,6 +1,8 @@
 <header class="header" role="banner">
     <img class="logo" src="/ghost-header.svg" [attr.alt]="'Ghost List'" (click)="logoClick.emit()" />
-    <h1 class="title">Ghost List</h1>
+    <h1 class="title" (click)="titleClick.emit()" role="button" tabindex="0"
+        [attr.aria-label]="'LISTS.FILTER_TITLE' | translate"
+        (keydown.enter)="titleClick.emit()">Ghost List</h1>
     <div class="actions">
         @if (totalUnread() > 0) {
         <button class="badge-btn" (click)="markAllReadOpen.emit()"

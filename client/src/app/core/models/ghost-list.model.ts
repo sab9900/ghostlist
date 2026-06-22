@@ -8,4 +8,5 @@ export interface GhostList {
     createdAt: string;
     items: GhostListItem[];
     chatMessages: GhostChatMessage[];
+    hasMoreMessages: boolean;
 }

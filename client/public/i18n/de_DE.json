@@ -9,7 +9,8 @@
         "DELETING": "Löschen…",
         "SKIP": "Überspringen",
         "TRY_AGAIN": "Erneut versuchen",
-        "SUBMIT": "Bestätigen"
+        "SUBMIT": "Bestätigen",
+        "LOADING": "Wird geladen…"
     },
     "LISTS": {
         "EMPTY_HEADLINE": "Noch keine Listen",
@@ -19,6 +20,12 @@
         "MENU_SETTINGS": "Einstellungen",
         "MENU_COFFEE": "Buy me a coffee",
         "MENU_ABOUT": "Über die App",
+        "FILTER_TITLE": "Suchen & Sortieren",
+        "FILTER_SEARCH_PLACEHOLDER": "Liste suchen…",
+        "FILTER_SORT_LABEL": "Sortierung",
+        "SORT_NAME": "Name",
+        "SORT_RECENT": "Zuletzt aktiv",
+        "SEARCH_NO_RESULTS": "Keine Listen gefunden.",
         "CREATE_TITLE": "Neue Liste",
         "CREATE_PLACEHOLDER": "Listenname…",
         "CREATE_BTN": "Erstellen",
@@ -74,6 +81,7 @@
     },
     "CHAT": {
         "NO_MESSAGES": "Noch keine Nachrichten.",
+        "LOADING_OLDER": "Ältere Nachrichten werden geladen…",
         "ANONYMOUS": "Anonym",
         "EDIT_NAME": "Name ändern",
         "MESSAGE_PLACEHOLDER": "Nachricht…",
@@ -305,6 +313,14 @@
         "HAPTICS_TITLE": "Haptik",
         "HAPTICS_ENABLE": "Haptisches Feedback aktivieren",
         "HAPTICS_HINT": "Vibration bei Tipps und Aktionen wie dem Hinzufügen oder Abhaken von Einträgen.",
+        "GHOST_MIST_TITLE": "Geisternebel",
+        "GHOST_MIST_HINT": "Nach einem Moment Inaktivität ziehen zarte Schlieren in deiner Akzentfarbe über die Listen-Seite nach oben.",
+        "GHOST_MIST_MODE": {
+            "OFF": "Aus",
+            "IDLE_3S": "Nach 3 Sekunden",
+            "IDLE_10S": "Nach 10 Sekunden",
+            "ALWAYS": "Immer ein"
+        },
         "SYNC_TITLE": "Sync-Maschine",
         "SYNC_HINT": "Listen mit einem anderen Gerät zusammenführen — die Richtung spielt keine Rolle.",
         "SYNC_MACHINES": "Geräte synchronisieren",
@@ -376,6 +392,29 @@
             "TITLE": "Benachrichtigungen",
             "HINT": "Benachrichtigungen müssen per Tap aktiviert werden – iOS erlaubt den Dialog nur bei einer direkten Nutzeraktion.",
             "PENDING": "Registrierung läuft…"
+        },
+        "ERINYES": {
+            "TITLE": "Erinyen-Protokoll",
+            "HINT": "Die Erinyen warten schon, um dieses Gerät in den Tartaros zu werfen — endgültig.",
+            "ACTIVATE_BTN": "Erinyen-Protokoll aktivieren",
+            "INTRO_TITLE": "Erinyen-Protokoll",
+            "INTRO_BODY": "Dieses Gerät verlässt sofort alle Listen, und sämtliche lokalen Daten — Tresor, Einstellungen, Cache — werden unwiderruflich gelöscht. Das betrifft nur dieses Gerät; deine Listen bleiben für alle anderen Mitglieder erhalten. Es gibt kein Zurück.",
+            "CONFIRM_TITLE": "Bist du sicher?",
+            "CONFIRM_BODY": "Diese Aktion ist endgültig und kann auf diesem Gerät nicht widerrufen werden.",
+            "CONFIRM_YES": "Ja, wirf alles in den Tartaros",
+            "PASSWORD_HINT": "Gib dein Master-Passwort ein, um fortzufahren.",
+            "BIOMETRIC_HINT": "Bestätige jetzt mit Biometrie.",
+            "BIOMETRIC_WORKING": "Warte auf Biometrie…",
+            "BIOMETRIC_ERROR": "Biometrische Bestätigung fehlgeschlagen.",
+            "FINAL_BTN": "In den Tartaros werfen",
+            "STEP_LEAVING": "Verlässt alle Listen…",
+            "STEP_VAULT": "Leert den Tresor…",
+            "STEP_SHRED": "Zerschreddert lokale Daten…",
+            "STEP_TARTAROS": "Wirft den Rest in den Tartaros…",
+            "DONE_TITLE": "Vollbracht.",
+            "DONE_BODY": "Dieses Gerät ruht nun im Tartaros. Danke, dass du Ghost List benutzt hast.",
+            "RESTART_BTN": "Neu beginnen",
+            "ERROR": "Etwas ist schiefgelaufen. Einige Schritte wurden möglicherweise nicht vollständig ausgeführt."
         }
     },
     "SECURITY": {
@@ -422,6 +461,9 @@
         "FEATURE_HIDDEN_DESC": "Markiere Listen als sensibel, damit sie verborgen bleiben – sichtbar nur nach drei Tipps auf das Logo und deinem Master-Passwort.",
         "BUILT_TITLE": "Entwickelt mit",
         "BUILT_TEXT": "Angular 22 · .NET 10 · PostgreSQL · SignalR · Web Crypto API · Capacitor",
+        "LEGAL_TITLE": "Rechtliches",
+        "LEGAL_PRIVACY": "Datenschutzerklärung",
+        "LEGAL_TERMS": "Allgemeine Geschäftsbedingungen",
         "FOOTER": "Mit Sorgfalt entwickelt von"
     },
     "SYNC_SEND": {

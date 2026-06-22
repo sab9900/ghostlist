@@ -1,9 +1,15 @@
-<div class="message-list-wrapper">
+<div class="message-list-wrapper" [class.message-list-wrapper--settling]="!chatReady()">
     <ul class="message-list" #messageList role="log" [attr.aria-label]="'LIST_DETAIL.TAB_CHAT' | translate"
-        aria-live="polite" aria-relevant="additions" (scroll)="onMessageListScroll()">
+        aria-live="polite" aria-relevant="additions" (scroll)="onMessageListScroll()"
+        (touchstart)="onMessageListTouchStart($event)" (touchmove)="onMessageListTouchMove($event)"
+        (touchend)="onMessageListTouchEnd()" (touchcancel)="onMessageListTouchEnd()">
 
         @if (decryptedMessages().length === 0) {
         <li class="empty-hint" role="status">{{ 'CHAT.NO_MESSAGES' | translate }}</li>
+        }
+
+        @if (loadingOlderMessages()) {
+        <li class="older-messages-loading" role="status" aria-live="polite">{{ 'CHAT.LOADING_OLDER' | translate }}</li>
         }
 
         @for (msg of decryptedMessages(); track msg.id) {

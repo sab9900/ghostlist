@@ -10,13 +10,16 @@ import { ListStorageService } from '../../core/services/list-storage.service';
 import { UserIdService } from '../../core/services/user-id.service';
 import { isNetworkError, resolveCreatedMessageId, tempId } from '../store-utils';
 
-export interface MessagesStoreSlice extends WritableStateSource<{ messages: GhostChatMessage[]; pendingOpsCount: number }> {
+export interface MessagesStoreSlice extends WritableStateSource<{ messages: GhostChatMessage[]; messagesHasMore: boolean; loadingOlderMessages: boolean; pendingOpsCount: number }> {
     currentListId: () => string | null;
     currentEncryptionKey: () => string | null;
     messages: () => GhostChatMessage[];
+    messagesHasMore: () => boolean;
+    loadingOlderMessages: () => boolean;
     pendingOpsCount: () => number;
     _persistCurrentList: () => Promise<void>;
     _enqueueOp: (op: Parameters<ListStorageService['addPendingOp']>[0]) => Promise<void>;
+    _bumpListActivity: (listId: string, at?: string) => void;
 }
 
 export function createMessagesMethods(store: MessagesStoreSlice) {
@@ -63,6 +66,7 @@ export function createMessagesMethods(store: MessagesStoreSlice) {
 
             patchState(store, { messages: [...store.messages(), optimisticMessage] });
             void store._persistCurrentList();
+            store._bumpListActivity(listId, optimisticMessage.createdAt);
 
             try {
                 const realId = await firstValueFrom(api.createMessage(payload));
@@ -102,6 +106,31 @@ export function createMessagesMethods(store: MessagesStoreSlice) {
                     throw e;
                 }
                 await store._enqueueOp({ type: 'deleteMessage', listId: store.currentListId() ?? '', messageId, createdAt: new Date().toISOString() });
+            }
+        },
+
+        async loadOlderMessages(): Promise<void> {
+            const listId = store.currentListId();
+            if (!listId) return;
+            if (store.loadingOlderMessages() || !store.messagesHasMore()) return;
+
+            const oldest = store.messages()[0];
+            if (!oldest) return;
+
+            patchState(store, { loadingOlderMessages: true });
+            try {
+                const page = await firstValueFrom(api.getMessages(listId, oldest.createdAt));
+                if (store.currentListId() !== listId) return;
+                const existingIds = new Set(store.messages().map(m => m.id));
+                const olderMessages = page.messages.filter(m => !existingIds.has(m.id));
+                patchState(store, {
+                    messages: [...olderMessages, ...store.messages()],
+                    messagesHasMore: page.hasMore,
+                });
+                void store._persistCurrentList();
+            } catch {
+            } finally {
+                patchState(store, { loadingOlderMessages: false });
             }
         },
     };

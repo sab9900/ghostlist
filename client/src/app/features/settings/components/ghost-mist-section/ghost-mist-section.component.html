@@ -1,0 +1,20 @@
+<section class="section" aria-labelledby="ghost-mist-heading">
+    <div class="heading">
+        <h2 class="title" id="ghost-mist-heading">{{ 'SETTINGS.GHOST_MIST_TITLE' | translate }}</h2>
+    </div>
+    <div class="body">
+        <p class="hint">{{ 'SETTINGS.GHOST_MIST_HINT' | translate }}</p>
+        <div class="option-list" role="radiogroup" aria-labelledby="ghost-mist-heading">
+            @for (opt of modeOptions(); track opt.value) {
+            <button class="option" [class.option--active]="mode() === opt.value"
+                (click)="modeChange.emit(opt.value)" role="radio"
+                [attr.aria-checked]="mode() === opt.value">
+                <span class="option-label">{{ opt.labelKey | translate }}</span>
+                @if (mode() === opt.value) {
+                <span class="option-check" aria-hidden="true">✓</span>
+                }
+            </button>
+            }
+        </div>
+    </div>
+</section>

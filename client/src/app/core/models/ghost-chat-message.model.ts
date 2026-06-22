@@ -11,6 +11,11 @@ export interface GhostChatMessage {
     senderUserId: string | null;
 }
 
+export interface GhostChatMessagePage {
+    messages: GhostChatMessage[];
+    hasMore: boolean;
+}
+
 export interface GhostMessageImageDto {
     messageId: string;
     encryptedImage: string;

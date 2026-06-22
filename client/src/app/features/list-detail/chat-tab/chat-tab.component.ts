@@ -2,6 +2,7 @@ import { Component, ElementRef, HostListener, OnDestroy, computed, effect, injec
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Clipboard } from '@capacitor/clipboard';
 import { Capacitor } from '@capacitor/core';
+import { Keyboard } from '@capacitor/keyboard';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Subject, debounceTime } from 'rxjs';
 import { HubService } from '../../../api/hub.service';
@@ -12,17 +13,17 @@ import { HapticsService } from '../../../core/services/haptics.service';
 import { ImageViewerService } from '../../../core/services/image-viewer.service';
 import { KeyboardInsetService } from '../../../core/services/keyboard-inset.service';
 import { NativeDownloadService } from '../../../core/services/native-download.service';
+import { ShareHandlerService } from '../../../core/services/share-handler.service';
 import { UserIdService } from '../../../core/services/user-id.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
+import { ScrollToBottomButtonComponent } from '../../../shared/scroll-to-bottom-button/scroll-to-bottom-button.component';
+import { VideoCaptureComponent, VideoCaptureResult } from '../../../shared/video-capture/video-capture.component';
 import { AppStore } from '../../../store/app.store';
-import { ShareHandlerService } from '../../../core/services/share-handler.service';
+import { DecryptedMessage, ReplyPreview } from './chat-tab.types';
 import { ChatComposeComponent } from './components/chat-compose/chat-compose.component';
 import { ChatMessageComponent } from './components/chat-message/chat-message.component';
 import { MentionListComponent } from './components/mention-list/mention-list.component';
 import { ReplyBarComponent } from './components/reply-bar/reply-bar.component';
-import { ScrollToBottomButtonComponent } from '../../../shared/scroll-to-bottom-button/scroll-to-bottom-button.component';
-import { VideoCaptureComponent, VideoCaptureResult } from '../../../shared/video-capture/video-capture.component';
-import { DecryptedMessage, ReplyPreview } from './chat-tab.types';
 
 const SWIPE_TRIGGER_DISTANCE = 56;
 const SWIPE_MAX_DISTANCE = 72;
@@ -31,6 +32,9 @@ const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const MAX_DATA_URL_LENGTH = 1_800_000;
 const MAX_VIDEO_FILE_SIZE = 14 * 1024 * 1024;
 const NEAR_BOTTOM_THRESHOLD = 120;
+const NEAR_TOP_THRESHOLD = 120;
+const KEYBOARD_DISMISS_DRAG_THRESHOLD = 32;
+const KEYBOARD_DISMISS_GRACE_MS = 350;
 
 @Component({
     selector: 'app-chat-tab',
@@ -89,17 +93,26 @@ export class ChatTabComponent implements OnDestroy {
     protected readonly menuLeft = signal(false);
     protected readonly highlightedId = signal<string | null>(null);
     protected readonly showScrollToBottomButton = signal(false);
+    protected readonly chatReady = signal(false);
+    protected readonly loadingOlderMessages = computed(() => this.store.loadingOlderMessages());
 
     protected readonly swipeTriggerDistance = SWIPE_TRIGGER_DISTANCE;
     protected readonly showReadReceiptCheckmark = SHOW_READ_RECEIPT_CHECKMARK;
 
     private _fullyOpened = false;
-    private _firstDecryptDone = false;
+    private _lastListId: string | null | undefined = undefined;
+    private settleRafId: number | null = null;
 
     private swipeStartX = 0;
     private swipeStartY = 0;
     private swipeAxisLocked: 'x' | 'y' | null = null;
     protected readonly swipeState = signal<{ id: string; dx: number } | null>(null);
+
+    private keyboardDismissTouchStartY: number | null = null;
+    private keyboardOpenedAt = 0;
+    private userTouchingList = false;
+    private pendingScrollToBottomAfterTouch = false;
+    private justSentOwnMessage = false;
 
     private readonly messagesById = computed(() => {
         const map = new Map<string, DecryptedMessage>();
@@ -188,6 +201,7 @@ export class ChatTabComponent implements OnDestroy {
 
     constructor() {
         this.keyboardInset.willShow$.pipe(takeUntilDestroyed()).subscribe(() => {
+            this.keyboardOpenedAt = Date.now();
             this.scrollToBottomDuringTransition();
         });
         this.typingInput$.pipe(debounceTime(400), takeUntilDestroyed()).subscribe(() => {
@@ -218,16 +232,27 @@ export class ChatTabComponent implements OnDestroy {
         });
 
         effect(() => {
+            const id = this.store.currentListId();
+            if (id !== this._lastListId) {
+                this._lastListId = id;
+                this.resetSettleState();
+            }
+        });
+
+        effect(() => {
             void this.store.messages();
+            void this.store.currentListSynced();
             void this.decryptMessages().then(ok => {
                 if (!ok) return;
-                if (!this._firstDecryptDone) {
-                    this._firstDecryptDone = true;
-                    this.scrollToFirstUnreadOrBottom();
-                    setTimeout(() => { this._fullyOpened = true; }, 1200);
-                } else if (this._fullyOpened) {
-                    if (this.isNearBottom()) this.scrollToBottom();
-                    else this.updateScrollButtonVisibility();
+                if (!this._fullyOpened) {
+                    this.startSettleLoop();
+                } else if (this.justSentOwnMessage || this.isNearBottom()) {
+                    this.justSentOwnMessage = false;
+                    if (this.userTouchingList) this.pendingScrollToBottomAfterTouch = true;
+                    else this.scrollToBottom();
+                } else {
+                    this.pendingScrollToBottomAfterTouch = false;
+                    this.updateScrollButtonVisibility();
                 }
             });
         });
@@ -235,12 +260,78 @@ export class ChatTabComponent implements OnDestroy {
 
     protected onMessageListScroll(): void {
         this.updateScrollButtonVisibility();
+        this.maybeLoadOlderMessages();
+    }
+
+    private isNearTop(): boolean {
+        const el = this.messageListRef()?.nativeElement;
+        if (!el) return false;
+        return el.scrollTop <= NEAR_TOP_THRESHOLD;
+    }
+
+    private maybeLoadOlderMessages(): void {
+        if (!this.chatReady()) return;
+        if (this.store.loadingOlderMessages() || !this.store.messagesHasMore()) return;
+        if (!this.isNearTop()) return;
+        void this.loadOlderMessagesPreservingScroll();
+    }
+
+    private async loadOlderMessagesPreservingScroll(): Promise<void> {
+        const el = this.messageListRef()?.nativeElement;
+        if (!el) return;
+        const prevScrollHeight = el.scrollHeight;
+        const prevScrollTop = el.scrollTop;
+
+        await this.store.loadOlderMessages();
+        await this.decryptMessages();
+
+        requestAnimationFrame(() => {
+            const target = this.messageListRef()?.nativeElement;
+            if (!target) return;
+            const delta = target.scrollHeight - prevScrollHeight;
+            target.scrollTop = prevScrollTop + delta;
+        });
+    }
+
+    protected onMessageListTouchStart(event: TouchEvent): void {
+        this.userTouchingList = true;
+        this.keyboardDismissTouchStartY = event.touches.length === 1 ? event.touches[0].clientY : null;
+    }
+
+    protected onMessageListTouchMove(event: TouchEvent): void {
+        const startY = this.keyboardDismissTouchStartY;
+        if (startY === null || event.touches.length !== 1) return;
+        if (!this.isMobile || !this.chatReady() || this.keyboardInset.height() === 0) return;
+        if (Date.now() - this.keyboardOpenedAt < KEYBOARD_DISMISS_GRACE_MS) return;
+        const dy = event.touches[0].clientY - startY;
+        if (dy > KEYBOARD_DISMISS_DRAG_THRESHOLD) {
+            this.keyboardDismissTouchStartY = null;
+            this.dismissKeyboard();
+        }
+    }
+
+    protected onMessageListTouchEnd(): void {
+        this.keyboardDismissTouchStartY = null;
+        this.userTouchingList = false;
+        if (this.pendingScrollToBottomAfterTouch) {
+            this.pendingScrollToBottomAfterTouch = false;
+            if (this.isNearBottom()) this.scrollToBottom();
+            else this.updateScrollButtonVisibility();
+        }
+    }
+
+    private dismissKeyboard(): void {
+        const active = document.activeElement as HTMLElement | null;
+        if (active && (active.tagName === 'TEXTAREA' || active.tagName === 'INPUT')) active.blur();
+        if (Capacitor.isNativePlatform()) void Keyboard.hide();
+        this.mentionQuery.set(null);
     }
 
     protected onScrollToBottomClick(): void {
         const el = this.messageListRef()?.nativeElement;
         if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
         this.showScrollToBottomButton.set(false);
+        this.haptics.scrollToBottom();
     }
 
     private isNearBottom(): boolean {
@@ -272,14 +363,61 @@ export class ChatTabComponent implements OnDestroy {
         requestAnimationFrame(step);
     }
 
-    private scrollToFirstUnreadOrBottom(): void {
-        requestAnimationFrame(() => {
+    private resetSettleState(): void {
+        if (this.settleRafId !== null) {
+            cancelAnimationFrame(this.settleRafId);
+            this.settleRafId = null;
+        }
+        this._fullyOpened = false;
+        this.chatReady.set(false);
+        this.keyboardDismissTouchStartY = null;
+        this.userTouchingList = false;
+        this.pendingScrollToBottomAfterTouch = false;
+        this.justSentOwnMessage = false;
+    }
+
+    private snapToTargetInstant(el: HTMLElement): void {
+        const firstUnread = el.querySelector<HTMLElement>('.message--unread');
+        if (firstUnread) {
+            const elRect = el.getBoundingClientRect();
+            const targetRect = firstUnread.getBoundingClientRect();
+            const offset = (targetRect.top - elRect.top) - (el.clientHeight - firstUnread.clientHeight) / 2;
+            const max = Math.max(0, el.scrollHeight - el.clientHeight);
+            el.scrollTop = Math.max(0, Math.min(el.scrollTop + offset, max));
+        } else {
+            el.scrollTop = el.scrollHeight;
+        }
+    }
+
+    private startSettleLoop(): void {
+        if (this.settleRafId !== null) return;
+        let lastHeight = -1;
+        let stableSinceMs = 0;
+        let startedAtMs = 0;
+        const STABLE_MS = 220;
+        const MIN_MS = 120;
+        const MAX_MS = 2500;
+        const tick = (now: number) => {
+            if (startedAtMs === 0) { startedAtMs = now; stableSinceMs = now; }
             const el = this.messageListRef()?.nativeElement;
-            if (!el) return;
-            const firstUnread = el.querySelector<HTMLElement>('.message--unread');
-            if (firstUnread) firstUnread.scrollIntoView({ block: 'center' });
-            else el.scrollTop = el.scrollHeight;
-        });
+            if (el) {
+                this.snapToTargetInstant(el);
+                const h = el.scrollHeight;
+                if (h !== lastHeight) { lastHeight = h; stableSinceMs = now; }
+            }
+            const elapsed = now - startedAtMs;
+            const stableFor = now - stableSinceMs;
+            const synced = this.store.currentListSynced();
+            const settled = (synced && stableFor >= STABLE_MS && elapsed >= MIN_MS) || elapsed >= MAX_MS;
+            if (settled) {
+                this.settleRafId = null;
+                this._fullyOpened = true;
+                this.chatReady.set(true);
+                return;
+            }
+            this.settleRafId = requestAnimationFrame(tick);
+        };
+        this.settleRafId = requestAnimationFrame(tick);
     }
 
     private async decryptMessages(): Promise<boolean> {
@@ -443,6 +581,7 @@ export class ChatTabComponent implements OnDestroy {
         this.sendingMessage.set(true);
         try {
             const replyId = this.replyingTo()?.id ?? null;
+            this.justSentOwnMessage = true;
             await this.store.sendMessage(text, sender, replyId);
             this.newMessageText.set('');
             this.replyingTo.set(null);
@@ -485,6 +624,7 @@ export class ChatTabComponent implements OnDestroy {
             const sender = this.prefs.senderName() || 'Anonymous';
             const replyId = this.replyingTo()?.id ?? null;
             this.haptics.messageSent();
+            this.justSentOwnMessage = true;
             await this.store.shareImage(dataUrl, sender, replyId);
             this.replyingTo.set(null);
         } catch {
@@ -509,6 +649,7 @@ export class ChatTabComponent implements OnDestroy {
             if (dataUrl.length > MAX_DATA_URL_LENGTH) { this.showFileTooLarge(); return; }
             const sender = this.prefs.senderName() || 'Anonymous';
             this.haptics.messageSent();
+            this.justSentOwnMessage = true;
             await this.store.shareImage(dataUrl, sender, null);
         } catch {
         } finally { this.sendingImage.set(false); }
@@ -522,6 +663,7 @@ export class ChatTabComponent implements OnDestroy {
             if (dataUrl.length > MAX_DATA_URL_LENGTH) { this.showFileTooLarge(); return; }
             const sender = this.prefs.senderName() || 'Anonymous';
             this.haptics.messageSent();
+            this.justSentOwnMessage = true;
             await this.store.shareAudio(dataUrl, sender, null);
         } catch {
         } finally { this.sendingAudio.set(false); }
@@ -534,6 +676,7 @@ export class ChatTabComponent implements OnDestroy {
             const dataUrl = await this.readAsDataUrl(file);
             const sender = this.prefs.senderName() || 'Anonymous';
             this.haptics.messageSent();
+            this.justSentOwnMessage = true;
             await this.store.shareVideo(dataUrl, sender, null);
         } catch {
         } finally { this.sendingVideo.set(false); }
@@ -640,7 +783,7 @@ export class ChatTabComponent implements OnDestroy {
         const sender = this.prefs.senderName() || 'Anonymous';
         const replyId = this.replyingTo()?.id ?? null;
         this.sendingAudio.set(true);
-        try { this.haptics.messageSent(); await this.store.shareAudio(dataUrl, sender, replyId); this.replyingTo.set(null); }
+        try { this.haptics.messageSent(); this.justSentOwnMessage = true; await this.store.shareAudio(dataUrl, sender, replyId); this.replyingTo.set(null); }
         catch { } finally { this.sendingAudio.set(false); }
     }
 
@@ -681,7 +824,7 @@ export class ChatTabComponent implements OnDestroy {
         const sender = this.prefs.senderName() || 'Anonymous';
         const replyId = this.replyingTo()?.id ?? null;
         this.sendingVideo.set(true);
-        try { this.haptics.messageSent(); await this.store.shareVideo(dataUrl, sender, replyId); this.replyingTo.set(null); }
+        try { this.haptics.messageSent(); this.justSentOwnMessage = true; await this.store.shareVideo(dataUrl, sender, replyId); this.replyingTo.set(null); }
         catch (err) {
             const errName = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
             this.videoRecordingDebugError.set(errName); this.videoRecordingNotSupported.set(true);
@@ -693,5 +836,6 @@ export class ChatTabComponent implements OnDestroy {
         if (this.recordingTimer !== null) clearInterval(this.recordingTimer);
         if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') this.mediaRecorder.stop();
         this.typingClearTimers.forEach(t => clearTimeout(t));
+        if (this.settleRafId !== null) cancelAnimationFrame(this.settleRafId);
     }
 }

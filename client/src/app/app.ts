@@ -8,11 +8,13 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 import { LucideBell, LucideLock } from '@lucide/angular';
 import { TranslatePipe } from '@ngx-translate/core';
 import { filter, map, startWith } from 'rxjs';
+import { PageTransitionDirective } from './core/directives/page-transition.directive';
 import { BadgeService } from './core/services/badge.service';
 import { InfoCenterService } from './core/services/info-center.service';
 import { KeyboardInsetService } from './core/services/keyboard-inset.service';
 import { LayoutService } from './core/services/layout.service';
 import { MasterPasswordService } from './core/services/master-password.service';
+import { PrefsCacheService } from './core/services/prefs-cache.service';
 import { PushNotificationService } from './core/services/push-notification.service';
 import { SensitiveListsService } from './core/services/sensitive-lists.service';
 import { UserPreferencesService } from './core/services/user-preferences.service';
@@ -22,6 +24,7 @@ import { AppStore } from './store/app.store';
 import { ListsComponent } from './features/lists/lists.component';
 import { ImageViewerComponent } from './shared/image-viewer/image-viewer.component';
 import { InfoOverlayComponent } from './shared/info-overlay/info-overlay.component';
+import { LoadingOverlayComponent } from './shared/loading-overlay/loading-overlay.component';
 import { OfflineBannerComponent } from './shared/offline-banner/offline-banner.component';
 import { PwaInstallBannerComponent } from './shared/pwa-install-banner/pwa-install-banner.component';
 import { SnackStackComponent } from './shared/snack-stack/snack-stack.component';
@@ -32,26 +35,28 @@ const SIDEBAR_MAX = 520;
 const SIDEBAR_DEFAULT = 320;
 
 
-function loadSidebarWidth(): number {
-    try {
-        const stored = localStorage.getItem(SIDEBAR_WIDTH_KEY);
-        if (stored) {
-            const n = parseInt(stored, 10);
-            if (!isNaN(n)) return Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, n));
-        }
-    } catch { }
+// Reads synchronously from PrefsCacheService's in-memory cache rather than
+// IndexedDB directly: App is only ever constructed after the cache's
+// warm-up app initializer has resolved (see app.config.ts), so the value is
+// already available without an async round-trip — no layout flash on load.
+function loadSidebarWidth(prefsCache: PrefsCacheService): number {
+    const stored = prefsCache.get<number | null>(SIDEBAR_WIDTH_KEY, null);
+    if (stored !== null && !isNaN(stored)) {
+        return Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, stored));
+    }
     return SIDEBAR_DEFAULT;
 }
 
 @Component({
     selector: 'app-root',
-    imports: [LucideBell, LucideLock, RouterOutlet, ListsComponent, TranslatePipe, FormsModule, PwaInstallBannerComponent, OfflineBannerComponent, InfoOverlayComponent, ImageViewerComponent, SnackStackComponent],
+    imports: [LucideBell, LucideLock, RouterOutlet, PageTransitionDirective, ListsComponent, TranslatePipe, FormsModule, PwaInstallBannerComponent, OfflineBannerComponent, InfoOverlayComponent, LoadingOverlayComponent, ImageViewerComponent, SnackStackComponent],
     templateUrl: './app.html',
     styleUrl: './app.scss',
 })
 export class App {
     protected readonly layout = inject(LayoutService);
     private readonly keyboardInset = inject(KeyboardInsetService);
+    private readonly prefsCache = inject(PrefsCacheService);
 
     private readonly _badge = inject(BadgeService);
     protected readonly webAuthn = inject(WebAuthnService);
@@ -267,7 +272,7 @@ export class App {
         return !!(url && url !== '/');
     });
 
-    protected readonly sidebarWidth = signal(loadSidebarWidth());
+    protected readonly sidebarWidth = signal(loadSidebarWidth(this.prefsCache));
     protected readonly resizing = signal(false);
 
     onResizeStart(startEvent: MouseEvent): void {
@@ -287,9 +292,7 @@ export class App {
             document.removeEventListener('mousemove', onMove);
             document.removeEventListener('mouseup', onUp);
             this.resizing.set(false);
-            try {
-                localStorage.setItem(SIDEBAR_WIDTH_KEY, String(this.sidebarWidth()));
-            } catch { }
+            this.prefsCache.set(SIDEBAR_WIDTH_KEY, this.sidebarWidth());
         };
 
         document.addEventListener('mousemove', onMove);

@@ -1,4 +1,5 @@
-<div class="capture" role="dialog" [attr.aria-label]="'VIDEO_CAPTURE.TITLE_ARIA' | translate">
+<div class="capture" role="dialog" [attr.aria-label]="'VIDEO_CAPTURE.TITLE_ARIA' | translate"
+    (touchstart)="$event.stopPropagation()">
     <button type="button" class="capture__close" (click)="close()"
         [attr.aria-label]="'VIDEO_CAPTURE.CLOSE_ARIA' | translate">
         <svg lucideX [size]="20" aria-hidden="true"></svg>
@@ -54,6 +55,7 @@
 
     <div class="capture__stage">
         <video #reviewVideo class="capture__review" [src]="reviewUrl()" controls playsinline
+            (timeupdate)="onReviewTimeUpdate($any($event.target).currentTime)"
             [attr.aria-label]="'VIDEO_CAPTURE.PREVIEW_ARIA' | translate"></video>
     </div>
 
@@ -64,12 +66,11 @@
             <span>{{ formatTime(trimStart()) }}</span>
             <span>{{ formatTime(trimEnd()) }}</span>
         </div>
-        <input type="range" class="capture__trim-slider" min="0" [max]="duration()" step="0.1"
-            [value]="trimStart()" (input)="onTrimStartChange($any($event.target).valueAsNumber)"
-            [attr.aria-label]="'VIDEO_CAPTURE.TRIM_START_ARIA' | translate" />
-        <input type="range" class="capture__trim-slider" min="0" [max]="duration()" step="0.1"
-            [value]="trimEnd()" (input)="onTrimEndChange($any($event.target).valueAsNumber)"
-            [attr.aria-label]="'VIDEO_CAPTURE.TRIM_END_ARIA' | translate" />
+        <app-video-trim-strip [duration]="duration()" [trimStart]="trimStart()" [trimEnd]="trimEnd()"
+            [thumbnails]="thumbnails()" [playhead]="playhead()"
+            [startAriaLabel]="'VIDEO_CAPTURE.TRIM_START_ARIA' | translate"
+            [endAriaLabel]="'VIDEO_CAPTURE.TRIM_END_ARIA' | translate" (trimStartChange)="onTrimStartChange($event)"
+            (trimEndChange)="onTrimEndChange($event)" (dragStart)="onTrimDragStart()" />
     </div>
     }
 
@@ -85,5 +86,12 @@
         </button>
     </div>
     }
+    }
+
+    @if (processing()) {
+    <div class="capture__processing" role="status" aria-live="polite"
+        [attr.aria-label]="'VIDEO_CAPTURE.PROCESSING' | translate">
+        <div class="capture__spinner" aria-hidden="true"></div>
+    </div>
     }
 </div>

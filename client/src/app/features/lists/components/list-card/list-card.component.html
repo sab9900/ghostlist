@@ -1,8 +1,7 @@
-<li class="card" (click)="open.emit()" role="button" tabindex="0"
-    [class.card--active]="isActive()"
+<li class="card" (click)="open.emit()" role="button" tabindex="0" [class.card--active]="isActive()"
     [attr.aria-current]="isActive() ? 'true' : null"
-    [attr.aria-label]="list().name + (unread() > 0 ? ', ' + unread() + ' unread' : '')"
-    (keydown.enter)="open.emit()" (keydown.space)="open.emit()">
+    [attr.aria-label]="list().name + (unread() > 0 ? ', ' + unread() + ' unread' : '')" (keydown.enter)="open.emit()"
+    (keydown.space)="open.emit()">
     <div class="body" aria-hidden="true">
         <span class="name truncate">{{ list().name }}</span>
         <span class="date">{{ list().addedAt | date:'d MMM yyyy' }}</span>
@@ -18,7 +17,7 @@
     </div>
     }
     @if (unread() > 0) {
-    <app-badge [count]="unread()" aria-hidden="true" />
+    <app-badge class="unread" [count]="unread()" aria-hidden="true" />
     }
     <span class="arrow" aria-hidden="true">›</span>
 </li>

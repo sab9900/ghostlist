@@ -26,6 +26,11 @@
                         (themeChange)="setTheme($event)"
                         (accentChange)="setAccent($event)" />
 
+                    <app-ghost-mist-section
+                        [mode]="prefs.ghostMistMode()"
+                        [modeOptions]="ghostMistModeOptions"
+                        (modeChange)="setGhostMistMode($event)" />
+
                     <app-language-section
                         [currentLang]="langService.currentLang()"
                         [langs]="supportedLangs"
@@ -79,6 +84,8 @@
                         (toggle)="setHapticsEnabled($event)" />
                     }
 
+                    <app-danger-zone-section (activate)="openErinyesDialog()" />
+
                 </div>
 
             </div>
@@ -101,5 +108,9 @@
     <app-recovery-code-dialog
         [code]="masterPassword.pendingRecoveryCode()"
         (acknowledge)="acknowledgeRecoveryCode()" />
+
+    <app-erinyes-protocol-dialog
+        [show]="showErinyesDialog()"
+        (closed)="showErinyesDialog.set(false)" />
 
 </div>

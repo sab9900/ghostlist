@@ -133,7 +133,7 @@
     </nav>
 
     <div class="tab-pane" role="tabpanel" [id]="'panel-' + activeTab()" [attr.aria-labelledby]="'tab-' + activeTab()">
-        <router-outlet />
+        <router-outlet appTabTransition />
     </div>
 
     @if (settingsOpen()) {
