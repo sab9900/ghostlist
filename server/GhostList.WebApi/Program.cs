@@ -43,7 +43,7 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy("create-list", ctx =>
         RateLimitPartition.GetSlidingWindowLimiter(IpKey(ctx), _ => new SlidingWindowRateLimiterOptions
         {
-            PermitLimit = 20,
+            PermitLimit = 100,
             Window = TimeSpan.FromHours(1),
             SegmentsPerWindow = 6,
             QueueProcessingOrder = QueueProcessingOrder.OldestFirst,

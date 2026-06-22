@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GhostList – Privacy Policy</title>
+  <style>
+    :root {
+      --bg: #0f0f13;
+      --surface: #1a1a22;
+      --border: #2e2e3a;
+      --text: #e8e8f0;
+      --muted: #888899;
+      --accent: #7c6afb;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      padding: 2rem 1rem 4rem;
+    }
+    .container { max-width: 740px; margin: 0 auto; }
+    header { margin-bottom: 2.5rem; }
+    h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .updated { color: var(--muted); font-size: 0.875rem; }
+
+    /* Language switcher */
+    .lang-switcher {
+      display: flex; flex-wrap: wrap; gap: 0.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .lang-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0.35rem 0.9rem;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.15s;
+    }
+    .lang-btn:hover { border-color: var(--accent); color: var(--text); }
+    .lang-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* Content */
+    .lang-content { display: none; }
+    .lang-content.visible { display: block; }
+    h2 { font-size: 1.1rem; font-weight: 600; margin: 2rem 0 0.6rem; color: var(--accent); }
+    p { margin-bottom: 1rem; color: #c8c8d8; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .highlight {
+      background: var(--surface);
+      border-left: 3px solid var(--accent);
+      padding: 0.8rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin: 1.2rem 0;
+      color: var(--text);
+    }
+    footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>GhostList</h1>
+    <p class="updated" id="updated-label">Last updated: June 23, 2026</p>
+  </header>
+
+  <div class="lang-switcher">
+    <button class="lang-btn active" onclick="switchLang('en')">English</button>
+    <button class="lang-btn" onclick="switchLang('de')">Deutsch</button>
+    <button class="lang-btn" onclick="switchLang('fr')">Français</button>
+    <button class="lang-btn" onclick="switchLang('es')">Español</button>
+    <button class="lang-btn" onclick="switchLang('it')">Italiano</button>
+  </div>
+
+  <!-- ═══════════════════════════════ ENGLISH ═══════════════════════════════ -->
+  <div class="lang-content visible" id="lang-en">
+    <div class="highlight">
+      GhostList is a zero-knowledge app. Your data is encrypted on your device before it ever reaches our servers. We cannot read your lists, items, or messages — ever.
+    </div>
+
+    <h2>1. Who we are</h2>
+    <p>GhostList is developed and operated by <strong>[DEVELOPER NAME]</strong>. If you have any questions about this Privacy Policy, you can reach us at <a href="mailto:[CONTACT EMAIL]">[CONTACT EMAIL]</a>.</p>
+
+    <h2>2. What data we collect</h2>
+    <p>GhostList is designed to collect as little data as possible.</p>
+    <p><strong>Data we never collect:</strong> the content of your lists, items, notes, or messages. All of this is encrypted on your device using AES-256-GCM before transmission. Our servers only ever store ciphertext. We have no means to decrypt it.</p>
+    <p><strong>Push notifications (optional):</strong> If you enable push notifications, your device token is transmitted to and stored on our servers via Firebase Cloud Messaging (Google LLC). This token is a technical identifier used solely to deliver notifications to your device. It does not identify you personally. You can disable push notifications at any time in your device settings.</p>
+    <p><strong>Technical logs:</strong> Our servers record standard access logs (IP address, timestamp, request path) for security and operational purposes. These logs are retained for a maximum of 30 days and are not linked to any user identity.</p>
+
+    <h2>3. Encryption &amp; zero-knowledge</h2>
+    <p>Your encryption key is generated on your device and never leaves it. When you share a list with another user, keys are exchanged via Elliptic-Curve Diffie-Hellman (ECDH) through an encrypted relay. At no point does our server have access to any plaintext data or any encryption key.</p>
+
+    <h2>4. Third-party services</h2>
+    <p><strong>Firebase Cloud Messaging (Google LLC):</strong> Used for push notifications. Google may process device tokens in accordance with their own privacy policy: <a href="https://policies.google.com/privacy" target="_blank">policies.google.com/privacy</a>. We have entered into a Data Processing Agreement with Google.</p>
+
+    <h2>5. Data storage &amp; transfers</h2>
+    <p>Encrypted data is stored on servers located in the European Union. If you use push notifications, your device token may be processed by Google on servers outside the EU, subject to standard contractual clauses.</p>
+
+    <h2>6. Your rights (GDPR)</h2>
+    <p>Under the GDPR, you have the right to access, rectify, or erase any personal data we hold about you (i.e. your device token, if applicable). To exercise these rights, contact us at <a href="mailto:[CONTACT EMAIL]">[CONTACT EMAIL]</a>. Since we cannot identify you from your encrypted data, requests concerning list content cannot be processed.</p>
+
+    <h2>7. Children</h2>
+    <p>GhostList is not directed at children under 13. We do not knowingly collect personal data from children.</p>
+
+    <h2>8. Changes to this policy</h2>
+    <p>We may update this policy from time to time. Material changes will be announced in the app. Continued use of the app after changes constitutes acceptance.</p>
+
+    <h2>9. Contact</h2>
+    <p><a href="mailto:[CONTACT EMAIL]">[CONTACT EMAIL]</a></p>
+  </div>
+
+  <!-- ═══════════════════════════════ DEUTSCH ═══════════════════════════════ -->
+  <div class="lang-content" id="lang-de">
+    <div class="highlight">
+      GhostList ist eine Zero-Knowledge-App. Deine Daten werden auf deinem Gerät verschlüsselt, bevor sie unsere Server erreichen. Wir können deine Listen, Einträge oder Nachrichten zu keinem Zeitpunkt lesen.
+    </div>
+
+    <h2>1. Wer wir sind</h2>
+    <p>GhostList wird entwickelt und betrieben von <strong>[ENTWICKLERNAME]</strong>. Bei Fragen zu dieser Datenschutzerklärung erreichst du uns unter <a href="mailto:[KONTAKT E-MAIL]">[KONTAKT E-MAIL]</a>.</p>
+
+    <h2>2. Welche Daten wir erheben</h2>
+    <p>GhostList ist darauf ausgelegt, so wenige Daten wie möglich zu erfassen.</p>
+    <p><strong>Daten, die wir niemals erheben:</strong> den Inhalt deiner Listen, Einträge, Notizen oder Nachrichten. All diese Daten werden auf deinem Gerät mit AES-256-GCM verschlüsselt, bevor sie übertragen werden. Unsere Server speichern ausschließlich verschlüsselten Text (Ciphertext). Wir haben keine Möglichkeit, diesen zu entschlüsseln.</p>
+    <p><strong>Push-Benachrichtigungen (optional):</strong> Wenn du Push-Benachrichtigungen aktivierst, wird dein Geräte-Token über Firebase Cloud Messaging (Google LLC) an unsere Server übermittelt und dort gespeichert. Dieser Token ist ein technischer Bezeichner, der ausschließlich zur Zustellung von Benachrichtigungen dient. Er identifiziert dich nicht persönlich. Du kannst Push-Benachrichtigungen jederzeit in den Geräteeinstellungen deaktivieren.</p>
+    <p><strong>Technische Logs:</strong> Unsere Server erfassen standardmäßige Zugriffsprotokolle (IP-Adresse, Zeitstempel, Anfragepfad) für Sicherheits- und Betriebszwecke. Diese Logs werden maximal 30 Tage aufbewahrt und sind keiner Nutzeridentität zugeordnet.</p>
+
+    <h2>3. Verschlüsselung &amp; Zero-Knowledge</h2>
+    <p>Dein Verschlüsselungsschlüssel wird auf deinem Gerät generiert und verlässt es nie. Beim Teilen einer Liste mit anderen Nutzern werden Schlüssel über Elliptic-Curve Diffie-Hellman (ECDH) durch einen verschlüsselten Relay ausgetauscht. Unser Server hat zu keinem Zeitpunkt Zugriff auf Klartextdaten oder Verschlüsselungsschlüssel.</p>
+
+    <h2>4. Drittanbieter</h2>
+    <p><strong>Firebase Cloud Messaging (Google LLC):</strong> Wird für Push-Benachrichtigungen genutzt. Google kann Geräte-Token gemäß eigener Datenschutzrichtlinie verarbeiten: <a href="https://policies.google.com/privacy" target="_blank">policies.google.com/privacy</a>. Wir haben mit Google einen Auftragsverarbeitungsvertrag (AVV) abgeschlossen.</p>
+
+    <h2>5. Datenspeicherung &amp; -übertragung</h2>
+    <p>Verschlüsselte Daten werden auf Servern innerhalb der Europäischen Union gespeichert. Bei Nutzung von Push-Benachrichtigungen kann dein Geräte-Token von Google auf Servern außerhalb der EU verarbeitet werden, abgesichert durch Standardvertragsklauseln.</p>
+
+    <h2>6. Deine Rechte (DSGVO)</h2>
+    <p>Nach der DSGVO hast du das Recht auf Auskunft, Berichtigung oder Löschung der über dich gespeicherten personenbezogenen Daten (d.h. ggf. deines Geräte-Tokens). Kontaktiere uns hierfür unter <a href="mailto:[KONTAKT E-MAIL]">[KONTAKT E-MAIL]</a>. Da wir dich anhand der verschlüsselten Daten nicht identifizieren können, können Anfragen bezüglich des Listeninhalts nicht bearbeitet werden.</p>
+
+    <h2>7. Kinder</h2>
+    <p>GhostList richtet sich nicht an Kinder unter 13 Jahren. Wir erfassen wissentlich keine personenbezogenen Daten von Kindern.</p>
+
+    <h2>8. Änderungen dieser Datenschutzerklärung</h2>
+    <p>Wir können diese Erklärung von Zeit zu Zeit aktualisieren. Wesentliche Änderungen werden in der App angekündigt. Die weitere Nutzung der App nach Änderungen gilt als Zustimmung.</p>
+
+    <h2>9. Kontakt</h2>
+    <p><a href="mailto:[KONTAKT E-MAIL]">[KONTAKT E-MAIL]</a></p>
+  </div>
+
+  <!-- ══════════════════════════════ FRANÇAIS ══════════════════════════════ -->
+  <div class="lang-content" id="lang-fr">
+    <div class="highlight">
+      GhostList est une application zéro connaissance. Vos données sont chiffrées sur votre appareil avant d'atteindre nos serveurs. Nous ne pouvons jamais lire vos listes, éléments ou messages.
+    </div>
+
+    <h2>1. Qui nous sommes</h2>
+    <p>GhostList est développé et exploité par <strong>[NOM DU DÉVELOPPEUR]</strong>. Pour toute question relative à cette politique de confidentialité, contactez-nous à <a href="mailto:[EMAIL DE CONTACT]">[EMAIL DE CONTACT]</a>.</p>
+
+    <h2>2. Données collectées</h2>
+    <p>GhostList est conçu pour collecter le moins de données possible.</p>
+    <p><strong>Données que nous ne collectons jamais :</strong> le contenu de vos listes, éléments, notes ou messages. Toutes ces données sont chiffrées sur votre appareil avec AES-256-GCM avant transmission. Nos serveurs ne stockent que du texte chiffré (ciphertext). Nous n'avons aucun moyen de le déchiffrer.</p>
+    <p><strong>Notifications push (optionnel) :</strong> Si vous activez les notifications push, votre token d'appareil est transmis à nos serveurs via Firebase Cloud Messaging (Google LLC). Ce token est un identifiant technique utilisé uniquement pour la livraison des notifications. Il ne vous identifie pas personnellement. Vous pouvez désactiver les notifications push à tout moment dans les paramètres de votre appareil.</p>
+    <p><strong>Journaux techniques :</strong> Nos serveurs enregistrent des journaux d'accès standard (adresse IP, horodatage, chemin de requête) à des fins de sécurité et opérationnelles, conservés au maximum 30 jours et non liés à une identité utilisateur.</p>
+
+    <h2>3. Chiffrement &amp; zéro connaissance</h2>
+    <p>Votre clé de chiffrement est générée sur votre appareil et ne le quitte jamais. Lors du partage d'une liste, les clés sont échangées via ECDH (Elliptic-Curve Diffie-Hellman) par un relais chiffré. Notre serveur n'a à aucun moment accès à des données en clair ni à des clés de chiffrement.</p>
+
+    <h2>4. Services tiers</h2>
+    <p><strong>Firebase Cloud Messaging (Google LLC) :</strong> Utilisé pour les notifications push. Google peut traiter les tokens d'appareil conformément à sa propre politique de confidentialité : <a href="https://policies.google.com/privacy" target="_blank">policies.google.com/privacy</a>. Nous avons conclu un accord de traitement des données avec Google.</p>
+
+    <h2>5. Stockage &amp; transferts de données</h2>
+    <p>Les données chiffrées sont stockées sur des serveurs situés dans l'Union européenne. En cas d'utilisation des notifications push, votre token peut être traité par Google sur des serveurs hors UE, encadré par des clauses contractuelles types.</p>
+
+    <h2>6. Vos droits (RGPD)</h2>
+    <p>Conformément au RGPD, vous disposez d'un droit d'accès, de rectification et d'effacement des données personnelles vous concernant (i.e. votre token d'appareil, le cas échéant). Pour exercer ces droits, contactez-nous à <a href="mailto:[EMAIL DE CONTACT]">[EMAIL DE CONTACT]</a>.</p>
+
+    <h2>7. Mineurs</h2>
+    <p>GhostList ne s'adresse pas aux enfants de moins de 13 ans. Nous ne collectons pas sciemment de données personnelles auprès d'enfants.</p>
+
+    <h2>8. Modifications</h2>
+    <p>Nous pouvons mettre à jour cette politique ponctuellement. Les changements importants seront annoncés dans l'application. L'utilisation continue de l'application vaut acceptation.</p>
+
+    <h2>9. Contact</h2>
+    <p><a href="mailto:[EMAIL DE CONTACT]">[EMAIL DE CONTACT]</a></p>
+  </div>
+
+  <!-- ══════════════════════════════ ESPAÑOL ═══════════════════════════════ -->
+  <div class="lang-content" id="lang-es">
+    <div class="highlight">
+      GhostList es una aplicación de conocimiento cero. Tus datos se cifran en tu dispositivo antes de llegar a nuestros servidores. Nunca podemos leer tus listas, elementos ni mensajes.
+    </div>
+
+    <h2>1. Quiénes somos</h2>
+    <p>GhostList es desarrollado y operado por <strong>[NOMBRE DEL DESARROLLADOR]</strong>. Si tienes preguntas sobre esta política de privacidad, puedes contactarnos en <a href="mailto:[EMAIL DE CONTACTO]">[EMAIL DE CONTACTO]</a>.</p>
+
+    <h2>2. Datos que recopilamos</h2>
+    <p>GhostList está diseñado para recopilar la menor cantidad de datos posible.</p>
+    <p><strong>Datos que nunca recopilamos:</strong> el contenido de tus listas, elementos, notas o mensajes. Todos estos datos se cifran en tu dispositivo con AES-256-GCM antes de su transmisión. Nuestros servidores solo almacenan texto cifrado (ciphertext). No tenemos forma de descifrarlo.</p>
+    <p><strong>Notificaciones push (opcional):</strong> Si activas las notificaciones push, tu token de dispositivo se transmite a nuestros servidores a través de Firebase Cloud Messaging (Google LLC). Este token es un identificador técnico utilizado únicamente para la entrega de notificaciones. No te identifica personalmente. Puedes desactivar las notificaciones push en cualquier momento en la configuración de tu dispositivo.</p>
+    <p><strong>Registros técnicos:</strong> Nuestros servidores registran registros de acceso estándar (dirección IP, marca de tiempo, ruta de solicitud) por motivos de seguridad y operativos, conservados un máximo de 30 días y no vinculados a ninguna identidad de usuario.</p>
+
+    <h2>3. Cifrado &amp; conocimiento cero</h2>
+    <p>Tu clave de cifrado se genera en tu dispositivo y nunca lo abandona. Al compartir una lista, las claves se intercambian mediante ECDH (Diffie-Hellman de curva elíptica) a través de un relay cifrado. Nuestro servidor nunca tiene acceso a datos en texto plano ni a claves de cifrado.</p>
+
+    <h2>4. Servicios de terceros</h2>
+    <p><strong>Firebase Cloud Messaging (Google LLC):</strong> Utilizado para notificaciones push. Google puede procesar tokens de dispositivo de acuerdo con su propia política de privacidad: <a href="https://policies.google.com/privacy" target="_blank">policies.google.com/privacy</a>. Hemos suscrito un acuerdo de procesamiento de datos con Google.</p>
+
+    <h2>5. Almacenamiento y transferencias de datos</h2>
+    <p>Los datos cifrados se almacenan en servidores ubicados en la Unión Europea. Si usas notificaciones push, tu token puede ser procesado por Google en servidores fuera de la UE, amparado por cláusulas contractuales estándar.</p>
+
+    <h2>6. Tus derechos (RGPD)</h2>
+    <p>De acuerdo con el RGPD, tienes derecho de acceso, rectificación y supresión de los datos personales que poseemos sobre ti (es decir, tu token de dispositivo, si aplica). Para ejercer estos derechos, contáctanos en <a href="mailto:[EMAIL DE CONTACTO]">[EMAIL DE CONTACTO]</a>.</p>
+
+    <h2>7. Menores</h2>
+    <p>GhostList no está dirigido a menores de 13 años. No recopilamos conscientemente datos personales de menores.</p>
+
+    <h2>8. Cambios en esta política</h2>
+    <p>Podemos actualizar esta política ocasionalmente. Los cambios importantes se anunciarán en la aplicación. El uso continuado de la aplicación tras los cambios implica su aceptación.</p>
+
+    <h2>9. Contacto</h2>
+    <p><a href="mailto:[EMAIL DE CONTACTO]">[EMAIL DE CONTACTO]</a></p>
+  </div>
+
+  <!-- ══════════════════════════════ ITALIANO ══════════════════════════════ -->
+  <div class="lang-content" id="lang-it">
+    <div class="highlight">
+      GhostList è un'app a conoscenza zero. I tuoi dati vengono cifrati sul tuo dispositivo prima di raggiungere i nostri server. Non possiamo mai leggere le tue liste, voci o messaggi.
+    </div>
+
+    <h2>1. Chi siamo</h2>
+    <p>GhostList è sviluppato e gestito da <strong>[NOME SVILUPPATORE]</strong>. Per domande su questa informativa sulla privacy, puoi contattarci all'indirizzo <a href="mailto:[EMAIL DI CONTATTO]">[EMAIL DI CONTATTO]</a>.</p>
+
+    <h2>2. Dati che raccogliamo</h2>
+    <p>GhostList è progettato per raccogliere il minor numero possibile di dati.</p>
+    <p><strong>Dati che non raccogliamo mai:</strong> il contenuto delle tue liste, voci, note o messaggi. Tutti questi dati vengono cifrati sul tuo dispositivo con AES-256-GCM prima della trasmissione. I nostri server archiviano solo testo cifrato (ciphertext). Non abbiamo modo di decifrarlo.</p>
+    <p><strong>Notifiche push (facoltative):</strong> Se attivi le notifiche push, il tuo token dispositivo viene trasmesso ai nostri server tramite Firebase Cloud Messaging (Google LLC). Questo token è un identificatore tecnico usato esclusivamente per la consegna delle notifiche. Non ti identifica personalmente. Puoi disattivare le notifiche push in qualsiasi momento nelle impostazioni del dispositivo.</p>
+    <p><strong>Log tecnici:</strong> I nostri server registrano log di accesso standard (indirizzo IP, timestamp, percorso della richiesta) per scopi di sicurezza e operativi, conservati al massimo 30 giorni e non collegati ad alcuna identità utente.</p>
+
+    <h2>3. Cifratura &amp; conoscenza zero</h2>
+    <p>La tua chiave di cifratura viene generata sul tuo dispositivo e non lo lascia mai. Quando condividi una lista, le chiavi vengono scambiate tramite ECDH (Elliptic-Curve Diffie-Hellman) attraverso un relay cifrato. Il nostro server non ha mai accesso a dati in chiaro né a chiavi di cifratura.</p>
+
+    <h2>4. Servizi di terze parti</h2>
+    <p><strong>Firebase Cloud Messaging (Google LLC):</strong> Utilizzato per le notifiche push. Google può elaborare i token dispositivo in conformità con la propria informativa sulla privacy: <a href="https://policies.google.com/privacy" target="_blank">policies.google.com/privacy</a>. Abbiamo stipulato un accordo sul trattamento dei dati con Google.</p>
+
+    <h2>5. Archiviazione e trasferimento dei dati</h2>
+    <p>I dati cifrati sono archiviati su server situati nell'Unione Europea. Se utilizzi le notifiche push, il tuo token può essere elaborato da Google su server al di fuori dell'UE, nell'ambito delle clausole contrattuali standard.</p>
+
+    <h2>6. I tuoi diritti (GDPR)</h2>
+    <p>Ai sensi del GDPR, hai diritto di accesso, rettifica e cancellazione dei dati personali in nostro possesso (ovvero il tuo token dispositivo, se applicabile). Per esercitare questi diritti, contattaci all'indirizzo <a href="mailto:[EMAIL DI CONTATTO]">[EMAIL DI CONTATTO]</a>.</p>
+
+    <h2>7. Minori</h2>
+    <p>GhostList non è destinato a minori di 13 anni. Non raccogliamo consapevolmente dati personali da minori.</p>
+
+    <h2>8. Modifiche alla presente informativa</h2>
+    <p>Potremmo aggiornare periodicamente questa informativa. Le modifiche sostanziali saranno annunciate nell'app. L'uso continuato dell'app dopo le modifiche costituisce accettazione.</p>
+
+    <h2>9. Contatto</h2>
+    <p><a href="mailto:[EMAIL DI CONTATTO]">[EMAIL DI CONTATTO]</a></p>
+  </div>
+
+  <footer>
+    <p>GhostList &copy; 2026 [DEVELOPER NAME]</p>
+  </footer>
+
+</div>
+
+<script>
+  function switchLang(lang) {
+    document.querySelectorAll('.lang-content').forEach(el => el.classList.remove('visible'));
+    document.querySelectorAll('.lang-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('lang-' + lang).classList.add('visible');
+    event.target.classList.add('active');
+  }
+</script>
+</body>
+</html>
