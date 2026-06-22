@@ -89,4 +89,9 @@ export class HapticsService {
         if (!this.enabled) return;
         Haptics.impact({ style: ImpactStyle.Light }).catch(() => { });
     }
+
+    hapticFeedbackOnTabChange(): void {
+        if (!this.enabled) return;
+        Haptics.impact({ style: ImpactStyle.Light }).catch(() => { });
+    }
 }

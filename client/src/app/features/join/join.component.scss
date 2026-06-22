@@ -39,8 +39,10 @@
 .content {
     flex: 1;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: var(--space-4);
     padding: var(--space-6);
 }
 
@@ -142,6 +144,30 @@
             background: var(--color-surface-2);
             color: var(--color-text);
         }
+    }
+}
+
+.privacy-notice {
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+
+    &__row {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-2);
+        font-size: var(--text-xs);
+        color: var(--color-text-subtle);
+        line-height: var(--leading-normal);
+        margin: 0;
+    }
+
+    &__icon {
+        flex-shrink: 0;
+        font-size: var(--text-sm);
+        line-height: 1.4;
     }
 }
 

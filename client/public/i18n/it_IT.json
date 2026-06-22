@@ -64,7 +64,7 @@
     },
     "ITEMS": {
         "ADD_PLACEHOLDER": "Aggiungi elemento…",
-        "EMPTY_HINT": "Aggiungi il tuo primo elemento qui sopra.",
+        "EMPTY_HINT": "Aggiungi il tuo primo elemento — solo le persone con questo link possono vederlo.",
         "DONE_SECTION": "Completati ({{count}})",
         "MARK_DONE_ARIA": "Segna come fatto: {{text}}",
         "MARK_UNDONE_ARIA": "Segna come non fatto: {{text}}",
@@ -80,7 +80,7 @@
         "REMINDER_ADD_TO_CALENDAR": "Aggiungi al calendario"
     },
     "CHAT": {
-        "NO_MESSAGES": "Nessun messaggio ancora.",
+        "NO_MESSAGES": "Nessun messaggio ancora — la chat è crittografata end-to-end.",
         "LOADING_OLDER": "Caricamento messaggi precedenti…",
         "ANONYMOUS": "Anonimo",
         "EDIT_NAME": "Modifica nome",
@@ -284,7 +284,12 @@
         "IMPORTING": "Importazione…",
         "ERROR_TITLE": "Qualcosa è andato storto",
         "ERROR_LIST_FULL": "Questa lista ha raggiunto il limite di 30 membri e non può accettare nuovi dispositivi.",
-        "GO_TO_LISTS": "Vai alle liste"
+        "GO_TO_LISTS": "Vai alle liste",
+        "ERROR_NOT_FOUND": "Questa lista non esiste più — potrebbe essere scaduta o essere stata eliminata.",
+        "ERROR_DECRYPT": "Impossibile decifrare questa lista. Il link potrebbe essere incompleto o la chiave è errata.",
+        "PRIVACY_KEY": "La tua chiave di cifratura rimane su questo dispositivo — il server non la vede mai.",
+        "PRIVACY_LOSS": "Se perdi questo dispositivo, perdi l'accesso a questa lista. Esporta la chiave dalle Impostazioni prima.",
+        "PRIVACY_BACKUP": "Backup della chiave: Impostazioni → Sicurezza → Esporta chiave."
     },
     "SETTINGS": {
         "TITLE": "Impostazioni",
@@ -487,5 +492,13 @@
         "REMINDER_GENERIC": "Promemoria in \"{{listName}}\"",
         "LIST_REMINDER": "\"{{listName}}\" — {{dateTime}}",
         "REMINDER_GO": "Mostra"
+    },
+    "LEGAL": {
+        "CONSENT_TITLE": "Prima di continuare",
+        "CONSENT_SUBTITLE": "Leggi e accetta i nostri termini prima di utilizzare GhostList.",
+        "CONSENT_AGREE_PREFIX": "Ho letto e accetto i",
+        "CONSENT_TOS_LINK": "Termini di Servizio",
+        "CONSENT_PRIVACY_LINK": "Informativa sulla Privacy",
+        "CONSENT_CONTINUE": "Continua"
     }
 }

@@ -4,6 +4,7 @@ using GhostList.Application.Features.GhostListItems.Commands.ToggleGhostListItem
 using GhostList.Application.Features.GhostListItems.Queries.GetGhostListItemsByListId;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace GhostList.WebApi.Controllers;
 
@@ -19,6 +20,7 @@ public class GhostItemsController(IMediator mediator) : ControllerBase
     }
 
     [HttpPost]
+    [EnableRateLimiting("write-content")]
     public async Task<ActionResult<Guid>> Create([FromBody] CreateGhostListItemCommand command)
     {
         var deviceId = Request.Headers["X-Device-Id"].FirstOrDefault();

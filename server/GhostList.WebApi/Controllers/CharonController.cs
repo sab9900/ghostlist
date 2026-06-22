@@ -4,6 +4,7 @@ using GhostList.Application.Features.Charon.Commands.MarkCharonDropViewed;
 using GhostList.Application.Features.Charon.Queries.GetCharonDropsByListId;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace GhostList.WebApi.Controllers;
 
@@ -24,6 +25,7 @@ public class CharonController(IMediator mediator) : ControllerBase
     }
 
     [HttpPost]
+    [EnableRateLimiting("media-upload")]
     public async Task<ActionResult<Guid>> Create([FromBody] CreateCharonDropCommand command)
     {
         var deviceId = Request.Headers["X-Device-Id"].FirstOrDefault();

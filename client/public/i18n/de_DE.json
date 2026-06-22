@@ -64,7 +64,7 @@
     },
     "ITEMS": {
         "ADD_PLACEHOLDER": "Eintrag hinzufügen…",
-        "EMPTY_HINT": "Füge oben deinen ersten Eintrag hinzu.",
+        "EMPTY_HINT": "Füge deinen ersten Eintrag hinzu — nur Personen mit diesem Link können ihn sehen.",
         "DONE_SECTION": "Erledigt ({{count}})",
         "MARK_DONE_ARIA": "Als erledigt markieren: {{text}}",
         "MARK_UNDONE_ARIA": "Als nicht erledigt markieren: {{text}}",
@@ -80,7 +80,7 @@
         "REMINDER_ADD_TO_CALENDAR": "Zum Kalender hinzufügen"
     },
     "CHAT": {
-        "NO_MESSAGES": "Noch keine Nachrichten.",
+        "NO_MESSAGES": "Noch keine Nachrichten — der Chat ist Ende-zu-Ende verschlüsselt.",
         "LOADING_OLDER": "Ältere Nachrichten werden geladen…",
         "ANONYMOUS": "Anonym",
         "EDIT_NAME": "Name ändern",
@@ -284,7 +284,12 @@
         "IMPORTING": "Importiere…",
         "ERROR_TITLE": "Etwas ist schiefgelaufen",
         "ERROR_LIST_FULL": "Diese Liste hat das Limit von 30 Mitgliedern erreicht und kann keine neuen Geräte mehr aufnehmen.",
-        "GO_TO_LISTS": "Zu den Listen"
+        "GO_TO_LISTS": "Zu den Listen",
+        "ERROR_NOT_FOUND": "Diese Liste existiert nicht mehr — sie ist möglicherweise abgelaufen oder wurde gelöscht.",
+        "ERROR_DECRYPT": "Die Liste konnte nicht entschlüsselt werden. Der Link ist möglicherweise unvollständig oder der Schlüssel ist falsch.",
+        "PRIVACY_KEY": "Dein Verschlüsselungsschlüssel bleibt auf diesem Gerät — der Server sieht ihn nie.",
+        "PRIVACY_LOSS": "Wenn du dieses Gerät verlierst, verlierst du den Zugang zu dieser Liste. Exportiere deinen Schlüssel zuerst in den Einstellungen.",
+        "PRIVACY_BACKUP": "Schlüssel sichern: Einstellungen → Sicherheit → Schlüssel exportieren."
     },
     "SETTINGS": {
         "TITLE": "Einstellungen",
@@ -504,5 +509,13 @@
         "REMINDER_GENERIC": "Erinnerung in „{{listName}}“",
         "LIST_REMINDER": "„{{listName}}“ — {{dateTime}}",
         "REMINDER_GO": "Zeigen"
+    },
+    "LEGAL": {
+        "CONSENT_TITLE": "Bevor du weitermachst",
+        "CONSENT_SUBTITLE": "Bitte lies und akzeptiere unsere Bedingungen, bevor du GhostList verwendest.",
+        "CONSENT_AGREE_PREFIX": "Ich habe gelesen und akzeptiere die",
+        "CONSENT_TOS_LINK": "Allgemeinen Geschäftsbedingungen",
+        "CONSENT_PRIVACY_LINK": "Datenschutzerklärung",
+        "CONSENT_CONTINUE": "Weiter"
     }
 }

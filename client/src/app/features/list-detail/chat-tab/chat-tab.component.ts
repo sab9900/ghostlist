@@ -111,8 +111,10 @@ export class ChatTabComponent implements OnDestroy {
     private keyboardDismissTouchStartY: number | null = null;
     private keyboardOpenedAt = 0;
     private userTouchingList = false;
-    private pendingScrollToBottomAfterTouch = false;
+    private pendingScrollToBottomReason: 'own' | 'incoming' | null = null;
     private justSentOwnMessage = false;
+    private decryptGeneration = 0;
+    private isPaginating = false;
 
     private readonly messagesById = computed(() => {
         const map = new Map<string, DecryptedMessage>();
@@ -244,17 +246,39 @@ export class ChatTabComponent implements OnDestroy {
             void this.store.currentListSynced();
             void this.decryptMessages().then(ok => {
                 if (!ok) return;
-                if (!this._fullyOpened) {
-                    this.startSettleLoop();
-                } else if (this.justSentOwnMessage) {
-                    this.justSentOwnMessage = false;
-                    if (this.userTouchingList) this.pendingScrollToBottomAfterTouch = true;
-                    else this.scrollToBottom('smooth');
-                } else {
-                    this.updateScrollButtonVisibility();
-                }
+                if (!this._fullyOpened) this.startSettleLoop();
+                else this.handleMessageListChanged();
             });
         });
+    }
+
+    private handleMessageListChanged(): void {
+        const ownMessage = this.justSentOwnMessage;
+        this.justSentOwnMessage = false;
+
+        const deferred = this.userTouchingList || this.isPaginating;
+
+        if (ownMessage) {
+            if (deferred) this.pendingScrollToBottomReason = 'own';
+            else this.scrollToBottom('smooth');
+            return;
+        }
+
+        if (deferred) {
+            if (this.isNearBottom()) this.pendingScrollToBottomReason = 'incoming';
+            return;
+        }
+
+        if (this.isNearBottom()) this.scrollToBottom('smooth');
+        else this.updateScrollButtonVisibility();
+    }
+
+    private resolvePendingScroll(): void {
+        const reason = this.pendingScrollToBottomReason;
+        this.pendingScrollToBottomReason = null;
+        if (reason === 'own') this.scrollToBottom('smooth');
+        else if (reason === 'incoming' && this.isNearBottom()) this.scrollToBottom('smooth');
+        else this.updateScrollButtonVisibility();
     }
 
     protected onMessageListScroll(): void {
@@ -280,16 +304,21 @@ export class ChatTabComponent implements OnDestroy {
         if (!el) return;
         const prevScrollHeight = el.scrollHeight;
         const prevScrollTop = el.scrollTop;
+        this.isPaginating = true;
+        try {
+            await this.store.loadOlderMessages();
+            await this.decryptMessages();
 
-        await this.store.loadOlderMessages();
-        await this.decryptMessages();
-
-        requestAnimationFrame(() => {
-            const target = this.messageListRef()?.nativeElement;
-            if (!target) return;
-            const delta = target.scrollHeight - prevScrollHeight;
-            target.scrollTop = prevScrollTop + delta;
-        });
+            requestAnimationFrame(() => {
+                const target = this.messageListRef()?.nativeElement;
+                if (!target) return;
+                const delta = target.scrollHeight - prevScrollHeight;
+                target.scrollTop = prevScrollTop + delta;
+            });
+        } finally {
+            this.isPaginating = false;
+            if (!this.userTouchingList) this.resolvePendingScroll();
+        }
     }
 
     protected onMessageListTouchStart(event: TouchEvent): void {
@@ -312,10 +341,7 @@ export class ChatTabComponent implements OnDestroy {
     protected onMessageListTouchEnd(): void {
         this.keyboardDismissTouchStartY = null;
         this.userTouchingList = false;
-        if (this.pendingScrollToBottomAfterTouch) {
-            this.pendingScrollToBottomAfterTouch = false;
-            this.scrollToBottom('smooth');
-        }
+        if (!this.isPaginating) this.resolvePendingScroll();
     }
 
     private dismissKeyboard(): void {
@@ -323,6 +349,16 @@ export class ChatTabComponent implements OnDestroy {
         if (active && (active.tagName === 'TEXTAREA' || active.tagName === 'INPUT')) active.blur();
         if (Capacitor.isNativePlatform()) void Keyboard.hide();
         this.mentionQuery.set(null);
+    }
+
+    private scrollToBottom(behavior: ScrollBehavior): void {
+        this.showScrollToBottomButton.set(false);
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                const el = this.messageListRef()?.nativeElement;
+                if (el) el.scrollTo({ top: el.scrollHeight, behavior });
+            });
+        });
     }
 
     protected onScrollToBottomClick(): void {
@@ -340,13 +376,6 @@ export class ChatTabComponent implements OnDestroy {
 
     private updateScrollButtonVisibility(): void {
         this.showScrollToBottomButton.set(!this.isNearBottom());
-    }
-
-    private scrollToBottom(behavior: ScrollBehavior = 'auto'): void {
-        requestAnimationFrame(() => {
-            const el = this.messageListRef()?.nativeElement;
-            if (el) el.scrollTo({ top: el.scrollHeight, behavior });
-        });
     }
 
     private scrollToBottomDuringTransition(): void {
@@ -370,8 +399,9 @@ export class ChatTabComponent implements OnDestroy {
         this.chatReady.set(false);
         this.keyboardDismissTouchStartY = null;
         this.userTouchingList = false;
-        this.pendingScrollToBottomAfterTouch = false;
+        this.pendingScrollToBottomReason = null;
         this.justSentOwnMessage = false;
+        this.isPaginating = false;
     }
 
     private snapToTargetInstant(el: HTMLElement): void {
@@ -421,6 +451,7 @@ export class ChatTabComponent implements OnDestroy {
     private async decryptMessages(): Promise<boolean> {
         const key = this.store.currentEncryptionKey();
         if (!key) return false;
+        const generation = ++this.decryptGeneration;
         const messages = await Promise.all(
             this.store.messages().map(async (msg: GhostChatMessage) => {
                 const text = await this.crypto.decrypt(msg.encryptedMessage, msg.messageInitializationVector, key);
@@ -437,6 +468,7 @@ export class ChatTabComponent implements OnDestroy {
                 return { id: msg.id, text, senderName, createdAt: msg.createdAt, replyToMessageId: msg.replyToMessageId, isImage, isAudio, isVideo, senderDeviceId: msg.senderDeviceId, senderUserId: msg.senderUserId } satisfies DecryptedMessage;
             }),
         );
+        if (generation !== this.decryptGeneration) return false;
         this.decryptedMessages.set(messages);
         const imageDataUrls = this.store.imageDataUrls();
         const audioDataUrls = this.store.audioDataUrls();
@@ -583,6 +615,9 @@ export class ChatTabComponent implements OnDestroy {
             await this.store.sendMessage(text, sender, replyId);
             this.newMessageText.set('');
             this.replyingTo.set(null);
+        } catch (err) {
+            this.justSentOwnMessage = false;
+            throw err;
         } finally {
             this.sendingMessage.set(false);
             const el = this.composeRef()?.textarea()?.nativeElement;
@@ -626,6 +661,7 @@ export class ChatTabComponent implements OnDestroy {
             await this.store.shareImage(dataUrl, sender, replyId);
             this.replyingTo.set(null);
         } catch {
+            this.justSentOwnMessage = false;
         } finally { this.sendingImage.set(false); }
     }
 
@@ -650,6 +686,7 @@ export class ChatTabComponent implements OnDestroy {
             this.justSentOwnMessage = true;
             await this.store.shareImage(dataUrl, sender, null);
         } catch {
+            this.justSentOwnMessage = false;
         } finally { this.sendingImage.set(false); }
     }
 
@@ -664,6 +701,7 @@ export class ChatTabComponent implements OnDestroy {
             this.justSentOwnMessage = true;
             await this.store.shareAudio(dataUrl, sender, null);
         } catch {
+            this.justSentOwnMessage = false;
         } finally { this.sendingAudio.set(false); }
     }
 
@@ -677,6 +715,7 @@ export class ChatTabComponent implements OnDestroy {
             this.justSentOwnMessage = true;
             await this.store.shareVideo(dataUrl, sender, null);
         } catch {
+            this.justSentOwnMessage = false;
         } finally { this.sendingVideo.set(false); }
     }
 
@@ -782,7 +821,7 @@ export class ChatTabComponent implements OnDestroy {
         const replyId = this.replyingTo()?.id ?? null;
         this.sendingAudio.set(true);
         try { this.haptics.messageSent(); this.justSentOwnMessage = true; await this.store.shareAudio(dataUrl, sender, replyId); this.replyingTo.set(null); }
-        catch { } finally { this.sendingAudio.set(false); }
+        catch { this.justSentOwnMessage = false; } finally { this.sendingAudio.set(false); }
     }
 
     private static getBestAudioMimeType(): string {
@@ -824,6 +863,7 @@ export class ChatTabComponent implements OnDestroy {
         this.sendingVideo.set(true);
         try { this.haptics.messageSent(); this.justSentOwnMessage = true; await this.store.shareVideo(dataUrl, sender, replyId); this.replyingTo.set(null); }
         catch (err) {
+            this.justSentOwnMessage = false;
             const errName = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
             this.videoRecordingDebugError.set(errName); this.videoRecordingNotSupported.set(true);
             setTimeout(() => { this.videoRecordingNotSupported.set(false); this.videoRecordingDebugError.set(null); }, 8000);

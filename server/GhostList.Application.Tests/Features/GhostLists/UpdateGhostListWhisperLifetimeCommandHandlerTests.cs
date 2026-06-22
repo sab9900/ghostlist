@@ -59,4 +59,60 @@ public class UpdateGhostListWhisperLifetimeCommandHandlerTests
 
         await act.Should().ThrowAsync<NotFoundException>();
     }
+
+    [Fact]
+    public async Task Handle_ListWithOwnerToken_CorrectToken_UpdatesWhisperLifetime()
+    {
+        await using var context = DbContextFactory.Create();
+        const string ownerToken = "correct-token";
+        var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(ownerToken))).ToLowerInvariant();
+        var list = Domain.Entities.GhostList.Create(ownerTokenHash: hash);
+        context.GhostLists.Add(list);
+        await context.SaveChangesAsync();
+
+        var handler = new UpdateGhostListWhisperLifetimeCommandHandler(context, MockNotifier());
+        await handler.Handle(new UpdateGhostListWhisperLifetimeCommand(list.Id, WhisperLifetime.TwelveSeconds, ownerToken), CancellationToken.None);
+
+        var updated = await context.GhostLists.FindAsync(list.Id);
+        updated!.WhisperLifetimeSeconds.Should().Be(WhisperLifetime.TwelveSeconds);
+    }
+
+    [Fact]
+    public async Task Handle_ListWithOwnerToken_WrongToken_ThrowsForbiddenException()
+    {
+        await using var context = DbContextFactory.Create();
+        const string ownerToken = "correct-token";
+        var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(ownerToken))).ToLowerInvariant();
+        var list = Domain.Entities.GhostList.Create(ownerTokenHash: hash);
+        context.GhostLists.Add(list);
+        await context.SaveChangesAsync();
+
+        var handler = new UpdateGhostListWhisperLifetimeCommandHandler(context, MockNotifier());
+        var act = () => handler.Handle(
+            new UpdateGhostListWhisperLifetimeCommand(list.Id, WhisperLifetime.FiveSeconds, "wrong-token"),
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<ForbiddenException>();
+    }
+
+    [Fact]
+    public async Task Handle_ListWithOwnerToken_NoToken_ThrowsForbiddenException()
+    {
+        await using var context = DbContextFactory.Create();
+        const string ownerToken = "some-token";
+        var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(ownerToken))).ToLowerInvariant();
+        var list = Domain.Entities.GhostList.Create(ownerTokenHash: hash);
+        context.GhostLists.Add(list);
+        await context.SaveChangesAsync();
+
+        var handler = new UpdateGhostListWhisperLifetimeCommandHandler(context, MockNotifier());
+        var act = () => handler.Handle(
+            new UpdateGhostListWhisperLifetimeCommand(list.Id, WhisperLifetime.FiveSeconds, null),
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<ForbiddenException>();
+    }
 }

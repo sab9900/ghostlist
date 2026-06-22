@@ -1,3 +1,4 @@
+using System.Threading.RateLimiting;
 using GhostList.Application;
 using GhostList.Application.Common.Interfaces;
 using GhostList.Infrastructure;
@@ -30,6 +31,41 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials());
+});
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    static string IpKey(HttpContext ctx) =>
+        ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+    options.AddPolicy("create-list", ctx =>
+        RateLimitPartition.GetFixedWindowLimiter(IpKey(ctx), _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 5,
+            Window = TimeSpan.FromHours(1),
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 0,
+        }));
+
+    options.AddPolicy("write-content", ctx =>
+        RateLimitPartition.GetFixedWindowLimiter(IpKey(ctx), _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 60,
+            Window = TimeSpan.FromHours(1),
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 0,
+        }));
+
+    options.AddPolicy("media-upload", ctx =>
+        RateLimitPartition.GetFixedWindowLimiter(IpKey(ctx), _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromHours(1),
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 0,
+        }));
 });
 
 builder.Services.AddRouting(options => options.LowercaseUrls = true);
@@ -76,6 +112,7 @@ else
     app.UseCors("AppClient");
 }
 
+app.UseRateLimiter();
 app.UseAuthorization();
 
 app.UseMiddleware<AdminAuthMiddleware>();

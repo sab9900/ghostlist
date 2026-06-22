@@ -9,6 +9,7 @@ using GhostList.Application.Features.GhostMessages.Queries.GetGhostMessageImage;
 using GhostList.Application.Features.GhostMessages.Queries.GetGhostMessageVideo;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace GhostList.WebApi.Controllers;
 
@@ -28,6 +29,7 @@ public class ChatController(IMediator mediator) : ControllerBase
     }
 
     [HttpPost]
+    [EnableRateLimiting("write-content")]
     public async Task<ActionResult<Guid>> Create([FromBody] CreateGhostMessageCommand command)
     {
         var deviceId = Request.Headers["X-Device-Id"].FirstOrDefault();
@@ -44,6 +46,7 @@ public class ChatController(IMediator mediator) : ControllerBase
     }
 
     [HttpPost("{messageId:guid}/image")]
+    [EnableRateLimiting("media-upload")]
     public async Task<ActionResult> SaveImage(Guid messageId, [FromBody] SaveGhostMessageImageRequest request)
     {
         await mediator.Send(new SaveGhostMessageImageCommand(messageId, request.EncryptedImage, request.ImageInitializationVector));
@@ -58,6 +61,7 @@ public class ChatController(IMediator mediator) : ControllerBase
     }
 
     [HttpPost("{messageId:guid}/audio")]
+    [EnableRateLimiting("media-upload")]
     public async Task<ActionResult> SaveAudio(Guid messageId, [FromBody] SaveGhostMessageAudioRequest request)
     {
         await mediator.Send(new SaveGhostMessageAudioCommand(messageId, request.EncryptedAudio, request.AudioInitializationVector));
@@ -72,6 +76,7 @@ public class ChatController(IMediator mediator) : ControllerBase
     }
 
     [HttpPost("{messageId:guid}/video")]
+    [EnableRateLimiting("media-upload")]
     public async Task<ActionResult> SaveVideo(Guid messageId, [FromBody] SaveGhostMessageVideoRequest request)
     {
         await mediator.Send(new SaveGhostMessageVideoCommand(messageId, request.EncryptedVideo, request.VideoInitializationVector));

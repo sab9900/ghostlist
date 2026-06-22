@@ -75,19 +75,23 @@ export class ApiService {
         return this.http.delete<void>(`${this.BASE}/ghostlist/${id}`);
     }
 
-    updateTtl(id: string, ttl: UpdateTtlRequest): Observable<void> {
+    updateTtl(id: string, ttl: UpdateTtlRequest, ownerToken?: string): Observable<void> {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (ownerToken) headers['X-Owner-Token'] = ownerToken;
         return this.http.patch<void>(
             `${this.BASE}/ghostlist/${id}/ttl`,
             JSON.stringify(ttl),
-            { headers: { 'Content-Type': 'application/json' } },
+            { headers },
         );
     }
 
-    updateWhisperLifetime(id: string, lifetime: UpdateWhisperLifetimeRequest): Observable<void> {
+    updateWhisperLifetime(id: string, lifetime: UpdateWhisperLifetimeRequest, ownerToken?: string): Observable<void> {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (ownerToken) headers['X-Owner-Token'] = ownerToken;
         return this.http.patch<void>(
             `${this.BASE}/ghostlist/${id}/whisper-lifetime`,
             JSON.stringify(lifetime),
-            { headers: { 'Content-Type': 'application/json' } },
+            { headers },
         );
     }
 

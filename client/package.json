@@ -14,7 +14,8 @@
         "cap:ios": "npx cap open ios",
         "cap:android": "npx cap open android",
         "watch": "ng build --watch --configuration development",
-        "test": "ng test"
+        "test": "vitest run",
+        "test:watch": "vitest"
     },
     "private": true,
     "packageManager": "npm@10.9.8",
@@ -56,6 +57,7 @@
         "@angular/cli": "^22.0.0",
         "@angular/compiler-cli": "^22.0.0",
         "@capacitor/cli": "^7.0.0",
+        "fake-indexeddb": "^6.2.5",
         "jsdom": "^28.0.0",
         "prettier": "^3.8.1",
         "typescript": "~6.0.2",

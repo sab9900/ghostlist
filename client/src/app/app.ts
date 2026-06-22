@@ -79,10 +79,16 @@ export class App {
     protected readonly showRecoveryFallback = signal(false);
     protected readonly recoveryInput = signal('');
 
-    protected readonly showNameDialog = computed(() => this.prefs.hydrated() && !this.prefs.onboarded());
+    protected readonly showConsentDialog = computed(() => !this.prefs.consentAccepted());
+    protected readonly consentTos = signal(false);
+    protected readonly consentPrivacy = signal(false);
+    protected readonly consentBothChecked = computed(() => this.consentTos() && this.consentPrivacy());
+
+    protected readonly showNameDialog = computed(() => this.prefs.consentAccepted() && this.prefs.hydrated() && !this.prefs.onboarded());
     protected readonly pendingName = signal('');
 
     protected readonly showNotifDialog = computed(() =>
+        this.prefs.consentAccepted() &&
         this.prefs.onboarded() &&
         !this.prefs.notifPrompted() &&
         this.push.webPushPermission() === 'default',
@@ -297,6 +303,11 @@ export class App {
 
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);
+    }
+
+    acceptConsent(): void {
+        if (!this.consentBothChecked()) return;
+        this.prefs.markConsentAccepted();
     }
 
     saveSenderName(): void {

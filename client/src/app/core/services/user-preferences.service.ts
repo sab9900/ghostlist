@@ -6,6 +6,7 @@ import { PrefsCacheService } from './prefs-cache.service';
 const KEY_CRYPTO_KEY  = 'prefs-crypto-key';
 const KEY_SENDER_NAME = 'sender-name';
 const LEGACY_SENDER_NAME_KEY = 'gl_sender_name';
+const LEGAL_CONSENT_KEY   = 'gl_legal_consent';
 const ONBOARDED_KEY       = 'gl_name_onboarded';
 const HAPTICS_KEY         = 'gl_haptics_enabled';
 const NOTIF_ENABLED_KEY   = 'gl_notif_enabled';
@@ -30,6 +31,8 @@ export class UserPreferencesService {
 
     readonly hydrated = signal(false);
 
+    readonly consentAccepted = signal<boolean>(this.prefsCache.get(LEGAL_CONSENT_KEY, false));
+
     readonly onboarded = signal<boolean>(this.prefsCache.get(ONBOARDED_KEY, false));
 
     private hydratedResolve!: () => void;
@@ -39,7 +42,21 @@ export class UserPreferencesService {
     private onboardedPromise: Promise<void> | null = null;
 
     constructor() {
+        void this.prefsCache.ready().then(() => this.applyCache());
         void this.loadFromIdb();
+    }
+
+    private applyCache(): void {
+        this.consentAccepted.set(this.prefsCache.get(LEGAL_CONSENT_KEY, false));
+        this.ghostMistMode.set(this.prefsCache.get<GhostMistMode>(GHOST_MIST_KEY, 'idle-3s'));
+        this.hapticsEnabled.set(this.prefsCache.get(HAPTICS_KEY, DEFAULT_HAPTICS_ENABLED));
+        this.notificationsEnabled.set(this.prefsCache.get(NOTIF_ENABLED_KEY, false));
+        this.notifPrompted.set(this.prefsCache.get(NOTIF_PROMPTED_KEY, false));
+        this.preferredCameraFacing.set(this.prefsCache.get<'user' | 'environment'>(CAMERA_FACING_KEY, 'user'));
+        this.listSortOrder.set(this.prefsCache.get<ListSortOrder>(LIST_SORT_KEY, 'name'));
+        if (!this.onboarded()) {
+            this.onboarded.set(this.prefsCache.get(ONBOARDED_KEY, false));
+        }
     }
 
     whenHydrated(): Promise<void> {
@@ -50,6 +67,12 @@ export class UserPreferencesService {
         if (this.onboarded()) return Promise.resolve();
         this.onboardedPromise ??= new Promise(resolve => { this.onboardedResolve = resolve; });
         return this.onboardedPromise;
+    }
+
+    markConsentAccepted(): void {
+        if (this.consentAccepted()) return;
+        this.consentAccepted.set(true);
+        this.prefsCache.set(LEGAL_CONSENT_KEY, true);
     }
 
     markOnboarded(): void {

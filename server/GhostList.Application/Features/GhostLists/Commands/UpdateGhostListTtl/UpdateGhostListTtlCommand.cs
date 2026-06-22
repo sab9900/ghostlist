@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GhostList.Application.Features.GhostLists.Commands.UpdateGhostListTtl;
 
-public record UpdateGhostListTtlCommand(Guid ListId, DeleteAfterDuration Ttl) : IRequest;
+public record UpdateGhostListTtlCommand(Guid ListId, DeleteAfterDuration Ttl, string? OwnerToken = null) : IRequest;
 
 public class UpdateGhostListTtlCommandHandler : IRequestHandler<UpdateGhostListTtlCommand>
 {
@@ -24,6 +24,9 @@ public class UpdateGhostListTtlCommandHandler : IRequestHandler<UpdateGhostListT
         var list = await _context.GhostLists
             .FirstOrDefaultAsync(gl => gl.Id == request.ListId, cancellationToken)
             ?? throw new NotFoundException(nameof(GhostList), request.ListId);
+
+        if (!list.IsOwnerTokenValid(request.OwnerToken))
+            throw new ForbiddenException("Invalid owner token.");
 
         list.UpdateTtl(request.Ttl);
         await _context.SaveChangesAsync(cancellationToken);

@@ -53,6 +53,7 @@
     </div>
 </section>
 
+@if (store.isCurrentListOwner()) {
 <section class="settings-section" aria-labelledby="ttl-heading">
     <h3 class="settings-section__title" id="ttl-heading">{{ 'LIST_SETTINGS.AUTO_DELETE_TITLE' | translate }}</h3>
     <p class="settings-section__hint" id="ttl-hint">{{ 'LIST_SETTINGS.AUTO_DELETE_HINT' | translate }}</p>
@@ -98,6 +99,7 @@
         </div>
     </div>
 </section>
+}
 
 <section class="settings-section" aria-labelledby="notifications-heading">
     <h3 class="settings-section__title" id="notifications-heading">{{ 'LIST_SETTINGS.NOTIFICATIONS_TITLE' | translate }}</h3>

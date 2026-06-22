@@ -2,6 +2,7 @@ import { Component, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { combineLatest, take } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { CryptoService } from '../../core/services/crypto.service';
 import { ListFullError } from '../../core/models';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -34,7 +35,7 @@ export class JoinComponent {
                 const key = fragment ? this.crypto.fromUrlSafeB64(fragment) : '';
 
                 if (!id || !key) {
-                    this.errorMsg.set('Invalid share link — missing list ID or key.');
+                    this.errorMsg.set(this.translate.instant('JOIN.ERROR_DECRYPT'));
                     this.state.set('error');
                     return;
                 }
@@ -71,8 +72,12 @@ export class JoinComponent {
         } catch (err) {
             if (err instanceof ListFullError) {
                 this.errorMsg.set(this.translate.instant('JOIN.ERROR_LIST_FULL'));
+            } else if (err instanceof HttpErrorResponse && err.status === 404) {
+                this.errorMsg.set(this.translate.instant('JOIN.ERROR_NOT_FOUND'));
+            } else if (err instanceof Error && err.message.toLowerCase().includes('decrypt')) {
+                this.errorMsg.set(this.translate.instant('JOIN.ERROR_DECRYPT'));
             } else {
-                this.errorMsg.set(err instanceof Error ? err.message : 'Import failed.');
+                this.errorMsg.set(this.translate.instant('JOIN.ERROR_DECRYPT'));
             }
             this.state.set('error');
         }

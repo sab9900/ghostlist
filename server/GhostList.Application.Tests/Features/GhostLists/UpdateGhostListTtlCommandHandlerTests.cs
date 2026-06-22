@@ -59,4 +59,60 @@ public class UpdateGhostListTtlCommandHandlerTests
 
         await act.Should().ThrowAsync<NotFoundException>();
     }
+
+    [Fact]
+    public async Task Handle_ListWithOwnerToken_CorrectToken_UpdatesTtl()
+    {
+        await using var context = DbContextFactory.Create();
+        const string ownerToken = "correct-token";
+        var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(ownerToken))).ToLowerInvariant();
+        var list = Domain.Entities.GhostList.Create(ownerTokenHash: hash);
+        context.GhostLists.Add(list);
+        await context.SaveChangesAsync();
+
+        var handler = new UpdateGhostListTtlCommandHandler(context, MockNotifier());
+        await handler.Handle(new UpdateGhostListTtlCommand(list.Id, DeleteAfterDuration.SixHours, ownerToken), CancellationToken.None);
+
+        var updated = await context.GhostLists.FindAsync(list.Id);
+        updated!.CompletedItemsTtl.Should().Be(DeleteAfterDuration.SixHours);
+    }
+
+    [Fact]
+    public async Task Handle_ListWithOwnerToken_WrongToken_ThrowsForbiddenException()
+    {
+        await using var context = DbContextFactory.Create();
+        const string ownerToken = "correct-token";
+        var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(ownerToken))).ToLowerInvariant();
+        var list = Domain.Entities.GhostList.Create(ownerTokenHash: hash);
+        context.GhostLists.Add(list);
+        await context.SaveChangesAsync();
+
+        var handler = new UpdateGhostListTtlCommandHandler(context, MockNotifier());
+        var act = () => handler.Handle(
+            new UpdateGhostListTtlCommand(list.Id, DeleteAfterDuration.OneDay, "wrong-token"),
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<ForbiddenException>();
+    }
+
+    [Fact]
+    public async Task Handle_ListWithOwnerToken_NoToken_ThrowsForbiddenException()
+    {
+        await using var context = DbContextFactory.Create();
+        const string ownerToken = "some-token";
+        var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(ownerToken))).ToLowerInvariant();
+        var list = Domain.Entities.GhostList.Create(ownerTokenHash: hash);
+        context.GhostLists.Add(list);
+        await context.SaveChangesAsync();
+
+        var handler = new UpdateGhostListTtlCommandHandler(context, MockNotifier());
+        var act = () => handler.Handle(
+            new UpdateGhostListTtlCommand(list.Id, DeleteAfterDuration.OneDay, null),
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<ForbiddenException>();
+    }
 }

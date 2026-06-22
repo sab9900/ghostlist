@@ -63,6 +63,11 @@ export class PageTransitionDirective implements OnInit, OnDestroy {
         const direction = this.transitions.resolveDirection(nextUrl);
         const gestureDriven = this.transitions.consumeGestureFlag();
 
+        // TEMP DEBUG — remove once the first-transition issue is diagnosed.
+        console.debug('[page-transition] onNavigationStart', {
+            nextUrl, direction, gestureDriven, hasActivatedOnce: this.hasActivatedOnce,
+        });
+
         if (direction === 'replace') return;
 
         this.cleanupActive?.();
@@ -78,6 +83,13 @@ export class PageTransitionDirective implements OnInit, OnDestroy {
 
         const outgoingEl = this.hostEl.nextElementSibling as HTMLElement | null;
         this.pendingOutgoingClone = outgoingEl ? cloneSnapshot(outgoingEl) : null;
+
+        // TEMP DEBUG
+        console.debug('[page-transition] captured snapshot', {
+            outgoingElFound: !!outgoingEl,
+            outgoingElTag: outgoingEl?.tagName,
+            cloneCreated: !!this.pendingOutgoingClone,
+        });
     }
 
     private onActivate(): void {
@@ -88,12 +100,25 @@ export class PageTransitionDirective implements OnInit, OnDestroy {
 
         const incomingEl = this.hostEl.nextElementSibling as HTMLElement | null;
 
+        // TEMP DEBUG — remove once the first-transition issue is diagnosed.
+        console.debug('[page-transition] onActivate', {
+            hasActivatedOnce: this.hasActivatedOnce,
+            direction,
+            hasOutgoingClone: !!outgoingClone,
+            incomingElFound: !!incomingEl,
+            incomingElTag: incomingEl?.tagName,
+        });
+
         if (!this.hasActivatedOnce) {
             this.hasActivatedOnce = true;
+            console.debug('[page-transition] SKIPPED — first-ever activation');
             return;
         }
 
-        if (!incomingEl || direction === null) return;
+        if (!incomingEl || direction === null) {
+            console.debug('[page-transition] BAILED — missing incomingEl or direction is null');
+            return;
+        }
 
         if (direction === 'push') {
             this.transitions.storeParentSnapshot(outgoingClone);

@@ -28,7 +28,8 @@
                 [attr.aria-label]="'LIST_DETAIL.CHAT_VIEW_TOGGLE_ARIA' | translate">
                 <button class="chat-view-toggle__btn"
                     [class.chat-view-toggle__btn--active]="desktopChatView() === 'chat'" role="tab"
-                    [attr.aria-selected]="desktopChatView() === 'chat'" (click)="desktopChatView.set('chat')">
+                    [attr.aria-selected]="desktopChatView() === 'chat'"
+                    (click)="desktopChatView.set('chat'); hapticFeedbackOnTabChange();">
                     {{ 'LIST_DETAIL.TAB_CHAT' | translate }}
                     @if (unreadMessages() > 0 && desktopChatView() !== 'chat') {
                     <app-badge [count]="unreadMessages()" aria-hidden="true" />
@@ -36,12 +37,14 @@
                 </button>
                 <button class="chat-view-toggle__btn"
                     [class.chat-view-toggle__btn--active]="desktopChatView() === 'whisper'" role="tab"
-                    [attr.aria-selected]="desktopChatView() === 'whisper'" (click)="desktopChatView.set('whisper')">
+                    [attr.aria-selected]="desktopChatView() === 'whisper'"
+                    (click)="desktopChatView.set('whisper'); hapticFeedbackOnTabChange();">
                     {{ 'LIST_DETAIL.TAB_WHISPER' | translate }}
                 </button>
                 <button class="chat-view-toggle__btn"
                     [class.chat-view-toggle__btn--active]="desktopChatView() === 'charon'" role="tab"
-                    [attr.aria-selected]="desktopChatView() === 'charon'" (click)="desktopChatView.set('charon')">
+                    [attr.aria-selected]="desktopChatView() === 'charon'"
+                    (click)="desktopChatView.set('charon'); hapticFeedbackOnTabChange();">
                     {{ 'LIST_DETAIL.TAB_CHARON' | translate }}
                     @if (pendingCharonDrops() > 0 && desktopChatView() !== 'charon') {
                     <app-badge [count]="pendingCharonDrops()" aria-hidden="true" />
@@ -58,7 +61,8 @@
             } @else {
             <div class="solo-hint">
                 <p class="solo-hint__text">{{ 'LIST_DETAIL.SOLO_HINT' | translate }}</p>
-                <button class="solo-hint__btn" (click)="settingsOpen.set(true)">{{ 'LIST_SETTINGS.SHARE_TITLE' |
+                <button class="solo-hint__btn" (click)="settingsOpen.set(true); hapticFeedbackOnTabChange();">{{
+                    'LIST_SETTINGS.SHARE_TITLE' |
                     translate }}</button>
             </div>
             }

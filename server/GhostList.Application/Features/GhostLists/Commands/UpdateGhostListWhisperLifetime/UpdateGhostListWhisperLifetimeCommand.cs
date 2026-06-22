@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GhostList.Application.Features.GhostLists.Commands.UpdateGhostListWhisperLifetime;
 
-public record UpdateGhostListWhisperLifetimeCommand(Guid ListId, WhisperLifetime Lifetime) : IRequest;
+public record UpdateGhostListWhisperLifetimeCommand(Guid ListId, WhisperLifetime Lifetime, string? OwnerToken = null) : IRequest;
 
 public class UpdateGhostListWhisperLifetimeCommandHandler : IRequestHandler<UpdateGhostListWhisperLifetimeCommand>
 {
@@ -24,6 +24,9 @@ public class UpdateGhostListWhisperLifetimeCommandHandler : IRequestHandler<Upda
         var list = await _context.GhostLists
             .FirstOrDefaultAsync(gl => gl.Id == request.ListId, cancellationToken)
             ?? throw new NotFoundException(nameof(GhostList), request.ListId);
+
+        if (!list.IsOwnerTokenValid(request.OwnerToken))
+            throw new ForbiddenException("Invalid owner token.");
 
         list.UpdateWhisperLifetime(request.Lifetime);
         await _context.SaveChangesAsync(cancellationToken);

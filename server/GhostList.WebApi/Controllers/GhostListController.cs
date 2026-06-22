@@ -6,6 +6,7 @@ using GhostList.Application.Features.GhostLists.Queries.GetGhostListById;
 using GhostList.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace GhostList.WebApi.Controllers;
 
@@ -16,6 +17,7 @@ public record CreateGhostListRequest(string? OwnerTokenHash = null);
 public class GhostListController(IMediator mediator) : ControllerBase
 {
     [HttpPost]
+    [EnableRateLimiting("create-list")]
     public async Task<ActionResult<Guid>> Create([FromBody] CreateGhostListRequest? request = null)
     {
         var listId = await mediator.Send(new CreateGhostListCommand(request?.OwnerTokenHash));
@@ -45,16 +47,20 @@ public class GhostListController(IMediator mediator) : ControllerBase
     }
 
     [HttpPatch("{id:guid}/ttl")]
+    [EnableRateLimiting("write-content")]
     public async Task<ActionResult> UpdateTtl(Guid id, [FromBody] DeleteAfterDuration ttl)
     {
-        await mediator.Send(new UpdateGhostListTtlCommand(id, ttl));
+        var ownerToken = Request.Headers["X-Owner-Token"].FirstOrDefault();
+        await mediator.Send(new UpdateGhostListTtlCommand(id, ttl, ownerToken));
         return NoContent();
     }
 
     [HttpPatch("{id:guid}/whisper-lifetime")]
+    [EnableRateLimiting("write-content")]
     public async Task<ActionResult> UpdateWhisperLifetime(Guid id, [FromBody] WhisperLifetime lifetime)
     {
-        await mediator.Send(new UpdateGhostListWhisperLifetimeCommand(id, lifetime));
+        var ownerToken = Request.Headers["X-Owner-Token"].FirstOrDefault();
+        await mediator.Send(new UpdateGhostListWhisperLifetimeCommand(id, lifetime, ownerToken));
         return NoContent();
     }
 }

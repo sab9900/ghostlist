@@ -64,7 +64,7 @@
     },
     "ITEMS": {
         "ADD_PLACEHOLDER": "Ajouter un élément…",
-        "EMPTY_HINT": "Ajoute ton premier élément ci-dessus.",
+        "EMPTY_HINT": "Ajoute ton premier élément — seules les personnes avec ce lien peuvent le voir.",
         "DONE_SECTION": "Terminés ({{count}})",
         "MARK_DONE_ARIA": "Marquer comme terminé : {{text}}",
         "MARK_UNDONE_ARIA": "Marquer comme non terminé : {{text}}",
@@ -80,7 +80,7 @@
         "REMINDER_ADD_TO_CALENDAR": "Ajouter au calendrier"
     },
     "CHAT": {
-        "NO_MESSAGES": "Aucun message pour le moment.",
+        "NO_MESSAGES": "Pas encore de messages — le chat est chiffré de bout en bout.",
         "LOADING_OLDER": "Chargement des messages précédents…",
         "ANONYMOUS": "Anonyme",
         "EDIT_NAME": "Modifier le nom",
@@ -284,7 +284,12 @@
         "IMPORTING": "Importation…",
         "ERROR_TITLE": "Un problème est survenu",
         "ERROR_LIST_FULL": "Cette liste a atteint sa limite de 30 membres et ne peut plus accepter de nouveaux appareils.",
-        "GO_TO_LISTS": "Aller aux listes"
+        "GO_TO_LISTS": "Aller aux listes",
+        "ERROR_NOT_FOUND": "Cette liste n'existe plus — elle a peut-être expiré ou été supprimée.",
+        "ERROR_DECRYPT": "Impossible de déchiffrer cette liste. Le lien est peut-être incomplet ou la clé est incorrecte.",
+        "PRIVACY_KEY": "Ta clé de chiffrement reste sur cet appareil — le serveur ne la voit jamais.",
+        "PRIVACY_LOSS": "Si tu perds cet appareil, tu perds l'accès à cette liste. Exporte ta clé dans les Paramètres d'abord.",
+        "PRIVACY_BACKUP": "Sauvegarder la clé : Paramètres → Sécurité → Exporter la clé."
     },
     "SETTINGS": {
         "TITLE": "Paramètres",
@@ -504,5 +509,13 @@
         "REMINDER_GENERIC": "Rappel dans « {{listName}} »",
         "LIST_REMINDER": "« {{listName}} » — {{dateTime}}",
         "REMINDER_GO": "Afficher"
+    },
+    "LEGAL": {
+        "CONSENT_TITLE": "Avant de continuer",
+        "CONSENT_SUBTITLE": "Veuillez lire et accepter nos conditions avant d'utiliser GhostList.",
+        "CONSENT_AGREE_PREFIX": "J'ai lu et j'accepte les",
+        "CONSENT_TOS_LINK": "Conditions d'utilisation",
+        "CONSENT_PRIVACY_LINK": "Politique de confidentialité",
+        "CONSENT_CONTINUE": "Continuer"
     }
 }

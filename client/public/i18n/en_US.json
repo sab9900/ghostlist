@@ -64,7 +64,7 @@
     },
     "ITEMS": {
         "ADD_PLACEHOLDER": "Add item…",
-        "EMPTY_HINT": "Add your first item above.",
+        "EMPTY_HINT": "Add your first item — only people with this link can see it.",
         "DONE_SECTION": "Done ({{count}})",
         "MARK_DONE_ARIA": "Mark as done: {{text}}",
         "MARK_UNDONE_ARIA": "Mark as not done: {{text}}",
@@ -80,7 +80,7 @@
         "REMINDER_ADD_TO_CALENDAR": "Add to Calendar"
     },
     "CHAT": {
-        "NO_MESSAGES": "No messages yet.",
+        "NO_MESSAGES": "No messages yet — chat is end-to-end encrypted.",
         "LOADING_OLDER": "Loading older messages…",
         "ANONYMOUS": "Anonymous",
         "EDIT_NAME": "Edit name",
@@ -284,7 +284,12 @@
         "IMPORTING": "Importing…",
         "ERROR_TITLE": "Something went wrong",
         "ERROR_LIST_FULL": "This list has reached its limit of 30 members and can't accept new devices.",
-        "GO_TO_LISTS": "Go to lists"
+        "ERROR_NOT_FOUND": "This list no longer exists — it may have expired or been deleted.",
+        "ERROR_DECRYPT": "Could not decrypt this list. The link may be incomplete or the key is wrong.",
+        "GO_TO_LISTS": "Go to lists",
+        "PRIVACY_KEY": "Your encryption key stays on this device — the server never sees it.",
+        "PRIVACY_LOSS": "If you lose this device, you lose access to this list. Export your key in Settings first.",
+        "PRIVACY_BACKUP": "Back up your key: Settings → Security → Export key."
     },
     "SETTINGS": {
         "TITLE": "Settings",
@@ -504,5 +509,13 @@
         "REMINDER_GENERIC": "Reminder in \"{{listName}}\"",
         "LIST_REMINDER": "\"{{listName}}\" — {{dateTime}}",
         "REMINDER_GO": "Show"
+    },
+    "LEGAL": {
+        "CONSENT_TITLE": "Before you continue",
+        "CONSENT_SUBTITLE": "Please review and accept our terms before using GhostList.",
+        "CONSENT_AGREE_PREFIX": "I have read and accept the",
+        "CONSENT_TOS_LINK": "Terms of Service",
+        "CONSENT_PRIVACY_LINK": "Privacy Policy",
+        "CONSENT_CONTINUE": "Continue"
     }
 }

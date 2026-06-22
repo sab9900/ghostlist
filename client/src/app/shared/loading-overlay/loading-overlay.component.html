@@ -1,6 +1,6 @@
 @if (visible()) {
 <div class="loading-overlay" role="status" aria-live="polite">
-    <app-ghost-mist mode="always" />
+    <app-ghost-mist [mode]="prefs.ghostMistMode()" />
     <img class="loading-overlay__ghost" src="/ghost-header.svg" alt="" aria-hidden="true" />
     <span class="visually-hidden">{{ 'COMMON.LOADING' | translate }}</span>
 </div>

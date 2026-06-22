@@ -64,7 +64,7 @@
     },
     "ITEMS": {
         "ADD_PLACEHOLDER": "Añadir elemento…",
-        "EMPTY_HINT": "Añade tu primer elemento arriba.",
+        "EMPTY_HINT": "Añade tu primer elemento — solo las personas con este enlace pueden verlo.",
         "DONE_SECTION": "Completados ({{count}})",
         "MARK_DONE_ARIA": "Marcar como hecho: {{text}}",
         "MARK_UNDONE_ARIA": "Marcar como no hecho: {{text}}",
@@ -80,7 +80,7 @@
         "REMINDER_ADD_TO_CALENDAR": "Añadir al calendario"
     },
     "CHAT": {
-        "NO_MESSAGES": "Aún no hay mensajes.",
+        "NO_MESSAGES": "Aún no hay mensajes — el chat está cifrado de extremo a extremo.",
         "LOADING_OLDER": "Cargando mensajes anteriores…",
         "ANONYMOUS": "Anónimo",
         "EDIT_NAME": "Editar nombre",
@@ -284,7 +284,12 @@
         "IMPORTING": "Importando…",
         "ERROR_TITLE": "Algo salió mal",
         "ERROR_LIST_FULL": "Esta lista ha alcanzado su límite de 30 miembros y no puede aceptar nuevos dispositivos.",
-        "GO_TO_LISTS": "Ir a las listas"
+        "GO_TO_LISTS": "Ir a las listas",
+        "ERROR_NOT_FOUND": "Esta lista ya no existe — puede haber expirado o haber sido eliminada.",
+        "ERROR_DECRYPT": "No se pudo descifrar esta lista. El enlace puede estar incompleto o la clave es incorrecta.",
+        "PRIVACY_KEY": "Tu clave de cifrado permanece en este dispositivo — el servidor nunca la ve.",
+        "PRIVACY_LOSS": "Si pierdes este dispositivo, pierdes el acceso a esta lista. Exporta tu clave desde Ajustes primero.",
+        "PRIVACY_BACKUP": "Hacer copia de la clave: Ajustes → Seguridad → Exportar clave."
     },
     "SETTINGS": {
         "TITLE": "Ajustes",
@@ -504,5 +509,13 @@
         "REMINDER_GENERIC": "Recordatorio en «{{listName}}»",
         "LIST_REMINDER": "«{{listName}}» — {{dateTime}}",
         "REMINDER_GO": "Ver"
+    },
+    "LEGAL": {
+        "CONSENT_TITLE": "Antes de continuar",
+        "CONSENT_SUBTITLE": "Por favor, lee y acepta nuestros términos antes de usar GhostList.",
+        "CONSENT_AGREE_PREFIX": "He leído y acepto los",
+        "CONSENT_TOS_LINK": "Términos de Servicio",
+        "CONSENT_PRIVACY_LINK": "Política de Privacidad",
+        "CONSENT_CONTINUE": "Continuar"
     }
 }

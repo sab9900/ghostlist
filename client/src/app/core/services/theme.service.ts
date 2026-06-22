@@ -51,15 +51,22 @@ export class ThemeService {
             if (this.theme() === 'system') this.syncThemeColorMeta();
         });
 
+        // DOM reflection only — no prefsCache writes here. This effect also
+        // fires once immediately at construction, with whatever value
+        // `accent` happens to hold at that moment (the persisted accent, read
+        // synchronously from the cache). If it also persisted on every run,
+        // any future change to *when* ThemeService gets constructed relative
+        // to the cache being warm could read a stale/default value and write
+        // that back over the real saved one — silently wiping it. Persisting
+        // is therefore only ever done imperatively, in setAccent() below, in
+        // direct response to the user actually changing it.
         effect(() => {
             const a = this.accent();
             const html = document.documentElement;
             if (a === 'violet') {
                 html.removeAttribute('data-accent');
-                this.prefsCache.delete(ACCENT_KEY);
             } else {
                 html.setAttribute('data-accent', a);
-                this.prefsCache.set(ACCENT_KEY, a);
             }
         });
     }
@@ -70,6 +77,11 @@ export class ThemeService {
 
     setAccent(accent: ThemeAccent): void {
         this.accent.set(accent);
+        if (accent === 'violet') {
+            this.prefsCache.delete(ACCENT_KEY);
+        } else {
+            this.prefsCache.set(ACCENT_KEY, accent);
+        }
     }
 
     private resolveTheme(): 'dark' | 'light' {

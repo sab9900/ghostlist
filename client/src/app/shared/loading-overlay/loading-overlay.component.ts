@@ -15,7 +15,7 @@ const MIN_VISIBLE_MS = 1000;
 })
 export class LoadingOverlayComponent implements OnDestroy {
     private readonly store = inject(AppStore);
-    private readonly prefs = inject(UserPreferencesService);
+    protected readonly prefs = inject(UserPreferencesService);
     private readonly webAuthn = inject(WebAuthnService);
 
     // Visible from the very first render — never delayed. Everything this

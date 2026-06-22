@@ -60,6 +60,39 @@
 
 } @else {
 
+@if (showConsentDialog()) {
+<div class="dialog-backdrop" role="presentation">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="consent-dialog-title"
+        aria-describedby="consent-dialog-hint">
+        <h2 class="dialog__title" id="consent-dialog-title">{{ 'LEGAL.CONSENT_TITLE' | translate }}</h2>
+        <p class="dialog__hint" id="consent-dialog-hint">{{ 'LEGAL.CONSENT_SUBTITLE' | translate }}</p>
+        <div class="dialog__consent-list">
+            <label class="dialog__consent-item">
+                <input type="checkbox" [ngModel]="consentTos()" (ngModelChange)="consentTos.set($event)"
+                    [attr.aria-label]="'LEGAL.CONSENT_TOS_LINK' | translate" />
+                <span>{{ 'LEGAL.CONSENT_AGREE_PREFIX' | translate }}
+                    <a class="dialog__consent-link" href="https://ghost-list.com/agb.html" target="_blank"
+                        rel="noopener noreferrer">{{ 'LEGAL.CONSENT_TOS_LINK' | translate }}</a>
+                </span>
+            </label>
+            <label class="dialog__consent-item">
+                <input type="checkbox" [ngModel]="consentPrivacy()" (ngModelChange)="consentPrivacy.set($event)"
+                    [attr.aria-label]="'LEGAL.CONSENT_PRIVACY_LINK' | translate" />
+                <span>{{ 'LEGAL.CONSENT_AGREE_PREFIX' | translate }}
+                    <a class="dialog__consent-link" href="https://ghost-list.com/datenschutz.html" target="_blank"
+                        rel="noopener noreferrer">{{ 'LEGAL.CONSENT_PRIVACY_LINK' | translate }}</a>
+                </span>
+            </label>
+        </div>
+        <div class="dialog__actions">
+            <button class="btn btn--primary" (click)="acceptConsent()" [disabled]="!consentBothChecked()">
+                {{ 'LEGAL.CONSENT_CONTINUE' | translate }}
+            </button>
+        </div>
+    </div>
+</div>
+}
+
 <app-offline-banner />
 <app-pwa-install-banner />
 

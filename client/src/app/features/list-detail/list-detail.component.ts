@@ -8,6 +8,7 @@ import { HubService } from '../../api/hub.service';
 import { SwipeBackDirective } from '../../core/directives/swipe-back.directive';
 import { TabTransitionDirective } from '../../core/directives/tab-transition.directive';
 import { ListMember, ListSubTab } from '../../core/models';
+import { HapticsService } from '../../core/services/haptics.service';
 import { LayoutService } from '../../core/services/layout.service';
 import { PrefsCacheService } from '../../core/services/prefs-cache.service';
 import { BadgeComponent } from '../../shared/badge/badge.component';
@@ -60,6 +61,7 @@ export class ListDetailComponent implements OnDestroy {
     private readonly router = inject(Router);
     protected readonly layout = inject(LayoutService);
     private readonly prefsCache = inject(PrefsCacheService);
+    private readonly haptics = inject(HapticsService);
 
     private readonly currentUrl = toSignal(
         this.router.events.pipe(
@@ -81,10 +83,15 @@ export class ListDetailComponent implements OnDestroy {
 
     protected readonly activeTab = computed<Tab>(() => this.routeTab() ?? 'items');
 
+    hapticFeedbackOnTabChange(): void {
+        this.haptics.hapticFeedbackOnTabChange()
+    }
+
     protected readonly settingsOpen = signal(false);
     protected readonly drawerClosing = signal(false);
 
     protected readonly desktopChatView = signal<DesktopChatView>('chat');
+
 
     protected readonly paneWidth = signal(loadPaneWidth(this.prefsCache));
     protected readonly paneResizing = signal(false);
@@ -240,6 +247,7 @@ export class ListDetailComponent implements OnDestroy {
     setTab(tab: Tab): void {
         const id = this.route.snapshot.paramMap.get('id');
         if (id && this.routeTab() !== tab) {
+            this.haptics.hapticFeedbackOnTabChange();
             void this.router.navigate(['/list', id, tab]);
         }
     }

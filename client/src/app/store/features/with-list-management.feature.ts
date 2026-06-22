@@ -275,13 +275,15 @@ export function createListManagementMethods(store: ListManagementStoreSlice) {
         async updateTtl(ttl: DeleteAfterDuration): Promise<void> {
             const id = store.currentListId();
             if (!id) return;
-            await firstValueFrom(api.updateTtl(id, ttl));
+            const ownerToken = store.knownLists().find(l => l.id === id)?.ownerToken;
+            await firstValueFrom(api.updateTtl(id, ttl, ownerToken));
         },
 
         async updateWhisperLifetime(lifetime: WhisperLifetime): Promise<void> {
             const id = store.currentListId();
             if (!id) return;
-            await firstValueFrom(api.updateWhisperLifetime(id, lifetime));
+            const ownerToken = store.knownLists().find(l => l.id === id)?.ownerToken;
+            await firstValueFrom(api.updateWhisperLifetime(id, lifetime, ownerToken));
         },
 
         async refreshCurrentList(): Promise<void> {

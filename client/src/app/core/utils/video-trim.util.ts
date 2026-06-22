@@ -23,13 +23,27 @@ export function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
  * duration field in the container — `video.duration` reads as `Infinity`
  * until the browser is forced to seek near the end and recompute it. This
  * resolves with the real, finite duration once that's done.
+ *
+ * Some WebKit versions report unknown duration as `-1` instead of
+ * `Infinity`/`NaN`. `-1` passes `Number.isFinite` (it IS finite!), so a
+ * plain finiteness check treats it as a valid, real duration and returns
+ * immediately without ever running the seek hack below — silently handing
+ * back `-1` as "the" duration. Every caller compares this against a real
+ * length (`duration() > 0.4`, etc.), and `-1` fails all of them, which is
+ * exactly what made the trim controls disappear entirely on an affected
+ * iOS Safari/WebKit version. So both finiteness AND positivity are
+ * required before trusting `video.duration` as-is.
  */
+function isUsableDuration(duration: number): boolean {
+    return Number.isFinite(duration) && duration > 0;
+}
+
 function resolveFiniteDuration(video: HTMLVideoElement): Promise<number> {
     return new Promise((resolve) => {
-        if (Number.isFinite(video.duration)) { resolve(video.duration); return; }
+        if (isUsableDuration(video.duration)) { resolve(video.duration); return; }
         const onTimeUpdate = () => {
             video.removeEventListener('timeupdate', onTimeUpdate);
-            const dur = Number.isFinite(video.duration) ? video.duration : 0;
+            const dur = isUsableDuration(video.duration) ? video.duration : 0;
             video.currentTime = 0;
             resolve(dur);
         };
@@ -37,7 +51,7 @@ function resolveFiniteDuration(video: HTMLVideoElement): Promise<number> {
         video.currentTime = Number.MAX_SAFE_INTEGER;
         setTimeout(() => {
             video.removeEventListener('timeupdate', onTimeUpdate);
-            resolve(Number.isFinite(video.duration) ? video.duration : 0);
+            resolve(isUsableDuration(video.duration) ? video.duration : 0);
         }, 2000);
     });
 }
@@ -87,8 +101,7 @@ export async function isPlayableVideoBlob(blob: Blob, expectedDurationSec?: numb
 
         if (!video.videoWidth || !video.videoHeight) return false;
 
-        const hasSaneDuration = Number.isFinite(video.duration) && video.duration > 0;
-        if (!hasSaneDuration) return false;
+        if (!isUsableDuration(video.duration)) return false;
         if (expectedDurationSec !== undefined && expectedDurationSec > 0.4) {
             // Allow generous slack (half the expected length or 1.5s,
             // whichever is bigger) — this only needs to catch "wildly

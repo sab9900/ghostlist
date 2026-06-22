@@ -21,6 +21,21 @@
                 <button class="btn btn--primary" (click)="importList()" [disabled]="!listName().trim()">{{ 'JOIN.IMPORT_BTN' | translate }}</button>
             </div>
         </div>
+
+        <div class="privacy-notice" role="note" aria-label="Privacy information">
+            <p class="privacy-notice__row">
+                <span class="privacy-notice__icon" aria-hidden="true">🔑</span>
+                {{ 'JOIN.PRIVACY_KEY' | translate }}
+            </p>
+            <p class="privacy-notice__row">
+                <span class="privacy-notice__icon" aria-hidden="true">⚠️</span>
+                {{ 'JOIN.PRIVACY_LOSS' | translate }}
+            </p>
+            <p class="privacy-notice__row">
+                <span class="privacy-notice__icon" aria-hidden="true">💾</span>
+                {{ 'JOIN.PRIVACY_BACKUP' | translate }}
+            </p>
+        </div>
         }
 
         @if (state() === 'importing') {
