@@ -1,9 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, ElementRef, ViewChild, effect, inject, signal, untracked } from '@angular/core';
+import { Component, DestroyRef, ElementRef, ViewChild, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Capacitor } from '@capacitor/core';
-import { LucideEye } from "@lucide/angular";
+import { LucideEye, LucideGhost } from "@lucide/angular";
+import { AvatarComponent } from '../../../shared/avatar/avatar.component';
+import { GhostMistComponent } from '../../../shared/ghost-mist/ghost-mist.component';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../../api/api.service';
@@ -32,7 +34,7 @@ const INVITE_COOLDOWN_MS = 60_000;
 
 @Component({
     selector: 'app-whisper-tab',
-    imports: [FormsModule, TranslatePipe, LucideEye],
+    imports: [FormsModule, TranslatePipe, LucideEye, LucideGhost, GhostMistComponent, AvatarComponent],
     templateUrl: './whisper-tab.component.html',
     styleUrl: './whisper-tab.component.scss',
 })
@@ -69,8 +71,21 @@ export class WhisperTabComponent {
 
     private readonly timers = new Set<ReturnType<typeof setTimeout>>();
 
-    protected readonly othersPresence = () =>
-        this.presence().filter(p => p.deviceId !== this.deviceId.deviceId);
+    private static readonly MAX_VISIBLE_AVATARS = 9;
+
+    protected readonly othersPresence = computed(() =>
+        this.presence().filter(p => p.deviceId !== this.deviceId.deviceId)
+    );
+
+    protected readonly visiblePresence = computed(() =>
+        this.othersPresence().slice(0, WhisperTabComponent.MAX_VISIBLE_AVATARS)
+    );
+
+    protected readonly overflowPresence = computed(() =>
+        this.othersPresence().slice(WhisperTabComponent.MAX_VISIBLE_AVATARS)
+    );
+
+    protected readonly presenceOverlay = signal<WhisperPresenceEntry[] | null>(null);
 
     protected readonly inviteableMembers = () =>
         this.members().filter(m => !m.isCurrentDevice);
@@ -340,11 +355,7 @@ export class WhisperTabComponent {
         }
     }
 
-    protected initials(name: string): string {
-        const trimmed = name.trim();
-        if (!trimmed) return '?';
-        const parts = trimmed.split(/\s+/);
-        if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    protected showPresenceOverlay(members: WhisperPresenceEntry[]): void {
+        this.presenceOverlay.set(members);
     }
 }

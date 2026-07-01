@@ -1,3 +1,13 @@
+export interface GhostMessageReaction {
+    id: string;
+    encryptedEmoji: string;
+    emojiInitializationVector: string;
+    encryptedSenderName: string;
+    senderNameInitializationVector: string;
+    senderDeviceId: string | null;
+    senderUserId: string | null;
+}
+
 export interface GhostChatMessage {
     id: string;
     ghostListId: string;
@@ -9,6 +19,7 @@ export interface GhostChatMessage {
     createdAt: string;
     senderDeviceId: string | null;
     senderUserId: string | null;
+    reactions: GhostMessageReaction[];
 }
 
 export interface GhostChatMessagePage {

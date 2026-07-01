@@ -1,11 +1,11 @@
 import { DatePipe } from '@angular/common';
 import { Component, input, output } from '@angular/core';
-import { LucideCheck, LucideCheckCheck, LucideCopy, LucideCornerUpLeft, LucideDownload, LucideEllipsisVertical, LucideImage, LucideMic, LucideTrash2, LucideVideo } from '@lucide/angular';
+import { LucideCheck, LucideCheckCheck, LucideCopy, LucideCornerUpLeft, LucideDownload, LucideEllipsisVertical, LucideImage, LucideMic, LucideSmilePlus, LucideTrash2, LucideVideo } from '@lucide/angular';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ViewportDwellDirective } from '../../../../../core/directives/viewport-dwell.directive';
 import { AudioWaveformPlayerComponent } from '../../../../../shared/audio-waveform-player/audio-waveform-player.component';
 import { AvatarComponent } from '../../../../../shared/avatar/avatar.component';
-import { DecryptedMessage, ReplyPreview } from '../../chat-tab.types';
+import { DecryptedMessage, DecryptedReaction, ReplyPreview } from '../../chat-tab.types';
 
 @Component({
     selector: 'app-chat-message',
@@ -16,6 +16,7 @@ import { DecryptedMessage, ReplyPreview } from '../../chat-tab.types';
         AvatarComponent,
         AudioWaveformPlayerComponent,
         LucideCornerUpLeft,
+        LucideSmilePlus,
         LucideImage,
         LucideMic,
         LucideCheckCheck,
@@ -46,6 +47,7 @@ export class ChatMessageComponent {
     readonly readers = input<{ displayName: string }[]>([]);
     readonly swipeOffset = input(0);
     readonly swipeTriggerDistance = input(56);
+    readonly myReactionEmoji = input<string | null>(null);
 
     readonly menuToggle = output<MouseEvent>();
     readonly reply = output<void>();
@@ -58,6 +60,18 @@ export class ChatMessageComponent {
     readonly touchMove = output<TouchEvent>();
     readonly touchEnd = output<void>();
     readonly imageOpen = output<{ url: string; alt: string }>();
+    readonly reactionPillClick = output<string>();
+    readonly longPress = output<void>();
+
+    protected groupedReactions(reactions: DecryptedReaction[]): { emoji: string; count: number; isMine: boolean }[] {
+        const map = new Map<string, { count: number; isMine: boolean }>();
+        const myEmoji = this.myReactionEmoji();
+        for (const r of reactions) {
+            const entry = map.get(r.emoji) ?? { count: 0, isMine: false };
+            map.set(r.emoji, { count: entry.count + 1, isMine: entry.isMine || r.emoji === myEmoji });
+        }
+        return Array.from(map.entries()).map(([emoji, { count, isMine }]) => ({ emoji, count, isMine }));
+    }
 
     protected parseText(text: string): { value: string; isMention: boolean }[] {
         const segments: { value: string; isMention: boolean }[] = [];

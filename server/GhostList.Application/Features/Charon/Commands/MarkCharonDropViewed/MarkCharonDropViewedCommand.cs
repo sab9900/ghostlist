@@ -43,6 +43,9 @@ public class MarkCharonDropViewedCommandHandler(IApplicationDbContext context, I
             });
 
             await context.SaveChangesAsync(cancellationToken);
+
+            var viewerIdentity = request.UserId ?? request.DeviceId;
+            await notifier.NotifyCharonDropViewed(drop.GhostListId, drop.Id, viewerIdentity);
         }
 
         var recipientMembers = await context.GhostListMembers

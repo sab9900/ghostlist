@@ -1,24 +1,11 @@
 import { Directive, ElementRef, Input, OnDestroy, OnInit, inject } from '@angular/core';
-import { NavigationStart, Router, RouterOutlet } from '@angular/router';
+import { ActivatedRoute, NavigationStart, Router, RouterOutlet } from '@angular/router';
 import { Subscription, filter } from 'rxjs';
-import { IOS_EASE, LEAVE_BLUR_PX, LEAVE_DARKEN, TAB_SWITCH_DURATION_MS } from '../utils/ios-motion';
 import { cloneSnapshot } from '../utils/page-snapshot.util';
 import { prefersReducedMotion } from '../utils/reduced-motion.util';
+import { SlideDirection, resolveSlideDirection, runSlideTransition } from '../utils/slide-transition.util';
 
-type TabDirection = 'forward' | 'backward' | 'none';
-
-function lastSegment(url: string): string {
-    const path = url.split('?')[0].split('#')[0];
-    const parts = path.split('/').filter(Boolean);
-    return parts[parts.length - 1] ?? '';
-}
-
-function resolveTabDirection(order: string[], fromKey: string, toKey: string): TabDirection {
-    const fromIndex = order.indexOf(fromKey);
-    const toIndex = order.indexOf(toKey);
-    if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return 'none';
-    return toIndex > fromIndex ? 'forward' : 'backward';
-}
+type TabDirection = SlideDirection;
 
 @Directive({
     selector: '[appTabTransition]',
@@ -26,11 +13,32 @@ function resolveTabDirection(order: string[], fromKey: string, toKey: string): T
 })
 export class TabTransitionDirective implements OnInit, OnDestroy {
 
-    @Input() appTabOrder: string[] = ['items', 'chat', 'whisper', 'charon'];
+    @Input() appTabOrder: string[] = ['items', 'chat', 'whisper', 'charon', 'nemesis'];
 
     private readonly hostEl = inject(ElementRef<HTMLElement>).nativeElement as HTMLElement;
     private readonly outlet = inject(RouterOutlet, { self: true });
     private readonly router = inject(Router);
+    // The ActivatedRoute of whatever component hosts this outlet+directive
+    // (e.g. ListDetailComponent, or NemesisTabComponent for its own nested
+    // outlet). Its pathFromRoot tells us exactly how many URL segments are
+    // already consumed above this outlet, so the segment this outlet is
+    // switching between is always the very next one — regardless of how
+    // deep this outlet sits, and regardless of any further child routes
+    // nested inside whatever it activates (e.g. nemesis/expenses vs.
+    // nemesis/settlements). Using the *last* URL segment instead would break
+    // as soon as the activated tab has its own child routes: while still on
+    // such a sub-route, the last segment is the child's, not this outlet's.
+    private readonly route = inject(ActivatedRoute);
+
+    private ownSegmentIndex(): number {
+        return this.route.snapshot.pathFromRoot.reduce((acc, r) => acc + r.url.length, 0);
+    }
+
+    private tabSegment(url: string): string {
+        const path = url.split('?')[0].split('#')[0];
+        const parts = path.split('/').filter(Boolean);
+        return parts[this.ownSegmentIndex()] ?? '';
+    }
 
     private navSub?: Subscription;
     private activateSub?: Subscription;
@@ -60,9 +68,9 @@ export class TabTransitionDirective implements OnInit, OnDestroy {
         // to its default tab) — only cancel/recapture for ones that actually
         // swap the tab, otherwise an unrelated navigation can cancel a
         // still-playing slide.
-        const fromKey = lastSegment(this.router.url);
-        const toKey = lastSegment(nextUrl);
-        const direction = resolveTabDirection(this.appTabOrder, fromKey, toKey);
+        const fromKey = this.tabSegment(this.router.url);
+        const toKey = this.tabSegment(nextUrl);
+        const direction = resolveSlideDirection(this.appTabOrder, fromKey, toKey);
 
         if (direction === 'none') return;
 
@@ -95,52 +103,10 @@ export class TabTransitionDirective implements OnInit, OnDestroy {
         this.cleanupActive = this.runSlide(incomingEl, outgoingClone, direction);
     }
 
-    private runSlide(incomingEl: HTMLElement, outgoingClone: HTMLElement, direction: TabDirection): () => void {
+    private runSlide(incomingEl: HTMLElement, outgoingClone: HTMLElement, direction: Exclude<TabDirection, 'none'>): () => void {
         const parent = this.hostEl.parentElement;
         if (!parent) return () => { };
 
-        parent.style.position = 'relative';
-
-        outgoingClone.style.position = 'absolute';
-        outgoingClone.style.top = '0';
-        outgoingClone.style.left = '0';
-        outgoingClone.style.width = '100%';
-        outgoingClone.style.height = '100%';
-        outgoingClone.style.margin = '0';
-        outgoingClone.style.willChange = 'transform';
-
-        incomingEl.style.position = 'relative';
-        incomingEl.style.willChange = 'transform';
-
-        parent.insertBefore(outgoingClone, this.hostEl);
-
-        const sign = direction === 'forward' ? 1 : -1;
-
-        const frontAnim = incomingEl.animate(
-            [{ transform: `translate3d(${sign * 100}%,0,0)` }, { transform: 'translate3d(0,0,0)' }],
-            { duration: TAB_SWITCH_DURATION_MS, easing: IOS_EASE, fill: 'both' },
-        );
-        const backAnim = outgoingClone.animate(
-            [
-                { transform: 'translate3d(0,0,0)', filter: 'blur(0px) brightness(1)' },
-                { transform: `translate3d(${-sign * 100}%,0,0)`, filter: `blur(${LEAVE_BLUR_PX}px) brightness(${LEAVE_DARKEN})` },
-            ],
-            { duration: TAB_SWITCH_DURATION_MS, easing: IOS_EASE, fill: 'both' },
-        );
-
-        let done = false;
-        const cleanup = () => {
-            if (done) return;
-            done = true;
-            frontAnim.cancel();
-            backAnim.cancel();
-            outgoingClone.remove();
-            incomingEl.style.position = '';
-            incomingEl.style.willChange = '';
-            parent.style.position = '';
-        };
-
-        Promise.all([frontAnim.finished, backAnim.finished]).then(cleanup).catch(cleanup);
-        return cleanup;
+        return runSlideTransition(parent, incomingEl, outgoingClone, direction);
     }
 }

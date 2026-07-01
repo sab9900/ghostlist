@@ -6,6 +6,7 @@ using GhostList.Application.Features.GhostMessages.Commands.DeleteExpiredImageBl
 using GhostList.Application.Features.GhostMessages.Commands.DeleteExpiredVideoBlobs;
 using GhostList.Application.Features.ItemReminders.Commands.TriggerDueItemReminders;
 using GhostList.Application.Features.ListReminders.Commands.TriggerDueListReminders;
+using GhostList.Application.Features.Nemesis.Commands.ExpireSettlements;
 using GhostList.Application.Features.Subscriptions.Commands.DeleteStaleDeviceSubscriptions;
 using MediatR;
 
@@ -20,6 +21,7 @@ public class GhostListCleanupWorker(IServiceScopeFactory scopeFactory, ILogger<G
 
     private DateTime _lastMemberlessCheck = DateTime.MinValue;
     private DateTime _lastStaleTokenCheck = DateTime.MinValue;
+    private DateTime _lastSettlementExpiryCheck = DateTime.MinValue;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -74,6 +76,12 @@ public class GhostListCleanupWorker(IServiceScopeFactory scopeFactory, ILogger<G
                     var staleTokens = await mediator.Send(new DeleteStaleDeviceSubscriptionsCommand(), stoppingToken);
                     if (staleTokens > 0)
                         logger.LogInformation("Cleanup: {Count} stale device subscription(s) deleted.", staleTokens);
+                }
+
+                if (DateTime.UtcNow - _lastSettlementExpiryCheck >= StaleTokenCheckInterval)
+                {
+                    _lastSettlementExpiryCheck = DateTime.UtcNow;
+                    await mediator.Send(new ExpireSettlementsCommand(), stoppingToken);
                 }
             }
             catch (Exception ex) when (ex is not OperationCanceledException)

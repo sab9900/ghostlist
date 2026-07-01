@@ -2,7 +2,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
 
-export type ShareTarget = 'charon' | 'chat';
+export type ShareTarget = 'charon' | 'chat' | 'nemesis';
 
 export interface SharedPayload {
     target: ShareTarget;

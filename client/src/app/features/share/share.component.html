@@ -48,6 +48,18 @@
                         <span class="option-check" aria-hidden="true">✓</span>
                     }
                 </button>
+                <button
+                    class="option"
+                    [class.option--active]="selectedTarget() === 'nemesis'"
+                    role="radio"
+                    [attr.aria-checked]="selectedTarget() === 'nemesis'"
+                    (click)="selectTarget('nemesis')">
+                    <svg lucideReceipt [size]="18" aria-hidden="true" class="option-icon"></svg>
+                    <span class="option-label">Nemesis</span>
+                    @if (selectedTarget() === 'nemesis') {
+                        <span class="option-check" aria-hidden="true">✓</span>
+                    }
+                </button>
             </div>
         </section>
 

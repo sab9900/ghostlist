@@ -12,3 +12,4 @@ export * from './requests.model';
 export * from './signalr-events.model';
 export * from './unread-summary.model';
 export * from './whisper-lifetime.enum';
+export * from './nemesis.model';

@@ -37,6 +37,12 @@ public class FcmNotificationService(
         PushNotificationType.Message => "chat",
         PushNotificationType.WhisperInvite => "whisper",
         PushNotificationType.CharonDrop => "charon",
+        PushNotificationType.NemesisUpdate => "nemesis/expenses",
+        PushNotificationType.NemesisSettlementUpdate => "nemesis/settlements",
+        PushNotificationType.NemesisSettlementExpiring => "nemesis/settlements",
+        PushNotificationType.NemesisSettlementExpired => "nemesis/settlements",
+        PushNotificationType.NemesisSettlementForgiven => "nemesis/settlements",
+        PushNotificationType.NemesisSettlementVoided => "nemesis/settlements",
         _ => "items",
     };
 
@@ -58,6 +64,12 @@ public class FcmNotificationService(
             [PushNotificationType.ItemsChanged] = ("GhostList", "One of your lists was updated"),
             [PushNotificationType.WhisperInvite] = ("GhostList", "👻 Someone is inviting you to whisper in Lethe"),
             [PushNotificationType.CharonDrop] = ("GhostList", "📦 A new Charon drop is waiting for you"),
+            [PushNotificationType.NemesisUpdate] = ("GhostList", "💸 Something changed in your expense split"),
+            [PushNotificationType.NemesisSettlementUpdate] = ("GhostList", "✅ Your payment was confirmed"),
+            [PushNotificationType.NemesisSettlementExpiring] = ("GhostList", "⚠️ A payment is expiring soon"),
+            [PushNotificationType.NemesisSettlementExpired] = ("GhostList", "⏱️ A pending payment has expired"),
+            [PushNotificationType.NemesisSettlementForgiven] = ("GhostList", "🙌 A debt was forgiven"),
+            [PushNotificationType.NemesisSettlementVoided] = ("GhostList", "👻 A payment was voided — member left"),
         },
         ["de_DE"] = new()
         {
@@ -65,6 +77,12 @@ public class FcmNotificationService(
             [PushNotificationType.ItemsChanged] = ("GhostList", "Eine deiner Listen wurde aktualisiert"),
             [PushNotificationType.WhisperInvite] = ("GhostList", "👻 Jemand lädt dich ein, in Lethe zu flüstern"),
             [PushNotificationType.CharonDrop] = ("GhostList", "📦 Ein neuer Charon-Drop wartet auf dich"),
+            [PushNotificationType.NemesisUpdate] = ("GhostList", "💸 Es gibt Neuigkeiten bei deinen Ausgaben"),
+            [PushNotificationType.NemesisSettlementUpdate] = ("GhostList", "✅ Deine Zahlung wurde bestätigt"),
+            [PushNotificationType.NemesisSettlementExpiring] = ("GhostList", "⚠️ Eine Zahlung läuft bald ab"),
+            [PushNotificationType.NemesisSettlementExpired] = ("GhostList", "⏱️ Eine ausstehende Zahlung ist abgelaufen"),
+            [PushNotificationType.NemesisSettlementForgiven] = ("GhostList", "🙌 Eine Schuld wurde erlassen"),
+            [PushNotificationType.NemesisSettlementVoided] = ("GhostList", "👻 Eine Zahlung wurde storniert — Mitglied hat verlassen"),
         },
         ["it_IT"] = new()
         {
@@ -72,6 +90,12 @@ public class FcmNotificationService(
             [PushNotificationType.ItemsChanged] = ("GhostList", "Una delle tue liste è stata aggiornata"),
             [PushNotificationType.WhisperInvite] = ("GhostList", "👻 Qualcuno ti invita a sussurrare in Lethe"),
             [PushNotificationType.CharonDrop] = ("GhostList", "📦 Un nuovo drop di Charon ti aspetta"),
+            [PushNotificationType.NemesisUpdate] = ("GhostList", "💸 Ci sono aggiornamenti sulla divisione spese"),
+            [PushNotificationType.NemesisSettlementUpdate] = ("GhostList", "✅ Il tuo pagamento è stato confermato"),
+            [PushNotificationType.NemesisSettlementExpiring] = ("GhostList", "⚠️ Un pagamento sta per scadere"),
+            [PushNotificationType.NemesisSettlementExpired] = ("GhostList", "⏱️ Un pagamento in sospeso è scaduto"),
+            [PushNotificationType.NemesisSettlementForgiven] = ("GhostList", "🙌 Un debito è stato condonato"),
+            [PushNotificationType.NemesisSettlementVoided] = ("GhostList", "👻 Un pagamento è stato annullato — il membro ha lasciato"),
         },
         ["es_ES"] = new()
         {
@@ -79,6 +103,12 @@ public class FcmNotificationService(
             [PushNotificationType.ItemsChanged] = ("GhostList", "Se ha actualizado una de tus listas"),
             [PushNotificationType.WhisperInvite] = ("GhostList", "👻 Alguien te invita a susurrar en Lethe"),
             [PushNotificationType.CharonDrop] = ("GhostList", "📦 Un nuevo drop de Charon te espera"),
+            [PushNotificationType.NemesisUpdate] = ("GhostList", "💸 Hay novedades en la división de gastos"),
+            [PushNotificationType.NemesisSettlementUpdate] = ("GhostList", "✅ Tu pago ha sido confirmado"),
+            [PushNotificationType.NemesisSettlementExpiring] = ("GhostList", "⚠️ Un pago está a punto de caducar"),
+            [PushNotificationType.NemesisSettlementExpired] = ("GhostList", "⏱️ Un pago pendiente ha caducado"),
+            [PushNotificationType.NemesisSettlementForgiven] = ("GhostList", "🙌 Una deuda fue perdonada"),
+            [PushNotificationType.NemesisSettlementVoided] = ("GhostList", "👻 Un pago fue anulado — el miembro se fue"),
         },
     };
 
@@ -103,7 +133,7 @@ public class FcmNotificationService(
             : ("GhostList", DefaultBody.GetValueOrDefault(key, DefaultBody[FallbackLocale]));
     }
 
-    public async Task SendNotificationAsync(Guid listId, PushNotificationType type, string? senderDeviceId, CancellationToken ct, IReadOnlyCollection<string>? targetDeviceIds = null)
+    public async Task SendNotificationAsync(Guid listId, PushNotificationType type, string? senderDeviceId, CancellationToken ct, IReadOnlyCollection<string>? targetDeviceIds = null, IReadOnlyCollection<string>? targetUserIds = null)
     {
         var app = GetOrCreateApp();
         if (app is null) return;
@@ -124,14 +154,22 @@ public class FcmNotificationService(
             PushNotificationType.ItemsChanged => query.Where(s => s.NotifyOnItemsChanged),
             PushNotificationType.WhisperInvite => query.Where(s => s.NotifyOnLethe),
             PushNotificationType.CharonDrop => query.Where(s => s.NotifyOnCharon),
-            PushNotificationType.ItemReminder => query, // user explicitly set this reminder — no preference filter
+            PushNotificationType.NemesisUpdate => query.Where(s => s.NotifyOnNemesis),
+            PushNotificationType.NemesisSettlementUpdate => query.Where(s => s.NotifyOnNemesis),
+            PushNotificationType.NemesisSettlementExpiring => query.Where(s => s.NotifyOnNemesis),
+            PushNotificationType.NemesisSettlementExpired => query.Where(s => s.NotifyOnNemesis),
+            PushNotificationType.NemesisSettlementForgiven => query.Where(s => s.NotifyOnNemesis),
+            PushNotificationType.NemesisSettlementVoided => query.Where(s => s.NotifyOnNemesis),
+            PushNotificationType.ItemReminder => query,
             PushNotificationType.ListReminder => query,
             _ => query,
         };
 
-        // Apply device filter whenever a target list is provided (reminders, whisper invites, etc.)
         if (targetDeviceIds is { Count: > 0 })
             query = query.Where(s => targetDeviceIds.Contains(s.DeviceId));
+
+        if (targetUserIds is { Count: > 0 })
+            query = query.Where(s => s.UserId != null && targetUserIds.Contains(s.UserId));
 
         var subscriptions = await query.ToListAsync(ct);
         logger.LogInformation(
@@ -160,7 +198,9 @@ public class FcmNotificationService(
         var iosBadgeCounts = new Dictionary<string, int>();
         foreach (var sub in targets.Where(s => s.Platform == DevicePlatform.Ios))
         {
-            iosBadgeCounts[sub.DeviceId] = await GetTotalUnreadBadgeCountAsync(context, sub.DeviceId, ct);
+            iosBadgeCounts[sub.DeviceId] = sub.UserId is not null
+                ? await GetTotalUnreadBadgeCountByUserAsync(context, sub.UserId, ct)
+                : await GetTotalUnreadBadgeCountAsync(context, sub.DeviceId, ct);
         }
 
         var messaging = FirebaseMessaging.GetMessaging(app);
@@ -254,6 +294,38 @@ public class FcmNotificationService(
         return unreadMessages + unreadItems;
     }
 
+    private static async Task<int> GetTotalUnreadBadgeCountByUserAsync(
+        IApplicationDbContext context, string userId, CancellationToken ct)
+    {
+        var subscribedListIds = await context.DeviceSubscriptions
+            .Where(s => s.UserId == userId)
+            .Select(s => s.ListId)
+            .Distinct()
+            .ToListAsync(ct);
+
+        var readMessageIds = context.MessageReadReceipts
+            .Where(r => r.UserId == userId)
+            .Select(r => r.MessageId);
+
+        var readItemIds = context.ItemReadReceipts
+            .Where(r => r.UserId == userId)
+            .Select(r => r.ItemId);
+
+        var unreadMessages = await context.GhostChatMessages
+            .Where(m => subscribedListIds.Contains(m.GhostListId))
+            .Where(m => m.SenderUserId != userId)
+            .Where(m => !readMessageIds.Contains(m.Id))
+            .CountAsync(ct);
+
+        var unreadItems = await context.GhostListItems
+            .Where(i => subscribedListIds.Contains(i.GhostListId))
+            .Where(i => i.SenderUserId != userId)
+            .Where(i => !readItemIds.Contains(i.Id))
+            .CountAsync(ct);
+
+        return unreadMessages + unreadItems;
+    }
+
     private static Message BuildMessage(DeviceSubscription sub, Guid listId, PushNotificationType type,
         int? badgeCount = null)
     {
@@ -268,6 +340,12 @@ public class FcmNotificationService(
                 PushNotificationType.ItemsChanged => "items_changed",
                 PushNotificationType.WhisperInvite => "whisper_invite",
                 PushNotificationType.CharonDrop => "charon_drop",
+                PushNotificationType.NemesisUpdate => "nemesis_update",
+                PushNotificationType.NemesisSettlementUpdate => "nemesis_settlement_update",
+                PushNotificationType.NemesisSettlementExpiring => "nemesis_settlement_expiring",
+                PushNotificationType.NemesisSettlementExpired => "nemesis_settlement_expired",
+                PushNotificationType.NemesisSettlementForgiven => "nemesis_settlement_forgiven",
+                PushNotificationType.NemesisSettlementVoided => "nemesis_settlement_voided",
                 PushNotificationType.ItemReminder => "item_reminder",
                 PushNotificationType.ListReminder => "list_reminder",
                 _ => "update",
@@ -292,6 +370,12 @@ public class FcmNotificationService(
                         ["apns-priority"] = type is PushNotificationType.Message
                             or PushNotificationType.WhisperInvite
                             or PushNotificationType.CharonDrop
+                            or PushNotificationType.NemesisUpdate
+                            or PushNotificationType.NemesisSettlementUpdate
+                            or PushNotificationType.NemesisSettlementExpiring
+                            or PushNotificationType.NemesisSettlementExpired
+                            or PushNotificationType.NemesisSettlementForgiven
+                            or PushNotificationType.NemesisSettlementVoided
                             or PushNotificationType.ItemReminder
                             or PushNotificationType.ListReminder ? "10" : "5",
                         // required when showing a visible alert
@@ -319,6 +403,12 @@ public class FcmNotificationService(
                             PushNotificationType.WhisperInvite => "ghost_lethe_v2",
                             PushNotificationType.CharonDrop => "ghost_charon_v2",
                             PushNotificationType.Message => "ghost_messages_v2",
+                            PushNotificationType.NemesisUpdate => "ghost_nemesis_v1",
+                            PushNotificationType.NemesisSettlementUpdate => "ghost_nemesis_v1",
+                            PushNotificationType.NemesisSettlementExpiring => "ghost_nemesis_v1",
+                            PushNotificationType.NemesisSettlementExpired => "ghost_nemesis_v1",
+                            PushNotificationType.NemesisSettlementForgiven => "ghost_nemesis_v1",
+                            PushNotificationType.NemesisSettlementVoided => "ghost_nemesis_v1",
                             PushNotificationType.ItemReminder => "ghost_reminders_v2",
                             PushNotificationType.ListReminder => "ghost_reminders_v2",
                             _ => "ghost_items_v2",
@@ -336,6 +426,12 @@ public class FcmNotificationService(
                         ["Urgency"] = type is PushNotificationType.Message
                             or PushNotificationType.WhisperInvite
                             or PushNotificationType.CharonDrop
+                            or PushNotificationType.NemesisUpdate
+                            or PushNotificationType.NemesisSettlementUpdate
+                            or PushNotificationType.NemesisSettlementExpiring
+                            or PushNotificationType.NemesisSettlementExpired
+                            or PushNotificationType.NemesisSettlementForgiven
+                            or PushNotificationType.NemesisSettlementVoided
                             or PushNotificationType.ItemReminder
                             or PushNotificationType.ListReminder ? "high" : "normal",
                     },

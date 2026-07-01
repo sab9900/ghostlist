@@ -12,6 +12,7 @@ public record SubscribeRequest(
     bool NotifyOnItemsChanged = false,
     bool NotifyOnLethe = true,
     bool NotifyOnCharon = true,
+    bool NotifyOnNemesis = true,
     string? Locale = null);
 
 [ApiController]
@@ -78,6 +79,7 @@ public class SubscriptionsController(IApplicationDbContext context) : Controller
         if (string.IsNullOrWhiteSpace(request.DeviceToken))
             return BadRequest("DeviceToken is required.");
 
+        var userId = Request.Headers["X-User-Id"].FirstOrDefault();
         var locale = ResolveLocale(request.Locale, Request.Headers["Accept-Language"].FirstOrDefault());
 
         var sub = await context.DeviceSubscriptions
@@ -94,12 +96,16 @@ public class SubscriptionsController(IApplicationDbContext context) : Controller
                 request.NotifyOnItemsChanged,
                 request.NotifyOnLethe,
                 request.NotifyOnCharon,
-                locale));
+                request.NotifyOnNemesis,
+                locale,
+                userId));
         }
         else
         {
             sub.UpdateToken(request.DeviceToken, request.Platform, locale);
-            sub.UpdatePreferences(request.NotifyOnMessage, request.NotifyOnItemsChanged, request.NotifyOnLethe, request.NotifyOnCharon);
+            sub.UpdatePreferences(request.NotifyOnMessage, request.NotifyOnItemsChanged, request.NotifyOnLethe, request.NotifyOnCharon, request.NotifyOnNemesis);
+            if (!string.IsNullOrWhiteSpace(userId))
+                sub.UpdateUserId(userId);
         }
 
         await context.SaveChangesAsync(ct);

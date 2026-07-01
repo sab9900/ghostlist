@@ -10,20 +10,22 @@ import { CryptoService } from '../../../core/services/crypto.service';
 import { DeviceIdService } from '../../../core/services/device-id.service';
 import { HapticsService } from '../../../core/services/haptics.service';
 import { IcalService } from '../../../core/services/ical.service';
+import { ItemPriorityService } from '../../../core/services/item-priority.service';
 import { UserIdService } from '../../../core/services/user-id.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 import { AppStore } from '../../../store/app.store';
 import { ItemAddBarComponent } from './components/item-add-bar/item-add-bar.component';
+import { ItemFilterDialogComponent } from './components/item-filter-dialog/item-filter-dialog.component';
 import { ItemRowComponent } from './components/item-row/item-row.component';
 import { ReminderDialogComponent } from './components/reminder-dialog/reminder-dialog.component';
-import { ActiveReminder, DecryptedItem } from './items-tab.types';
+import { ActiveReminder, DecryptedItem, ItemPriority, ItemSortOrder } from './items-tab.types';
 
 const SWIPE_TRIGGER_DISTANCE = 64;
 const SWIPE_MAX_DISTANCE = 80;
 
 @Component({
     selector: 'app-items-tab',
-    imports: [TranslatePipe, ItemAddBarComponent, ItemRowComponent, ReminderDialogComponent],
+    imports: [TranslatePipe, ItemAddBarComponent, ItemRowComponent, ReminderDialogComponent, ItemFilterDialogComponent],
     templateUrl: './items-tab.component.html',
     styleUrl: './items-tab.component.scss',
 })
@@ -38,6 +40,7 @@ export class ItemsTabComponent implements OnDestroy {
     private readonly hub = inject(HubService);
     private readonly ical = inject(IcalService);
     private readonly route = inject(ActivatedRoute);
+    private readonly itemPriority = inject(ItemPriorityService);
 
     protected readonly addingItem = signal(false);
     protected readonly decryptedItems = signal<DecryptedItem[]>([]);
@@ -66,6 +69,10 @@ export class ItemsTabComponent implements OnDestroy {
     private lastSavedRemindAt = '';
     private lastSavedItemId = '';
 
+    protected readonly filterOpen = signal(false);
+    protected readonly searchQuery = signal('');
+    protected readonly itemSortOrder = signal<ItemSortOrder>('createdAt');
+
     protected readonly reminderMinDateTime = computed(() => {
         const d = new Date(Date.now() + 60_000);
         const pad = (n: number) => String(n).padStart(2, '0');
@@ -73,17 +80,38 @@ export class ItemsTabComponent implements OnDestroy {
     });
 
     private readonly sortedItems = computed(() => {
-        const createdAt = (item: DecryptedItem) => new Date(item.createdAt).getTime();
-        return [...this.decryptedItems()].sort((a, b) => createdAt(b) - createdAt(a));
+        const order = this.itemSortOrder();
+        const items = [...this.decryptedItems()];
+        if (order === 'az') return items.sort((a, b) => a.text.localeCompare(b.text));
+        if (order === 'za') return items.sort((a, b) => b.text.localeCompare(a.text));
+        if (order === 'priority') {
+            const rank = (p: ItemPriority | null) => p === 'important' ? 0 : p === 'optional' ? 2 : 1;
+            return items.sort((a, b) => {
+                const diff = rank(a.priority) - rank(b.priority);
+                if (diff !== 0) return diff;
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            });
+        }
+        return items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     });
 
-    protected readonly activeItems = computed(() => this.sortedItems().filter(i => !i.isChecked));
-    protected readonly checkedItems = computed(() => this.sortedItems().filter(i => i.isChecked));
+    private readonly filteredItems = computed(() => {
+        const q = this.searchQuery().trim().toLowerCase();
+        if (!q) return this.sortedItems();
+        return this.sortedItems().filter(i => i.text.toLowerCase().includes(q));
+    });
+
+    protected readonly activeItems = computed(() => this.filteredItems().filter(i => !i.isChecked));
+    protected readonly checkedItems = computed(() => this.filteredItems().filter(i => i.isChecked));
 
     constructor() {
         effect(() => {
             const id = this.store.currentListId();
-            untracked(() => { this.loadMembers(id); this.loadReminders(id); });
+            untracked(() => {
+                this.loadMembers(id);
+                this.loadReminders(id);
+                this.itemSortOrder.set(id ? this.itemPriority.getItemSortOrder(id) : 'createdAt');
+            });
         });
         effect(() => {
             void this.store.items(); void this.members(); void this.store.unreadItemIds();
@@ -146,7 +174,7 @@ export class ItemsTabComponent implements OnDestroy {
         this.highlightClearTimer = setTimeout(() => {
             this.highlightedItemId.set(null);
             this.pendingHighlightId = null;
-        }, 4000);
+        }, 5000);
     }
 
     private scrollToItem(itemId: string): void {
@@ -195,6 +223,7 @@ export class ItemsTabComponent implements OnDestroy {
                 isNew: unread.has(item.id),
                 creatorName: this.resolveName(item.senderUserId, item.senderDeviceId),
                 checkedByName: item.isChecked ? this.resolveName(item.checkedByUserId, item.checkedByDeviceId) : null,
+                priority: this.numericToItemPriority(item.priority),
             })),
         );
         this.decryptedItems.set(items);
@@ -336,5 +365,28 @@ export class ItemsTabComponent implements OnDestroy {
             updated.delete(itemId);
             this.reminders.set(updated);
         } catch { }
+    }
+
+    private numericToItemPriority(value: number): ItemPriority | null {
+        if (value === 1) return 'important';
+        if (value === 2) return 'optional';
+        return null;
+    }
+
+    private itemPriorityToNumeric(priority: ItemPriority | null): number {
+        if (priority === 'important') return 1;
+        if (priority === 'optional') return 2;
+        return 0;
+    }
+
+    setItemPriority(itemId: string, priority: ItemPriority | null): void {
+        this.openMenuId.set(null);
+        void this.store.setItemPriority(itemId, this.itemPriorityToNumeric(priority));
+    }
+
+    onSortOrderChange(order: ItemSortOrder): void {
+        this.itemSortOrder.set(order);
+        const listId = this.store.currentListId();
+        if (listId) this.itemPriority.setItemSortOrder(listId, order);
     }
 }

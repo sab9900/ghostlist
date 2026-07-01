@@ -123,15 +123,16 @@ export function withKnownLists() {
                     notifyOnItemsChanged: boolean,
                     notifyOnLethe: boolean,
                     notifyOnCharon: boolean,
+                    notifyOnNemesis: boolean,
                 ): Promise<void> {
                     const known = store.knownLists().find(l => l.id === listId);
                     if (!known) return;
-                    const updated: KnownList = { ...known, notifyOnMessage, notifyOnItemsChanged, notifyOnLethe, notifyOnCharon };
+                    const updated: KnownList = { ...known, notifyOnMessage, notifyOnItemsChanged, notifyOnLethe, notifyOnCharon, notifyOnNemesis };
                     await storage.upsert(stripPlaintextIfWrapped(updated));
                     patchState(store, {
                         knownLists: store.knownLists().map(l => l.id === listId ? updated : l),
                     });
-                    await push.updatePreferences(listId, notifyOnMessage, notifyOnItemsChanged, notifyOnLethe, notifyOnCharon);
+                    await push.updatePreferences(listId, notifyOnMessage, notifyOnItemsChanged, notifyOnLethe, notifyOnCharon, notifyOnNemesis);
                 },
 
                 async setListSensitive(listId: string, isSensitive: boolean): Promise<void> {

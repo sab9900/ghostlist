@@ -68,8 +68,20 @@
 
     .avatar { flex-shrink: 0; align-self: flex-end; margin-bottom: 2px; }
 
-    .bubble {
+    .bubble-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
         max-width: 75vw;
+        min-width: 0;
+    }
+
+    &--mine .bubble-wrap {
+        align-items: flex-end;
+    }
+
+    .bubble {
+        width: 100%;
         background: var(--msg-bubble-bg);
         border: var(--msg-bubble-border);
         border-radius: var(--radius-md);
@@ -162,6 +174,41 @@
     .menu-readers { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2) var(--space-3); border-top: 1px solid var(--color-border); margin-top: var(--space-1); }
     .menu-readers-label { font-size: var(--text-xs); color: var(--color-text-subtle); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
     .menu-reader { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); color: var(--color-text); }
+
+    .reactions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: -5px;
+        padding: 0 var(--space-2);
+        position: relative;
+        z-index: 1;
+    }
+
+    .reaction-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 2px 7px 2px 5px;
+        border-radius: 999px;
+        background: var(--color-surface-2);
+        border: 1px solid var(--color-border);
+        cursor: pointer;
+        font-family: var(--font-sans);
+        transition: background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), transform 0.1s ease;
+        -webkit-tap-highlight-color: transparent;
+
+        &:hover { background: var(--color-surface-3, rgba(255,255,255,0.12)); }
+        &:active { transform: scale(0.93); }
+
+        &--mine {
+            background: color-mix(in srgb, var(--color-primary) 20%, transparent);
+            border-color: color-mix(in srgb, var(--color-primary) 60%, transparent);
+        }
+    }
+
+    .reaction-emoji { font-size: 14px; line-height: 1; }
+    .reaction-count { font-size: var(--text-xs); color: var(--color-text-muted, var(--color-text-subtle)); font-weight: 500; }
 }
 
 @keyframes message-highlight {

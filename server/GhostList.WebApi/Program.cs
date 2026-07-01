@@ -1,4 +1,5 @@
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.SignalR;
 using GhostList.Application;
 using GhostList.Application.Common.Interfaces;
 using GhostList.Infrastructure;
@@ -105,6 +106,10 @@ builder.Services.AddSignalR(options =>
 {
     options.MaximumReceiveMessageSize = 32 * 1024 * 1024;
     options.AddFilter<SignalRRateLimitFilter>();
+})
+.AddJsonProtocol(options =>
+{
+    options.PayloadSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
 });
 builder.Services.AddSingleton<SignalRRateLimitFilter>();
 

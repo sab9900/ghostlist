@@ -1,0 +1,95 @@
+<div class="detail">
+
+    <header class="detail__header">
+        <button class="detail__back" type="button" (click)="closed.emit()"
+            [attr.aria-label]="'NEMESIS.DETAIL_CLOSE_ARIA' | translate">←</button>
+        <h2 class="detail__title">{{ expense.description }}</h2>
+    </header>
+
+    <div class="detail__body">
+
+        <div class="row">
+            <span class="row__label">{{ 'NEMESIS.DETAIL_AMOUNT' | translate }}</span>
+            <span class="row__value">{{ expense.amount | number:'1.2-2' }} {{ expense.currency }}</span>
+        </div>
+
+        <div class="row">
+            <span class="row__label">{{ 'NEMESIS.DETAIL_PAID_BY' | translate }}</span>
+            <span class="row__value">{{ memberName(expense.paidByUserId) }}</span>
+        </div>
+
+        <div class="row">
+            <span class="row__label">{{ 'NEMESIS.DETAIL_SHARE' | translate }}</span>
+            <span class="row__value">{{ sharePerPerson | number:'1.2-2' }} {{ expense.currency }}</span>
+        </div>
+
+        @if (expense.splitBetween.length > 0) {
+            <div class="row">
+                <span class="row__label">{{ 'NEMESIS.DETAIL_SPLIT' | translate }}</span>
+                <span class="row__value">{{ expense.splitBetween.map(id => memberName(id)).join(', ') }}</span>
+            </div>
+        }
+
+        <div class="row">
+            <span class="row__label">{{ 'NEMESIS.DETAIL_STATUS' | translate }}</span>
+            <span class="row__value"
+                [class.row__value--verified]="expense.status === VerificationStatus.Verified"
+                [class.row__value--rejected]="expense.status === VerificationStatus.Rejected">
+                @switch (expense.status) {
+                    @case (VerificationStatus.Verified) { {{ 'NEMESIS.DETAIL_STATUS_VERIFIED' | translate }} }
+                    @case (VerificationStatus.Rejected) { {{ 'NEMESIS.DETAIL_STATUS_REJECTED' | translate }} }
+                    @default { {{ 'NEMESIS.DETAIL_STATUS_PENDING' | translate: { count: expense.verifications.length } }} }
+                }
+            </span>
+        </div>
+
+        @if (expense.hasReceipt) {
+            <div class="receipt">
+                <span class="receipt__label">{{ 'NEMESIS.DETAIL_RECEIPT' | translate }}</span>
+                @if (receiptDataUrl) {
+                    <button type="button" class="receipt__thumb" (click)="openReceipt()"
+                        [attr.aria-label]="'NEMESIS.DETAIL_RECEIPT_VIEW_ARIA' | translate">
+                        <img [src]="receiptDataUrl" alt="" />
+                    </button>
+                } @else if (receiptLoading) {
+                    <div class="receipt__status">
+                        <span class="receipt__spinner" aria-hidden="true"></span>
+                        <span>{{ 'NEMESIS.DETAIL_RECEIPT_LOADING' | translate }}</span>
+                    </div>
+                } @else if (receiptError) {
+                    <div class="receipt__status receipt__status--error">
+                        <span>{{ 'NEMESIS.DETAIL_RECEIPT_ERROR' | translate }}</span>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (expense.verifications.length > 0) {
+            <div class="verifications">
+                <h3 class="verifications__heading">{{ 'NEMESIS.DETAIL_VERIFICATIONS' | translate }}</h3>
+                @for (v of expense.verifications; track v.verifiedByUserId) {
+                    <div class="verifications__item">
+                        <span>{{ memberName(v.verifiedByUserId) }}</span>
+                        <span class="verifications__date">{{ v.verifiedAt | date:'short' }}</span>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (canVerify || canReject) {
+            <div class="action-row">
+                @if (canReject) {
+                    <button class="action-btn action-btn--reject" type="button" (click)="rejectRequested.emit(expense.id)">
+                        {{ 'NEMESIS.DETAIL_REJECT_BTN' | translate }}
+                    </button>
+                }
+                @if (canVerify) {
+                    <button class="action-btn action-btn--verify" type="button" (click)="verifyRequested.emit(expense.id)">
+                        {{ 'NEMESIS.DETAIL_VERIFY_BTN' | translate }}
+                    </button>
+                }
+            </div>
+        }
+
+    </div>
+</div>

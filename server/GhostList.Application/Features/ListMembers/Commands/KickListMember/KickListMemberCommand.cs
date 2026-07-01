@@ -1,5 +1,6 @@
 using GhostList.Application.Common.Exceptions;
 using GhostList.Application.Common.Interfaces;
+using GhostList.Application.Features.Nemesis.Commands.VoidMemberSettlements;
 using GhostList.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +9,7 @@ namespace GhostList.Application.Features.ListMembers.Commands.KickListMember;
 
 public record KickListMemberCommand(Guid ListId, string DeviceId, string? OwnerToken) : IRequest;
 
-public class KickListMemberCommandHandler(IApplicationDbContext context, IGhostListNotifier notifier)
+public class KickListMemberCommandHandler(IApplicationDbContext context, IGhostListNotifier notifier, IMediator mediator)
     : IRequestHandler<KickListMemberCommand>
 {
     public async Task Handle(KickListMemberCommand request, CancellationToken cancellationToken)
@@ -25,9 +26,13 @@ public class KickListMemberCommandHandler(IApplicationDbContext context, IGhostL
 
         if (member is null) return;
 
+        var userId = member.UserId;
         context.GhostListMembers.Remove(member);
         await context.SaveChangesAsync(cancellationToken);
 
         await notifier.NotifyMemberKicked(request.ListId, request.DeviceId);
+
+        if (!string.IsNullOrWhiteSpace(userId))
+            await mediator.Send(new VoidMemberSettlementsCommand(request.ListId, userId), cancellationToken);
     }
 }

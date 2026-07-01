@@ -222,6 +222,7 @@ export const AppStore = signalStore(
                         encryptedPayload: event.encryptedPayload,
                         initializationVector: event.initializationVector,
                         isChecked: event.isChecked,
+                        priority: 0,
                         checkedAt: null,
                         createdAt: event.createdAt,
                         senderDeviceId: event.senderDeviceId,
@@ -255,6 +256,15 @@ export const AppStore = signalStore(
                     patchState(store, { items: store.items().filter((i) => i.id !== itemId) });
                     void store._persistCurrentList();
                     haptics.itemDeleted();
+                });
+
+                hub.itemPriorityChanged$.subscribe((event) => {
+                    patchState(store, {
+                        items: store.items().map((i) =>
+                            i.id === event.itemId ? { ...i, priority: event.priority } : i,
+                        ),
+                    });
+                    void store._persistCurrentList();
                 });
 
                 hub.messageReceived$.subscribe((event) => {
@@ -307,6 +317,7 @@ export const AppStore = signalStore(
                         createdAt: event.createdAt,
                         senderDeviceId: event.senderDeviceId,
                         senderUserId: event.senderUserId,
+                        reactions: [],
                     } satisfies GhostChatMessage;
                     patchState(store, { messages: [...store.messages(), newMessage] });
                     void store._persistCurrentList();
@@ -314,6 +325,32 @@ export const AppStore = signalStore(
 
                 hub.messageDeleted$.subscribe((messageId) => {
                     patchState(store, { messages: store.messages().filter((m) => m.id !== messageId) });
+                    void store._persistCurrentList();
+                });
+
+                hub.reactionChanged$.subscribe((event) => {
+                    patchState(store, {
+                        messages: store.messages().map((m) => {
+                            if (m.id !== event.messageId) return m;
+                            if (event.removed) {
+                                return { ...m, reactions: m.reactions.filter((r) => r.id !== event.reactionId) };
+                            }
+                            const alreadyPresent = m.reactions.some((r) => r.id === event.reactionId);
+                            if (alreadyPresent) return m;
+                            return {
+                                ...m,
+                                reactions: [...m.reactions, {
+                                    id: event.reactionId,
+                                    encryptedEmoji: event.encryptedEmoji,
+                                    emojiInitializationVector: event.emojiInitializationVector,
+                                    encryptedSenderName: event.encryptedSenderName,
+                                    senderNameInitializationVector: event.senderNameInitializationVector,
+                                    senderDeviceId: event.senderDeviceId,
+                                    senderUserId: event.senderUserId,
+                                }],
+                            };
+                        }),
+                    });
                     void store._persistCurrentList();
                 });
 
@@ -383,6 +420,7 @@ export const AppStore = signalStore(
                         createdAt: event.createdAt,
                         senderDeviceId: event.senderDeviceId,
                         senderUserId: event.senderUserId,
+                        viewerIds: [],
                     } satisfies CharonDropDto;
                     patchState(store, { charonDrops: [...store.charonDrops(), newDrop] });
                     if (!isOwn) {
@@ -397,12 +435,61 @@ export const AppStore = signalStore(
                     patchState(store, { charonDrops: store.charonDrops().filter((d) => d.id !== dropId) });
                 });
 
+                hub.charonDropViewed$.subscribe((event) => {
+                    patchState(store, {
+                        charonDrops: store.charonDrops().map((d) =>
+                            d.id === event.dropId && !d.viewerIds.includes(event.viewerIdentity)
+                                ? { ...d, viewerIds: [...d.viewerIds, event.viewerIdentity] }
+                                : d,
+                        ),
+                    });
+                });
+
                 hub.whisperInviteReceived$.subscribe((event) => {
                     if (isOwnSender(null, event.senderDeviceId)) return;
                     if (event.targetDeviceIds && !event.targetDeviceIds.includes(deviceId.deviceId)) return;
                     haptics.whisperInviteReceived();
                     if (isListNotifiable(event.listId, 'whisper')) {
                         showCrossListSnack(event.listId, 'whisper', 'lethe', 'SNACK.LETHE_INVITE');
+                    }
+                });
+
+                hub.nemesisExpenseCreated$.subscribe((event) => {
+                    if (isOwnSender(event.createdByUserId, event.createdByDeviceId)) return;
+                    if (isListNotifiable(event.ghostListId, 'nemesis')) {
+                        showCrossListSnack(event.ghostListId, 'nemesis', 'nemesis', 'NEMESIS.SNACK_EXPENSE_CREATED');
+                    }
+                });
+
+                hub.nemesisExpenseVerified$.subscribe((event) => {
+                    if (event.verifiedByUserId === userId.userId()) return;
+                    if (isListNotifiable(event.ghostListId, 'nemesis')) {
+                        showCrossListSnack(event.ghostListId, 'nemesis', 'nemesis', 'NEMESIS.SNACK_EXPENSE_VERIFIED');
+                    }
+                });
+
+                hub.nemesisSettlementCreated$.subscribe((event) => {
+                    if (isOwnSender(null, event.payerDeviceId)) return;
+                    if (isListNotifiable(event.ghostListId, 'nemesis')) {
+                        showCrossListSnack(event.ghostListId, 'nemesis', 'nemesis', 'NEMESIS.SNACK_SETTLEMENT_CREATED');
+                    }
+                });
+
+                hub.nemesisSettlementConfirmed$.subscribe((event) => {
+                    if (isListNotifiable(event.ghostListId, 'nemesis')) {
+                        showCrossListSnack(event.ghostListId, 'nemesis', 'nemesis', 'NEMESIS.SNACK_SETTLEMENT_CONFIRMED');
+                    }
+                });
+
+                hub.nemesisSettlementDeclined$.subscribe((event) => {
+                    if (isListNotifiable(event.ghostListId, 'nemesis')) {
+                        showCrossListSnack(event.ghostListId, 'nemesis', 'nemesis', 'NEMESIS.SNACK_SETTLEMENT_DECLINED');
+                    }
+                });
+
+                hub.nemesisExpenseArchived$.subscribe((event) => {
+                    if (isListNotifiable(event.ghostListId, 'nemesis')) {
+                        showCrossListSnack(event.ghostListId, 'nemesis', 'nemesis', 'NEMESIS.SNACK_EXPENSE_ARCHIVED');
                     }
                 });
 

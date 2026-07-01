@@ -23,6 +23,10 @@ public interface IApplicationDbContext
     DbSet<CharonViewReceipt> CharonViewReceipts { get; }
     DbSet<ItemReminder> ItemReminders { get; }
     DbSet<ListReminder> ListReminders { get; }
+    DbSet<NemesisExpense> NemesisExpenses { get; }
+    DbSet<NemesisVerification> NemesisVerifications { get; }
+    DbSet<NemesisSettlement> NemesisSettlements { get; }
+    DbSet<GhostMessageReaction> GhostMessageReactions { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 

@@ -12,9 +12,11 @@ import { BadgeComponent } from '../../../../shared/badge/badge.component';
 export class ListsHeaderComponent {
     readonly totalUnread = input(0);
     readonly showCoffeeLink = input(true);
+    readonly filterActive = input(false);
+    readonly filterHasQuery = input(false);
 
     readonly logoClick = output<void>();
-    readonly titleClick = output<void>();
+    readonly filterClick = output<void>();
     readonly markAllReadOpen = output<void>();
     readonly importOpen = output<void>();
     readonly exportOpen = output<void>();

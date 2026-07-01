@@ -66,4 +66,43 @@ public class GhostListItemTests
         item.IsChecked.Should().BeFalse();
         item.CheckedAt.Should().BeNull();
     }
+
+    [Fact]
+    public void Create_DefaultPriorityIsNone()
+    {
+        var item = GhostListItem.Create(ListId, "payload", "iv");
+
+        item.Priority.Should().Be(ItemPriority.None);
+    }
+
+    [Fact]
+    public void SetPriority_Important_SetsPriorityToImportant()
+    {
+        var item = GhostListItem.Create(ListId, "payload", "iv");
+
+        item.SetPriority(ItemPriority.Important);
+
+        item.Priority.Should().Be(ItemPriority.Important);
+    }
+
+    [Fact]
+    public void SetPriority_Optional_SetsPriorityToOptional()
+    {
+        var item = GhostListItem.Create(ListId, "payload", "iv");
+
+        item.SetPriority(ItemPriority.Optional);
+
+        item.Priority.Should().Be(ItemPriority.Optional);
+    }
+
+    [Fact]
+    public void SetPriority_None_ClearsPriority()
+    {
+        var item = GhostListItem.Create(ListId, "payload", "iv");
+        item.SetPriority(ItemPriority.Important);
+
+        item.SetPriority(ItemPriority.None);
+
+        item.Priority.Should().Be(ItemPriority.None);
+    }
 }

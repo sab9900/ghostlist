@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
 import { LucideAlarmClock } from '@lucide/angular';
 import { ApiService } from '../../../api/api.service';
+import { UpdateNemesisSettingsRequest } from '../../../core/models/nemesis.model';
 import { IcalService } from '../../../core/services/ical.service';
 import {
     DeleteAfterDuration,
@@ -21,6 +22,7 @@ import { MasterPasswordService } from '../../../core/services/master-password.se
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 import { VaultKeyService } from '../../../core/services/vault-key.service';
 import { formatReminderDate } from '../../../core/utils/reminder-date.util';
+import { AvatarComponent } from '../../../shared/avatar/avatar.component';
 import { QrScannerComponent } from '../../../shared/qr-scanner/qr-scanner.component';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
@@ -38,7 +40,7 @@ interface MemberGroup {
 
 @Component({
     selector: 'app-settings-tab',
-    imports: [DatePipe, FormsModule, QrScannerComponent, TranslatePipe, LucideAlarmClock, BiometricConfirmDialogComponent],
+    imports: [DatePipe, FormsModule, QrScannerComponent, TranslatePipe, LucideAlarmClock, BiometricConfirmDialogComponent, AvatarComponent],
     templateUrl: './settings-tab.component.html',
     styleUrl: './settings-tab.component.scss',
 })
@@ -125,10 +127,16 @@ export class SettingsTabComponent {
     protected readonly membersLoading = signal(false);
     protected readonly kickingDeviceId = signal<string | null>(null);
 
+    protected readonly nemesisExpiryDays = signal(60);
+    protected readonly nemesisHideAfterDays = signal(30);
+    protected readonly savingNemesisSettings = signal(false);
+    protected readonly nemesisSettingsSaved = signal(false);
+
     protected readonly notifyOnMessage = signal(true);
     protected readonly notifyOnItemsChanged = signal(false);
     protected readonly notifyOnLethe = signal(true);
     protected readonly notifyOnCharon = signal(true);
+    protected readonly notifyOnNemesis = signal(true);
     protected readonly isSensitive = signal(false);
 
     constructor() {
@@ -168,9 +176,11 @@ export class SettingsTabComponent {
             this.notifyOnItemsChanged.set(known.notifyOnItemsChanged ?? false);
             this.notifyOnLethe.set(known.notifyOnLethe ?? true);
             this.notifyOnCharon.set(known.notifyOnCharon ?? true);
+            this.notifyOnNemesis.set(known.notifyOnNemesis ?? true);
             this.isSensitive.set(known.isSensitive ?? false);
             void this.loadMembers(known.id, known.encryptionKey);
             void this.loadListReminders(known.id);
+            void this.loadNemesisSettings(known.id);
         }
     }
 
@@ -179,6 +189,14 @@ export class SettingsTabComponent {
             next: reminders => this.listReminders.set(reminders),
             error: () => { },
         });
+    }
+
+    private async loadNemesisSettings(listId: string): Promise<void> {
+        try {
+            const data = await firstValueFrom(this.api.getNemesisData(listId));
+            this.nemesisExpiryDays.set(data.nemesisSettlementExpiryDays ?? 60);
+            this.nemesisHideAfterDays.set(data.nemesisSettlementHideAfterDays ?? 30);
+        } catch { }
     }
 
     protected formatReminderDate(isoStr: string): string {
@@ -311,6 +329,23 @@ export class SettingsTabComponent {
         }
     }
 
+    async saveNemesisSettings(): Promise<void> {
+        const id = this.store.currentListId();
+        if (!id) return;
+        const request: UpdateNemesisSettingsRequest = {
+            expiryDays: Math.max(1, Math.min(3650, this.nemesisExpiryDays())),
+            hideAfterDays: Math.max(0, Math.min(365, this.nemesisHideAfterDays())),
+        };
+        this.savingNemesisSettings.set(true);
+        try {
+            await firstValueFrom(this.api.updateNemesisSettings(id, request));
+            this.nemesisSettingsSaved.set(true);
+            setTimeout(() => this.nemesisSettingsSaved.set(false), 2000);
+        } finally {
+            this.savingNemesisSettings.set(false);
+        }
+    }
+
     async deleteList(): Promise<void> {
         const msg = await firstValueFrom(this.translate.get('LIST_SETTINGS.CONFIRM_DELETE'));
         if (!confirm(msg)) return;
@@ -336,28 +371,35 @@ export class SettingsTabComponent {
         const id = this.store.currentListId();
         if (!id) return;
         this.notifyOnMessage.set(value);
-        await this.store.updateNotificationPreferences(id, value, this.notifyOnItemsChanged(), this.notifyOnLethe(), this.notifyOnCharon());
+        await this.store.updateNotificationPreferences(id, value, this.notifyOnItemsChanged(), this.notifyOnLethe(), this.notifyOnCharon(), this.notifyOnNemesis());
     }
 
     async setNotifyOnItemsChanged(value: boolean): Promise<void> {
         const id = this.store.currentListId();
         if (!id) return;
         this.notifyOnItemsChanged.set(value);
-        await this.store.updateNotificationPreferences(id, this.notifyOnMessage(), value, this.notifyOnLethe(), this.notifyOnCharon());
+        await this.store.updateNotificationPreferences(id, this.notifyOnMessage(), value, this.notifyOnLethe(), this.notifyOnCharon(), this.notifyOnNemesis());
     }
 
     async setNotifyOnLethe(value: boolean): Promise<void> {
         const id = this.store.currentListId();
         if (!id) return;
         this.notifyOnLethe.set(value);
-        await this.store.updateNotificationPreferences(id, this.notifyOnMessage(), this.notifyOnItemsChanged(), value, this.notifyOnCharon());
+        await this.store.updateNotificationPreferences(id, this.notifyOnMessage(), this.notifyOnItemsChanged(), value, this.notifyOnCharon(), this.notifyOnNemesis());
     }
 
     async setNotifyOnCharon(value: boolean): Promise<void> {
         const id = this.store.currentListId();
         if (!id) return;
         this.notifyOnCharon.set(value);
-        await this.store.updateNotificationPreferences(id, this.notifyOnMessage(), this.notifyOnItemsChanged(), this.notifyOnLethe(), value);
+        await this.store.updateNotificationPreferences(id, this.notifyOnMessage(), this.notifyOnItemsChanged(), this.notifyOnLethe(), value, this.notifyOnNemesis());
+    }
+
+    async setNotifyOnNemesis(value: boolean): Promise<void> {
+        const id = this.store.currentListId();
+        if (!id) return;
+        this.notifyOnNemesis.set(value);
+        await this.store.updateNotificationPreferences(id, this.notifyOnMessage(), this.notifyOnItemsChanged(), this.notifyOnLethe(), this.notifyOnCharon(), value);
     }
 
     async setSensitive(value: boolean): Promise<void> {

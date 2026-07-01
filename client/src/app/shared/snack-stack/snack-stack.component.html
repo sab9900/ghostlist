@@ -3,7 +3,10 @@
     [attr.aria-label]="'SNACK.REGION_ARIA' | translate">
     @for (entry of orderedEntries(); track entry.snack.id) {
     <div class="snack" [class.snack--closing]="entry.closing" role="alert" aria-live="assertive">
-        <div class="snack__icon" [class.snack__icon--charon]="entry.snack.iconKind === 'charon'" aria-hidden="true">
+        <div class="snack__icon"
+            [class.snack__icon--charon]="entry.snack.iconKind === 'charon'"
+            [class.snack__icon--nemesis]="entry.snack.iconKind === 'nemesis'"
+            aria-hidden="true">
             @switch (entry.snack.iconKind) {
             @case ('item') {
             <svg lucideListChecks [size]="18" [strokeWidth]="2"></svg>
@@ -19,6 +22,9 @@
             }
             @case ('reminder') {
             <svg lucideAlarmClock [size]="18" [strokeWidth]="2"></svg>
+            }
+            @case ('nemesis') {
+            <svg lucideScale [size]="18" [strokeWidth]="2"></svg>
             }
             }
         </div>

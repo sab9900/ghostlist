@@ -106,7 +106,7 @@ export function createListManagementMethods(store: ListManagementStoreSlice) {
             if (store.currentListId() === id) return;
 
             const cached = await storage.getListCache(id).catch(() => undefined);
-            const cachedMessages = cached?.messages ?? [];
+            const cachedMessages = (cached?.messages ?? []).map(m => ({ ...m, reactions: m.reactions ?? [] }));
             const initialMessages = cachedMessages.slice(-RECENT_MESSAGES_DISPLAY_LIMIT);
             const initialMessagesHasMore = cached?.hasMoreMessages ?? cachedMessages.length > initialMessages.length;
 

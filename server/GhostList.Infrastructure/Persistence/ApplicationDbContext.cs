@@ -22,6 +22,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<CharonViewReceipt> CharonViewReceipts => Set<CharonViewReceipt>();
     public DbSet<ItemReminder> ItemReminders => Set<ItemReminder>();
     public DbSet<ListReminder> ListReminders => Set<ListReminder>();
+    public DbSet<NemesisExpense> NemesisExpenses => Set<NemesisExpense>();
+    public DbSet<NemesisVerification> NemesisVerifications => Set<NemesisVerification>();
+    public DbSet<NemesisSettlement> NemesisSettlements => Set<NemesisSettlement>();
+    public DbSet<GhostMessageReaction> GhostMessageReactions => Set<GhostMessageReaction>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -33,6 +37,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.CompletedItemsTtl).HasConversion<int>();
             entity.Property(e => e.WhisperLifetimeSeconds).HasConversion<int>().HasDefaultValue(WhisperLifetime.FiveSeconds);
             entity.Property(e => e.OwnerTokenHash).HasMaxLength(64);
+            entity.Property(e => e.NemesisSettlementExpiryDays).HasDefaultValue(60);
+            entity.Property(e => e.NemesisSettlementHideAfterDays).HasDefaultValue(30);
             entity.HasMany(e => e.Items)
                   .WithOne()
                   .HasForeignKey(i => i.GhostListId)
@@ -52,6 +58,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.SenderUserId).HasMaxLength(64);
             entity.Property(e => e.CheckedByDeviceId).HasMaxLength(64);
             entity.Property(e => e.CheckedByUserId).HasMaxLength(64);
+            entity.Property(e => e.Priority).HasConversion<int>();
         });
 
         modelBuilder.Entity<GhostChatMessage>(entity =>
@@ -75,7 +82,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.Property(e => e.Locale).HasMaxLength(8);
             entity.Property(e => e.NotifyOnLethe).HasDefaultValue(true);
             entity.Property(e => e.NotifyOnCharon).HasDefaultValue(true);
+            entity.Property(e => e.NotifyOnNemesis).HasDefaultValue(true);
+            entity.Property(e => e.UserId).HasMaxLength(64);
             entity.HasIndex(e => e.DeviceToken);
+            entity.HasIndex(e => e.UserId);
             entity.HasOne<Domain.Entities.GhostList>()
                   .WithMany()
                   .HasForeignKey(s => s.ListId)
@@ -194,6 +204,70 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             entity.HasOne<Domain.Entities.GhostList>()
                   .WithMany()
                   .HasForeignKey(e => e.GhostListId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<NemesisExpense>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EncryptedPayload).IsRequired();
+            entity.Property(e => e.PayloadInitializationVector).IsRequired();
+            entity.Property(e => e.EncryptedReceiptKey).HasMaxLength(100);
+            entity.Property(e => e.ReceiptBlobKey).HasMaxLength(500);
+            entity.Property(e => e.Status).HasConversion<int>();
+            entity.Property(e => e.CreatedByDeviceId).HasMaxLength(64);
+            entity.Property(e => e.CreatedByUserId).HasMaxLength(64);
+            entity.HasIndex(e => new { e.GhostListId, e.CreatedAt });
+            entity.HasIndex(e => new { e.GhostListId, e.IsArchived });
+            entity.HasMany(e => e.Verifications)
+                  .WithOne()
+                  .HasForeignKey(v => v.ExpenseId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<Domain.Entities.GhostList>()
+                  .WithMany()
+                  .HasForeignKey(e => e.GhostListId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<NemesisVerification>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.VerifiedByUserId).HasMaxLength(64).IsRequired();
+            entity.HasIndex(e => new { e.ExpenseId, e.VerifiedByUserId }).IsUnique();
+        });
+
+        modelBuilder.Entity<NemesisSettlement>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EncryptedPayload).IsRequired();
+            entity.Property(e => e.PayloadInitializationVector).IsRequired();
+            entity.Property(e => e.PayerDeviceId).HasMaxLength(64);
+            entity.Property(e => e.PayerUserId).HasMaxLength(64);
+            entity.Property(e => e.ReceiverUserId).HasMaxLength(64);
+            entity.Property(e => e.Status).HasConversion<int>();
+            entity.HasIndex(e => e.GhostListId);
+            entity.HasIndex(e => new { e.GhostListId, e.Status });
+            entity.HasOne<Domain.Entities.GhostList>()
+                  .WithMany()
+                  .HasForeignKey(e => e.GhostListId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<GhostMessageReaction>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EncryptedEmoji).IsRequired();
+            entity.Property(e => e.EmojiInitializationVector).IsRequired();
+            entity.Property(e => e.EncryptedSenderName).IsRequired();
+            entity.Property(e => e.SenderNameInitializationVector).IsRequired();
+            entity.Property(e => e.SenderDeviceId).HasMaxLength(64);
+            entity.Property(e => e.SenderUserId).HasMaxLength(64);
+            entity.HasIndex(e => e.MessageId);
+            entity.HasIndex(e => new { e.MessageId, e.SenderDeviceId });
+            entity.HasIndex(e => new { e.MessageId, e.SenderUserId });
+            entity.HasOne<GhostChatMessage>()
+                  .WithMany()
+                  .HasForeignKey(e => e.MessageId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }

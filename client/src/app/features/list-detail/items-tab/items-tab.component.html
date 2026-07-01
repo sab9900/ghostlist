@@ -1,5 +1,19 @@
 <app-item-add-bar [adding]="addingItem()" (add)="addItem($event)" />
 
+<div class="list-toolbar">
+    <button class="filter-btn" type="button" (click)="filterOpen.set(true)"
+        [class.filter-btn--active]="searchQuery() || itemSortOrder() !== 'createdAt'"
+        [attr.aria-label]="'ITEMS.FILTER_OPEN_ARIA' | translate">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
+        </svg>
+        @if (searchQuery()) {
+        <span class="filter-btn__badge" aria-hidden="true"></span>
+        }
+    </button>
+</div>
+
 <ul class="item-list" role="list" [attr.aria-label]="'LIST_DETAIL.TAB_ITEMS' | translate" aria-live="polite"
     aria-relevant="additions removals">
 
@@ -8,6 +22,7 @@
         [item]="item"
         [isMenuOpen]="openMenuId() === item.id"
         [menuAbove]="menuAbove()"
+        [highlighted]="highlightedItemId() === item.id"
         [swipeDx]="swipeOffset(item.id)"
         [activeReminder]="reminderFor(item.id)"
         [swipeTriggerDistance]="swipeTriggerDistance"
@@ -16,6 +31,7 @@
         (menuToggle)="toggleMenu(item.id, $event)"
         (openReminder)="openReminder(item)"
         (cancelReminder)="cancelReminder(item.id)"
+        (setPriority)="setItemPriority(item.id, $event)"
         (dwellRead)="onItemDwellRead($event)"
         (touchStart)="onTouchStart($event, item.id)"
         (touchMove)="onTouchMove($event, item.id)"
@@ -29,11 +45,13 @@
         [item]="item"
         [isMenuOpen]="openMenuId() === item.id"
         [menuAbove]="menuAbove()"
+        [highlighted]="highlightedItemId() === item.id"
         [swipeDx]="swipeOffset(item.id)"
         [swipeTriggerDistance]="swipeTriggerDistance"
         (toggle)="onItemClick(item.id)"
         (delete)="deleteItem(item.id)"
         (menuToggle)="toggleMenu(item.id, $event)"
+        (setPriority)="setItemPriority(item.id, $event)"
         (dwellRead)="onItemDwellRead($event)"
         (touchStart)="onTouchStart($event, item.id)"
         (touchMove)="onTouchMove($event, item.id)"
@@ -55,3 +73,11 @@
     (save)="saveReminder($event)"
     (close)="closeReminder()"
     (downloadIcal)="downloadIcal()" />
+
+<app-item-filter-dialog
+    [show]="filterOpen()"
+    [query]="searchQuery()"
+    [sortOrder]="itemSortOrder()"
+    (queryChange)="searchQuery.set($event)"
+    (sortOrderChange)="onSortOrderChange($event)"
+    (closed)="filterOpen.set(false)" />

@@ -26,8 +26,9 @@ public class MainActivity extends BridgeActivity {
     private AudioManager audioManager;
     private AudioFocusRequest audioFocusRequest;
 
-    private static final String ALIAS_CHARON = "com.norica_informatics.ghostlist.CharonDropShareActivity";
-    private static final String ALIAS_CHAT   = "com.norica_informatics.ghostlist.GhostChatShareActivity";
+    private static final String ALIAS_CHARON  = "com.norica_informatics.ghostlist.CharonDropShareActivity";
+    private static final String ALIAS_CHAT    = "com.norica_informatics.ghostlist.GhostChatShareActivity";
+    private static final String ALIAS_NEMESIS = "com.norica_informatics.ghostlist.NemesisReceiptShareActivity";
 
     @Override
     public void onStart() {
@@ -118,6 +119,7 @@ public class MainActivity extends BridgeActivity {
         if (intent.getComponent() != null) {
             String cls = intent.getComponent().getClassName();
             if (ALIAS_CHAT.equals(cls)) return "chat";
+            if (ALIAS_NEMESIS.equals(cls)) return "nemesis";
         }
         return "charon";
     }

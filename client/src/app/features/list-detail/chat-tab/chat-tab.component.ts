@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Clipboard } from '@capacitor/clipboard';
 import { Capacitor } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
+import { LucideMessageSquare } from "@lucide/angular";
 import { TranslatePipe } from '@ngx-translate/core';
 import { Subject, debounceTime } from 'rxjs';
 import { HubService } from '../../../api/hub.service';
@@ -23,6 +24,7 @@ import { DecryptedMessage, ReplyPreview } from './chat-tab.types';
 import { ChatComposeComponent } from './components/chat-compose/chat-compose.component';
 import { ChatMessageComponent } from './components/chat-message/chat-message.component';
 import { MentionListComponent } from './components/mention-list/mention-list.component';
+import { ReactionPickerComponent } from './components/reaction-picker/reaction-picker.component';
 import { ReplyBarComponent } from './components/reply-bar/reply-bar.component';
 
 const SWIPE_TRIGGER_DISTANCE = 56;
@@ -36,9 +38,11 @@ const NEAR_TOP_THRESHOLD = 120;
 const KEYBOARD_DISMISS_DRAG_THRESHOLD = 32;
 const KEYBOARD_DISMISS_GRACE_MS = 350;
 
+const LONG_PRESS_MS = 420;
+
 @Component({
     selector: 'app-chat-tab',
-    imports: [TranslatePipe, ChatMessageComponent, ReplyBarComponent, MentionListComponent, ChatComposeComponent, ScrollToBottomButtonComponent, VideoCaptureComponent],
+    imports: [TranslatePipe, ChatMessageComponent, ReplyBarComponent, MentionListComponent, ChatComposeComponent, ScrollToBottomButtonComponent, VideoCaptureComponent, ReactionPickerComponent, LucideMessageSquare],
     templateUrl: './chat-tab.component.html',
     styleUrl: './chat-tab.component.scss',
 })
@@ -107,6 +111,9 @@ export class ChatTabComponent implements OnDestroy {
     private swipeStartY = 0;
     private swipeAxisLocked: 'x' | 'y' | null = null;
     protected readonly swipeState = signal<{ id: string; dx: number } | null>(null);
+
+    private longPressTimer: ReturnType<typeof setTimeout> | null = null;
+    protected readonly reactionPickerMessageId = signal<string | null>(null);
 
     private keyboardDismissTouchStartY: number | null = null;
     private keyboardOpenedAt = 0;
@@ -195,6 +202,40 @@ export class ChatTabComponent implements OnDestroy {
     protected swipeOffset(id: string): number {
         const state = this.swipeState();
         return state?.id === id ? state.dx : 0;
+    }
+
+    protected myReactionEmoji(msg: DecryptedMessage): string | null {
+        for (const r of msg.reactions) {
+            const matchesUser = r.senderUserId !== null && r.senderUserId === this.userId.userId();
+            const matchesDevice = r.senderDeviceId !== null && r.senderDeviceId === this.deviceId.deviceId;
+            if (matchesUser || (!r.senderUserId && matchesDevice)) return r.emoji;
+        }
+        return null;
+    }
+
+    openReactionPicker(msgId: string): void {
+        if (this.reactionPickerMessageId() === msgId) return;
+        this.openMenuId.set(null);
+        this.haptics.reactionPickerOpened();
+        this.reactionPickerMessageId.set(msgId);
+    }
+
+    closeReactionPicker(): void {
+        this.reactionPickerMessageId.set(null);
+    }
+
+    async onReactionPick(emoji: string): Promise<void> {
+        const msgId = this.reactionPickerMessageId();
+        this.reactionPickerMessageId.set(null);
+        if (!msgId) return;
+        const msg = this.decryptedMessages().find((m: DecryptedMessage) => m.id === msgId);
+        const removeOnly = msg ? this.myReactionEmoji(msg) === emoji : false;
+        await this.store.toggleReaction(msgId, emoji, removeOnly);
+    }
+
+    async onReactionPillClick(msg: DecryptedMessage, emoji: string): Promise<void> {
+        const removeOnly = this.myReactionEmoji(msg) === emoji;
+        await this.store.toggleReaction(msg.id, emoji, removeOnly);
     }
 
     protected imageDataUrl(id: string): string | null { return this.store.imageDataUrls()[id] ?? null; }
@@ -465,7 +506,16 @@ export class ChatTabComponent implements OnDestroy {
                         isVideo = parsed?.type === 'video';
                     } catch { }
                 }
-                return { id: msg.id, text, senderName, createdAt: msg.createdAt, replyToMessageId: msg.replyToMessageId, isImage, isAudio, isVideo, senderDeviceId: msg.senderDeviceId, senderUserId: msg.senderUserId } satisfies DecryptedMessage;
+                const reactions = await Promise.all(
+                    (msg.reactions ?? []).map(async r => ({
+                        id: r.id,
+                        emoji: await this.crypto.decrypt(r.encryptedEmoji, r.emojiInitializationVector, key),
+                        senderName: await this.crypto.decrypt(r.encryptedSenderName, r.senderNameInitializationVector, key),
+                        senderDeviceId: r.senderDeviceId,
+                        senderUserId: r.senderUserId,
+                    })),
+                );
+                return { id: msg.id, text, senderName, createdAt: msg.createdAt, replyToMessageId: msg.replyToMessageId, isImage, isAudio, isVideo, senderDeviceId: msg.senderDeviceId, senderUserId: msg.senderUserId, reactions } satisfies DecryptedMessage;
             }),
         );
         if (generation !== this.decryptGeneration) return false;
@@ -510,7 +560,10 @@ export class ChatTabComponent implements OnDestroy {
     }
 
     @HostListener('document:click')
-    closeMenu(): void { this.openMenuId.set(null); }
+    closeMenu(): void {
+        this.openMenuId.set(null);
+        this.reactionPickerMessageId.set(null);
+    }
 
     async copyMessage(msg: DecryptedMessage): Promise<void> {
         this.openMenuId.set(null);
@@ -524,6 +577,13 @@ export class ChatTabComponent implements OnDestroy {
         this.swipeStartY = event.touches[0].clientY;
         this.swipeAxisLocked = null;
         this.swipeState.set({ id: msg.id, dx: 0 });
+
+        this.clearLongPressTimer();
+        this.longPressTimer = setTimeout(() => {
+            if (this.swipeAxisLocked === 'x') return;
+            this.swipeState.set(null);
+            this.openReactionPicker(msg.id);
+        }, LONG_PRESS_MS);
     }
 
     onTouchMove(event: TouchEvent, msg: DecryptedMessage): void {
@@ -535,6 +595,11 @@ export class ChatTabComponent implements OnDestroy {
             if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
             this.swipeAxisLocked = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
         }
+        if (this.swipeAxisLocked === 'x') {
+            this.clearLongPressTimer();
+        } else if (Math.abs(dy) > 12) {
+            this.clearLongPressTimer();
+        }
         if (this.swipeAxisLocked !== 'x') return;
         const clamped = Math.max(0, Math.min(dx, SWIPE_MAX_DISTANCE));
         if (clamped >= SWIPE_TRIGGER_DISTANCE && state.dx < SWIPE_TRIGGER_DISTANCE) this.haptics.listTap();
@@ -542,10 +607,18 @@ export class ChatTabComponent implements OnDestroy {
     }
 
     onTouchEnd(msg: DecryptedMessage): void {
+        this.clearLongPressTimer();
         const state = this.swipeState();
         this.swipeAxisLocked = null;
         if (state && state.id === msg.id && state.dx >= SWIPE_TRIGGER_DISTANCE) this.startReply(msg);
         this.swipeState.set(null);
+    }
+
+    private clearLongPressTimer(): void {
+        if (this.longPressTimer !== null) {
+            clearTimeout(this.longPressTimer);
+            this.longPressTimer = null;
+        }
     }
 
     onKeydown(event: KeyboardEvent): void {
@@ -604,16 +677,17 @@ export class ChatTabComponent implements OnDestroy {
     }
 
     async sendMessage(): Promise<void> {
+        if (this.sendingMessage()) return;
         const text = this.newMessageText().trim();
         const sender = this.prefs.senderName() || 'Anonymous';
         if (!text) return;
         this.haptics.messageSent();
         this.sendingMessage.set(true);
+        this.newMessageText.set('');
         try {
             const replyId = this.replyingTo()?.id ?? null;
             this.justSentOwnMessage = true;
             await this.store.sendMessage(text, sender, replyId);
-            this.newMessageText.set('');
             this.replyingTo.set(null);
         } catch (err) {
             this.justSentOwnMessage = false;
@@ -875,5 +949,6 @@ export class ChatTabComponent implements OnDestroy {
         if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') this.mediaRecorder.stop();
         this.typingClearTimers.forEach(t => clearTimeout(t));
         if (this.settleRafId !== null) cancelAnimationFrame(this.settleRafId);
+        this.clearLongPressTimer();
     }
 }

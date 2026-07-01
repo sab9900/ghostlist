@@ -1,14 +1,14 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
-import { LucideGhost, LucideSkull, LucideX } from '@lucide/angular';
+import { LucideGhost, LucideReceipt, LucideSkull, LucideX } from '@lucide/angular';
 import { ShareHandlerService, ShareTarget } from '../../core/services/share-handler.service';
 import { AppStore } from '../../store/app.store';
 import { KnownList } from '../../core/models';
 
 @Component({
     selector: 'app-share',
-    imports: [TranslatePipe, LucideX, LucideSkull, LucideGhost],
+    imports: [TranslatePipe, LucideX, LucideSkull, LucideGhost, LucideReceipt],
     templateUrl: './share.component.html',
     styleUrl: './share.component.scss',
 })

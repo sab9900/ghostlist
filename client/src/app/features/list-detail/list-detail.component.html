@@ -3,7 +3,15 @@
 <div class="screen screen--desktop">
 
     <header class="header" role="banner">
-        <h1 class="header__title truncate">{{ listName() }}</h1>
+        <div class="header__title-group">
+            <h1 class="header__title truncate">{{ listName() }}</h1>
+            @if (nextReminder()) {
+            <span class="header__reminder truncate">
+                <svg lucideAlarmClock [size]="10" aria-hidden="true"></svg>
+                {{ formatReminderDate(nextReminder()!.remindAt) }}
+            </span>
+            }
+        </div>
         <button class="header__settings-btn" (click)="settingsOpen.set(true)"
             [attr.aria-label]="'LIST_DETAIL.SETTINGS_ARIA' | translate" aria-haspopup="dialog">
             <svg lucideSettings [size]="20" aria-hidden="true"></svg>
@@ -50,11 +58,22 @@
                     <app-badge [count]="pendingCharonDrops()" aria-hidden="true" />
                     }
                 </button>
+                <button class="chat-view-toggle__btn"
+                    [class.chat-view-toggle__btn--active]="desktopChatView() === 'nemesis'" role="tab"
+                    [attr.aria-selected]="desktopChatView() === 'nemesis'"
+                    (click)="desktopChatView.set('nemesis'); hapticFeedbackOnTabChange();">
+                    {{ 'LIST_DETAIL.TAB_NEMESIS' | translate }}
+                    @if (nemesisBadge.pendingCount() > 0 && desktopChatView() !== 'nemesis') {
+                    <app-badge [count]="nemesisBadge.pendingCount()" aria-hidden="true" />
+                    }
+                </button>
             </div>
             @if (desktopChatView() === 'chat') {
             <app-chat-tab />
             } @else if (desktopChatView() === 'whisper') {
             <app-whisper-tab />
+            } @else if (desktopChatView() === 'nemesis') {
+            <app-nemesis-tab />
             } @else {
             <app-charon-tab />
             }
@@ -95,14 +114,22 @@
     <header class="header" role="banner">
         <button class="header__back" (click)="goBack()"
             [attr.aria-label]="'LIST_DETAIL.BACK_ARIA' | translate">‹</button>
-        <h1 class="header__title truncate">{{ listName() }}</h1>
+        <div class="header__title-group">
+            <h1 class="header__title truncate">{{ listName() }}</h1>
+            @if (nextReminder()) {
+            <span class="header__reminder truncate">
+                <svg lucideAlarmClock [size]="10" aria-hidden="true"></svg>
+                {{ formatReminderDate(nextReminder()!.remindAt) }}
+            </span>
+            }
+        </div>
         <button class="header__settings-btn" (click)="settingsOpen.set(true)"
             [attr.aria-label]="'LIST_DETAIL.SETTINGS_ARIA' | translate" aria-haspopup="dialog">
             <svg lucideSettings [size]="20" aria-hidden="true"></svg>
         </button>
     </header>
 
-    <nav class="tabs" role="tablist" [attr.aria-label]="'LIST_DETAIL.TAB_ITEMS' | translate">
+    <nav #tabsNav class="tabs" role="tablist" [attr.aria-label]="'LIST_DETAIL.TAB_ITEMS' | translate">
         <button class="tabs__tab" [class.tabs__tab--active]="activeTab() === 'items'" role="tab"
             [attr.aria-selected]="activeTab() === 'items'" id="tab-items" [attr.aria-controls]="'panel-items'"
             (click)="setTab('items')">
@@ -131,6 +158,14 @@
             {{ 'LIST_DETAIL.TAB_CHARON' | translate }}
             @if (pendingCharonDrops() > 0 && activeTab() !== 'charon') {
             <app-badge [count]="pendingCharonDrops()" aria-hidden="true" />
+            }
+        </button>
+        <button class="tabs__tab" [class.tabs__tab--active]="activeTab() === 'nemesis'" role="tab"
+            [attr.aria-selected]="activeTab() === 'nemesis'" id="tab-nemesis" [attr.aria-controls]="'panel-nemesis'"
+            (click)="setTab('nemesis')">
+            {{ 'LIST_DETAIL.TAB_NEMESIS' | translate }}
+            @if (nemesisBadge.pendingCount() > 0 && activeTab() !== 'nemesis') {
+            <app-badge [count]="nemesisBadge.pendingCount()" aria-hidden="true" />
             }
         </button>
         }

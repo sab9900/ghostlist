@@ -1,8 +1,6 @@
 <header class="header" role="banner">
     <img class="logo" src="/ghost-header.svg" [attr.alt]="'Ghost List'" (click)="logoClick.emit()" />
-    <h1 class="title" (click)="titleClick.emit()" role="button" tabindex="0"
-        [attr.aria-label]="'LISTS.FILTER_TITLE' | translate"
-        (keydown.enter)="titleClick.emit()">Ghost List</h1>
+    <h1 class="title">Ghost List</h1>
     <div class="actions">
         @if (totalUnread() > 0) {
         <button class="badge-btn" (click)="markAllReadOpen.emit()"
@@ -10,9 +8,22 @@
             <app-badge [count]="totalUnread()" />
         </button>
         }
+        <button class="filter-btn" type="button" (click)="filterClick.emit()"
+            [class.filter-btn--active]="filterActive()" [attr.aria-label]="'LISTS.FILTER_OPEN_ARIA' | translate">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
+                <line x1="4" y1="6" x2="20" y2="6" />
+                <line x1="8" y1="12" x2="16" y2="12" />
+                <line x1="11" y1="18" x2="13" y2="18" />
+            </svg>
+            @if (filterHasQuery()) {
+            <span class="filter-btn__badge" aria-hidden="true"></span>
+            }
+        </button>
         <div class="anchor">
-            <button class="action" (click)="toggleMenu()"
-                [attr.aria-label]="'LISTS.MENU_SETTINGS' | translate" [attr.aria-expanded]="showMenu()">
+            <button class="action" (click)="toggleMenu()" [attr.aria-label]="'LISTS.MENU_SETTINGS' | translate"
+                [attr.aria-expanded]="showMenu()">
                 <svg lucideMenu [size]="20" aria-hidden="true"></svg>
             </button>
 

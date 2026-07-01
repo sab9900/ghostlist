@@ -2,7 +2,7 @@
     display: block;
     overflow-y: auto;
     flex: 1;
-    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: none;
 }
 
 .settings-section {
@@ -97,6 +97,25 @@
         -webkit-appearance: none;
         appearance: none;
     }
+
+    &--number {
+        flex: 0 0 auto;
+        width: 100px;
+        text-align: right;
+    }
+}
+
+.settings-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    margin-bottom: var(--space-2);
+}
+
+.settings-label {
+    font-size: var(--text-sm);
+    color: var(--color-text-subtle);
+    font-weight: var(--weight-medium);
 }
 
 .save-slot {
@@ -418,21 +437,7 @@
         width: 36px;
         height: 36px;
         border-radius: var(--radius-full);
-        background: var(--color-surface-2);
-        border: 1px solid var(--color-border);
-        color: var(--color-text-muted);
-        font-size: var(--text-sm);
-        font-weight: var(--weight-semi);
-        display: flex;
-        align-items: center;
-        justify-content: center;
         flex-shrink: 0;
-
-        &--self {
-            background: var(--color-primary);
-            border-color: var(--color-primary);
-            color: var(--color-on-primary);
-        }
     }
 
     &__info {

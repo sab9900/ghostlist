@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { LucideBell, LucideBellOff, LucideChevronLeft, LucideGhost, LucideLock, LucideRepeat, LucideShield, LucideUpload } from "@lucide/angular";
+import { LucideBell, LucideBellOff, LucideChevronLeft, LucideGhost, LucideLock, LucideRepeat, LucideScale, LucideShield, LucideSkull, LucideUpload } from "@lucide/angular";
 import { TranslatePipe } from '@ngx-translate/core';
 import { ApiService } from '../../api/api.service';
 import { SwipeBackDirective } from '../../core/directives/swipe-back.directive';
@@ -17,8 +17,10 @@ import { APP_VERSION } from '../../version';
         LucideRepeat,
         LucideShield,
         LucideGhost,
+        LucideSkull,
         LucideBell,
-        LucideBellOff],
+        LucideBellOff,
+        LucideScale],
     templateUrl: './about.component.html',
     styleUrl: './about.component.scss',
 })

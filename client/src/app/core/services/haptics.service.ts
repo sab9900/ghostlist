@@ -80,6 +80,12 @@ export class HapticsService {
         setTimeout(() => Haptics.impact({ style: ImpactStyle.Light }).catch(() => { }), 90);
     }
 
+    reactionPickerOpened(): void {
+        if (!this.enabled) return;
+        Haptics.impact({ style: ImpactStyle.Heavy }).catch(() => { });
+        setTimeout(() => Haptics.impact({ style: ImpactStyle.Light }).catch(() => { }), 70);
+    }
+
     scrollToBottom(): void {
         if (!this.enabled) return;
         Haptics.impact({ style: ImpactStyle.Light }).catch(() => { });

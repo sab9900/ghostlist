@@ -17,6 +17,8 @@ public record ItemToggledNotification(
     string? CheckedByDeviceId,
     string? CheckedByUserId);
 
+public record ItemPriorityChangedNotification(Guid ItemId, int Priority);
+
 public record MessageCreatedNotification(
     Guid Id,
     Guid GhostListId,
@@ -67,3 +69,15 @@ public record VideoRelayNotification(
     string EncryptedVideo,
     string VideoInitializationVector,
     string SenderConnectionId);
+
+public record ReactionChangedNotification(
+    Guid ReactionId,
+    Guid MessageId,
+    Guid GhostListId,
+    string EncryptedEmoji,
+    string EmojiInitializationVector,
+    string EncryptedSenderName,
+    string SenderNameInitializationVector,
+    string? SenderDeviceId,
+    string? SenderUserId,
+    bool Removed);

@@ -4,6 +4,7 @@ export interface GhostListItemSummary {
     encryptedPayload: string;
     initializationVector: string;
     isChecked: boolean;
+    priority: number;
 }
 
 export interface GhostListItem extends GhostListItemSummary {

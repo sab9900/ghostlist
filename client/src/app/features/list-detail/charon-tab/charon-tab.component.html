@@ -1,39 +1,78 @@
 <div class="charon">
     @if (store.charonDrops().length === 0 && revealedDrops().length === 0) {
-    <p class="charon__hint">{{ 'CHARON.HINT' | translate }}</p>
+    <div class="feature-hint" role="status">
+        <svg lucideSkull [size]="28" aria-hidden="true"></svg>
+        <p>{{ 'CHARON.HINT' | translate }}</p>
+    </div>
     }
 
     <ul class="charon-list" role="list">
         @for (drop of store.charonDrops(); track drop.id) {
-        <li class="charon-card">
+        <li class="charon-card" [class.charon-card--mine]="isMine(drop)"
+            [class.charon-card--panel-open]="viewerPanelDropId() === drop.id">
             <div class="charon-card__icon" aria-hidden="true">
                 @if (isImageMime(meta(drop.id)?.mimeType)) {
                 <svg lucideImage [size]="22" aria-hidden="true"></svg>
-                <!-- <lucide-icon name="image" [size]="22" /> -->
                 } @else if (isAudioMime(meta(drop.id)?.mimeType)) {
                 <svg lucideMic [size]="22" aria-hidden="true"></svg>
-                <!-- <lucide-icon name="mic" [size]="22" /> -->
                 } @else if (isVideoMime(meta(drop.id)?.mimeType)) {
                 <svg lucideVideo [size]="22" aria-hidden="true"></svg>
-                <!-- <lucide-icon name="video" [size]="22" /> -->
+                } @else if (isTextMime(meta(drop.id)?.mimeType)) {
+                <svg lucideKeyRound [size]="22" aria-hidden="true"></svg>
                 } @else {
                 <svg lucideFileText [size]="22" aria-hidden="true"></svg>
-                <!-- <lucide-icon name="file-text" [size]="22" /> -->
                 }
             </div>
             <div class="charon-card__info">
                 @if (meta(drop.id)) {
-                <span class="charon-card__filename">{{ meta(drop.id)!.fileName }}</span>
-                <span class="charon-card__meta">
-                    {{ formatSize(meta(drop.id)!.size) }}
-                    @if (isMine(drop)) {
-                    · {{ 'CHARON.FROM_YOU' | translate }}
+                <span class="charon-card__filename">
+                    @if (isTextMime(meta(drop.id)?.mimeType)) {
+                    {{ 'CHARON.TEXT_LABEL' | translate }}
                     } @else {
-                    · {{ 'CHARON.FROM' | translate: { name: meta(drop.id)!.senderName } }}
+                    {{ meta(drop.id)!.fileName }}
+                    }
+                </span>
+                <span class="charon-card__meta">
+                    @if (!isTextMime(meta(drop.id)?.mimeType)) {
+                    {{ formatSize(meta(drop.id)!.size) }} ·
+                    }
+                    @if (isMine(drop)) {
+                    {{ 'CHARON.FROM_YOU' | translate }}
+                    @let state = viewReceiptState(drop);
+                    <span class="charon-card__receipt"
+                        [class.charon-card__receipt--partial]="state === 'partial'"
+                        [class.charon-card__receipt--all]="state === 'all'"
+                        role="button" tabindex="0"
+                        [attr.aria-label]="'CHARON.VIEWERS_ARIA' | translate"
+                        (click)="toggleViewerPanel($event, drop.id)"
+                        (keydown.enter)="toggleViewerPanel($event, drop.id)">
+                        @if (state === 'all') {
+                        <svg lucideCheckCheck [size]="13" aria-hidden="true"></svg>
+                        } @else if (state === 'partial') {
+                        <svg lucideCheck [size]="13" aria-hidden="true"></svg>
+                        } @else {
+                        <svg lucideCheck [size]="13" aria-hidden="true" style="opacity:0.35"></svg>
+                        }
+                    </span>
+                    } @else {
+                    {{ 'CHARON.FROM' | translate: { name: meta(drop.id)!.senderName } }}
                     }
                 </span>
                 } @else {
                 <span class="charon-card__filename">{{ 'CHARON.SEALED' | translate }}</span>
+                }
+                @if (isMine(drop) && viewerPanelDropId() === drop.id) {
+                <div class="charon-card__viewers" role="group" [attr.aria-label]="'CHARON.VIEWED_BY' | translate">
+                    @let viewers = viewersForDrop(drop);
+                    @if (viewers.length === 0) {
+                    <span class="charon-card__viewers-empty">{{ 'CHARON.NO_VIEWERS' | translate }}</span>
+                    } @else {
+                    <span class="charon-card__viewers-label">{{ 'CHARON.VIEWED_BY' | translate }}</span>
+                    @for (viewer of viewers; track viewer.displayName) {
+                    <span class="charon-card__viewer">{{ viewer.displayName }}</span>
+                    }
+                    }
+                </div>
                 }
             </div>
             <div class="charon-card__actions">
@@ -48,8 +87,16 @@
         }
 
         @for (drop of revealedDrops(); track drop.id) {
-        <li class="charon-card charon-card--revealed" [class.charon-card--audio]="drop.isAudio || drop.isVideo">
-            @if (drop.isImage) {
+        <li class="charon-card charon-card--revealed"
+            [class.charon-card--audio]="drop.isAudio || drop.isVideo"
+            [class.charon-card--text]="drop.isText">
+            @if (drop.isText) {
+            <pre class="charon-card__text charon-card__text--copyable"
+                role="button" tabindex="0"
+                [attr.aria-label]="'CHARON.COPY_ARIA' | translate"
+                (click)="copyTextContent(drop.textContent)"
+                (keydown.enter)="copyTextContent(drop.textContent)">{{ drop.textContent }}</pre>
+            } @else if (drop.isImage) {
             @let imgAlt = 'CHARON.IMAGE_ALT' | translate;
             <img class="charon-card__preview" [src]="drop.dataUrl" [attr.alt]="imgAlt" role="button" tabindex="0"
                 [attr.aria-label]="imgAlt" (click)="openImage(drop.dataUrl, imgAlt)"
@@ -62,17 +109,24 @@
             } @else {
             <div class="charon-card__icon" aria-hidden="true">
                 <svg lucideFileText [size]="22" aria-hidden="true"></svg>
-                <!-- <lucide-icon name="file-text" [size]="22" /> -->
             </div>
             }
             <div class="charon-card__info">
-                <span class="charon-card__filename">{{ drop.fileName }}</span>
+                <span class="charon-card__filename">
+                    @if (drop.isText) {
+                    {{ 'CHARON.TEXT_LABEL' | translate }}
+                    } @else {
+                    {{ drop.fileName }}
+                    }
+                </span>
+                @if (!drop.isText) {
                 <span class="charon-card__meta">{{ formatSize(drop.size) }} · {{ 'CHARON.FROM' | translate: { name:
                     drop.senderName } }}</span>
+                }
                 <span class="charon-card__burned">{{ 'CHARON.BURNED_NOTICE' | translate }}</span>
             </div>
             <div class="charon-card__actions">
-                @if (!drop.isImage) {
+                @if (!drop.isImage && !drop.isText) {
                 <button type="button" class="charon-card__download" (click)="download(drop)">{{ 'CHARON.DOWNLOAD' |
                     translate }}</button>
                 }
@@ -104,6 +158,32 @@
     <p class="charon__error" role="alert" style="font-size:0.7em;opacity:0.7">DBG: {{ videoRecordingDebugError() }}</p>
     }
     }
+    @if (textTooLong()) {
+    <p class="charon__error" role="alert">{{ 'CHARON.TEXT_TOO_LONG' | translate }}</p>
+    }
+
+    @if (showTextCompose()) {
+    <div class="compose-text">
+        <textarea class="compose-text__input"
+            [value]="textInput()"
+            (input)="textInput.set($any($event.target).value)"
+            [attr.maxlength]="MAX_TEXT_LENGTH"
+            [attr.placeholder]="'CHARON.TEXT_PLACEHOLDER' | translate"
+            rows="3"
+            [attr.aria-label]="'CHARON.TEXT_PLACEHOLDER' | translate"></textarea>
+        <div class="compose-text__footer">
+            <span class="compose-text__char-count" aria-hidden="true">{{ textInput().length }} / {{ MAX_TEXT_LENGTH }}</span>
+            <button type="button" class="compose-text__send"
+                (click)="sendText()"
+                [disabled]="sending() || !textInput().trim()"
+                [attr.aria-label]="'CHARON.TEXT_SEND_ARIA' | translate"
+                [attr.aria-busy]="sending()">
+                {{ (sending() ? 'CHARON.SENDING' : 'CHARON.TEXT_SEND') | translate }}
+            </button>
+        </div>
+    </div>
+    }
+
     <div class="compose" role="form" [attr.aria-label]="'CHARON.ATTACH_ARIA' | translate">
         <input #fileInput type="file" class="visually-hidden" tabindex="-1"
             accept=".jpg,.jpeg,.png,.gif,.webp,.bmp,.svg,.heic,.heif,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.txt,.rtf,.csv,.mp3,.wav,.m4a,.ogg,.flac,.mp4,.mov,.webm,.avi,.zip"
@@ -121,6 +201,12 @@
         <button type="button" class="compose__record" (click)="openVideoCapture()" [disabled]="sending() || recording()"
             [attr.aria-label]="'CHARON.RECORD_VIDEO_ARIA' | translate">
             <svg lucideVideo [size]="20" aria-hidden="true"></svg>
+        </button>
+        <button type="button" class="compose__record" [class.compose__record--active]="showTextCompose()"
+            (click)="toggleTextCompose()" [disabled]="sending() || recording()"
+            [attr.aria-label]="'CHARON.TEXT_TOGGLE_ARIA' | translate"
+            [attr.aria-pressed]="showTextCompose()">
+            <svg lucideKeyRound [size]="20" aria-hidden="true"></svg>
         </button>
         @if (recording()) {
         <span class="compose__timer" role="timer" [attr.aria-label]="formatRecordingTime(recordingSeconds())">

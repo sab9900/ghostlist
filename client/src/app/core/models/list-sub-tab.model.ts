@@ -1,1 +1,1 @@
-export type ListSubTab = 'items' | 'chat' | 'whisper' | 'charon';
+export type ListSubTab = 'items' | 'chat' | 'whisper' | 'charon' | 'nemesis';

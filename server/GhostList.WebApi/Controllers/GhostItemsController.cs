@@ -1,7 +1,9 @@
 using GhostList.Application.Features.GhostListItems.Commands.CreateGhostListItem;
 using GhostList.Application.Features.GhostListItems.Commands.DeleteGhostListItem;
+using GhostList.Application.Features.GhostListItems.Commands.SetItemPriority;
 using GhostList.Application.Features.GhostListItems.Commands.ToggleGhostListItem;
 using GhostList.Application.Features.GhostListItems.Queries.GetGhostListItemsByListId;
+using GhostList.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -39,6 +41,14 @@ public class GhostItemsController(IMediator mediator) : ControllerBase
         return NoContent();
     }
 
+    [HttpPut("{id:guid}/priority")]
+    [EnableRateLimiting("write-content")]
+    public async Task<ActionResult> SetPriority(Guid id, [FromBody] SetItemPriorityRequest request)
+    {
+        await mediator.Send(new SetItemPriorityCommand(id, (ItemPriority)request.Priority));
+        return NoContent();
+    }
+
     [HttpDelete("{id:guid}")]
     [EnableRateLimiting("write-content")]
     public async Task<ActionResult> DeleteItem(Guid id)
@@ -48,3 +58,5 @@ public class GhostItemsController(IMediator mediator) : ControllerBase
         return NoContent();
     }
 }
+
+public record SetItemPriorityRequest(int Priority);

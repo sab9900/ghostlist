@@ -35,11 +35,7 @@
     letter-spacing: 0.5px;
     flex: 1;
     min-width: 0;
-    cursor: pointer;
-    transition: opacity var(--duration-fast) var(--ease-out);
-
-    @media (hover: hover) { &:hover { opacity: 0.85; } }
-    &:active { opacity: 0.7; }
+    transition: none;
 }
 
 .actions {
@@ -62,6 +58,35 @@
 
     &:hover { color: var(--color-primary); }
     &:disabled { opacity: 0.3; cursor: not-allowed; }
+}
+
+.filter-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-subtle);
+    cursor: pointer;
+    transition: color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
+
+    &:hover { color: var(--color-text); background: var(--color-surface-2); }
+
+    &--active { color: var(--color-primary); }
+
+    &__badge {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--color-primary);
+    }
 }
 
 .badge-btn {

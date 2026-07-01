@@ -16,6 +16,9 @@ public class GhostListNotifier(IHubContext<GhostListHub> hubContext) : IGhostLis
     public Task NotifyItemDeleted(Guid listId, Guid itemId) =>
         hubContext.Clients.Group(listId.ToString()).SendAsync("ItemDeleted", itemId);
 
+    public Task NotifyItemPriorityChanged(Guid listId, ItemPriorityChangedNotification notification) =>
+        hubContext.Clients.Group(listId.ToString()).SendAsync("ItemPriorityChanged", notification);
+
     public Task NotifyMessageCreated(Guid listId, MessageCreatedNotification notification) =>
         hubContext.Clients.Group(listId.ToString()).SendAsync("MessageReceived", notification);
 
@@ -50,6 +53,9 @@ public class GhostListNotifier(IHubContext<GhostListHub> hubContext) : IGhostLis
     public Task NotifyCharonDropDeleted(Guid listId, Guid dropId) =>
         hubContext.Clients.Group(listId.ToString()).SendAsync("CharonDropDeleted", dropId);
 
+    public Task NotifyCharonDropViewed(Guid listId, Guid dropId, string viewerIdentity) =>
+        hubContext.Clients.Group(listId.ToString()).SendAsync("CharonDropViewed", new { dropId, viewerIdentity });
+
     public Task NotifyAudioShared(Guid listId, AudioRelayNotification notification) =>
         hubContext.Clients.GroupExcept(listId.ToString(), notification.SenderConnectionId)
             .SendAsync("AudioShared", notification);
@@ -69,4 +75,37 @@ public class GhostListNotifier(IHubContext<GhostListHub> hubContext) : IGhostLis
     public Task NotifyListReminderFired(Guid listId, Guid reminderId, DateTime remindAt, string deviceId) =>
         hubContext.Clients.Group($"device-{deviceId}")
             .SendAsync("ListReminderFired", new { listId, reminderId, remindAt });
+
+    public Task NotifyNemesisExpenseCreated(Guid listId, NemesisExpenseCreatedNotification notification) =>
+        hubContext.Clients.Group(listId.ToString()).SendAsync("NemesisExpenseCreated", notification);
+
+    public Task NotifyNemesisExpenseVerified(Guid listId, NemesisExpenseVerifiedNotification notification) =>
+        hubContext.Clients.Group(listId.ToString()).SendAsync("NemesisExpenseVerified", notification);
+
+    public Task NotifyNemesisSettlementCreated(Guid listId, NemesisSettlementCreatedNotification notification) =>
+        hubContext.Clients.Group(listId.ToString()).SendAsync("NemesisSettlementCreated", notification);
+
+    public Task NotifyNemesisSettlementConfirmed(Guid listId, NemesisSettlementConfirmedNotification notification) =>
+        hubContext.Clients.Group(listId.ToString()).SendAsync("NemesisSettlementConfirmed", notification);
+
+    public Task NotifyNemesisSettlementDeclined(Guid listId, NemesisSettlementDeclinedNotification notification) =>
+        hubContext.Clients.Group(listId.ToString()).SendAsync("NemesisSettlementDeclined", notification);
+
+    public Task NotifyNemesisExpenseArchived(Guid listId, NemesisExpenseArchivedNotification notification) =>
+        hubContext.Clients.Group(listId.ToString()).SendAsync("NemesisExpenseArchived", notification);
+
+    public Task NotifyNemesisSettlementVoided(Guid listId, NemesisSettlementVoidedNotification notification) =>
+        hubContext.Clients.Group(listId.ToString()).SendAsync("NemesisSettlementVoided", notification);
+
+    public Task NotifyNemesisSettlementExpired(Guid listId, NemesisSettlementExpiredNotification notification) =>
+        hubContext.Clients.Group(listId.ToString()).SendAsync("NemesisSettlementExpired", notification);
+
+    public Task NotifyNemesisSettlementForgiven(Guid listId, NemesisSettlementForgivenNotification notification) =>
+        hubContext.Clients.Group(listId.ToString()).SendAsync("NemesisSettlementForgiven", notification);
+
+    public Task NotifyNemesisSettlementExpiring(Guid listId, NemesisSettlementExpiringNotification notification) =>
+        hubContext.Clients.Group(listId.ToString()).SendAsync("NemesisSettlementExpiring", notification);
+
+    public Task NotifyReactionChanged(Guid listId, ReactionChangedNotification notification) =>
+        hubContext.Clients.Group(listId.ToString()).SendAsync("ReactionChanged", notification);
 }

@@ -1,3 +1,5 @@
+<app-ghost-mist [mode]="prefs.ghostMistMode()" />
+
 <div class="invite-bar">
     <button class="invite-bar__btn" (click)="toggleInvitePicker()" [disabled]="onCooldown()"
         [attr.aria-expanded]="showInvitePicker()">
@@ -44,20 +46,48 @@
     <span class="presence__empty">{{ 'WHISPER.PRESENCE_EMPTY' | translate }}</span>
     } @else {
     <span class="presence__label">{{ 'WHISPER.PRESENCE_LABEL' | translate }}</span>
-    <ul class="presence__list">
-        @for (p of othersPresence(); track p.deviceId) {
-        <li class="presence__item">
-            <span class="presence__avatar" aria-hidden="true">{{ initials(p.displayName) }}</span>
-            <span class="presence__name">{{ p.displayName }}</span>
+    <ul class="presence__avatars">
+        @for (p of visiblePresence(); track p.deviceId) {
+        <li>
+            <button class="presence__avatar-btn" (click)="showPresenceOverlay([p])" [attr.aria-label]="p.displayName">
+                <app-avatar [name]="p.displayName" [size]="28" />
+            </button>
+        </li>
+        }
+        @if (overflowPresence().length > 0) {
+        <li>
+            <button class="presence__overflow" (click)="showPresenceOverlay(overflowPresence())"
+                [attr.aria-label]="'WHISPER.PRESENCE_MORE' | translate: { count: overflowPresence().length }">
+                +{{ overflowPresence().length }}
+            </button>
         </li>
         }
     </ul>
     }
 </div>
 
+@if (presenceOverlay() !== null) {
+<div class="presence-overlay-backdrop" (click)="presenceOverlay.set(null)" role="dialog"
+    [attr.aria-label]="'WHISPER.PRESENCE_OVERLAY_ARIA' | translate" aria-modal="true">
+    <div class="presence-overlay" (click)="$event.stopPropagation()">
+        <ul class="presence-overlay__list">
+            @for (p of presenceOverlay()!; track p.deviceId) {
+            <li class="presence-overlay__item">
+                <app-avatar [name]="p.displayName" [size]="24" />
+                <span class="presence-overlay__name">{{ p.displayName }}</span>
+            </li>
+            }
+        </ul>
+    </div>
+</div>
+}
+
 <div class="whisper-feed" #whisperFeed role="log" aria-live="polite" aria-relevant="additions">
     @if (whispers().length === 0) {
-    <p class="whisper-feed__hint">{{ 'WHISPER.HINT' | translate }}</p>
+    <div class="feature-hint" role="status">
+        <svg lucideGhost [size]="28" aria-hidden="true"></svg>
+        <p>{{ 'WHISPER.HINT' | translate }}</p>
+    </div>
     }
     @for (w of whispers(); track w.id) {
     <div class="whisper" [class.whisper--mine]="w.mine" [class.whisper--fading]="w.fading">

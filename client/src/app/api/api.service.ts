@@ -4,6 +4,13 @@ import { Observable } from 'rxjs';
 import {
     CharonDropDto,
     CreateCharonDropRequest,
+    ArchivedExpensesDto,
+    CreateExpenseRequest,
+    NemesisDataDto,
+    NemesisReceiptDto,
+    SaveReceiptRequest,
+    SubmitSettlementRequest,
+    UpdateNemesisSettingsRequest,
     CreateGhostListItemRequest,
     CreateGhostMessageRequest,
     CreateItemReminderRequest,
@@ -114,6 +121,10 @@ export class ApiService {
             { headers: this.deviceIdHeaders() });
     }
 
+    setItemPriority(id: string, priority: number): Observable<void> {
+        return this.http.put<void>(`${this.BASE}/ghostitems/${id}/priority`, { priority });
+    }
+
     getMessages(listId: string, before?: string, take = 50): Observable<GhostChatMessagePage> {
         const params: Record<string, string> = { take: String(take) };
         if (before) params['before'] = before;
@@ -161,6 +172,19 @@ export class ApiService {
 
     getMessageVideo(messageId: string): Observable<GhostMessageVideoDto> {
         return this.http.get<GhostMessageVideoDto>(`${this.BASE}/chat/${messageId}/video`);
+    }
+
+    toggleReaction(messageId: string, request: {
+        encryptedEmoji?: string;
+        emojiInitializationVector?: string;
+        encryptedSenderName?: string;
+        senderNameInitializationVector?: string;
+        removeOnly?: boolean;
+    }): Observable<{ reactionId: string | null; removed: boolean }> {
+        return this.http.put<{ reactionId: string | null; removed: boolean }>(
+            `${this.BASE}/chat/${messageId}/reactions`,
+            request,
+            { headers: { ...this.deviceIdHeaders(), ...this.userIdHeaders() } });
     }
 
     deliverShare(sessionId: string, delivery: ShareDelivery): Observable<void> {
@@ -315,5 +339,76 @@ export class ApiService {
     acknowledgeListReminder(reminderId: string): Observable<void> {
         return this.http.put<void>(`${this.BASE}/listreminders/${reminderId}/acknowledge`, null,
             { headers: this.deviceIdHeaders() });
+    }
+
+    getNemesisData(listId: string): Observable<NemesisDataDto> {
+        return this.http.get<NemesisDataDto>(`${this.BASE}/nemesis/${listId}`);
+    }
+
+    createExpense(request: CreateExpenseRequest): Observable<string> {
+        return this.http.post<string>(`${this.BASE}/nemesis/expenses`, request, {
+            headers: { ...this.deviceIdHeaders(), ...this.userIdHeaders() },
+        });
+    }
+
+    saveExpenseReceipt(expenseId: string, request: SaveReceiptRequest): Observable<void> {
+        return this.http.post<void>(`${this.BASE}/nemesis/expenses/${expenseId}/receipt`, request);
+    }
+
+    getExpenseReceipt(expenseId: string): Observable<NemesisReceiptDto> {
+        return this.http.get<NemesisReceiptDto>(`${this.BASE}/nemesis/expenses/${expenseId}/receipt`);
+    }
+
+    verifyExpense(expenseId: string, userId: string): Observable<void> {
+        return this.http.post<void>(`${this.BASE}/nemesis/expenses/${expenseId}/verify`, { userId }, {
+            headers: this.userIdHeaders(),
+        });
+    }
+
+    submitSettlement(request: SubmitSettlementRequest): Observable<string> {
+        return this.http.post<string>(`${this.BASE}/nemesis/settlements`, request, {
+            headers: { ...this.deviceIdHeaders(), ...this.userIdHeaders() },
+        });
+    }
+
+    confirmSettlement(settlementId: string): Observable<void> {
+        return this.http.post<void>(`${this.BASE}/nemesis/settlements/${settlementId}/confirm`, null, {
+            headers: this.userIdHeaders(),
+        });
+    }
+
+    declineSettlement(settlementId: string): Observable<void> {
+        return this.http.delete<void>(`${this.BASE}/nemesis/settlements/${settlementId}`, {
+            headers: this.userIdHeaders(),
+        });
+    }
+
+    rejectExpense(expenseId: string): Observable<void> {
+        return this.http.post<void>(`${this.BASE}/nemesis/expenses/${expenseId}/reject`, null, {
+            headers: this.userIdHeaders(),
+        });
+    }
+
+    archiveExpense(expenseId: string): Observable<void> {
+        return this.http.post<void>(`${this.BASE}/nemesis/expenses/${expenseId}/archive`, null, {
+            headers: this.userIdHeaders(),
+        });
+    }
+
+    getArchivedExpenses(listId: string, cursor?: string): Observable<ArchivedExpensesDto> {
+        const params = cursor ? { cursor } : undefined;
+        return this.http.get<ArchivedExpensesDto>(`${this.BASE}/nemesis/${listId}/archived-expenses`, { params });
+    }
+
+    forgiveSettlement(settlementId: string): Observable<void> {
+        return this.http.post<void>(`${this.BASE}/nemesis/settlements/${settlementId}/forgive`, null, {
+            headers: this.userIdHeaders(),
+        });
+    }
+
+    updateNemesisSettings(listId: string, request: UpdateNemesisSettingsRequest): Observable<void> {
+        return this.http.put<void>(`${this.BASE}/nemesis/${listId}/settings`, request, {
+            headers: this.userIdHeaders(),
+        });
     }
 }

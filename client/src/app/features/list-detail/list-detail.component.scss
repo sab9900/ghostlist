@@ -42,11 +42,29 @@
         align-items: center;
     }
 
+    &__title-group {
+        flex: 1;
+        min-width: 0;
+        position: relative;
+    }
+
     &__title {
         font-size: var(--text-lg);
         font-weight: var(--weight-semi);
-        flex: 1;
-        min-width: 0;
+    }
+
+    &__reminder {
+        position: absolute;
+        bottom: -10px;
+        left: 0px;
+        font-size: var(--text-xs);
+        color: var(--color-text-muted);
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        max-width: 100%;
     }
 
     &__settings-btn {
@@ -78,13 +96,19 @@
     flex-shrink: 0;
     display: flex;
     border-bottom: 1px solid var(--color-border);
-    padding: 0 var(--space-4);
+    overflow-x: auto;
+    overscroll-behavior-x: none;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
 
     &__tab {
         background: none;
         border: none;
         border-bottom: 2px solid transparent;
-        padding: var(--space-3);
+        padding: var(--space-3) var(--space-4);
         font-size: var(--text-base);
         font-weight: var(--weight-medium);
         font-family: var(--font-sans);
@@ -96,7 +120,10 @@
         margin-bottom: -1px;
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: var(--space-2);
+        flex: 1 0 auto;
+        min-width: max-content;
 
         &--active {
             color: var(--color-primary);
@@ -118,7 +145,7 @@
 
     &--scroll {
         overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: none;
     }
 }
 
@@ -327,7 +354,7 @@
         overflow-y: auto;
         display: flex;
         flex-direction: column;
-        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: none;
     }
 }
 

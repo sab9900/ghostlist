@@ -9,6 +9,7 @@ import { DeviceIdService } from '../../core/services/device-id.service';
 import { ListStorageService } from '../../core/services/list-storage.service';
 import { UserIdService } from '../../core/services/user-id.service';
 import { isNetworkError, resolveCreatedMessageId, tempId } from '../store-utils';
+import { UserPreferencesService } from '../../core/services/user-preferences.service';
 
 export interface MessagesStoreSlice extends WritableStateSource<{ messages: GhostChatMessage[]; messagesHasMore: boolean; loadingOlderMessages: boolean; pendingOpsCount: number }> {
     currentListId: () => string | null;
@@ -29,6 +30,7 @@ export function createMessagesMethods(store: MessagesStoreSlice) {
     const userId = inject(UserIdService);
     const storage = inject(ListStorageService);
     const connectivity = inject(ConnectivityService);
+    const prefs = inject(UserPreferencesService);
 
     return {
         async sendMessage(plainMessage: string, plainSenderName: string, replyToMessageId?: string | null): Promise<void> {
@@ -62,6 +64,7 @@ export function createMessagesMethods(store: MessagesStoreSlice) {
                 createdAt: new Date().toISOString(),
                 senderDeviceId: deviceId.deviceId,
                 senderUserId: userId.userId(),
+                reactions: [],
             };
 
             patchState(store, { messages: [...store.messages(), optimisticMessage] });
@@ -132,6 +135,71 @@ export function createMessagesMethods(store: MessagesStoreSlice) {
             } finally {
                 patchState(store, { loadingOlderMessages: false });
             }
+        },
+
+        async toggleReaction(messageId: string, emoji: string, removeOnly = false): Promise<void> {
+            const key = store.currentEncryptionKey();
+            const senderName = prefs.senderName() || 'Anonymous';
+            if (!key) return;
+
+            // Optimistic: remove own existing reaction immediately (handles both remove and replace)
+            patchState(store, {
+                messages: store.messages().map((m) => {
+                    if (m.id !== messageId) return m;
+                    return {
+                        ...m,
+                        reactions: m.reactions.filter((r) =>
+                            !(r.senderUserId !== null
+                                ? r.senderUserId === userId.userId()
+                                : r.senderDeviceId === deviceId.deviceId)),
+                    };
+                }),
+            });
+
+            if (removeOnly) {
+                await firstValueFrom(api.toggleReaction(messageId, { removeOnly: true }));
+                void store._persistCurrentList();
+                return;
+            }
+
+            const [encEmoji, encSender] = await Promise.all([
+                crypto.encrypt(emoji, key),
+                crypto.encrypt(senderName, key),
+            ]);
+
+            const result = await firstValueFrom(api.toggleReaction(messageId, {
+                encryptedEmoji: encEmoji.ciphertext,
+                emojiInitializationVector: encEmoji.iv,
+                encryptedSenderName: encSender.ciphertext,
+                senderNameInitializationVector: encSender.iv,
+                removeOnly: false,
+            }));
+
+            if (!result.reactionId) {
+                void store._persistCurrentList();
+                return;
+            }
+            const alreadyPresent = store.messages().find(m => m.id === messageId)?.reactions.some(r => r.id === result.reactionId);
+            if (alreadyPresent) return;
+
+            patchState(store, {
+                messages: store.messages().map((m) => {
+                    if (m.id !== messageId) return m;
+                    return {
+                        ...m,
+                        reactions: [...m.reactions, {
+                            id: result.reactionId!,
+                            encryptedEmoji: encEmoji.ciphertext,
+                            emojiInitializationVector: encEmoji.iv,
+                            encryptedSenderName: encSender.ciphertext,
+                            senderNameInitializationVector: encSender.iv,
+                            senderDeviceId: deviceId.deviceId,
+                            senderUserId: userId.userId(),
+                        }],
+                    };
+                }),
+            });
+            void store._persistCurrentList();
         },
     };
 }

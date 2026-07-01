@@ -18,7 +18,8 @@ public record GhostListItemDto(
     string? SenderDeviceId,
     string? SenderUserId,
     string? CheckedByDeviceId,
-    string? CheckedByUserId);
+    string? CheckedByUserId,
+    int Priority);
 
 public class GetGhostListItemsByListIdQueryHandler(IApplicationDbContext context)
     : IRequestHandler<GetGhostListItemsByListIdQuery, List<GhostListItemDto>>
@@ -46,7 +47,8 @@ public class GetGhostListItemsByListIdQueryHandler(IApplicationDbContext context
                 i.SenderDeviceId,
                 i.SenderUserId,
                 i.CheckedByDeviceId,
-                i.CheckedByUserId))
+                i.CheckedByUserId,
+                (int)i.Priority))
             .ToListAsync(cancellationToken);
     }
 }

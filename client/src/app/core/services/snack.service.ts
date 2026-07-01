@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 
-export type SnackIconKind = 'item' | 'chat' | 'lethe' | 'charon' | 'reminder';
+export type SnackIconKind = 'item' | 'chat' | 'lethe' | 'charon' | 'reminder' | 'nemesis';
 
 export interface SnackAction {
     label: string;

@@ -1,0 +1,26 @@
+<div class="nemesis-shell" [class.nemesis-shell--busy]="nemesisStore.loading()">
+
+    <nav class="seg" role="tablist">
+        <a class="seg__btn"
+            [routerLink]="['expenses']"
+            routerLinkActive="seg__btn--active"
+            role="tab">
+            {{ 'NEMESIS.SEGMENT_EXPENSES' | translate }}
+        </a>
+        <a class="seg__btn"
+            [routerLink]="['settlements']"
+            routerLinkActive="seg__btn--active"
+            role="tab">
+            {{ 'NEMESIS.SEGMENT_SETTLE' | translate }}
+        </a>
+    </nav>
+
+    <div class="nemesis-outlet">
+        <router-outlet appTabTransition [appTabOrder]="['expenses', 'settlements']"></router-outlet>
+    </div>
+
+    @if (nemesisStore.error()) {
+        <p class="error" role="alert">{{ nemesisStore.error() }}</p>
+    }
+
+</div>

@@ -1,5 +1,6 @@
 using GhostList.Application.Common.Interfaces;
 using GhostList.Application.Common.Exceptions;
+using GhostList.Application.Features.Nemesis.Commands.VoidMemberSettlements;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,7 +8,7 @@ namespace GhostList.Application.Features.ListMembers.Commands.DeleteListMember;
 
 public record DeleteListMemberCommand(Guid ListId, string DeviceId, string? RequestingDeviceId, string? RequestingUserId) : IRequest;
 
-public class DeleteListMemberCommandHandler(IApplicationDbContext context, IGhostListNotifier notifier)
+public class DeleteListMemberCommandHandler(IApplicationDbContext context, IGhostListNotifier notifier, IMediator mediator)
     : IRequestHandler<DeleteListMemberCommand>
 {
     public async Task Handle(DeleteListMemberCommand request, CancellationToken cancellationToken)
@@ -24,9 +25,13 @@ public class DeleteListMemberCommandHandler(IApplicationDbContext context, IGhos
         if (!isCurrentDevice && !isSameUser)
             throw new ForbiddenException("Cannot remove another user's device.");
 
+        var userId = member.UserId;
         context.GhostListMembers.Remove(member);
         await context.SaveChangesAsync(cancellationToken);
 
         await notifier.NotifyMemberKicked(request.ListId, request.DeviceId);
+
+        if (!string.IsNullOrWhiteSpace(userId))
+            await mediator.Send(new VoidMemberSettlementsCommand(request.ListId, userId), cancellationToken);
     }
 }

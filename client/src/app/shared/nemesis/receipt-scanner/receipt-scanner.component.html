@@ -1,0 +1,138 @@
+<div class="scanner" [class.scanner--live]="isLive" [class.scanner--frozen]="isFrozen">
+
+    <!-- Live video -->
+    <video #videoEl class="scanner-video" [class.scanner-video--hidden]="isFrozen"
+        autoplay playsinline muted></video>
+
+    <!-- Frozen frame (shown while processing + result) -->
+    @if (capturedImageUrl && isFrozen) {
+        <img class="scanner-frozen" [src]="capturedImageUrl"
+            [class.scanner-frozen--blur]="state === 'processing'" alt="" />
+    }
+
+    <!-- Live/result overlay: word boxes + detected amount/description chips.
+         The SVG viewBox matches the video's native pixel size 1:1, and
+         preserveAspectRatio="xMidYMid slice" reproduces the same cropping
+         math as the video/image's object-fit:cover — so boxes drawn in raw
+         video-space line up correctly no matter how the element is sized. -->
+    @if (showOverlay) {
+        <svg class="scanner-boxes-svg" [attr.viewBox]="svgViewBox" preserveAspectRatio="xMidYMid slice">
+            @for (word of words; track $index) {
+                <rect
+                    [attr.x]="word.bbox.x0" [attr.y]="word.bbox.y0"
+                    [attr.width]="word.bbox.x1 - word.bbox.x0"
+                    [attr.height]="word.bbox.y1 - word.bbox.y0"
+                    [class]="word.isAmount ? 'wbox wbox--amount' : 'wbox'"
+                />
+            }
+        </svg>
+        <div class="scanner-cards">
+            @if (detectedDescription) {
+                <div class="scanner-card">
+                    <span class="scanner-card-label">{{ 'NEMESIS.SCANNER_MERCHANT' | translate }}</span>
+                    <span class="scanner-card-value">{{ detectedDescription }}</span>
+                </div>
+            }
+            @if (detectedAmount !== null) {
+                <div class="scanner-card scanner-card--amount">
+                    <span class="scanner-card-label">{{ 'NEMESIS.SCANNER_TOTAL' | translate }}</span>
+                    <span class="scanner-card-value">{{ detectedAmount | number:'1.2-2' }}</span>
+                </div>
+            }
+        </div>
+    }
+    @if (state === 'result' && !detectedDescription && detectedAmount === null) {
+        <div class="scanner-cards">
+            <div class="scanner-card scanner-card--warn">
+                <span class="scanner-card-value">{{ 'NEMESIS.SCANNER_NOTHING_DETECTED' | translate }}</span>
+            </div>
+        </div>
+    }
+
+    <!-- Off-screen canvases + file input -->
+    <canvas #captureCanvas class="scanner-offscreen"></canvas>
+    <canvas #motionCanvas class="scanner-offscreen"></canvas>
+    <canvas #ocrCanvas class="scanner-offscreen"></canvas>
+    <input #fileInput type="file" accept="image/*,application/pdf" class="scanner-offscreen" (change)="onFileSelected($event)" />
+
+    <!-- Header -->
+    <div class="scanner-header">
+        <button type="button" class="scanner-close" (click)="cancelled.emit()"
+            [attr.aria-label]="'NEMESIS.DETAIL_CLOSE_ARIA' | translate">
+            <svg lucideX [size]="18" aria-hidden="true"></svg>
+        </button>
+        <span class="scanner-title">{{ 'NEMESIS.SCANNER_TITLE' | translate }}</span>
+        <span class="scanner-header-spacer"></span>
+    </div>
+
+    <!-- Initializing -->
+    @if (state === 'initializing') {
+        <div class="scanner-center">
+            <div class="scanner-spinner"></div>
+        </div>
+    }
+
+    <!-- Error -->
+    @if (state === 'error') {
+        <div class="scanner-center">
+            <p class="scanner-error-text">{{ errorMessage | translate }}</p>
+            <div class="scanner-error-actions">
+                <button type="button" class="scanner-pill-btn" (click)="pickFromGallery()">
+                    {{ 'NEMESIS.SCANNER_GALLERY_ARIA' | translate }}
+                </button>
+                <button type="button" class="scanner-pill-btn" (click)="cancelled.emit()">
+                    {{ 'NEMESIS.DETAIL_CLOSE_ARIA' | translate }}
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- Live / Stable — viewfinder + scanline -->
+    @if (isLive) {
+        <div class="scanner-vf" [class.scanner-vf--stable]="state === 'stable'">
+            <div class="scanner-corner scanner-corner--tl"></div>
+            <div class="scanner-corner scanner-corner--tr"></div>
+            <div class="scanner-corner scanner-corner--bl"></div>
+            <div class="scanner-corner scanner-corner--br"></div>
+            @if (state === 'live') {
+                <div class="scanner-scanline"></div>
+            }
+        </div>
+        <p class="scanner-hint">
+            {{ (state === 'stable' ? 'NEMESIS.SCANNER_STABLE' : 'NEMESIS.SCANNER_HOLD_STEADY') | translate }}
+        </p>
+
+        <div class="scanner-live-footer">
+            <button type="button" class="scanner-gallery-btn" (click)="pickFromGallery()"
+                [attr.aria-label]="'NEMESIS.SCANNER_GALLERY_ARIA' | translate">
+                <svg lucideImage [size]="20" aria-hidden="true"></svg>
+            </button>
+            <button type="button" class="scanner-shutter" [class.scanner-shutter--ready]="liveHasData"
+                (click)="shutterTap()" [attr.aria-label]="'NEMESIS.SCANNER_SHUTTER_ARIA' | translate">
+                <span class="scanner-shutter-ring"></span>
+            </button>
+            <span class="scanner-live-footer-spacer"></span>
+        </div>
+    }
+
+    <!-- Processing -->
+    @if (state === 'processing') {
+        <div class="scanner-center">
+            <div class="scanner-spinner"></div>
+            <p class="scanner-processing-text">{{ 'NEMESIS.SCANNER_ANALYZING' | translate }}</p>
+        </div>
+    }
+
+    <!-- Result footer -->
+    @if (state === 'result') {
+        <div class="scanner-footer">
+            <button type="button" class="scanner-btn scanner-btn--outline" (click)="retry()">
+                {{ 'NEMESIS.SCANNER_RETRY' | translate }}
+            </button>
+            <button type="button" class="scanner-btn scanner-btn--primary" (click)="confirm()">
+                {{ 'NEMESIS.SCANNER_CONFIRM' | translate }}
+            </button>
+        </div>
+    }
+
+</div>

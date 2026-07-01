@@ -31,6 +31,9 @@ public class GhostList
 
     public string? OwnerTokenHash { get; private set; }
 
+    public int NemesisSettlementExpiryDays { get; private set; } = 60;
+    public int NemesisSettlementHideAfterDays { get; private set; } = 30;
+
     public List<GhostListItem> Items { get; private set; } = [];
     public List<GhostChatMessage> ChatMessages { get; private set; } = [];
 
@@ -70,6 +73,17 @@ public class GhostList
     public void UpdateWhisperLifetime(WhisperLifetime lifetime)
     {
         WhisperLifetimeSeconds = lifetime;
+    }
+
+    public void UpdateNemesisSettings(int expiryDays, int hideAfterDays)
+    {
+        if (expiryDays < 1)
+            throw new ArgumentOutOfRangeException(nameof(expiryDays));
+        if (hideAfterDays < 0)
+            throw new ArgumentOutOfRangeException(nameof(hideAfterDays));
+
+        NemesisSettlementExpiryDays = expiryDays;
+        NemesisSettlementHideAfterDays = hideAfterDays;
     }
 
     public GhostListItem CreateListItem(string encryptedPayload, string initializationVector, string? senderDeviceId = null, string? senderUserId = null)

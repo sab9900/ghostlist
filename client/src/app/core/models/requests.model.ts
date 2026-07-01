@@ -37,6 +37,7 @@ export interface SubscribeRequest {
     notifyOnItemsChanged?: boolean;
     notifyOnLethe?: boolean;
     notifyOnCharon?: boolean;
+    notifyOnNemesis?: boolean;
     locale?: string;
 }
 

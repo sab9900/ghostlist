@@ -1,5 +1,6 @@
-import { Component, effect, ElementRef, inject, OnDestroy, signal, untracked, ViewChild } from '@angular/core';
-import { LucideFileText, LucideImage, LucideMic, LucidePaperclip, LucideVideo } from "@lucide/angular";
+import { Clipboard } from '@capacitor/clipboard';
+import { Component, computed, effect, ElementRef, inject, OnDestroy, signal, untracked, ViewChild } from '@angular/core';
+import { LucideCheck, LucideCheckCheck, LucideFileText, LucideImage, LucideKeyRound, LucideMic, LucidePaperclip, LucideSkull, LucideVideo } from "@lucide/angular";
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { CharonDropDto } from '../../../core/models';
@@ -8,6 +9,7 @@ import { DeviceIdService } from '../../../core/services/device-id.service';
 import { HapticsService } from '../../../core/services/haptics.service';
 import { ImageViewerService } from '../../../core/services/image-viewer.service';
 import { NativeDownloadService } from '../../../core/services/native-download.service';
+import { SnackService } from '../../../core/services/snack.service';
 import { UserIdService } from '../../../core/services/user-id.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 import { AudioWaveformPlayerComponent } from '../../../shared/audio-waveform-player/audio-waveform-player.component';
@@ -26,6 +28,7 @@ interface CharonMeta {
 interface RevealedDrop {
     id: string;
     dataUrl: string;
+    textContent: string;
     fileName: string;
     mimeType: string;
     size: number;
@@ -33,9 +36,12 @@ interface RevealedDrop {
     isImage: boolean;
     isAudio: boolean;
     isVideo: boolean;
+    isText: boolean;
 }
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
+const MAX_TEXT_LENGTH = 5000;
+const MIME_TEXT_SECRET = 'text/x-charon-secret';
 
 const MAX_IMAGE_DIMENSION = 1280;
 const IMAGE_QUALITY = 0.72;
@@ -58,7 +64,7 @@ function isAllowedFile(file: File): boolean {
 
 @Component({
     selector: 'app-charon-tab',
-    imports: [TranslatePipe, AudioWaveformPlayerComponent, LucidePaperclip, LucideMic, LucideImage, LucideFileText, LucideVideo, VideoCaptureComponent],
+    imports: [TranslatePipe, AudioWaveformPlayerComponent, LucidePaperclip, LucideMic, LucideImage, LucideFileText, LucideVideo, LucideKeyRound, LucideSkull, LucideCheck, LucideCheckCheck, VideoCaptureComponent],
     templateUrl: './charon-tab.component.html',
     styleUrl: './charon-tab.component.scss',
 })
@@ -72,15 +78,22 @@ export class CharonTabComponent implements OnDestroy {
     private readonly translate = inject(TranslateService);
     private readonly imageViewer = inject(ImageViewerService);
     private readonly nativeDownload = inject(NativeDownloadService);
+    private readonly snack = inject(SnackService);
 
     @ViewChild('fileInput') private fileInputRef?: ElementRef<HTMLInputElement>;
 
     protected readonly dropMeta = signal<Map<string, CharonMeta>>(new Map());
 
+    protected readonly viewerPanelDropId = signal<string | null>(null);
+
     protected readonly revealedDrops = signal<RevealedDrop[]>([]);
     protected readonly sending = signal(false);
     protected readonly fileTooLarge = signal(false);
     protected readonly fileTypeNotAllowed = signal(false);
+    protected readonly showTextCompose = signal(false);
+    protected readonly textInput = signal('');
+    protected readonly textTooLong = signal(false);
+    protected readonly MAX_TEXT_LENGTH = MAX_TEXT_LENGTH;
     protected readonly recording = signal(false);
     protected readonly recordingSeconds = signal(0);
     protected readonly recordingNotSupported = signal(false);
@@ -149,6 +162,44 @@ export class CharonTabComponent implements OnDestroy {
         return false;
     }
 
+    protected viewReceiptState(drop: CharonDropDto): 'none' | 'partial' | 'all' {
+        const listId = this.store.currentListId();
+        if (!listId) return 'none';
+        const membersList = this.store.cachedMembers()[listId];
+        if (membersList === undefined) return 'none';
+        const others = membersList.filter(m => !m.isCurrentUser);
+        if (others.length === 0) return drop.viewerIds.length > 0 ? 'all' : 'none';
+        if (drop.viewerIds.length === 0) return 'none';
+        const viewedCount = drop.viewerIds.filter(id =>
+            others.some(m => (m.userId && m.userId === id) || m.deviceId === id)
+        ).length;
+        if (viewedCount === 0) return 'none';
+        return viewedCount >= others.length ? 'all' : 'partial';
+    }
+
+    protected viewersForDrop(drop: CharonDropDto): { displayName: string }[] {
+        const listId = this.store.currentListId();
+        if (!listId) return [];
+        const members = this.store.cachedMembers()[listId] ?? [];
+        return drop.viewerIds.flatMap(id => {
+            const member = members.find(m => (m.userId && m.userId === id) || m.deviceId === id);
+            return member ? [{ displayName: member.displayName }] : [];
+        });
+    }
+
+    protected toggleViewerPanel(event: Event, dropId: string): void {
+        event.stopPropagation();
+        this.viewerPanelDropId.update(current => current === dropId ? null : dropId);
+    }
+
+    async copyTextContent(text: string): Promise<void> {
+        try {
+            await Clipboard.write({ string: text });
+            const msg = await firstValueFrom(this.translate.get('CHARON.COPIED'));
+            this.snack.show({ iconKind: 'charon', text: msg, autoDismissMs: 2000 });
+        } catch { }
+    }
+
     protected isImageMime(mimeType: string | undefined): boolean {
         return !!mimeType?.startsWith('image/');
     }
@@ -159,6 +210,10 @@ export class CharonTabComponent implements OnDestroy {
 
     protected isVideoMime(mimeType: string | undefined): boolean {
         return !!mimeType?.startsWith('video/');
+    }
+
+    protected isTextMime(mimeType: string | undefined): boolean {
+        return mimeType === MIME_TEXT_SECRET;
     }
 
     protected formatSize(bytes: number): string {
@@ -175,8 +230,10 @@ export class CharonTabComponent implements OnDestroy {
         const key = this.store.currentEncryptionKey();
         if (!key) return;
 
-        const confirmMsg = await firstValueFrom(this.translate.get('CHARON.REVEAL_CONFIRM'));
-        if (!confirm(confirmMsg)) return;
+        if (!this.isMine(drop)) {
+            const confirmMsg = await firstValueFrom(this.translate.get('CHARON.REVEAL_CONFIRM'));
+            if (!confirm(confirmMsg)) return;
+        }
 
         let meta = this.meta(drop.id);
         try {
@@ -188,8 +245,13 @@ export class CharonTabComponent implements OnDestroy {
 
             const isAudio = this.isAudioMime(meta!.mimeType);
             const isVideo = this.isVideoMime(meta!.mimeType);
+            const isText = this.isTextMime(meta!.mimeType);
             let srcUrl = dataUrl;
-            if (isAudio || isVideo) {
+            let textContent = '';
+            if (isText) {
+                textContent = dataUrl;
+                srcUrl = '';
+            } else if (isAudio || isVideo) {
                 const blob = CharonTabComponent.dataUrlToBlob(dataUrl);
                 srcUrl = URL.createObjectURL(blob);
                 this.blobUrls.set(drop.id, srcUrl);
@@ -198,6 +260,7 @@ export class CharonTabComponent implements OnDestroy {
             this.revealedDrops.update(list => [...list, {
                 id: drop.id,
                 dataUrl: srcUrl,
+                textContent,
                 fileName: meta!.fileName,
                 mimeType: meta!.mimeType,
                 size: meta!.size,
@@ -205,12 +268,13 @@ export class CharonTabComponent implements OnDestroy {
                 isImage: this.isImageMime(meta!.mimeType),
                 isAudio,
                 isVideo,
+                isText,
             }]);
         } catch {
             return;
         }
 
-        await this.store.viewCharonDrop(drop.id);
+        await this.store.viewCharonDrop(drop.id, this.isMine(drop));
     }
 
     dismiss(id: string): void {
@@ -232,6 +296,51 @@ export class CharonTabComponent implements OnDestroy {
         try {
             await this.nativeDownload.downloadUrl(drop.dataUrl, drop.fileName);
         } catch { }
+    }
+
+    toggleTextCompose(): void {
+        this.showTextCompose.update(v => !v);
+        if (!this.showTextCompose()) this.textInput.set('');
+    }
+
+    async sendText(): Promise<void> {
+        const text = this.textInput().trim();
+        if (!text) return;
+        if (text.length > MAX_TEXT_LENGTH) {
+            this.textTooLong.set(true);
+            setTimeout(() => this.textTooLong.set(false), 4000);
+            return;
+        }
+
+        const key = this.store.currentEncryptionKey();
+        if (!key) return;
+
+        this.sending.set(true);
+        try {
+            const senderName = this.prefs.senderName() || await firstValueFrom(this.translate.get('CHAT.ANONYMOUS'));
+            const meta: CharonMeta = {
+                fileName: '',
+                mimeType: MIME_TEXT_SECRET,
+                size: new TextEncoder().encode(text).byteLength,
+                senderName,
+            };
+
+            const [content, metadata] = await Promise.all([
+                this.crypto.encrypt(text, key),
+                this.crypto.encrypt(JSON.stringify(meta), key),
+            ]);
+
+            await this.store.sendCharonDrop(
+                content.ciphertext, content.iv,
+                metadata.ciphertext, metadata.iv,
+            );
+            this.haptics.charonDropSent();
+            this.textInput.set('');
+            this.showTextCompose.set(false);
+        } catch {
+        } finally {
+            this.sending.set(false);
+        }
     }
 
     pickFile(): void {

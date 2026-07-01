@@ -1,5 +1,5 @@
 import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
-import { LucideAlarmClock, LucideFlame, LucideGhost, LucideListChecks, LucideMessageCircle, LucideX } from '@lucide/angular';
+import { LucideAlarmClock, LucideFlame, LucideGhost, LucideListChecks, LucideMessageCircle, LucideScale, LucideX } from '@lucide/angular';
 import { TranslatePipe } from '@ngx-translate/core';
 import { LayoutService } from '../../core/services/layout.service';
 import { Snack, SnackService } from '../../core/services/snack.service';
@@ -13,7 +13,7 @@ const EXIT_DURATION_MS = 220;
 
 @Component({
     selector: 'app-snack-stack',
-    imports: [TranslatePipe, LucideListChecks, LucideMessageCircle, LucideGhost, LucideFlame, LucideAlarmClock, LucideX],
+    imports: [TranslatePipe, LucideListChecks, LucideMessageCircle, LucideGhost, LucideFlame, LucideAlarmClock, LucideScale, LucideX],
     templateUrl: './snack-stack.component.html',
     styleUrl: './snack-stack.component.scss',
 })

@@ -148,6 +148,15 @@ export class PushNotificationService {
                 visibility: 1,
             });
             await PushNotifications.createChannel({
+                id: 'ghost_nemesis_v1',
+                name: 'Nemesis – Ausgaben',
+                description: 'Neuigkeiten bei deinen geteilten Ausgaben',
+                importance: 4,
+                vibration: true,
+                sound: 'sonar_ping',
+                visibility: 1,
+            });
+            await PushNotifications.createChannel({
                 id: 'ghost_reminders_v2',
                 name: 'Erinnerungen',
                 description: 'Fälligkeitserinnerungen für Items',
@@ -184,7 +193,7 @@ export class PushNotificationService {
             const listId = action.notification.data?.listId as string | undefined;
             const type = action.notification.data?.type as string | undefined;
             if (listId) {
-                this.router.navigate(['/list', listId, this.routeForType(type)]);
+                void this.router.navigate(['/list', listId, ...this.segmentsForType(type)]);
             }
         });
 
@@ -264,7 +273,7 @@ export class PushNotificationService {
                 const listId = payload.data?.['listId'];
                 const type = payload.data?.['type'];
                 if (listId) {
-                    this.router.navigate(['/list', listId, this.routeForType(type)]);
+                    void this.router.navigate(['/list', listId, ...this.segmentsForType(type)]);
                 }
             });
 
@@ -289,13 +298,14 @@ export class PushNotificationService {
         notifyOnItemsChanged: boolean,
         notifyOnLethe: boolean,
         notifyOnCharon: boolean,
+        notifyOnNemesis: boolean,
     ): Promise<void> {
         const token = await this.waitForToken();
         const platform = this.platformDto();
         if (!platform || !token) return;
         const locale = this.languageService.currentLang();
         await firstValueFrom(
-            this.api.subscribeToList(listId, { deviceToken: token, platform, notifyOnMessage, notifyOnItemsChanged, notifyOnLethe, notifyOnCharon, locale }),
+            this.api.subscribeToList(listId, { deviceToken: token, platform, notifyOnMessage, notifyOnItemsChanged, notifyOnLethe, notifyOnCharon, notifyOnNemesis, locale }),
         ).catch(() => {});
     }
 
@@ -305,16 +315,18 @@ export class PushNotificationService {
         await firstValueFrom(this.api.unsubscribeFromList(listId)).catch(() => {});
     }
 
-    private routeForType(type: string | undefined): string {
+    private segmentsForType(type: string | undefined): string[] {
         switch (type) {
-            case 'message':
-                return 'chat';
-            case 'whisper_invite':
-                return 'whisper';
-            case 'charon_drop':
-                return 'charon';
-            default:
-                return 'items';
+            case 'message': return ['chat'];
+            case 'whisper_invite': return ['whisper'];
+            case 'charon_drop': return ['charon'];
+            case 'nemesis_update': return ['nemesis', 'expenses'];
+            case 'nemesis_settlement_update': return ['nemesis', 'settlements'];
+            case 'nemesis_settlement_expiring': return ['nemesis', 'settlements'];
+            case 'nemesis_settlement_expired': return ['nemesis', 'settlements'];
+            case 'nemesis_settlement_forgiven': return ['nemesis', 'settlements'];
+            case 'nemesis_settlement_voided': return ['nemesis', 'settlements'];
+            default: return ['items'];
         }
     }
 

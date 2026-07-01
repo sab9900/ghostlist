@@ -62,19 +62,22 @@
     outline: none;
     transition: border-color var(--duration-fast) var(--ease-out);
 
-    &:focus { border-color: var(--color-primary); }
+    &:focus {
+        border-color: var(--color-primary);
+    }
 }
 
 .save-slot {
     position: relative;
     flex-shrink: 0;
 
-    &--hidden { opacity: 0; pointer-events: none; }
+    &--hidden {
+        opacity: 0;
+        pointer-events: none;
+    }
 }
 
 .save-feedback {
-    position: absolute;
-    inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -82,6 +85,10 @@
     font-size: var(--text-sm);
     color: var(--color-primary);
     font-weight: var(--weight-medium);
+    &--sm {
+        padding: var(--space-2) var(--space-4);
+        font-size: var(--text-sm);
+    }
 }
 
 .btn {
@@ -96,15 +103,25 @@
     font-family: var(--font-sans);
     font-weight: var(--weight-medium);
     cursor: pointer;
-    transition: background var(--duration-fast) var(--ease-out), opacity var(--duration-fast) var(--ease-out);
+    transition:
+        background var(--duration-fast) var(--ease-out),
+        opacity var(--duration-fast) var(--ease-out);
     white-space: nowrap;
 
-    &:disabled { opacity: 0.45; pointer-events: none; }
-    &--sm { padding: var(--space-2) var(--space-4); font-size: var(--text-sm); }
+    &:disabled {
+        opacity: 0.45;
+        pointer-events: none;
+    }
+    &--sm {
+        padding: var(--space-2) var(--space-4);
+        font-size: var(--text-sm);
+    }
 
     &--primary {
         background: var(--color-primary);
         color: var(--color-on-primary);
-        &:hover { opacity: 0.88; }
+        &:hover {
+            opacity: 0.88;
+        }
     }
 }

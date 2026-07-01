@@ -31,8 +31,10 @@ export function createCharonDropsMethods(store: CharonDropsStoreSlice) {
             }));
         },
 
-        async viewCharonDrop(dropId: string): Promise<void> {
-            patchState(store, { charonDrops: store.charonDrops().filter(d => d.id !== dropId) });
+        async viewCharonDrop(dropId: string, keepInState = false): Promise<void> {
+            if (!keepInState) {
+                patchState(store, { charonDrops: store.charonDrops().filter(d => d.id !== dropId) });
+            }
             try {
                 await firstValueFrom(api.markCharonDropViewed(dropId));
             } catch { }

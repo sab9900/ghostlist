@@ -5,7 +5,10 @@
         (touchend)="onMessageListTouchEnd()" (touchcancel)="onMessageListTouchEnd()">
 
         @if (decryptedMessages().length === 0) {
-        <li class="empty-hint" role="status">{{ 'CHAT.NO_MESSAGES' | translate }}</li>
+        <li class="feature-hint" role="status">
+            <svg lucideMessageSquare [size]="28" aria-hidden="true"></svg>
+            <p>{{ 'CHAT.NO_MESSAGES' | translate }}</p>
+        </li>
         }
 
         @if (loadingOlderMessages()) {
@@ -13,7 +16,7 @@
         }
 
         @for (msg of decryptedMessages(); track msg.id) {
-        <li>
+        <li class="message-item" [class.message-item--reaction-open]="reactionPickerMessageId() === msg.id">
             <app-chat-message
                 [msg]="msg"
                 [mine]="isMineFor(msg)"
@@ -31,6 +34,7 @@
                 [readers]="readersForMessage(msg)"
                 [swipeOffset]="swipeOffset(msg.id)"
                 [swipeTriggerDistance]="swipeTriggerDistance"
+                [myReactionEmoji]="myReactionEmoji(msg)"
                 (menuToggle)="toggleMenu(msg.id, $event)"
                 (reply)="startReply(msg)"
                 (copy)="copyMessage(msg)"
@@ -42,7 +46,15 @@
                 (touchMove)="onTouchMove($event, msg)"
                 (touchEnd)="onTouchEnd(msg)"
                 (imageOpen)="openImage($event.url, $event.alt)"
+                (longPress)="openReactionPicker(msg.id)"
+                (reactionPillClick)="onReactionPillClick(msg, $event)"
             />
+            @if (reactionPickerMessageId() === msg.id) {
+            <div class="reaction-picker-anchor" [class.reaction-picker-anchor--mine]="isMineFor(msg)"
+                (click)="$event.stopPropagation()">
+                <app-reaction-picker (pick)="onReactionPick($event)" />
+            </div>
+            }
         </li>
         }
 
@@ -52,7 +64,7 @@
         (clicked)="onScrollToBottomClick()" />
 </div>
 
-@if (openMenuId()) {
+@if (openMenuId() || reactionPickerMessageId()) {
 <div class="message-menu-backdrop" aria-hidden="true"></div>
 }
 

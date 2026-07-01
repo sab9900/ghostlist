@@ -9,4 +9,5 @@ export interface CharonDropDto {
     createdAt: string;
     senderDeviceId: string | null;
     senderUserId: string | null;
+    viewerIds: string[];
 }

@@ -1,0 +1,92 @@
+<div class="matrix">
+
+    @if (pendingConfirmations.length > 0) {
+        <section>
+            <h3 class="heading">{{ 'NEMESIS.CONFIRM_HEADING' | translate }}</h3>
+            @for (s of pendingConfirmations; track s.id) {
+                <div class="debt debt--confirm">
+                    <div class="debt__info">
+                        <span class="debt__label">{{ 'NEMESIS.PAID_BY_NOTICE' | translate: { name: memberName(s.fromUserId) } }}</span>
+                        <span class="debt__amount">{{ s.amount | number:'1.2-2' }} {{ s.currency }}</span>
+                    </div>
+                    <div class="debt__actions">
+                        <button class="debt__decline" (click)="declineSettlementRequested.emit(s.id)">
+                            {{ 'NEMESIS.DECLINE_BTN' | translate }}
+                        </button>
+                        <button class="debt__forgive" (click)="forgiveSettlementRequested.emit(s.id)">
+                            {{ 'NEMESIS.SETTLEMENT_FORGIVE' | translate }}
+                        </button>
+                        <button class="debt__confirm" (click)="confirmSettlementRequested.emit(s.id)">
+                            {{ 'NEMESIS.CONFIRM_BTN' | translate }}
+                        </button>
+                    </div>
+                </div>
+            }
+        </section>
+    }
+
+    @if (myDebts.length > 0) {
+        <section>
+            <h3 class="heading">{{ 'NEMESIS.OWE_HEADING' | translate }}</h3>
+            @for (debt of myDebts; track debt.fromUserId + debt.toUserId) {
+                @let sid = pendingSettlementId(debt);
+                <div class="debt" [class.debt--awaiting]="!!sid" [class.debt--highlighted]="debt.toUserId === highlightedToUserId">
+                    <div class="debt__info">
+                        <span class="debt__label">→ {{ memberName(debt.toUserId) }}</span>
+                        <span class="debt__amount">{{ debt.amount | number:'1.2-2' }} {{ debt.currency }}</span>
+                    </div>
+                    @if (sid) {
+                        <div class="debt__actions">
+                            <span class="debt__awaiting">{{ 'NEMESIS.AWAITING_CONFIRMATION' | translate }}</span>
+                            <button class="debt__cancel" (click)="declineSettlementRequested.emit(sid)">
+                                {{ 'NEMESIS.CANCEL_PAYMENT' | translate }}
+                            </button>
+                        </div>
+                    } @else {
+                        <button class="debt__settle" (click)="settleRequested.emit(debt)">
+                            {{ 'NEMESIS.PAY_BTN' | translate }}
+                        </button>
+                    }
+                </div>
+            }
+        </section>
+    }
+
+    @if (othersOweMe.length > 0) {
+        <section>
+            <h3 class="heading">{{ 'NEMESIS.RECEIVE_HEADING' | translate }}</h3>
+            @for (debt of othersOweMe; track debt.fromUserId + debt.toUserId) {
+                <div class="debt">
+                    <div class="debt__info">
+                        <span class="debt__label">← {{ memberName(debt.fromUserId) }}</span>
+                        <span class="debt__amount">{{ debt.amount | number:'1.2-2' }} {{ debt.currency }}</span>
+                    </div>
+                </div>
+            }
+        </section>
+    }
+
+    @if (resolvedSettlements.length > 0) {
+        <section class="section--resolved">
+            <h3 class="heading heading--muted">{{ 'NEMESIS.RESOLVED_HEADING' | translate }}</h3>
+            @for (s of resolvedSettlements; track s.id) {
+                <div class="debt debt--resolved">
+                    <div class="debt__info">
+                        <span class="debt__label">
+                            {{ memberName(s.fromUserId) }} → {{ memberName(s.toUserId) }}
+                        </span>
+                        <span class="debt__amount">{{ s.amount | number:'1.2-2' }} {{ s.currency }}</span>
+                    </div>
+                    <span class="debt__status-badge debt__status-badge--{{ settlementStatusMod(s.status) }}">
+                        {{ settlementStatusKey(s.status) | translate }}
+                    </span>
+                </div>
+            }
+        </section>
+    }
+
+    @if (debts.length === 0 && pendingConfirmations.length === 0 && resolvedSettlements.length === 0) {
+        <p class="empty">{{ 'NEMESIS.SETTLED' | translate }}</p>
+    }
+
+</div>

@@ -1,11 +1,12 @@
 import { Component, ElementRef, effect, input, output, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { LucideX } from '@lucide/angular';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ListSortOrder } from '../../../../core/services/user-preferences.service';
 
 @Component({
     selector: 'app-list-filter-dialog',
-    imports: [FormsModule, TranslatePipe],
+    imports: [FormsModule, TranslatePipe, LucideX],
     templateUrl: './list-filter-dialog.component.html',
     styleUrl: './list-filter-dialog.component.scss',
 })

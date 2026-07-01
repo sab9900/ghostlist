@@ -20,6 +20,8 @@ public class GhostListItem
 
     public string? CheckedByUserId { get; private set; }
 
+    public ItemPriority Priority { get; private set; } = ItemPriority.None;
+
     private GhostListItem() { }
 
     public static GhostListItem Create(Guid ghostListId, string encryptedPayload, string initializationVector, string? senderDeviceId = null, string? senderUserId = null)
@@ -43,5 +45,10 @@ public class GhostListItem
         CheckedAt = IsChecked ? DateTime.UtcNow : (DateTime?)null;
         CheckedByDeviceId = IsChecked ? checkedByDeviceId : null;
         CheckedByUserId = IsChecked ? checkedByUserId : null;
+    }
+
+    public void SetPriority(ItemPriority priority)
+    {
+        Priority = priority;
     }
 }

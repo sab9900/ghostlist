@@ -49,6 +49,7 @@ export function createItemsMethods(store: ItemsStoreSlice) {
                 encryptedPayload: ciphertext,
                 initializationVector: iv,
                 isChecked: false,
+                priority: 0,
                 checkedAt: null,
                 createdAt: new Date().toISOString(),
                 senderDeviceId: deviceId.deviceId,
@@ -103,6 +104,26 @@ export function createItemsMethods(store: ItemsStoreSlice) {
                     throw e;
                 }
                 await store._upsertToggleOp(store.currentListId() ?? '', itemId, desiredChecked, new Date().toISOString());
+            }
+        },
+
+        async setItemPriority(itemId: string, priority: number): Promise<void> {
+            const prev = store.items();
+            patchState(store, {
+                items: prev.map(i => i.id === itemId ? { ...i, priority } : i),
+            });
+            void store._persistCurrentList();
+
+            if (itemId.startsWith('local-')) return;
+
+            try {
+                await firstValueFrom(api.setItemPriority(itemId, priority));
+            } catch (e: unknown) {
+                if (!isNetworkError(e)) {
+                    patchState(store, { items: prev });
+                    void store._persistCurrentList();
+                    throw e;
+                }
             }
         },
 

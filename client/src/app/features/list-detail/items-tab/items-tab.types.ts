@@ -1,3 +1,6 @@
+export type ItemPriority = 'important' | 'optional';
+export type ItemSortOrder = 'createdAt' | 'az' | 'za' | 'priority';
+
 export interface DecryptedItem {
     id: string;
     text: string;
@@ -7,6 +10,7 @@ export interface DecryptedItem {
     isNew: boolean;
     creatorName: string | null;
     checkedByName: string | null;
+    priority: ItemPriority | null;
 }
 
 export interface ActiveReminder {

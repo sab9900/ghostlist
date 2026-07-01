@@ -15,6 +15,15 @@ public static class ChatMessagePaging
 public record GetGhostChatMessagesByListIdQuery(Guid ListId, DateTime? Before = null, int Take = ChatMessagePaging.DefaultPageSize)
     : IRequest<GhostChatMessagePageDto>;
 
+public record GhostMessageReactionDto(
+    Guid Id,
+    string EncryptedEmoji,
+    string EmojiInitializationVector,
+    string EncryptedSenderName,
+    string SenderNameInitializationVector,
+    string? SenderDeviceId,
+    string? SenderUserId);
+
 public record GhostChatMessageDto(
     Guid Id,
     string EncryptedMessage,
@@ -24,7 +33,8 @@ public record GhostChatMessageDto(
     Guid? ReplyToMessageId,
     DateTime CreatedAt,
     string? SenderDeviceId,
-    string? SenderUserId);
+    string? SenderUserId,
+    List<GhostMessageReactionDto> Reactions);
 
 public record GhostChatMessagePageDto(List<GhostChatMessageDto> Messages, bool HasMore);
 
@@ -61,12 +71,34 @@ public class GetGhostChatMessagesByListIdQueryHandler(IApplicationDbContext cont
                 m.ReplyToMessageId,
                 m.CreatedAt,
                 m.SenderDeviceId,
-                m.SenderUserId))
+                m.SenderUserId,
+                new List<GhostMessageReactionDto>()))
             .ToListAsync(cancellationToken);
 
         var hasMore = fetched.Count > pageSize;
         var page = fetched.Take(pageSize).Reverse().ToList();
 
-        return new GhostChatMessagePageDto(page, hasMore);
+        var messageIds = page.Select(m => m.Id).ToList();
+
+        var reactions = await context.GhostMessageReactions
+            .Where(r => messageIds.Contains(r.MessageId))
+            .Select(r => new { r.MessageId, Dto = new GhostMessageReactionDto(
+                r.Id,
+                r.EncryptedEmoji,
+                r.EmojiInitializationVector,
+                r.EncryptedSenderName,
+                r.SenderNameInitializationVector,
+                r.SenderDeviceId,
+                r.SenderUserId) })
+            .ToListAsync(cancellationToken);
+
+        var reactionsByMessage = reactions.GroupBy(r => r.MessageId)
+            .ToDictionary(g => g.Key, g => g.Select(r => r.Dto).ToList());
+
+        var pageWithReactions = page
+            .Select(m => m with { Reactions = reactionsByMessage.TryGetValue(m.Id, out var r) ? r : [] })
+            .ToList();
+
+        return new GhostChatMessagePageDto(pageWithReactions, hasMore);
     }
 }

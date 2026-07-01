@@ -58,6 +58,21 @@
             </intent-filter>
         </activity-alias>
 
+        <activity-alias
+            android:name=".NemesisReceiptShareActivity"
+            android:targetActivity=".MainActivity"
+            android:label="Nemesis"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
+        </activity-alias>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

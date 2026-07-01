@@ -1,0 +1,46 @@
+@if (sectionLabel) {
+    <h3 class="section-label">{{ sectionLabel }}</h3>
+}
+<ul class="list">
+    @for (expense of expenses; track expense.id) {
+        <li class="card" [class.card--verified]="expense.status === VerificationStatus.Verified"
+                         [class.card--needs-verify]="canVerify(expense)">
+            <button class="card__body" (click)="expenseSelected.emit(expense)">
+                <span class="card__top">
+                    <span class="card__title">{{ expense.description }}</span>
+                    @if (expense.hasReceipt) {
+                        <svg lucideReceipt [size]="14" class="card__receipt-icon"
+                            [attr.aria-label]="'NEMESIS.RECEIPT_ATTACHED' | translate"></svg>
+                    }
+                </span>
+                <span class="card__meta">
+                    <span class="card__amount">{{ expense.amount | number:'1.2-2' }} {{ expense.currency }}</span>
+                    <span class="card__payer">{{ 'NEMESIS.PAYER_PREFIX' | translate: { name: memberName(expense.paidByUserId) } }}</span>
+                    @if (expense.status === VerificationStatus.Verified) {
+                        <span class="card__status card__status--verified">{{ 'NEMESIS.STATUS_VERIFIED' | translate }}</span>
+                    } @else if (expense.status === VerificationStatus.Rejected) {
+                        <span class="card__status card__status--rejected">{{ 'NEMESIS.STATUS_REJECTED' | translate }}</span>
+                    } @else {
+                        <span class="card__status">
+                            {{ 'NEMESIS.STATUS_PENDING' | translate: { count: expense.verifications.length, total: expense.splitCount } }}
+                        </span>
+                    }
+                </span>
+            </button>
+            @if (canVerify(expense)) {
+                <div class="card__verify-banner">
+                    <p class="card__verify-hint">{{ 'NEMESIS.NEEDS_VERIFY_HINT' | translate }}</p>
+                    <button class="card__verify" (click)="verifyRequested.emit(expense.id)">
+                        {{ 'NEMESIS.VERIFY' | translate }}
+                    </button>
+                </div>
+            }
+        </li>
+    }
+    @empty {
+        <li class="hint" role="status">
+            <svg lucideScale [size]="28" aria-hidden="true"></svg>
+            <p>{{ 'NEMESIS.HINT' | translate }}</p>
+        </li>
+    }
+</ul>

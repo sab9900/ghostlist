@@ -1,0 +1,55 @@
+@if (show() || closing()) {
+<div class="backdrop" #backdrop (click)="requestClose()" role="presentation">
+    <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+        aria-labelledby="nemesis-filter-dialog-title">
+        <h2 class="title" id="nemesis-filter-dialog-title">
+            {{ (mode() === 'expenses' ? 'NEMESIS.FILTER_TITLE_EXPENSES' : 'NEMESIS.FILTER_TITLE_SETTLEMENTS') | translate }}
+        </h2>
+
+        <div class="input-wrap">
+            <input #input class="input" type="text"
+                [attr.placeholder]="(mode() === 'expenses' ? 'NEMESIS.FILTER_SEARCH_EXPENSES' : 'NEMESIS.FILTER_SEARCH_SETTLEMENTS') | translate"
+                [ngModel]="query()" (ngModelChange)="onQueryChange($event)"
+                [attr.aria-label]="(mode() === 'expenses' ? 'NEMESIS.FILTER_SEARCH_EXPENSES' : 'NEMESIS.FILTER_SEARCH_SETTLEMENTS') | translate" />
+            @if (query()) {
+            <button type="button" class="input-clear" (click)="onQueryChange('')" aria-label="Clear search">
+                <svg lucideX [size]="14" [strokeWidth]="2.5" aria-hidden="true"></svg>
+            </button>
+            }
+        </div>
+
+        <div class="sort">
+            <span class="sort__label">{{ 'ITEMS.FILTER_SORT_LABEL' | translate }}</span>
+            @if (mode() === 'expenses') {
+            <div class="sort__options" role="radiogroup" [attr.aria-label]="'ITEMS.FILTER_SORT_LABEL' | translate">
+                <button type="button" class="sort__option" [class.is-active]="expenseSortOrder() === 'createdAt'"
+                    role="radio" [attr.aria-checked]="expenseSortOrder() === 'createdAt'"
+                    (click)="onExpenseSortChange('createdAt')">{{ 'ITEMS.SORT_CREATED' | translate }}</button>
+                <button type="button" class="sort__option" [class.is-active]="expenseSortOrder() === 'az'"
+                    role="radio" [attr.aria-checked]="expenseSortOrder() === 'az'"
+                    (click)="onExpenseSortChange('az')">{{ 'ITEMS.SORT_AZ' | translate }}</button>
+                <button type="button" class="sort__option" [class.is-active]="expenseSortOrder() === 'za'"
+                    role="radio" [attr.aria-checked]="expenseSortOrder() === 'za'"
+                    (click)="onExpenseSortChange('za')">{{ 'ITEMS.SORT_ZA' | translate }}</button>
+                <button type="button" class="sort__option" [class.is-active]="expenseSortOrder() === 'amount'"
+                    role="radio" [attr.aria-checked]="expenseSortOrder() === 'amount'"
+                    (click)="onExpenseSortChange('amount')">{{ 'NEMESIS.SORT_AMOUNT' | translate }}</button>
+            </div>
+            } @else {
+            <div class="sort__options" role="radiogroup" [attr.aria-label]="'ITEMS.FILTER_SORT_LABEL' | translate">
+                <button type="button" class="sort__option" [class.is-active]="settlementSortOrder() === 'amount'"
+                    role="radio" [attr.aria-checked]="settlementSortOrder() === 'amount'"
+                    (click)="onSettlementSortChange('amount')">{{ 'NEMESIS.SORT_AMOUNT' | translate }}</button>
+                <button type="button" class="sort__option" [class.is-active]="settlementSortOrder() === 'az'"
+                    role="radio" [attr.aria-checked]="settlementSortOrder() === 'az'"
+                    (click)="onSettlementSortChange('az')">{{ 'ITEMS.SORT_AZ' | translate }}</button>
+            </div>
+            }
+        </div>
+
+        <div class="actions">
+            <button class="btn btn--primary" (click)="requestClose()">{{ 'COMMON.CLOSE' | translate }}</button>
+        </div>
+    </div>
+</div>
+}

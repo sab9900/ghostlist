@@ -81,4 +81,70 @@ public class GetCharonDropsByListIdQueryHandlerTests
 
         await act.Should().ThrowAsync<NotFoundException>();
     }
+
+    [Fact]
+    public async Task Handle_Sender_SeesOwnDropEvenAfterViewing()
+    {
+        await using var context = DbContextFactory.Create();
+        var list = Domain.Entities.GhostList.Create();
+        var drop = CharonDrop.Create(list.Id, "meta", "miv", senderDeviceId: "sender");
+
+        context.GhostLists.Add(list);
+        context.CharonDrops.Add(drop);
+        context.CharonViewReceipts.Add(new CharonViewReceipt
+        {
+            DropId = drop.Id,
+            DeviceId = "sender",
+            ViewedAt = DateTimeOffset.UtcNow
+        });
+        await context.SaveChangesAsync();
+
+        var blob = MockBlobReturning(drop.Id, "enc", "iv");
+        var handler = new GetCharonDropsByListIdQueryHandler(context, blob);
+        var result = await handler.Handle(new GetCharonDropsByListIdQuery(list.Id, "sender"), CancellationToken.None);
+
+        result.Should().ContainSingle();
+        result[0].Id.Should().Be(drop.Id);
+    }
+
+    [Fact]
+    public async Task Handle_Sender_GetsViewerIdsPopulated()
+    {
+        await using var context = DbContextFactory.Create();
+        var list = Domain.Entities.GhostList.Create();
+        var drop = CharonDrop.Create(list.Id, "meta", "miv", senderDeviceId: "sender", senderUserId: "user-sender");
+
+        context.GhostLists.Add(list);
+        context.CharonDrops.Add(drop);
+        context.CharonViewReceipts.AddRange(
+            new CharonViewReceipt { DropId = drop.Id, DeviceId = "phone", UserId = "user-a", ViewedAt = DateTimeOffset.UtcNow },
+            new CharonViewReceipt { DropId = drop.Id, DeviceId = "laptop", UserId = "user-b", ViewedAt = DateTimeOffset.UtcNow });
+        await context.SaveChangesAsync();
+
+        var blob = MockBlobReturning(drop.Id, "enc", "iv");
+        var handler = new GetCharonDropsByListIdQueryHandler(context, blob);
+        var result = await handler.Handle(new GetCharonDropsByListIdQuery(list.Id, "sender", "user-sender"), CancellationToken.None);
+
+        result.Should().ContainSingle();
+        result[0].ViewerIds.Should().BeEquivalentTo(new[] { "user-a", "user-b" });
+    }
+
+    [Fact]
+    public async Task Handle_NonSender_DoesNotGetViewerIds()
+    {
+        await using var context = DbContextFactory.Create();
+        var list = Domain.Entities.GhostList.Create();
+        var drop = CharonDrop.Create(list.Id, "meta", "miv", senderDeviceId: "sender");
+
+        context.GhostLists.Add(list);
+        context.CharonDrops.Add(drop);
+        await context.SaveChangesAsync();
+
+        var blob = MockBlobReturning(drop.Id, "enc", "iv");
+        var handler = new GetCharonDropsByListIdQueryHandler(context, blob);
+        var result = await handler.Handle(new GetCharonDropsByListIdQuery(list.Id, "recipient"), CancellationToken.None);
+
+        result.Should().ContainSingle();
+        result[0].ViewerIds.Should().BeEmpty();
+    }
 }

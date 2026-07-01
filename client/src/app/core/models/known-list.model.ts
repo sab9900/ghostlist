@@ -15,6 +15,7 @@ export interface KnownList {
     notifyOnItemsChanged?: boolean;
     notifyOnLethe?: boolean;
     notifyOnCharon?: boolean;
+    notifyOnNemesis?: boolean;
     isSensitive?: boolean;
 }
 

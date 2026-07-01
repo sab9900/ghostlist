@@ -32,6 +32,24 @@ export const routes: Routes = [
                     import('./features/list-detail/charon-tab/charon-tab.component').then((m) => m.CharonTabComponent),
             },
             {
+                path: 'nemesis',
+                loadComponent: () =>
+                    import('./features/list-detail/nemesis-tab/nemesis-tab.component').then((m) => m.NemesisTabComponent),
+                children: [
+                    { path: '', redirectTo: 'expenses', pathMatch: 'full' },
+                    {
+                        path: 'expenses',
+                        loadComponent: () =>
+                            import('./features/nemesis/nemesis-expenses-panel/nemesis-expenses-panel.component').then((m) => m.NemesisExpensesPanelComponent),
+                    },
+                    {
+                        path: 'settlements',
+                        loadComponent: () =>
+                            import('./features/nemesis/nemesis-settlements-panel/nemesis-settlements-panel.component').then((m) => m.NemesisSettlementsPanelComponent),
+                    },
+                ],
+            },
+            {
                 path: 'settings',
                 loadComponent: () =>
                     import('./features/list-detail/settings-tab/settings-tab.component').then((m) => m.SettingsTabComponent),

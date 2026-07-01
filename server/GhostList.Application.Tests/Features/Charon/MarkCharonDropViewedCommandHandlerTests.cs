@@ -15,6 +15,7 @@ public class MarkCharonDropViewedCommandHandlerTests
     {
         var notifier = Substitute.For<IGhostListNotifier>();
         notifier.NotifyCharonDropDeleted(Arg.Any<Guid>(), Arg.Any<Guid>()).Returns(Task.CompletedTask);
+        notifier.NotifyCharonDropViewed(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<string>()).Returns(Task.CompletedTask);
         return notifier;
     }
 

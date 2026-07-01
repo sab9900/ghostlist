@@ -99,6 +99,37 @@
         </div>
     </div>
 </section>
+
+<section class="settings-section" aria-labelledby="nemesis-settings-heading">
+    <h3 class="settings-section__title" id="nemesis-settings-heading">{{ 'LIST_SETTINGS.NEMESIS_TITLE' | translate }}</h3>
+    <p class="settings-section__hint">{{ 'LIST_SETTINGS.NEMESIS_HINT' | translate }}</p>
+    <div class="settings-field">
+        <label class="settings-label" for="nemesis-expiry-days">{{ 'LIST_SETTINGS.NEMESIS_EXPIRY_DAYS_LABEL' | translate }}</label>
+        <div class="settings-row">
+            <input class="settings-input settings-input--number" id="nemesis-expiry-days" type="number"
+                [ngModel]="nemesisExpiryDays()" (ngModelChange)="nemesisExpiryDays.set(+$event)"
+                min="1" max="3650" step="1" aria-labelledby="nemesis-settings-heading" />
+        </div>
+    </div>
+    <div class="settings-field">
+        <label class="settings-label" for="nemesis-hide-days">{{ 'LIST_SETTINGS.NEMESIS_HIDE_AFTER_DAYS_LABEL' | translate }}</label>
+        <div class="settings-row">
+            <input class="settings-input settings-input--number" id="nemesis-hide-days" type="number"
+                [ngModel]="nemesisHideAfterDays()" (ngModelChange)="nemesisHideAfterDays.set(+$event)"
+                min="0" max="365" step="1" aria-labelledby="nemesis-settings-heading" />
+        </div>
+    </div>
+    <div class="save-slot">
+        <button class="btn btn--primary btn--sm" (click)="saveNemesisSettings()"
+            [class.save-slot__hidden]="nemesisSettingsSaved()"
+            [disabled]="savingNemesisSettings()" [attr.aria-busy]="savingNemesisSettings()">
+            {{ savingNemesisSettings() ? ('COMMON.SAVING' | translate) : ('COMMON.SAVE' | translate) }}
+        </button>
+        @if (nemesisSettingsSaved()) {
+        <span class="save-feedback save-slot__overlay" role="status" aria-live="polite">{{ 'COMMON.SAVED' | translate }}</span>
+        }
+    </div>
+</section>
 }
 
 <section class="settings-section" aria-labelledby="notifications-heading">
@@ -145,6 +176,17 @@
         </div>
         <label class="toggle-switch" aria-labelledby="notify-charon-label">
             <input type="checkbox" [ngModel]="notifyOnCharon()" (ngModelChange)="setNotifyOnCharon($event)" />
+            <span class="toggle-switch__track" aria-hidden="true"></span>
+        </label>
+    </div>
+
+    <div class="toggle-row">
+        <div>
+            <p class="toggle-label" id="notify-nemesis-label">{{ 'LIST_SETTINGS.NOTIFY_ON_NEMESIS' | translate }}</p>
+            <p class="toggle-hint">{{ 'LIST_SETTINGS.NOTIFY_ON_NEMESIS_HINT' | translate }}</p>
+        </div>
+        <label class="toggle-switch" aria-labelledby="notify-nemesis-label">
+            <input type="checkbox" [ngModel]="notifyOnNemesis()" (ngModelChange)="setNotifyOnNemesis($event)" />
             <span class="toggle-switch__track" aria-hidden="true"></span>
         </label>
     </div>
@@ -235,9 +277,7 @@
     <div class="member-list" role="list">
         @for (group of memberGroups(); track group.key) {
         <div class="member" role="listitem">
-            <div class="member__avatar" [class.member__avatar--self]="group.isCurrentUser" aria-hidden="true">
-                {{ group.displayName.charAt(0).toUpperCase() }}
-            </div>
+            <app-avatar [name]="group.displayName" [size]="36" />
             <div class="member__info">
                 <span class="member__name">
                     {{ group.displayName }}

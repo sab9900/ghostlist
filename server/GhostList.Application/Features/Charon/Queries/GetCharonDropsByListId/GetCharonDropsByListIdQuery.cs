@@ -17,7 +17,8 @@ public record CharonDropDto(
     string MetadataInitializationVector,
     DateTime CreatedAt,
     string? SenderDeviceId,
-    string? SenderUserId);
+    string? SenderUserId,
+    List<string> ViewerIds);
 
 public class GetCharonDropsByListIdQueryHandler(IApplicationDbContext context, IBlobStorage blobStorage)
     : IRequestHandler<GetCharonDropsByListIdQuery, List<CharonDropDto>>
@@ -32,6 +33,11 @@ public class GetCharonDropsByListIdQueryHandler(IApplicationDbContext context, I
         if (!listExists)
             throw new NotFoundException(nameof(Domain.Entities.GhostList), request.ListId);
 
+        bool IsSender(Domain.Entities.CharonDrop d) =>
+            request.UserId != null
+                ? d.SenderUserId == request.UserId
+                : d.SenderDeviceId == request.DeviceId;
+
         var viewedDropIds = context.CharonViewReceipts
             .Where(r => request.UserId != null
                 ? r.UserId == request.UserId
@@ -39,9 +45,21 @@ public class GetCharonDropsByListIdQueryHandler(IApplicationDbContext context, I
             .Select(r => r.DropId);
 
         var drops = await context.CharonDrops
-            .Where(d => d.GhostListId == request.ListId && !viewedDropIds.Contains(d.Id))
+            .Where(d => d.GhostListId == request.ListId)
+            .Where(d =>
+                (request.UserId != null ? d.SenderUserId == request.UserId : d.SenderDeviceId == request.DeviceId)
+                || !viewedDropIds.Contains(d.Id))
             .OrderBy(d => d.CreatedAt)
             .ToListAsync(cancellationToken);
+
+        var allReceipts = await context.CharonViewReceipts
+            .Where(r => drops.Select(d => d.Id).Contains(r.DropId))
+            .Select(r => new { r.DropId, Identity = r.UserId ?? r.DeviceId })
+            .ToListAsync(cancellationToken);
+
+        var receiptsByDrop = allReceipts
+            .GroupBy(r => r.DropId)
+            .ToDictionary(g => g.Key, g => g.Select(r => r.Identity).Distinct().ToList());
 
         var results = await Task.WhenAll(drops.Select(async d =>
         {
@@ -60,6 +78,10 @@ public class GetCharonDropsByListIdQueryHandler(IApplicationDbContext context, I
             }
             catch { }
 
+            var viewerIds = IsSender(d) && receiptsByDrop.TryGetValue(d.Id, out var ids)
+                ? ids
+                : [];
+
             return new CharonDropDto(
                 d.Id,
                 d.GhostListId,
@@ -69,7 +91,8 @@ public class GetCharonDropsByListIdQueryHandler(IApplicationDbContext context, I
                 d.MetadataInitializationVector,
                 d.CreatedAt,
                 d.SenderDeviceId,
-                d.SenderUserId);
+                d.SenderUserId,
+                viewerIds);
         }));
 
         return [.. results];

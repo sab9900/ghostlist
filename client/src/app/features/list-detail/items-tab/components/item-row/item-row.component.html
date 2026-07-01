@@ -1,8 +1,10 @@
 @let it = item();
 @let reminder = activeReminder();
+@let status = reminderStatus();
 <li class="item" [attr.data-item-id]="it.id"
     [class.item--checked]="it.isChecked"
     [class.item--open]="isMenuOpen()"
+    [class.item--highlighted]="highlighted()"
     [attr.aria-label]="it.isChecked ? ('ITEMS.MARK_UNDONE_ARIA' | translate:{text: it.text}) : ('ITEMS.MARK_DONE_ARIA' | translate:{text: it.text})"
     tabindex="0" role="button"
     [attr.aria-pressed]="it.isChecked"
@@ -38,9 +40,21 @@
             <span class="new-dot" aria-hidden="true"></span>
             }
             @if (reminder) {
-            <span class="reminder-badge" aria-hidden="true">
+            <span class="reminder-badge"
+                [class.reminder-badge--overdue]="status === 'overdue'"
+                [class.reminder-badge--due-soon]="status === 'due-soon'"
+                aria-hidden="true">
                 <svg lucideClock [size]="11" [strokeWidth]="2.5"></svg>
                 {{ formatReminderDate(reminder.remindAt) }}
+            </span>
+            }
+            @if (it.priority === 'important') {
+            <span class="priority-badge priority-badge--important" aria-hidden="true">
+                <svg lucideCircleAlert [size]="13" [strokeWidth]="2"></svg>
+            </span>
+            } @else if (it.priority === 'optional') {
+            <span class="priority-badge priority-badge--optional" aria-hidden="true">
+                <svg lucideCircleHelp [size]="13" [strokeWidth]="2"></svg>
             </span>
             }
             @if (!it.isChecked && it.creatorName) {
@@ -71,6 +85,24 @@
                 {{ 'ITEMS.REMEMBER_ME' | translate }}
             </button>
             }
+        }
+        @if (it.priority !== 'important') {
+        <button type="button" role="menuitem" class="menu-item menu-item--important" (click)="setPriority.emit('important')">
+            <svg lucideCircleAlert [size]="15" aria-hidden="true"></svg>
+            {{ 'ITEMS.SET_IMPORTANT' | translate }}
+        </button>
+        }
+        @if (it.priority !== 'optional') {
+        <button type="button" role="menuitem" class="menu-item menu-item--optional" (click)="setPriority.emit('optional')">
+            <svg lucideCircleHelp [size]="15" aria-hidden="true"></svg>
+            {{ 'ITEMS.SET_OPTIONAL' | translate }}
+        </button>
+        }
+        @if (it.priority) {
+        <button type="button" role="menuitem" class="menu-item" (click)="setPriority.emit(null)">
+            <svg lucideCircleX [size]="15" aria-hidden="true"></svg>
+            {{ 'ITEMS.CLEAR_PRIORITY' | translate }}
+        </button>
         }
         <button type="button" role="menuitem" class="menu-item menu-item--danger" (click)="delete.emit()">
             <svg lucideTrash2 [size]="15" aria-hidden="true"></svg>

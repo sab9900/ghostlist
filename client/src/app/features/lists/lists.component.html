@@ -5,8 +5,10 @@
     <app-lists-header
         [totalUnread]="totalUnread()"
         [showCoffeeLink]="showCoffeeLink"
+        [filterActive]="!!(searchQuery() || prefs.listSortOrder() !== 'name')"
+        [filterHasQuery]="!!searchQuery()"
         (logoClick)="onLogoClick()"
-        (titleClick)="showFilterDialog.set(true)"
+        (filterClick)="showFilterDialog.set(true)"
         (markAllReadOpen)="showMarkAllReadDialog.set(true)"
         (importOpen)="showImportDialog.set(true)"
         (exportOpen)="showExportDialog.set(true)"

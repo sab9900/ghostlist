@@ -1,3 +1,11 @@
+export interface DecryptedReaction {
+    id: string;
+    emoji: string;
+    senderName: string;
+    senderDeviceId: string | null;
+    senderUserId: string | null;
+}
+
 export interface DecryptedMessage {
     id: string;
     text: string;
@@ -9,6 +17,7 @@ export interface DecryptedMessage {
     isVideo: boolean;
     senderDeviceId: string | null;
     senderUserId: string | null;
+    reactions: DecryptedReaction[];
 }
 
 export interface ReplyPreview {

@@ -9,7 +9,6 @@ public record GetGhostListByIdQuery(Guid Id) : IRequest<GhostListDto?>;
 
 public record GhostListDto(Guid Id, int Ttl, int WhisperLifetimeSeconds, DateTime CreatedAt, List<GhostListItemDto> Items, List<GhostChatMessageDto> ChatMessages, bool HasMoreMessages);
 public record GhostListItemDto(Guid Id, string EncryptedPayload, string InitializationVector, bool IsChecked, DateTime? CheckedAt, DateTime CreatedAt, string? SenderDeviceId, string? SenderUserId);
-public record GhostChatMessageDto(Guid Id, string EncryptedMessage, string MessageInitializationVector, string EncryptedSenderName, string SenderNameInitializationVector, Guid? ReplyToMessageId, DateTime CreatedAt, string? SenderDeviceId, string? SenderUserId);
 
 public class GetGhostListByIdQueryHandler(IApplicationDbContext context) : IRequestHandler<GetGhostListByIdQuery, GhostListDto?>
 {
@@ -28,7 +27,24 @@ public class GetGhostListByIdQueryHandler(IApplicationDbContext context) : IRequ
             .ToListAsync(cancellationToken);
 
         var hasMoreMessages = fetchedMessages.Count > ChatMessagePaging.DefaultPageSize;
-        var recentMessages = fetchedMessages.Take(ChatMessagePaging.DefaultPageSize).Reverse();
+        var recentMessages = fetchedMessages.Take(ChatMessagePaging.DefaultPageSize).Reverse().ToList();
+
+        var messageIds = recentMessages.Select(m => m.Id).ToList();
+
+        var reactions = await context.GhostMessageReactions
+            .Where(r => messageIds.Contains(r.MessageId))
+            .Select(r => new { r.MessageId, Dto = new GhostMessageReactionDto(
+                r.Id,
+                r.EncryptedEmoji,
+                r.EmojiInitializationVector,
+                r.EncryptedSenderName,
+                r.SenderNameInitializationVector,
+                r.SenderDeviceId,
+                r.SenderUserId) })
+            .ToListAsync(cancellationToken);
+
+        var reactionsByMessage = reactions.GroupBy(r => r.MessageId)
+            .ToDictionary(g => g.Key, g => g.Select(r => r.Dto).ToList());
 
         return new GhostListDto(
             list.Id,
@@ -48,7 +64,8 @@ public class GetGhostListByIdQueryHandler(IApplicationDbContext context) : IRequ
                     m.ReplyToMessageId,
                     m.CreatedAt,
                     m.SenderDeviceId,
-                    m.SenderUserId))
+                    m.SenderUserId,
+                    reactionsByMessage.TryGetValue(m.Id, out var r) ? r : []))
                 .ToList(),
             hasMoreMessages);
     }

@@ -71,6 +71,11 @@
         background: var(--color-danger-dim);
         color: var(--color-danger);
     }
+
+    &--nemesis {
+        background: color-mix(in srgb, var(--color-warning, #f59e0b) 12%, transparent);
+        color: var(--color-warning, #f59e0b);
+    }
 }
 
 .snack__text {

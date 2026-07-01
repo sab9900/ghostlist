@@ -1,0 +1,156 @@
+<div class="panel-root" [class.panel-root--busy]="store.loading()">
+
+    <div class="list-toolbar">
+        <button class="filter-btn" type="button" (click)="filterOpen.set(true)"
+            [class.filter-btn--active]="filterActive()" [attr.aria-label]="'NEMESIS.FILTER_OPEN_ARIA' | translate">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
+                <line x1="4" y1="6" x2="20" y2="6" />
+                <line x1="8" y1="12" x2="16" y2="12" />
+                <line x1="11" y1="18" x2="13" y2="18" />
+            </svg>
+            @if (searchQuery()) {
+            <span class="filter-btn__badge" aria-hidden="true"></span>
+            }
+        </button>
+    </div>
+
+    <div class="list">
+        <app-expense-list [expenses]="filteredExpenses()" [currentUserId]="currentUserId" [members]="uniqueMembers"
+            (expenseSelected)="onExpenseSelected($event)" (verifyRequested)="onVerifyRequested($event)" />
+    </div>
+
+    <button class="fab" (click)="openAddSheet()" [attr.aria-label]="'NEMESIS.ADD_EXPENSE' | translate">
+        <svg lucidePlus [size]="24" aria-hidden="true"></svg>
+    </button>
+
+    <app-nemesis-filter-dialog [show]="filterOpen()" [mode]="'expenses'" [query]="searchQuery()"
+        [expenseSortOrder]="sortOrder()" [settlementSortOrder]="'amount'" (queryChange)="searchQuery.set($event)"
+        (expenseSortOrderChange)="sortOrder.set($event)" (settlementSortOrderChange)="$event"
+        (closed)="filterOpen.set(false)" />
+
+</div>
+
+@if (showScanner) {
+<app-receipt-scanner (confirmed)="onScanConfirmed($event)" (cancelled)="onScanCancelled()" />
+}
+
+@if (showAddSheet()) {
+<div class="overlay" #addSheetOverlay (click)="closeAddSheet()">
+    <div class="sheet sheet--form" (click)="$event.stopPropagation()">
+
+        <div class="sheet__header">
+            <span class="sheet__title">{{ 'NEMESIS.ADD_EXPENSE' | translate }}</span>
+            <button class="sheet__close" (click)="closeAddSheet()"
+                [attr.aria-label]="'NEMESIS.DETAIL_CLOSE_ARIA' | translate">
+                <svg lucideX [size]="20" aria-hidden="true"></svg>
+            </button>
+        </div>
+
+        <div class="sheet__body">
+
+            @if (pendingReceipt) {
+            <div class="form__receipt">
+                <span>📎 {{ 'NEMESIS.RECEIPT_ATTACHED' | translate }}</span>
+                @if (pendingReceipt.detectedAmount !== null) {
+                <span>{{ 'NEMESIS.RECEIPT_DETECTED' | translate: { amount: (pendingReceipt.detectedAmount |
+                    number:'1.2-2') } }}</span>
+                }
+                <button type="button" class="form__receipt-remove" (click)="pendingReceipt = null"
+                    [attr.aria-label]="'NEMESIS.RECEIPT_REMOVE_ARIA' | translate">✕</button>
+            </div>
+            }
+
+            <input #directFileInput type="file" accept="image/*,application/pdf" class="form__file-input"
+                (change)="onDirectFileSelected($event)" aria-hidden="true" />
+
+            <div class="form__row">
+
+                <textarea class="form__desc" rows="3" [(ngModel)]="newExpense.description" name="description"
+                    [attr.placeholder]="'NEMESIS.DESC_PLACEHOLDER' | translate"
+                    (input)="autoResizeDesc($event)"></textarea>
+                <div style="display: flex; flex-direction: column; gap: 4px; margin-left: 4px;">
+                    <button type="button" class="form__scan" [class.form__scan--active]="!!pendingReceipt"
+                        (click)="triggerDirectFileInput()" [attr.aria-label]="'NEMESIS.UPLOAD_ARIA' | translate">
+                        <svg lucidePaperclip [size]="20" aria-hidden="true"></svg>
+                    </button>
+                    <button type="button" class="form__scan" (click)="openScanner()"
+                        [attr.aria-label]="'NEMESIS.SCAN_ARIA' | translate">
+                        <svg lucideCamera [size]="20" aria-hidden="true"></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form__row">
+                <input class="form__amount" type="number" [(ngModel)]="newExpense.amount" name="amount"
+                    [attr.placeholder]="'NEMESIS.AMOUNT_PLACEHOLDER' | translate" min="0.01" step="0.01" />
+                <input class="form__currency" type="text" [(ngModel)]="newExpense.currency" name="currency"
+                    maxlength="3" />
+            </div>
+
+            <div class="form__section">
+                <p class="form__label">{{ 'NEMESIS.PAID_BY' | translate }}</p>
+                <div class="form__members">
+                    @for (member of uniqueMembers; track member.userId ?? member.deviceId) {
+                    @if (member.userId) {
+                    <button type="button" class="member"
+                        [class.member--selected]="newExpense.paidByUserId === member.userId"
+                        (click)="newExpense.paidByUserId = member.userId!">
+                        <span class="member__avatar">{{ initial(member.displayName) }}</span>
+                        <span class="member__name">{{ member.displayName }}</span>
+                        @if (newExpense.paidByUserId === member.userId) {
+                        <svg lucideCheck [size]="16" class="member__check" aria-hidden="true"></svg>
+                        }
+                    </button>
+                    }
+                    }
+                </div>
+            </div>
+
+            <div class="form__section">
+                <div class="form__section-header">
+                    <p class="form__label">{{ 'NEMESIS.SPLIT_BETWEEN' | translate }}</p>
+                    <button type="button" class="form__toggle" (click)="toggleAllSplit()">
+                        {{ (allSplitSelected ? 'NEMESIS.DESELECT_ALL' : 'NEMESIS.SELECT_ALL') | translate }}
+                    </button>
+                </div>
+                <div class="form__members">
+                    @for (member of uniqueMembers; track member.userId ?? member.deviceId) {
+                    @if (member.userId) {
+                    <button type="button" class="member" [class.member--selected]="isSplitMember(member.userId!)"
+                        (click)="toggleSplitMember(member.userId!)">
+                        <span class="member__avatar" [class.member__avatar--dim]="!isSplitMember(member.userId!)">{{
+                            initial(member.displayName) }}</span>
+                        <span class="member__name">{{ member.displayName }}</span>
+                        @if (isSplitMember(member.userId!)) {
+                        <svg lucideCheck [size]="16" class="member__check" aria-hidden="true"></svg>
+                        }
+                    </button>
+                    }
+                    }
+                </div>
+            </div>
+
+        </div>
+
+        <div class="sheet__footer">
+            <button class="sheet__submit" [disabled]="!canSubmit" (click)="submitExpense()">
+                {{ 'NEMESIS.ADD_BTN' | translate }}
+            </button>
+        </div>
+
+    </div>
+</div>
+}
+
+@if (selectedExpense()) {
+<div class="overlay" #detailOverlay (click)="onDetailClosed()">
+    <div class="sheet" (click)="$event.stopPropagation()">
+        <app-expense-detail [expense]="selectedExpense()!" [currentUserId]="currentUserId" [members]="uniqueMembers"
+            [receiptDataUrl]="selectedReceiptUrl()" [receiptError]="selectedReceiptError()"
+            (verifyRequested)="onVerifyRequested($event)" (rejectRequested)="onRejectRequested($event)"
+            (receiptOpened)="onReceiptOpened($event)" (closed)="onDetailClosed()" />
+    </div>
+</div>
+}

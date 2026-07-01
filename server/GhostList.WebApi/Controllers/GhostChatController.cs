@@ -3,6 +3,7 @@ using GhostList.Application.Features.GhostMessages.Commands.DeleteGhostChatMessa
 using GhostList.Application.Features.GhostMessages.Commands.SaveGhostMessageAudio;
 using GhostList.Application.Features.GhostMessages.Commands.SaveGhostMessageImage;
 using GhostList.Application.Features.GhostMessages.Commands.SaveGhostMessageVideo;
+using GhostList.Application.Features.GhostMessages.Commands.ToggleReaction;
 using GhostList.Application.Features.GhostMessages.Queries.GetGhostChatMessagesByListId;
 using GhostList.Application.Features.GhostMessages.Queries.GetGhostMessageAudio;
 using GhostList.Application.Features.GhostMessages.Queries.GetGhostMessageImage;
@@ -16,6 +17,12 @@ namespace GhostList.WebApi.Controllers;
 public record SaveGhostMessageImageRequest(string EncryptedImage, string ImageInitializationVector);
 public record SaveGhostMessageAudioRequest(string EncryptedAudio, string AudioInitializationVector);
 public record SaveGhostMessageVideoRequest(string EncryptedVideo, string VideoInitializationVector);
+public record ToggleReactionRequest(
+    string? EncryptedEmoji,
+    string? EmojiInitializationVector,
+    string? EncryptedSenderName,
+    string? SenderNameInitializationVector,
+    bool RemoveOnly = false);
 
 [ApiController]
 [Route("api/[controller]")]
@@ -89,5 +96,23 @@ public class ChatController(IMediator mediator) : ControllerBase
     {
         var video = await mediator.Send(new GetGhostMessageVideoQuery(messageId));
         return Ok(video);
+    }
+
+    [HttpPut("{messageId:guid}/reactions")]
+    [EnableRateLimiting("write-content")]
+    public async Task<ActionResult<ToggleReactionResult>> ToggleReaction(Guid messageId, [FromBody] ToggleReactionRequest request)
+    {
+        var deviceId = Request.Headers["X-Device-Id"].FirstOrDefault();
+        var userId = Request.Headers["X-User-Id"].FirstOrDefault();
+        var result = await mediator.Send(new ToggleReactionCommand(
+            messageId,
+            request.EncryptedEmoji,
+            request.EmojiInitializationVector,
+            request.EncryptedSenderName,
+            request.SenderNameInitializationVector,
+            request.RemoveOnly,
+            deviceId,
+            userId));
+        return Ok(result);
     }
 }

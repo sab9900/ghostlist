@@ -4,10 +4,17 @@
         aria-labelledby="filter-dialog-title">
         <h2 class="title" id="filter-dialog-title">{{ 'LISTS.FILTER_TITLE' | translate }}</h2>
 
-        <input #input class="input" type="search"
-            [attr.placeholder]="'LISTS.FILTER_SEARCH_PLACEHOLDER' | translate"
-            [ngModel]="query()" (ngModelChange)="onQueryChange($event)"
-            [attr.aria-label]="'LISTS.FILTER_SEARCH_PLACEHOLDER' | translate" />
+        <div class="input-wrap">
+            <input #input class="input" type="text"
+                [attr.placeholder]="'LISTS.FILTER_SEARCH_PLACEHOLDER' | translate"
+                [ngModel]="query()" (ngModelChange)="onQueryChange($event)"
+                [attr.aria-label]="'LISTS.FILTER_SEARCH_PLACEHOLDER' | translate" />
+            @if (query()) {
+            <button type="button" class="input-clear" (click)="onQueryChange('')" aria-label="Clear search">
+                <svg lucideX [size]="14" [strokeWidth]="2.5" aria-hidden="true"></svg>
+            </button>
+            }
+        </div>
 
         <div class="sort">
             <span class="sort__label">{{ 'LISTS.FILTER_SORT_LABEL' | translate }}</span>

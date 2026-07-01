@@ -1,0 +1,12 @@
+<div class="picker" role="toolbar" aria-label="Reaction picker">
+    @for (emoji of emojis; track emoji) {
+    <button
+        type="button"
+        class="emoji-btn"
+        [attr.aria-label]="emoji"
+        (click)="onPick(emoji, $event)"
+        (touchend)="onPick(emoji, $event)">
+        {{ emoji }}
+    </button>
+    }
+</div>

@@ -86,7 +86,7 @@ export function withPairing() {
                 if (!remoteIsOlder) return;
 
                 userId.setUserId(parsed.userId, remoteCreatedAt);
-                if (parsed.senderName && !prefs.senderName()) {
+                if (parsed.senderName) {
                     prefs.setSenderName(parsed.senderName);
                 }
             };

@@ -7,8 +7,11 @@ public static class BlobKeys
     public static string ChatVideo(Guid messageId) => $"chat-videos/{messageId}";
     public static string CharonDrop(Guid dropId) => $"charon-drops/{dropId}";
 
+    public static string NemesisReceipt(Guid expenseId) => $"nemesis-receipts/{expenseId}";
+
     public static string ChatImagePrefix => "chat-images/";
     public static string ChatAudioPrefix => "chat-audios/";
     public static string ChatVideoPrefix => "chat-videos/";
     public static string CharonDropPrefix => "charon-drops/";
+    public static string NemesisReceiptPrefix => "nemesis-receipts/";
 }

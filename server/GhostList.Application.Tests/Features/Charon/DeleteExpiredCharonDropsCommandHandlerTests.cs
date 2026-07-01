@@ -4,7 +4,6 @@ using GhostList.Application.Features.Charon.Commands.DeleteExpiredCharonDrops;
 using GhostList.Application.Tests.Helpers;
 using GhostList.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
-using GhostList.Application.Common.Interfaces;
 using NSubstitute;
 
 namespace GhostList.Application.Tests.Features.Charon;

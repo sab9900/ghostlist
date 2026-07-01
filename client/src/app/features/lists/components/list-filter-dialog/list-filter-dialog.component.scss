@@ -32,6 +32,12 @@
     font-weight: var(--weight-semi);
 }
 
+.input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
 .input {
     background: var(--color-surface-2);
     border: 1px solid var(--color-border);
@@ -48,6 +54,24 @@
     &:focus { border-color: var(--color-primary); }
 }
 
+.input-clear {
+    position: absolute;
+    right: var(--space-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-subtle);
+    cursor: pointer;
+    padding: 0;
+
+    &:hover { color: var(--color-text); background: var(--color-surface-3); }
+}
+
 .sort {
     display: flex;
     flex-direction: column;
@@ -61,14 +85,14 @@
 
 .sort__options {
     display: flex;
-    gap: var(--space-2);
+    flex-direction: column;
+    gap: var(--space-1);
     background: var(--color-surface-2);
     border-radius: var(--radius-sm);
     padding: var(--space-1);
 }
 
 .sort__option {
-    flex: 1;
     border: none;
     background: transparent;
     color: var(--color-text-muted);

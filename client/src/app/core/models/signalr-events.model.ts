@@ -17,6 +17,11 @@ export interface ItemToggledEvent {
     checkedByUserId: string | null;
 }
 
+export interface ItemPriorityChangedEvent {
+    itemId: string;
+    priority: number;
+}
+
 export interface MessageCreatedEvent {
     id: string;
     ghostListId: string;
@@ -106,4 +111,89 @@ export interface CharonDropCreatedEvent {
     createdAt: string;
     senderDeviceId: string | null;
     senderUserId: string | null;
+}
+
+export interface NemesisExpenseCreatedEvent {
+    id: string;
+    ghostListId: string;
+    encryptedPayload: string;
+    payloadInitializationVector: string;
+    status: string;
+    splitCount: number;
+    createdAt: string;
+    createdByDeviceId: string | null;
+    createdByUserId: string | null;
+    encryptedReceiptKey: string | null;
+    receiptBlobKey: string | null;
+    verifications: { verifiedByUserId: string; verifiedAt: string }[];
+}
+
+export interface NemesisExpenseVerifiedEvent {
+    expenseId: string;
+    ghostListId: string;
+    status: string;
+    verifiedByUserId: string;
+}
+
+export interface NemesisSettlementCreatedEvent {
+    id: string;
+    ghostListId: string;
+    encryptedPayload: string;
+    payloadInitializationVector: string;
+    isPaidByPayer: boolean;
+    isConfirmedByReceiver: boolean;
+    paidAt: string | null;
+    payerDeviceId: string | null;
+    payerUserId: string | null;
+    receiverUserId: string | null;
+}
+
+export interface NemesisSettlementConfirmedEvent {
+    settlementId: string;
+    ghostListId: string;
+    confirmedAt: string;
+}
+
+export interface NemesisSettlementDeclinedEvent {
+    settlementId: string;
+    ghostListId: string;
+}
+
+export interface NemesisExpenseArchivedEvent {
+    expenseId: string;
+    ghostListId: string;
+}
+
+export interface NemesisSettlementVoidedEvent {
+    settlementId: string;
+    ghostListId: string;
+}
+
+export interface NemesisSettlementExpiredEvent {
+    settlementId: string;
+    ghostListId: string;
+}
+
+export interface NemesisSettlementForgivenEvent {
+    settlementId: string;
+    ghostListId: string;
+}
+
+export interface NemesisSettlementExpiringEvent {
+    settlementId: string;
+    ghostListId: string;
+    daysLeft: number;
+}
+
+export interface ReactionChangedEvent {
+    reactionId: string;
+    messageId: string;
+    ghostListId: string;
+    encryptedEmoji: string;
+    emojiInitializationVector: string;
+    encryptedSenderName: string;
+    senderNameInitializationVector: string;
+    senderDeviceId: string | null;
+    senderUserId: string | null;
+    removed: boolean;
 }

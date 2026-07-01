@@ -67,6 +67,9 @@ public static class DependencyInjection
 
             DROP TABLE IF EXISTS "GhostMessageImages";
             DROP TABLE IF EXISTS "GhostMessageAudios";
+
+            ALTER TABLE "GhostListItems"
+            ADD COLUMN IF NOT EXISTS "Priority" integer NOT NULL DEFAULT 0;
             """);
     }
 }
