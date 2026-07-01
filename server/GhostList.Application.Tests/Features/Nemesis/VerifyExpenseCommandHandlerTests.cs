@@ -18,6 +18,13 @@ public class VerifyExpenseCommandHandlerTests
         return notifier;
     }
 
+    private static IPushNotificationService MockPush()
+    {
+        var push = Substitute.For<IPushNotificationService>();
+        push.SendNotificationAsync(Arg.Any<Guid>(), Arg.Any<PushNotificationType>(), Arg.Any<string?>(), Arg.Any<CancellationToken>(), Arg.Any<IReadOnlyCollection<string>?>(), Arg.Any<IReadOnlyCollection<string>?>()).Returns(Task.CompletedTask);
+        return push;
+    }
+
     private static async Task<(Domain.Entities.GhostList list, NemesisExpense expense)> SetupListAndExpense(
         GhostList.Infrastructure.Persistence.ApplicationDbContext context,
         int splitCount = 2)
@@ -38,7 +45,7 @@ public class VerifyExpenseCommandHandlerTests
         await using var context = DbContextFactory.Create();
         var (_, expense) = await SetupListAndExpense(context, splitCount: 2);
 
-        var handler = new VerifyExpenseCommandHandler(context, MockNotifier());
+        var handler = new VerifyExpenseCommandHandler(context, MockNotifier(), MockPush());
         await handler.Handle(new VerifyExpenseCommand(expense.Id, "user1"), CancellationToken.None);
 
         var updated = context.NemesisExpenses.Find(expense.Id);
@@ -52,7 +59,7 @@ public class VerifyExpenseCommandHandlerTests
         await using var context = DbContextFactory.Create();
         var (_, expense) = await SetupListAndExpense(context, splitCount: 1);
 
-        var handler = new VerifyExpenseCommandHandler(context, MockNotifier());
+        var handler = new VerifyExpenseCommandHandler(context, MockNotifier(), MockPush());
         await handler.Handle(new VerifyExpenseCommand(expense.Id, "user1"), CancellationToken.None);
 
         var updated = context.NemesisExpenses.Find(expense.Id);
@@ -66,7 +73,7 @@ public class VerifyExpenseCommandHandlerTests
         await using var context = DbContextFactory.Create();
         var (_, expense) = await SetupListAndExpense(context, splitCount: 2);
 
-        var handler = new VerifyExpenseCommandHandler(context, MockNotifier());
+        var handler = new VerifyExpenseCommandHandler(context, MockNotifier(), MockPush());
         await handler.Handle(new VerifyExpenseCommand(expense.Id, "user1"), CancellationToken.None);
 
         var updated = context.NemesisExpenses.Find(expense.Id);
@@ -80,7 +87,7 @@ public class VerifyExpenseCommandHandlerTests
         var (list, expense) = await SetupListAndExpense(context);
 
         var notifier = MockNotifier();
-        var handler = new VerifyExpenseCommandHandler(context, notifier);
+        var handler = new VerifyExpenseCommandHandler(context, notifier, MockPush());
         await handler.Handle(new VerifyExpenseCommand(expense.Id, "user1"), CancellationToken.None);
 
         await notifier.Received(1).NotifyNemesisExpenseVerified(list.Id, Arg.Is<NemesisExpenseVerifiedNotification>(n =>
@@ -94,7 +101,7 @@ public class VerifyExpenseCommandHandlerTests
         await using var context = DbContextFactory.Create();
         var (_, expense) = await SetupListAndExpense(context, splitCount: 2);
 
-        var handler = new VerifyExpenseCommandHandler(context, MockNotifier());
+        var handler = new VerifyExpenseCommandHandler(context, MockNotifier(), MockPush());
         await handler.Handle(new VerifyExpenseCommand(expense.Id, "user1"), CancellationToken.None);
         await handler.Handle(new VerifyExpenseCommand(expense.Id, "user1"), CancellationToken.None);
 
@@ -106,7 +113,7 @@ public class VerifyExpenseCommandHandlerTests
     public async Task Handle_NonExistentExpense_ThrowsNotFoundException()
     {
         await using var context = DbContextFactory.Create();
-        var handler = new VerifyExpenseCommandHandler(context, MockNotifier());
+        var handler = new VerifyExpenseCommandHandler(context, MockNotifier(), MockPush());
 
         var act = () => handler.Handle(new VerifyExpenseCommand(Guid.NewGuid(), "user1"), CancellationToken.None);
 

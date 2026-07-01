@@ -2,19 +2,19 @@ using FluentAssertions;
 using GhostList.Application.Common.Exceptions;
 using GhostList.Application.Common.Interfaces;
 using GhostList.Application.Common.Notifications;
-using GhostList.Application.Features.Nemesis.Commands.ConfirmSettlement;
+using GhostList.Application.Features.Nemesis.Commands.DeclineSettlement;
 using GhostList.Application.Tests.Helpers;
 using GhostList.Domain.Entities;
 using NSubstitute;
 
 namespace GhostList.Application.Tests.Features.Nemesis;
 
-public class ConfirmSettlementCommandHandlerTests
+public class DeclineSettlementCommandHandlerTests
 {
     private static IGhostListNotifier MockNotifier()
     {
         var notifier = Substitute.For<IGhostListNotifier>();
-        notifier.NotifyNemesisSettlementConfirmed(Arg.Any<Guid>(), Arg.Any<NemesisSettlementConfirmedNotification>()).Returns(Task.CompletedTask);
+        notifier.NotifyNemesisSettlementDeclined(Arg.Any<Guid>(), Arg.Any<NemesisSettlementDeclinedNotification>()).Returns(Task.CompletedTask);
         return notifier;
     }
 
@@ -26,7 +26,7 @@ public class ConfirmSettlementCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ValidSettlement_ConfirmsReceipt()
+    public async Task Handle_ValidSettlement_SetsStatusToDeclined()
     {
         await using var context = DbContextFactory.Create();
         var list = Domain.Entities.GhostList.Create();
@@ -35,34 +35,33 @@ public class ConfirmSettlementCommandHandlerTests
         context.NemesisSettlements.Add(settlement);
         await context.SaveChangesAsync();
 
-        var handler = new ConfirmSettlementCommandHandler(context, MockNotifier(), MockPush());
-        await handler.Handle(new ConfirmSettlementCommand(settlement.Id), CancellationToken.None);
+        var handler = new DeclineSettlementCommandHandler(context, MockNotifier(), MockPush());
+        await handler.Handle(new DeclineSettlementCommand(settlement.Id), CancellationToken.None);
 
         var updated = context.NemesisSettlements.Find(settlement.Id);
-        updated!.IsConfirmedByReceiver.Should().BeTrue();
-        updated.ConfirmedAt.Should().NotBeNull();
-    }
-
-    [Fact]
-    public async Task Handle_ValidSettlement_SetsStatusToConfirmed()
-    {
-        await using var context = DbContextFactory.Create();
-        var list = Domain.Entities.GhostList.Create();
-        context.GhostLists.Add(list);
-        var settlement = NemesisSettlement.Create(list.Id, "enc", "iv");
-        context.NemesisSettlements.Add(settlement);
-        await context.SaveChangesAsync();
-
-        var handler = new ConfirmSettlementCommandHandler(context, MockNotifier(), MockPush());
-        await handler.Handle(new ConfirmSettlementCommand(settlement.Id), CancellationToken.None);
-
-        var updated = context.NemesisSettlements.Find(settlement.Id);
-        updated!.Status.Should().Be(SettlementStatus.Confirmed);
+        updated.Should().NotBeNull();
+        updated!.Status.Should().Be(SettlementStatus.Declined);
         updated.ResolvedAt.Should().NotBeNull();
     }
 
     [Fact]
-    public async Task Handle_ValidSettlement_NotifiesConfirmation()
+    public async Task Handle_ValidSettlement_DoesNotDeleteRecord()
+    {
+        await using var context = DbContextFactory.Create();
+        var list = Domain.Entities.GhostList.Create();
+        context.GhostLists.Add(list);
+        var settlement = NemesisSettlement.Create(list.Id, "enc", "iv");
+        context.NemesisSettlements.Add(settlement);
+        await context.SaveChangesAsync();
+
+        var handler = new DeclineSettlementCommandHandler(context, MockNotifier(), MockPush());
+        await handler.Handle(new DeclineSettlementCommand(settlement.Id), CancellationToken.None);
+
+        context.NemesisSettlements.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task Handle_ValidSettlement_NotifiesDeclined()
     {
         await using var context = DbContextFactory.Create();
         var list = Domain.Entities.GhostList.Create();
@@ -72,10 +71,10 @@ public class ConfirmSettlementCommandHandlerTests
         await context.SaveChangesAsync();
 
         var notifier = MockNotifier();
-        var handler = new ConfirmSettlementCommandHandler(context, notifier, MockPush());
-        await handler.Handle(new ConfirmSettlementCommand(settlement.Id), CancellationToken.None);
+        var handler = new DeclineSettlementCommandHandler(context, notifier, MockPush());
+        await handler.Handle(new DeclineSettlementCommand(settlement.Id), CancellationToken.None);
 
-        await notifier.Received(1).NotifyNemesisSettlementConfirmed(list.Id, Arg.Is<NemesisSettlementConfirmedNotification>(n =>
+        await notifier.Received(1).NotifyNemesisSettlementDeclined(list.Id, Arg.Is<NemesisSettlementDeclinedNotification>(n =>
             n.SettlementId == settlement.Id &&
             n.GhostListId == list.Id));
     }
@@ -84,26 +83,26 @@ public class ConfirmSettlementCommandHandlerTests
     public async Task Handle_NonExistentSettlement_ThrowsNotFoundException()
     {
         await using var context = DbContextFactory.Create();
-        var handler = new ConfirmSettlementCommandHandler(context, MockNotifier(), MockPush());
+        var handler = new DeclineSettlementCommandHandler(context, MockNotifier(), MockPush());
 
-        var act = () => handler.Handle(new ConfirmSettlementCommand(Guid.NewGuid()), CancellationToken.None);
+        var act = () => handler.Handle(new DeclineSettlementCommand(Guid.NewGuid()), CancellationToken.None);
 
         await act.Should().ThrowAsync<NotFoundException>();
     }
 
     [Fact]
-    public async Task Handle_AlreadyConfirmedSettlement_ThrowsInvalidOperationException()
+    public async Task Handle_AlreadyDeclinedSettlement_ThrowsInvalidOperationException()
     {
         await using var context = DbContextFactory.Create();
         var list = Domain.Entities.GhostList.Create();
         context.GhostLists.Add(list);
         var settlement = NemesisSettlement.Create(list.Id, "enc", "iv");
-        settlement.ConfirmReceipt();
+        settlement.Decline();
         context.NemesisSettlements.Add(settlement);
         await context.SaveChangesAsync();
 
-        var handler = new ConfirmSettlementCommandHandler(context, MockNotifier(), MockPush());
-        var act = () => handler.Handle(new ConfirmSettlementCommand(settlement.Id), CancellationToken.None);
+        var handler = new DeclineSettlementCommandHandler(context, MockNotifier(), MockPush());
+        var act = () => handler.Handle(new DeclineSettlementCommand(settlement.Id), CancellationToken.None);
 
         await act.Should().ThrowAsync<InvalidOperationException>();
     }

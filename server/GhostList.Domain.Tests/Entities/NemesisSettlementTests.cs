@@ -87,4 +87,148 @@ public class NemesisSettlementTests
 
         a.Id.Should().NotBe(b.Id);
     }
+
+    [Fact]
+    public void Create_SetsStatusToPending()
+    {
+        var settlement = NemesisSettlement.Create(Guid.NewGuid(), "enc", "iv");
+
+        settlement.Status.Should().Be(SettlementStatus.Pending);
+    }
+
+    [Fact]
+    public void Decline_SetsStatusToDeclined()
+    {
+        var settlement = NemesisSettlement.Create(Guid.NewGuid(), "enc", "iv");
+
+        settlement.Decline();
+
+        settlement.Status.Should().Be(SettlementStatus.Declined);
+    }
+
+    [Fact]
+    public void Decline_SetsResolvedAt()
+    {
+        var before = DateTime.UtcNow;
+        var settlement = NemesisSettlement.Create(Guid.NewGuid(), "enc", "iv");
+
+        settlement.Decline();
+
+        settlement.ResolvedAt.Should().BeOnOrAfter(before);
+    }
+
+    [Fact]
+    public void Decline_WhenNotPending_ThrowsInvalidOperationException()
+    {
+        var settlement = NemesisSettlement.Create(Guid.NewGuid(), "enc", "iv");
+        settlement.ConfirmReceipt();
+
+        var act = () => settlement.Decline();
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Expire_SetsStatusToExpired()
+    {
+        var settlement = NemesisSettlement.Create(Guid.NewGuid(), "enc", "iv");
+
+        settlement.Expire();
+
+        settlement.Status.Should().Be(SettlementStatus.Expired);
+    }
+
+    [Fact]
+    public void Expire_SetsResolvedAt()
+    {
+        var before = DateTime.UtcNow;
+        var settlement = NemesisSettlement.Create(Guid.NewGuid(), "enc", "iv");
+
+        settlement.Expire();
+
+        settlement.ResolvedAt.Should().BeOnOrAfter(before);
+    }
+
+    [Fact]
+    public void Expire_WhenNotPending_ThrowsInvalidOperationException()
+    {
+        var settlement = NemesisSettlement.Create(Guid.NewGuid(), "enc", "iv");
+        settlement.Decline();
+
+        var act = () => settlement.Expire();
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Void_SetsStatusToVoided()
+    {
+        var settlement = NemesisSettlement.Create(Guid.NewGuid(), "enc", "iv");
+
+        settlement.Void();
+
+        settlement.Status.Should().Be(SettlementStatus.Voided);
+    }
+
+    [Fact]
+    public void Void_SetsResolvedAt()
+    {
+        var before = DateTime.UtcNow;
+        var settlement = NemesisSettlement.Create(Guid.NewGuid(), "enc", "iv");
+
+        settlement.Void();
+
+        settlement.ResolvedAt.Should().BeOnOrAfter(before);
+    }
+
+    [Fact]
+    public void Void_WhenNotPending_ThrowsInvalidOperationException()
+    {
+        var settlement = NemesisSettlement.Create(Guid.NewGuid(), "enc", "iv");
+        settlement.Forgive();
+
+        var act = () => settlement.Void();
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Forgive_SetsStatusToForgiven()
+    {
+        var settlement = NemesisSettlement.Create(Guid.NewGuid(), "enc", "iv");
+
+        settlement.Forgive();
+
+        settlement.Status.Should().Be(SettlementStatus.Forgiven);
+    }
+
+    [Fact]
+    public void Forgive_SetsResolvedAt()
+    {
+        var before = DateTime.UtcNow;
+        var settlement = NemesisSettlement.Create(Guid.NewGuid(), "enc", "iv");
+
+        settlement.Forgive();
+
+        settlement.ResolvedAt.Should().BeOnOrAfter(before);
+    }
+
+    [Fact]
+    public void Forgive_WhenNotPending_ThrowsInvalidOperationException()
+    {
+        var settlement = NemesisSettlement.Create(Guid.NewGuid(), "enc", "iv");
+        settlement.ConfirmReceipt();
+
+        var act = () => settlement.Forgive();
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Create_WithReceiverUserId_StoresIt()
+    {
+        var settlement = NemesisSettlement.Create(Guid.NewGuid(), "enc", "iv", receiverUserId: "user42");
+
+        settlement.ReceiverUserId.Should().Be("user42");
+    }
 }

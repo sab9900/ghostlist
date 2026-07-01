@@ -119,4 +119,61 @@ public class GhostListTests
 
         a.Id.Should().NotBe(b.Id);
     }
+
+    [Fact]
+    public void Create_SetsDefaultNemesisSettlementExpiryDaysTo60()
+    {
+        var list = Domain.Entities.GhostList.Create();
+
+        list.NemesisSettlementExpiryDays.Should().Be(60);
+    }
+
+    [Fact]
+    public void Create_SetsDefaultNemesisSettlementHideAfterDaysTo30()
+    {
+        var list = Domain.Entities.GhostList.Create();
+
+        list.NemesisSettlementHideAfterDays.Should().Be(30);
+    }
+
+    [Fact]
+    public void UpdateNemesisSettings_ChangesExpiryAndHideDays()
+    {
+        var list = Domain.Entities.GhostList.Create();
+
+        list.UpdateNemesisSettings(90, 14);
+
+        list.NemesisSettlementExpiryDays.Should().Be(90);
+        list.NemesisSettlementHideAfterDays.Should().Be(14);
+    }
+
+    [Fact]
+    public void UpdateNemesisSettings_WithZeroExpiryDays_ThrowsArgumentOutOfRangeException()
+    {
+        var list = Domain.Entities.GhostList.Create();
+
+        var act = () => list.UpdateNemesisSettings(0, 14);
+
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public void UpdateNemesisSettings_WithNegativeHideAfterDays_ThrowsArgumentOutOfRangeException()
+    {
+        var list = Domain.Entities.GhostList.Create();
+
+        var act = () => list.UpdateNemesisSettings(60, -1);
+
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public void UpdateNemesisSettings_WithZeroHideAfterDays_Succeeds()
+    {
+        var list = Domain.Entities.GhostList.Create();
+
+        list.UpdateNemesisSettings(60, 0);
+
+        list.NemesisSettlementHideAfterDays.Should().Be(0);
+    }
 }
