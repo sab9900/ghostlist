@@ -32,6 +32,16 @@ public class UpdateExpenseSplitCommandHandlerTests
         return expense;
     }
 
+    private static async Task Verify(
+        GhostList.Infrastructure.Persistence.ApplicationDbContext context,
+        NemesisExpense expense,
+        string userId)
+    {
+        expense.AddVerification(userId);
+        context.NemesisVerifications.Add(expense.Verifications.First(v => v.VerifiedByUserId == userId));
+        await context.SaveChangesAsync();
+    }
+
     [Fact]
     public async Task Handle_UpdatesPayloadAndSplitCount()
     {
@@ -52,9 +62,8 @@ public class UpdateExpenseSplitCommandHandlerTests
     {
         await using var context = DbContextFactory.Create();
         var expense = await SeedExpense(context);
-        expense.AddVerification("user1");
-        expense.AddVerification("user2");
-        await context.SaveChangesAsync();
+        await Verify(context, expense, "user1");
+        await Verify(context, expense, "user2");
 
         var handler = new UpdateExpenseSplitCommandHandler(context, MockNotifier());
         await handler.Handle(new UpdateExpenseSplitCommand(expense.Id, "enc2", "iv2", SplitCount: 2), CancellationToken.None);
@@ -67,9 +76,8 @@ public class UpdateExpenseSplitCommandHandlerTests
     {
         await using var context = DbContextFactory.Create();
         var expense = await SeedExpense(context);
-        expense.AddVerification("user1");
-        expense.AddVerification("leaver");
-        await context.SaveChangesAsync();
+        await Verify(context, expense, "user1");
+        await Verify(context, expense, "leaver");
 
         var handler = new UpdateExpenseSplitCommandHandler(context, MockNotifier());
         await handler.Handle(new UpdateExpenseSplitCommand(expense.Id, "enc2", "iv2", SplitCount: 2, RemovedUserIds: ["leaver"]), CancellationToken.None);
@@ -97,8 +105,7 @@ public class UpdateExpenseSplitCommandHandlerTests
     {
         await using var context = DbContextFactory.Create();
         var expense = await SeedExpense(context, splitCount: 1);
-        expense.AddVerification("user1");
-        await context.SaveChangesAsync();
+        await Verify(context, expense, "user1");
         var notifier = MockNotifier();
 
         var handler = new UpdateExpenseSplitCommandHandler(context, notifier);

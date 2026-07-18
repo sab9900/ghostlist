@@ -42,9 +42,14 @@ app-overlay {
 .ov-backdrop--sheet {
     align-items: flex-end;
     justify-content: center;
-    // Reserve the keyboard's height so the sheet sits above the keyboard.
+    // Sheets only: extend the backdrop down to the physical screen bottom and
+    // reserve the keyboard height so the sheet stays docked just above the
+    // keyboard. Dialogs deliberately keep the plain inset:0 box (their gap is
+    // covered by the ::after strip instead), so their centring is unaffected.
+    bottom: calc(-1 * var(--keyboard-height, 0px));
     padding-bottom: var(--keyboard-height, 0px);
-    transition: padding-bottom var(--duration-normal) var(--ease-out);
+    transition: padding-bottom var(--duration-normal) var(--ease-out),
+        bottom var(--duration-normal) var(--ease-out);
 
     @media (min-width: 640px) {
         align-items: center;

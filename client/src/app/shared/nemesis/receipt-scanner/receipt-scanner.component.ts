@@ -102,9 +102,6 @@ export class ReceiptScannerComponent implements AfterViewInit, OnDestroy {
         await video.play();
     }
 
-    // Double-tap the live view to re-trigger autofocus. Where the camera supports a single-shot focus
-    // constraint we pulse it (no visible interruption); otherwise we re-acquire the stream, which forces
-    // the camera to focus again. Stability is reset so the refocus frame doesn't immediately auto-capture.
     protected async refocus(): Promise<void> {
         if (this.state !== 'live' && this.state !== 'stable') return;
         const track = this.stream?.getVideoTracks?.()[0];

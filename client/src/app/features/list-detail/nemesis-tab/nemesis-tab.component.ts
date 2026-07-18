@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, effect, inject, untracked } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet, Router, ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter, mergeMap } from 'rxjs';
@@ -11,16 +11,12 @@ import { SnackService } from '../../../core/services/snack.service';
 import { UserIdService } from '../../../core/services/user-id.service';
 import { NemesisStore } from '../../../store/nemesis/nemesis.store';
 import { AppStore } from '../../../store/app.store';
-import { NemesisExpensesPanelComponent } from '../../nemesis/nemesis-expenses-panel/nemesis-expenses-panel.component';
-import { NemesisSettlementsPanelComponent } from '../../nemesis/nemesis-settlements-panel/nemesis-settlements-panel.component';
 import { DecryptedSettlement, SettlementStatus, VerificationStatus } from '../../../core/models/nemesis.model';
-
-type NemesisPanel = 'expenses' | 'settlements';
 
 @Component({
     selector: 'app-nemesis-tab',
     standalone: true,
-    imports: [RouterLink, RouterLinkActive, RouterOutlet, TranslatePipe, TabTransitionDirective, NemesisExpensesPanelComponent, NemesisSettlementsPanelComponent],
+    imports: [RouterLink, RouterLinkActive, RouterOutlet, TranslatePipe, TabTransitionDirective],
     providers: [NemesisStore],
     templateUrl: './nemesis-tab.component.html',
     styleUrls: ['./nemesis-tab.component.scss'],
@@ -36,8 +32,6 @@ export class NemesisTabComponent implements OnInit, OnDestroy {
     private readonly route = inject(ActivatedRoute);
     protected readonly layout = inject(LayoutService);
     readonly nemesisStore = inject(NemesisStore);
-
-    protected readonly activePanel = signal<NemesisPanel>('expenses');
 
     get listId(): string {
         return this.appStore.currentListId() ?? '';
@@ -314,16 +308,8 @@ export class NemesisTabComponent implements OnInit, OnDestroy {
         this.badge.clear();
     }
 
-    protected selectPanel(panel: NemesisPanel): void {
-        this.activePanel.set(panel);
-    }
-
     private goToSettlements(): void {
-        if (this.layout.isDesktop()) {
-            this.activePanel.set('settlements');
-        } else {
-            void this.router.navigate(['settlements'], { relativeTo: this.route });
-        }
+        void this.router.navigate(['settlements'], { relativeTo: this.route });
     }
 
     private async loadMembers(): Promise<void> {

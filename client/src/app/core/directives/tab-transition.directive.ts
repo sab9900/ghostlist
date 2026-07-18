@@ -15,6 +15,10 @@ export class TabTransitionDirective implements OnInit, OnDestroy {
 
     @Input() appTabOrder: string[] = ['items', 'chat', 'whisper', 'charon', 'nemesis'];
 
+    // When true the outlet still swaps its routed component, but without the slide animation — used on
+    // desktop where an instant panel switch is wanted while navigation stays fully route-driven.
+    @Input({ alias: 'appTabTransitionDisabled' }) disabled = false;
+
     private readonly hostEl = inject(ElementRef<HTMLElement>).nativeElement as HTMLElement;
     private readonly outlet = inject(RouterOutlet, { self: true });
     private readonly router = inject(Router);
@@ -63,6 +67,7 @@ export class TabTransitionDirective implements OnInit, OnDestroy {
     }
 
     private onNavigationStart(nextUrl: string): void {
+        if (this.disabled) return;
         // Any navigation in the app fires here, not just ones touching this
         // outlet (e.g. opening a list at all, or list-detail's own redirect
         // to its default tab) — only cancel/recapture for ones that actually

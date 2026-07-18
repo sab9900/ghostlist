@@ -1,7 +1,7 @@
 :host {
     position: fixed;
     inset: 0;
-    z-index: 400;
+    z-index: 140000;
     background: #000;
     overflow: hidden;
 }
@@ -14,6 +14,7 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+    z-index: 150000;
 }
 
 .scanner-video {
@@ -23,7 +24,9 @@
     height: 100%;
     object-fit: cover;
 
-    &--hidden { visibility: hidden; }
+    &--hidden {
+        visibility: hidden;
+    }
 }
 
 .scanner-frozen {
@@ -34,7 +37,9 @@
     object-fit: cover;
     transition: filter var(--duration-fast) var(--ease-out);
 
-    &--blur { filter: blur(4px) brightness(0.6); }
+    &--blur {
+        filter: blur(4px) brightness(0.6);
+    }
 }
 
 .scanner-offscreen {
@@ -72,7 +77,9 @@
     justify-content: center;
     transition: background var(--duration-fast) var(--ease-out);
 
-    &:hover { background: rgba(255, 255, 255, 0.25); }
+    &:hover {
+        background: rgba(255, 255, 255, 0.25);
+    }
 }
 
 .scanner-title {
@@ -84,7 +91,25 @@
     text-align: center;
 }
 
-.scanner-header-spacer { width: 36px; }
+.scanner-header-spacer {
+    width: 36px;
+}
+
+.scanner-build-marker {
+    position: absolute;
+    top: calc(env(safe-area-inset-top, 0px) + 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 30;
+    padding: 2px 8px;
+    background: #ff2d55;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    border-radius: 999px;
+    pointer-events: none;
+}
 
 // ── Center states (init / error / processing) ──────────────────────────────
 
@@ -133,7 +158,9 @@
     font-size: var(--text-sm);
     cursor: pointer;
 
-    &:hover { background: rgba(255, 255, 255, 0.25); }
+    &:hover {
+        background: rgba(255, 255, 255, 0.25);
+    }
 }
 
 // ── Viewfinder ─────────────────────────────────────────────────────────────
@@ -159,9 +186,17 @@
 }
 
 @keyframes focus-pulse {
-    0%   { transform: scale(1.4); opacity: 0; }
-    40%  { opacity: 1; }
-    100% { transform: scale(0.85); opacity: 0; }
+    0% {
+        transform: scale(1.4);
+        opacity: 0;
+    }
+    40% {
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0.85);
+        opacity: 0;
+    }
 }
 
 .scanner-vf {
@@ -187,13 +222,34 @@
     height: 22px;
     border-style: solid;
     border-color: rgba(255, 255, 255, 0.9);
-    transition: border-color var(--duration-fast) var(--ease-out),
-                box-shadow var(--duration-fast) var(--ease-out);
+    transition:
+        border-color var(--duration-fast) var(--ease-out),
+        box-shadow var(--duration-fast) var(--ease-out);
 
-    &--tl { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 3px 0 0 0; }
-    &--tr { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 3px 0 0; }
-    &--bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 3px; }
-    &--br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 3px 0; }
+    &--tl {
+        top: 0;
+        left: 0;
+        border-width: 3px 0 0 3px;
+        border-radius: 3px 0 0 0;
+    }
+    &--tr {
+        top: 0;
+        right: 0;
+        border-width: 3px 3px 0 0;
+        border-radius: 0 3px 0 0;
+    }
+    &--bl {
+        bottom: 0;
+        left: 0;
+        border-width: 0 0 3px 3px;
+        border-radius: 0 0 0 3px;
+    }
+    &--br {
+        bottom: 0;
+        right: 0;
+        border-width: 0 3px 3px 0;
+        border-radius: 0 0 3px 0;
+    }
 }
 
 .scanner-scanline {
@@ -201,7 +257,12 @@
     left: 0;
     right: 0;
     height: 2px;
-    background: linear-gradient(to right, transparent 0%, var(--color-primary) 50%, transparent 100%);
+    background: linear-gradient(
+        to right,
+        transparent 0%,
+        var(--color-primary) 50%,
+        transparent 100%
+    );
     box-shadow: 0 0 10px 1px var(--color-primary);
     animation: scanline 2s ease-in-out infinite;
 }
@@ -269,7 +330,9 @@
     justify-content: center;
     transition: background var(--duration-fast) var(--ease-out);
 
-    &:hover { background: rgba(255, 255, 255, 0.25); }
+    &:hover {
+        background: rgba(255, 255, 255, 0.25);
+    }
 }
 
 .scanner-shutter {
@@ -283,7 +346,9 @@
     cursor: pointer;
     transition: border-color var(--duration-fast) var(--ease-out);
 
-    &--ready { border-color: var(--color-primary); }
+    &--ready {
+        border-color: var(--color-primary);
+    }
 }
 
 .scanner-shutter-ring {
@@ -401,31 +466,53 @@
         background: rgba(255, 255, 255, 0.12);
         border: 1px solid rgba(255, 255, 255, 0.25);
         color: #fff;
-        &:hover { background: rgba(255, 255, 255, 0.2); }
+        &:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
     }
 
     &--primary {
         background: var(--color-primary);
         border: none;
         color: var(--color-on-primary);
-        &:hover { background: var(--color-primary-hover); }
+        &:hover {
+            background: var(--color-primary-hover);
+        }
     }
 }
 
 // ── Animations ─────────────────────────────────────────────────────────────
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 @keyframes scanline {
-    0%   { top: 0;    opacity: 0; }
-    8%   { opacity: 1; }
-    92%  { opacity: 1; }
-    100% { top: 100%; opacity: 0; }
+    0% {
+        top: 0;
+        opacity: 0;
+    }
+    8% {
+        opacity: 1;
+    }
+    92% {
+        opacity: 1;
+    }
+    100% {
+        top: 100%;
+        opacity: 0;
+    }
 }
 
 @keyframes card-in {
-    from { opacity: 0; transform: translateX(8px); }
-    to   { opacity: 1; transform: translateX(0); }
+    from {
+        opacity: 0;
+        transform: translateX(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
