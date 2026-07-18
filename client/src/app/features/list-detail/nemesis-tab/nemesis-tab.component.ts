@@ -1,21 +1,26 @@
-import { Component, OnDestroy, OnInit, computed, effect, inject, untracked } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet, Router, ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter, mergeMap } from 'rxjs';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { HubService } from '../../../api/hub.service';
 import { TabTransitionDirective } from '../../../core/directives/tab-transition.directive';
+import { LayoutService } from '../../../core/services/layout.service';
 import { NemesisBadgeService } from '../../../core/services/nemesis-badge.service';
 import { SnackService } from '../../../core/services/snack.service';
 import { UserIdService } from '../../../core/services/user-id.service';
 import { NemesisStore } from '../../../store/nemesis/nemesis.store';
 import { AppStore } from '../../../store/app.store';
+import { NemesisExpensesPanelComponent } from '../../nemesis/nemesis-expenses-panel/nemesis-expenses-panel.component';
+import { NemesisSettlementsPanelComponent } from '../../nemesis/nemesis-settlements-panel/nemesis-settlements-panel.component';
 import { DecryptedSettlement, SettlementStatus, VerificationStatus } from '../../../core/models/nemesis.model';
+
+type NemesisPanel = 'expenses' | 'settlements';
 
 @Component({
     selector: 'app-nemesis-tab',
     standalone: true,
-    imports: [RouterLink, RouterLinkActive, RouterOutlet, TranslatePipe, TabTransitionDirective],
+    imports: [RouterLink, RouterLinkActive, RouterOutlet, TranslatePipe, TabTransitionDirective, NemesisExpensesPanelComponent, NemesisSettlementsPanelComponent],
     providers: [NemesisStore],
     templateUrl: './nemesis-tab.component.html',
     styleUrls: ['./nemesis-tab.component.scss'],
@@ -29,7 +34,10 @@ export class NemesisTabComponent implements OnInit, OnDestroy {
     private readonly userIdService = inject(UserIdService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
+    protected readonly layout = inject(LayoutService);
     readonly nemesisStore = inject(NemesisStore);
+
+    protected readonly activePanel = signal<NemesisPanel>('expenses');
 
     get listId(): string {
         return this.appStore.currentListId() ?? '';
@@ -105,6 +113,7 @@ export class NemesisTabComponent implements OnInit, OnDestroy {
             takeUntilDestroyed(),
             filter(e => e.ghostListId === this.listId),
             mergeMap(async e => {
+                const now = new Date().toISOString();
                 const decrypted = await this.nemesisStore.onSettlementCreatedAsync({
                     id: e.id,
                     ghostListId: e.ghostListId,
@@ -113,18 +122,30 @@ export class NemesisTabComponent implements OnInit, OnDestroy {
                     isPaidByPayer: e.isPaidByPayer,
                     isConfirmedByReceiver: e.isConfirmedByReceiver,
                     paidAt: e.paidAt,
-                    confirmedAt: null,
+                    confirmedAt: e.isConfirmedByReceiver ? now : null,
                     payerDeviceId: e.payerDeviceId,
                     payerUserId: e.payerUserId,
                     receiverUserId: e.receiverUserId ?? null,
-                    status: SettlementStatus.Pending,
-                    resolvedAt: null,
-                    createdAt: new Date().toISOString(),
+                    status: e.isConfirmedByReceiver ? SettlementStatus.Confirmed : SettlementStatus.Pending,
+                    resolvedAt: e.isConfirmedByReceiver ? now : null,
+                    createdAt: now,
                 });
                 return { e, decrypted };
             }),
         ).subscribe(({ e, decrypted }) => {
             const userId = this.userIdService.userId();
+            if (e.isConfirmedByReceiver) {
+                if (e.payerUserId === userId) {
+                    if (decrypted?.toUserId) this.nemesisStore.setJustConfirmedDebt(decrypted.toUserId);
+                    this.goToSettlements();
+                    this.snack.show({
+                        iconKind: 'nemesis',
+                        text: this.translate.instant('NEMESIS.SNACK_SETTLEMENT_CONFIRMED'),
+                        autoDismissMs: 5000,
+                    });
+                }
+                return;
+            }
             if (e.payerUserId !== userId && decrypted?.toUserId === userId) {
                 this.snack.show({
                     iconKind: 'nemesis',
@@ -144,7 +165,7 @@ export class NemesisTabComponent implements OnInit, OnDestroy {
             this.nemesisStore.onSettlementConfirmed(e.settlementId);
             if (raw?.payerUserId === userId && decrypted?.toUserId) {
                 this.nemesisStore.setJustConfirmedDebt(decrypted.toUserId);
-                void this.router.navigate(['settlements'], { relativeTo: this.route });
+                this.goToSettlements();
                 this.snack.show({
                     iconKind: 'nemesis',
                     text: this.translate.instant('NEMESIS.SNACK_SETTLEMENT_CONFIRMED'),
@@ -175,6 +196,44 @@ export class NemesisTabComponent implements OnInit, OnDestroy {
         ).subscribe(e => {
             this.nemesisStore.onExpenseArchived(e.expenseId);
         });
+
+        this.hub.nemesisExpenseUpdated$.pipe(
+            takeUntilDestroyed(),
+            filter(e => e.ghostListId === this.listId),
+        ).subscribe(e => {
+            void this.nemesisStore.onExpenseUpdated({
+                id: e.id,
+                ghostListId: e.ghostListId,
+                encryptedPayload: e.encryptedPayload,
+                payloadInitializationVector: e.payloadInitializationVector,
+                status: e.status as VerificationStatus,
+                splitCount: e.splitCount,
+                isArchived: e.isArchived,
+                createdAt: e.createdAt,
+                createdByDeviceId: e.createdByDeviceId,
+                createdByUserId: e.createdByUserId,
+                encryptedReceiptKey: e.encryptedReceiptKey,
+                receiptBlobKey: e.receiptBlobKey,
+                verifications: e.verifications ?? [],
+            });
+        });
+
+        this.hub.nemesisExpenseDeleted$.pipe(
+            takeUntilDestroyed(),
+            filter(e => e.ghostListId === this.listId),
+        ).subscribe(e => {
+            this.nemesisStore.onExpenseDeleted(e.expenseId);
+        });
+
+        this.hub.memberKicked$.pipe(
+            takeUntilDestroyed(),
+            filter(({ listId }) => listId === this.listId),
+        ).subscribe(() => void this.reconcileAfterMembershipChange());
+
+        this.hub.memberJoined$.pipe(
+            takeUntilDestroyed(),
+            filter(({ listId }) => listId === this.listId),
+        ).subscribe(() => void this.loadMembers());
 
         this.hub.nemesisSettlementVoided$.pipe(
             takeUntilDestroyed(),
@@ -218,6 +277,13 @@ export class NemesisTabComponent implements OnInit, OnDestroy {
             });
         });
 
+        this.hub.nemesisLedgerPurged$.pipe(
+            takeUntilDestroyed(),
+            filter(e => e.ghostListId === this.listId),
+        ).subscribe(() => {
+            this.nemesisStore.onLedgerPurged();
+        });
+
         this.hub.reconnected$.pipe(takeUntilDestroyed()).subscribe(() => {
             void this.nemesisStore.loadData();
         });
@@ -248,6 +314,18 @@ export class NemesisTabComponent implements OnInit, OnDestroy {
         this.badge.clear();
     }
 
+    protected selectPanel(panel: NemesisPanel): void {
+        this.activePanel.set(panel);
+    }
+
+    private goToSettlements(): void {
+        if (this.layout.isDesktop()) {
+            this.activePanel.set('settlements');
+        } else {
+            void this.router.navigate(['settlements'], { relativeTo: this.route });
+        }
+    }
+
     private async loadMembers(): Promise<void> {
         try {
             const key = this.appStore.currentEncryptionKey() ?? '';
@@ -259,5 +337,11 @@ export class NemesisTabComponent implements OnInit, OnDestroy {
             });
             this.nemesisStore.setMembers(members);
         } catch { }
+    }
+
+    private async reconcileAfterMembershipChange(): Promise<void> {
+        await this.loadMembers();
+        const trusted = this.appStore.peekMembersComplete(this.listId);
+        await this.nemesisStore.reconcileMembership(trusted);
     }
 }

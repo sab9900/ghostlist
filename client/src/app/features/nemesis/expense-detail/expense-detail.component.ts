@@ -19,6 +19,7 @@ export class ExpenseDetailComponent {
     @Input() receiptError = false;
     @Output() verifyRequested = new EventEmitter<string>();
     @Output() rejectRequested = new EventEmitter<string>();
+    @Output() deleteRequested = new EventEmitter<string>();
     @Output() closed = new EventEmitter<void>();
     @Output() receiptOpened = new EventEmitter<string>();
 
@@ -49,6 +50,10 @@ export class ExpenseDetailComponent {
 
     get canReject(): boolean {
         return this.expense.status === VerificationStatus.Pending && this.isNonPayerSplitMember;
+    }
+
+    get canDelete(): boolean {
+        return !!this.currentUserId && this.expense.createdByUserId === this.currentUserId;
     }
 
     get sharePerPerson(): number {

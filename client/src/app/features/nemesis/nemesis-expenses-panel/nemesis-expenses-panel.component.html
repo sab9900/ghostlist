@@ -37,7 +37,7 @@
 }
 
 @if (showAddSheet()) {
-<div class="overlay" #addSheetOverlay (click)="closeAddSheet()">
+<app-overlay #addSheetOverlay variant="sheet" (dismissed)="closeAddSheet()">
     <div class="sheet sheet--form" (click)="$event.stopPropagation()">
 
         <div class="sheet__header">
@@ -53,12 +53,44 @@
             @if (pendingReceipt) {
             <div class="form__receipt">
                 <span>📎 {{ 'NEMESIS.RECEIPT_ATTACHED' | translate }}</span>
-                @if (pendingReceipt.detectedAmount !== null) {
-                <span>{{ 'NEMESIS.RECEIPT_DETECTED' | translate: { amount: (pendingReceipt.detectedAmount |
-                    number:'1.2-2') } }}</span>
-                }
-                <button type="button" class="form__receipt-remove" (click)="pendingReceipt = null"
+                <button type="button" class="form__receipt-remove" (click)="removeReceipt()"
                     [attr.aria-label]="'NEMESIS.RECEIPT_REMOVE_ARIA' | translate">✕</button>
+            </div>
+            }
+
+            @if (scanStatus === 'analyzing') {
+            <div class="form__scan-status">
+                <span class="form__scan-spinner" aria-hidden="true"></span>
+                <span>{{ 'NEMESIS.SCAN_ANALYZING' | translate }}</span>
+            </div>
+            }
+
+            @if (scanStatus === 'ready' && scanSuggestion) {
+            <div class="form__suggestion">
+                <div class="form__suggestion-head">
+                    <span class="form__suggestion-title">{{ 'NEMESIS.SCAN_SUGGESTION' | translate }}</span>
+                    <button type="button" class="form__suggestion-dismiss" (click)="dismissSuggestion()"
+                        [attr.aria-label]="'NEMESIS.SCAN_DISMISS' | translate">✕</button>
+                </div>
+                <div class="form__suggestion-values">
+                    @if (scanSuggestion.amount !== null) {
+                    <span class="form__suggestion-chip">{{ 'NEMESIS.SCANNER_TOTAL' | translate }}: {{
+                        scanSuggestion.amount | number:'1.2-2' }}</span>
+                    }
+                    @if (scanSuggestion.merchant) {
+                    <span class="form__suggestion-chip">{{ 'NEMESIS.SCANNER_MERCHANT' | translate }}: {{
+                        scanSuggestion.merchant }}</span>
+                    }
+                </div>
+                <button type="button" class="form__suggestion-apply" (click)="applySuggestion()">
+                    {{ 'NEMESIS.SCAN_APPLY' | translate }}
+                </button>
+            </div>
+            }
+
+            @if (scanStatus === 'empty' || scanStatus === 'failed') {
+            <div class="form__scan-hint">
+                {{ (scanStatus === 'failed' ? 'NEMESIS.SCAN_FAILED' : 'NEMESIS.SCAN_NOTHING') | translate }}
             </div>
             }
 
@@ -141,16 +173,17 @@
         </div>
 
     </div>
-</div>
+</app-overlay>
 }
 
 @if (selectedExpense()) {
-<div class="overlay" #detailOverlay (click)="onDetailClosed()">
+<app-overlay #detailOverlay variant="sheet" (dismissed)="onDetailClosed()">
     <div class="sheet" (click)="$event.stopPropagation()">
         <app-expense-detail [expense]="selectedExpense()!" [currentUserId]="currentUserId" [members]="uniqueMembers"
             [receiptDataUrl]="selectedReceiptUrl()" [receiptError]="selectedReceiptError()"
             (verifyRequested)="onVerifyRequested($event)" (rejectRequested)="onRejectRequested($event)"
+            (deleteRequested)="onDeleteRequested($event)"
             (receiptOpened)="onReceiptOpened($event)" (closed)="onDetailClosed()" />
     </div>
-</div>
+</app-overlay>
 }

@@ -27,6 +27,41 @@
                             {
                                 "glob": "**/*",
                                 "input": "public"
+                            },
+                            {
+                                "glob": "worker.min.js",
+                                "input": "node_modules/tesseract.js/dist",
+                                "output": "tesseract"
+                            },
+                            {
+                                "glob": "tesseract-core*lstm.wasm*",
+                                "input": "node_modules/tesseract.js-core",
+                                "output": "tesseract"
+                            },
+                            {
+                                "glob": "deu.traineddata.gz",
+                                "input": "node_modules/@tesseract.js-data/deu/4.0.0",
+                                "output": "tesseract/lang"
+                            },
+                            {
+                                "glob": "eng.traineddata.gz",
+                                "input": "node_modules/@tesseract.js-data/eng/4.0.0",
+                                "output": "tesseract/lang"
+                            },
+                            {
+                                "glob": "ita.traineddata.gz",
+                                "input": "node_modules/@tesseract.js-data/ita/4.0.0",
+                                "output": "tesseract/lang"
+                            },
+                            {
+                                "glob": "spa.traineddata.gz",
+                                "input": "node_modules/@tesseract.js-data/spa/4.0.0",
+                                "output": "tesseract/lang"
+                            },
+                            {
+                                "glob": "fra.traineddata.gz",
+                                "input": "node_modules/@tesseract.js-data/fra/4.0.0",
+                                "output": "tesseract/lang"
                             }
                         ],
                         "styles": ["src/styles.scss"],

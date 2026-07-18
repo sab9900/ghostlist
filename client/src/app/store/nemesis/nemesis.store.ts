@@ -142,6 +142,33 @@ export const NemesisStore = signalStore(
             }
         }
 
+        function clearLedgerState(): void {
+            patchState(store, {
+                rawExpenses: [],
+                rawSettlements: [],
+                decryptedExpenses: [],
+                decryptedSettlements: [],
+                rawArchivedExpenses: [],
+                archivedExpenses: [],
+                archivedCursor: null,
+                archivedHasMore: false,
+            });
+        }
+
+        async function autoPurgeIfSettled(): Promise<void> {
+            const listId = store.listId();
+            if (!listId) return;
+            const hasData = store.decryptedExpenses().length > 0 || store.decryptedSettlements().length > 0;
+            if (!hasData) return;
+            if (store.minimizedDebts().length > 0) return;
+            if (store.decryptedSettlements().some(s => s.status === SettlementStatus.Pending)) return;
+            if (store.decryptedExpenses().some(e => e.status === VerificationStatus.Pending)) return;
+            try {
+                await firstValueFrom(api.purgeNemesisLedger(listId));
+                clearLedgerState();
+            } catch { }
+        }
+
         return {
             initialize(listId: string, encryptionKey: string): void {
                 patchState(store, { listId, encryptionKey });
@@ -233,9 +260,26 @@ export const NemesisStore = signalStore(
                 await doLoadData();
             },
 
+            async confirmReceived(payload: { fromUserId: string; toUserId: string; amount: number; currency: string }): Promise<void> {
+                const key = store.encryptionKey();
+                const listId = store.listId();
+                if (!key || !listId) return;
+
+                const { ciphertext, iv } = await crypto.encrypt(JSON.stringify(payload), key);
+                await firstValueFrom(api.confirmReceivedSettlement({
+                    ghostListId: listId,
+                    encryptedPayload: ciphertext,
+                    payloadInitializationVector: iv,
+                    payerUserId: payload.fromUserId,
+                }));
+                await doLoadData();
+                await autoPurgeIfSettled();
+            },
+
             async confirmSettlement(settlementId: string): Promise<void> {
                 await firstValueFrom(api.confirmSettlement(settlementId));
                 await doLoadData();
+                await autoPurgeIfSettled();
             },
 
             async declineSettlement(settlementId: string): Promise<void> {
@@ -303,6 +347,10 @@ export const NemesisStore = signalStore(
                 return decrypted;
             },
 
+            onLedgerPurged(): void {
+                clearLedgerState();
+            },
+
             setJustConfirmedDebt(toUserId: string | null): void {
                 patchState(store, { justConfirmedDebtToUserId: toUserId });
             },
@@ -312,9 +360,10 @@ export const NemesisStore = signalStore(
             },
 
             onSettlementConfirmed(settlementId: string): void {
+                const now = new Date().toISOString();
                 const updated = store.rawSettlements().map(s =>
                     s.id === settlementId
-                        ? { ...s, isConfirmedByReceiver: true, confirmedAt: new Date().toISOString() }
+                        ? { ...s, status: SettlementStatus.Confirmed, isConfirmedByReceiver: true, confirmedAt: now, resolvedAt: s.resolvedAt ?? now }
                         : s
                 );
                 patchState(store, { rawSettlements: updated });
@@ -369,6 +418,101 @@ export const NemesisStore = signalStore(
             async rejectExpense(expenseId: string): Promise<void> {
                 await firstValueFrom(api.rejectExpense(expenseId));
                 await doLoadData();
+            },
+
+            async deleteExpense(expenseId: string): Promise<void> {
+                await firstValueFrom(api.deleteExpense(expenseId));
+                const updated = store.rawExpenses().filter(e => e.id !== expenseId);
+                patchState(store, { rawExpenses: updated });
+                const key = store.encryptionKey();
+                if (key) void doDecryptExpenses(updated, key);
+            },
+
+            onExpenseDeleted(expenseId: string): void {
+                const updated = store.rawExpenses().filter(e => e.id !== expenseId);
+                patchState(store, { rawExpenses: updated });
+                const key = store.encryptionKey();
+                if (key) void doDecryptExpenses(updated, key);
+            },
+
+            async onExpenseUpdated(dto: NemesisExpenseDto): Promise<void> {
+                const key = store.encryptionKey();
+                if (dto.isArchived) {
+                    const updated = store.rawExpenses().filter(e => e.id !== dto.id);
+                    patchState(store, {
+                        rawExpenses: updated,
+                        rawArchivedExpenses: [],
+                        archivedExpenses: [],
+                        archivedCursor: null,
+                        archivedHasMore: false,
+                    });
+                    if (key) await doDecryptExpenses(updated, key);
+                    return;
+                }
+                const exists = store.rawExpenses().some(e => e.id === dto.id);
+                const updated = exists
+                    ? store.rawExpenses().map(e => (e.id === dto.id ? dto : e))
+                    : [...store.rawExpenses(), dto];
+                patchState(store, { rawExpenses: updated });
+                if (key) await doDecryptExpenses(updated, key);
+            },
+
+            async reconcileMembership(trusted: boolean): Promise<void> {
+                if (!trusted) return;
+
+                const key = store.encryptionKey();
+                if (!key) return;
+
+                const currentUserId = userIdService.userId();
+                const memberIds = new Set(
+                    store.members().map(m => m.userId).filter((id): id is string => !!id),
+                );
+                if (memberIds.size === 0) return;
+
+                const pending = store.decryptedExpenses().filter(e => e.status === VerificationStatus.Pending);
+                let changed = false;
+
+                for (const expense of pending) {
+                    const stale = expense.splitBetween.filter(id => !memberIds.has(id));
+                    if (stale.length === 0) continue;
+
+                    const remaining = expense.splitBetween.filter(id => memberIds.has(id));
+                    const payerLeft = !memberIds.has(expense.paidByUserId);
+
+                    if (payerLeft || remaining.length === 0) {
+                        const writer = remaining.length > 0 ? [...remaining].sort()[0] : null;
+                        if (writer !== currentUserId) continue;
+                        try {
+                            await firstValueFrom(api.rejectExpense(expense.id));
+                            changed = true;
+                        } catch { }
+                        continue;
+                    }
+
+                    const writer = [...remaining].sort()[0];
+                    if (writer !== currentUserId) continue;
+
+                    const newSplitCount = remaining.filter(id => id !== expense.paidByUserId).length;
+                    const payload = {
+                        amount: expense.amount,
+                        currency: expense.currency,
+                        description: expense.description,
+                        paidByUserId: expense.paidByUserId,
+                        splitBetween: remaining,
+                    };
+                    try {
+                        const { ciphertext, iv } = await crypto.encrypt(JSON.stringify(payload), key);
+                        await firstValueFrom(api.updateExpenseSplit(expense.id, {
+                            encryptedPayload: ciphertext,
+                            payloadInitializationVector: iv,
+                            splitCount: newSplitCount,
+                            removedUserIds: stale,
+                        }));
+                        changed = true;
+                    } catch { }
+                }
+
+                if (changed) await doLoadData();
             },
 
             async archiveExpense(expenseId: string): Promise<void> {

@@ -1,5 +1,5 @@
 @if (show()) {
-<div class="backdrop" (click)="closed.emit()" role="presentation">
+<app-overlay (dismissed)="closed.emit()">
     <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
         aria-labelledby="item-filter-dialog-title">
         <h2 class="title" id="item-filter-dialog-title">{{ 'ITEMS.FILTER_TITLE' | translate }}</h2>
@@ -38,5 +38,5 @@
             <button class="btn btn--primary" (click)="closed.emit()">{{ 'COMMON.CLOSE' | translate }}</button>
         </div>
     </div>
-</div>
+</app-overlay>
 }

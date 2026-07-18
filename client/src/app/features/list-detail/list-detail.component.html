@@ -143,7 +143,7 @@
             [attr.aria-selected]="activeTab() === 'chat'" id="tab-chat" [attr.aria-controls]="'panel-chat'"
             (click)="setTab('chat')">
             {{ 'LIST_DETAIL.TAB_CHAT' | translate }}
-            @if (unreadMessages() > 0 && activeTab() !== 'chat') {
+            @if (unreadMessages() > 0) {
             <app-badge [count]="unreadMessages()" aria-hidden="true" />
             }
         </button>

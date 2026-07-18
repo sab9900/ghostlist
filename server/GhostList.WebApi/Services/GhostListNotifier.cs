@@ -82,6 +82,12 @@ public class GhostListNotifier(IHubContext<GhostListHub> hubContext) : IGhostLis
     public Task NotifyNemesisExpenseVerified(Guid listId, NemesisExpenseVerifiedNotification notification) =>
         hubContext.Clients.Group(listId.ToString()).SendAsync("NemesisExpenseVerified", notification);
 
+    public Task NotifyNemesisExpenseUpdated(Guid listId, NemesisExpenseUpdatedNotification notification) =>
+        hubContext.Clients.Group(listId.ToString()).SendAsync("NemesisExpenseUpdated", notification);
+
+    public Task NotifyNemesisExpenseDeleted(Guid listId, NemesisExpenseDeletedNotification notification) =>
+        hubContext.Clients.Group(listId.ToString()).SendAsync("NemesisExpenseDeleted", notification);
+
     public Task NotifyNemesisSettlementCreated(Guid listId, NemesisSettlementCreatedNotification notification) =>
         hubContext.Clients.Group(listId.ToString()).SendAsync("NemesisSettlementCreated", notification);
 
@@ -105,6 +111,9 @@ public class GhostListNotifier(IHubContext<GhostListHub> hubContext) : IGhostLis
 
     public Task NotifyNemesisSettlementExpiring(Guid listId, NemesisSettlementExpiringNotification notification) =>
         hubContext.Clients.Group(listId.ToString()).SendAsync("NemesisSettlementExpiring", notification);
+
+    public Task NotifyNemesisLedgerPurged(Guid listId, NemesisLedgerPurgedNotification notification) =>
+        hubContext.Clients.Group(listId.ToString()).SendAsync("NemesisLedgerPurged", notification);
 
     public Task NotifyReactionChanged(Guid listId, ReactionChangedNotification notification) =>
         hubContext.Clients.Group(listId.ToString()).SendAsync("ReactionChanged", notification);

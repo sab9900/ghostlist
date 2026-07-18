@@ -14,6 +14,8 @@ import {
     MessageCreatedEvent,
     NemesisExpenseArchivedEvent,
     NemesisExpenseCreatedEvent,
+    NemesisExpenseDeletedEvent,
+    NemesisExpenseUpdatedEvent,
     NemesisExpenseVerifiedEvent,
     NemesisSettlementConfirmedEvent,
     NemesisSettlementCreatedEvent,
@@ -22,6 +24,7 @@ import {
     NemesisSettlementExpiredEvent,
     NemesisSettlementForgivenEvent,
     NemesisSettlementExpiringEvent,
+    NemesisLedgerPurgedEvent,
     ReactionChangedEvent,
     ReadReceiptUpdatedEvent,
     ReminderFiredEvent,
@@ -74,7 +77,10 @@ export class HubService implements OnDestroy {
     private readonly _nemesisSettlementExpired$ = new Subject<NemesisSettlementExpiredEvent>();
     private readonly _nemesisSettlementForgiven$ = new Subject<NemesisSettlementForgivenEvent>();
     private readonly _nemesisSettlementExpiring$ = new Subject<NemesisSettlementExpiringEvent>();
+    private readonly _nemesisLedgerPurged$ = new Subject<NemesisLedgerPurgedEvent>();
     private readonly _nemesisExpenseArchived$ = new Subject<NemesisExpenseArchivedEvent>();
+    private readonly _nemesisExpenseUpdated$ = new Subject<NemesisExpenseUpdatedEvent>();
+    private readonly _nemesisExpenseDeleted$ = new Subject<NemesisExpenseDeletedEvent>();
     private readonly _itemPriorityChanged$ = new Subject<ItemPriorityChangedEvent>();
     private readonly _reactionChanged$ = new Subject<ReactionChangedEvent>();
 
@@ -112,7 +118,10 @@ export class HubService implements OnDestroy {
     readonly nemesisSettlementExpired$ = this._nemesisSettlementExpired$.asObservable();
     readonly nemesisSettlementForgiven$ = this._nemesisSettlementForgiven$.asObservable();
     readonly nemesisSettlementExpiring$ = this._nemesisSettlementExpiring$.asObservable();
+    readonly nemesisLedgerPurged$ = this._nemesisLedgerPurged$.asObservable();
     readonly nemesisExpenseArchived$ = this._nemesisExpenseArchived$.asObservable();
+    readonly nemesisExpenseUpdated$ = this._nemesisExpenseUpdated$.asObservable();
+    readonly nemesisExpenseDeleted$ = this._nemesisExpenseDeleted$.asObservable();
     readonly itemPriorityChanged$ = this._itemPriorityChanged$.asObservable();
     readonly reactionChanged$ = this._reactionChanged$.asObservable();
 
@@ -158,7 +167,10 @@ export class HubService implements OnDestroy {
         this.connection.on('NemesisSettlementExpired', (e: NemesisSettlementExpiredEvent) => this._nemesisSettlementExpired$.next(e));
         this.connection.on('NemesisSettlementForgiven', (e: NemesisSettlementForgivenEvent) => this._nemesisSettlementForgiven$.next(e));
         this.connection.on('NemesisSettlementExpiring', (e: NemesisSettlementExpiringEvent) => this._nemesisSettlementExpiring$.next(e));
+        this.connection.on('NemesisLedgerPurged', (e: NemesisLedgerPurgedEvent) => this._nemesisLedgerPurged$.next(e));
         this.connection.on('NemesisExpenseArchived', (e: NemesisExpenseArchivedEvent) => this._nemesisExpenseArchived$.next(e));
+        this.connection.on('NemesisExpenseUpdated', (e: NemesisExpenseUpdatedEvent) => this._nemesisExpenseUpdated$.next(e));
+        this.connection.on('NemesisExpenseDeleted', (e: NemesisExpenseDeletedEvent) => this._nemesisExpenseDeleted$.next(e));
         this.connection.on('ItemPriorityChanged', (e: ItemPriorityChangedEvent) => this._itemPriorityChanged$.next(e));
         this.connection.on('ReactionChanged', (e: ReactionChangedEvent) => this._reactionChanged$.next(e));
 

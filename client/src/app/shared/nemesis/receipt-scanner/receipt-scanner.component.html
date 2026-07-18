@@ -52,7 +52,6 @@
     <!-- Off-screen canvases + file input -->
     <canvas #captureCanvas class="scanner-offscreen"></canvas>
     <canvas #motionCanvas class="scanner-offscreen"></canvas>
-    <canvas #ocrCanvas class="scanner-offscreen"></canvas>
     <input #fileInput type="file" accept="image/*,application/pdf" class="scanner-offscreen" (change)="onFileSelected($event)" />
 
     <!-- Header -->
@@ -89,6 +88,10 @@
 
     <!-- Live / Stable — viewfinder + scanline -->
     @if (isLive) {
+        <div class="scanner-focus-layer" (dblclick)="refocus()"></div>
+        @if (focusing) {
+            <div class="scanner-focus-ring" aria-hidden="true"></div>
+        }
         <div class="scanner-vf" [class.scanner-vf--stable]="state === 'stable'">
             <div class="scanner-corner scanner-corner--tl"></div>
             <div class="scanner-corner scanner-corner--tr"></div>
@@ -99,15 +102,18 @@
             }
         </div>
         <p class="scanner-hint">
-            {{ (state === 'stable' ? 'NEMESIS.SCANNER_STABLE' : 'NEMESIS.SCANNER_HOLD_STEADY') | translate }}
+            {{ (focusing ? 'NEMESIS.SCANNER_FOCUSING'
+                : state === 'stable' ? 'NEMESIS.SCANNER_STABLE'
+                : 'NEMESIS.SCANNER_HOLD_STEADY') | translate }}
         </p>
+        <p class="scanner-subhint">{{ 'NEMESIS.SCANNER_TAP_FOCUS' | translate }}</p>
 
         <div class="scanner-live-footer">
             <button type="button" class="scanner-gallery-btn" (click)="pickFromGallery()"
                 [attr.aria-label]="'NEMESIS.SCANNER_GALLERY_ARIA' | translate">
                 <svg lucideImage [size]="20" aria-hidden="true"></svg>
             </button>
-            <button type="button" class="scanner-shutter" [class.scanner-shutter--ready]="liveHasData"
+            <button type="button" class="scanner-shutter" [class.scanner-shutter--ready]="state === 'stable'"
                 (click)="shutterTap()" [attr.aria-label]="'NEMESIS.SCANNER_SHUTTER_ARIA' | translate">
                 <span class="scanner-shutter-ring"></span>
             </button>

@@ -98,6 +98,7 @@
     border-bottom: 1px solid var(--color-border);
     overflow-x: auto;
     overscroll-behavior-x: none;
+    touch-action: pan-x;
     scrollbar-width: none;
 
     &::-webkit-scrollbar {
@@ -145,7 +146,7 @@
 
     &--scroll {
         overflow-y: auto;
-        overscroll-behavior-y: none;
+        
     }
 }
 
@@ -354,7 +355,7 @@
         overflow-y: auto;
         display: flex;
         flex-direction: column;
-        overscroll-behavior-y: none;
+        
     }
 }
 

@@ -370,6 +370,23 @@
     "SYNC_LINK_COPIED": "Link copiato!",
     "SYNC_REQUIRES_BIOMETRIC": "Attiva il blocco biometrico (sopra) per usare la Sync Machine.",
     "SECURITY": {
+      "TITLE": "Sicurezza",
+      "HINT": "Blocca l’app con la biometria (Face ID, impronta digitale). Solo tu puoi aprirla — il server non lo sa mai.",
+      "ENABLE_BTN": "Attiva blocco biometrico",
+      "ENABLING": "Attivazione…",
+      "ENABLED": "Attivato",
+      "DISABLE_BTN": "Disattiva",
+      "DISABLING": "Verifica in corso…",
+      "UNSUPPORTED": "La biometria non è supportata su questo dispositivo.",
+      "ENABLE_ERROR": "Attivazione non riuscita. Riprova.",
+      "AUTO_LOCK": {
+        "TITLE": "Blocco automatico",
+        "NEVER": "Mai",
+        "1MIN": "Dopo 1 minuto",
+        "5MIN": "Dopo 5 minuti",
+        "10MIN": "Dopo 10 minuti",
+        "1H": "Dopo 1 ora"
+      },
       "MASTER_PASSWORD": {
         "TITLE": "Password principale",
         "HINT": "Protegge le liste contrassegnate come sensibili. Necessaria per mostrarle dopo aver toccato il logo del fantasma tre volte.",
@@ -403,6 +420,7 @@
       "ONBOARDING_TITLE": "Resta aggiornato",
       "ONBOARDING_BODY": "GhostList può avvisarti quando qualcuno scrive nelle tue liste, modifica elementi o ti invita a Lethe. Non invieremo nulla di superfluo.",
       "ENABLE_BTN": "Attiva notifiche",
+      "ENABLING": "Attivazione…",
       "LATER_BTN": "Più tardi",
       "TOGGLE_LABEL": "Notifiche push",
       "TOGGLE_HINT": "Attiva o disattiva le notifiche per questo dispositivo senza modificare il permesso del browser.",
@@ -566,6 +584,7 @@
     "STATUS_REJECTED": "✗ Rifiutato",
     "STATUS_PENDING": "{{count}} di {{total}} confermato",
     "PAYER_PREFIX": "da {{name}}",
+    "SHARE_PER_PERSON": "{{amount}} {{currency}} / persona",
     "CONFIRM_HEADING": "Conferma ricezione",
     "PAID_BY_NOTICE": "{{name}} ha pagato",
     "CONFIRM_BTN": "Conferma ricezione",
@@ -625,6 +644,7 @@
     "SORT_AMOUNT": "Importo (alto → basso)",
     "FILTER_SHOW_ARCHIVED": "Mostra archiviate",
     "DETAIL_REJECT_BTN": "Rifiuta",
+    "DETAIL_DELETE_BTN": "Elimina",
     "DETAIL_ARCHIVE_BTN": "Archivia",
     "ARCHIVED_SECTION": "Archiviate",
     "LOAD_MORE_ARCHIVED": "Carica altri",
@@ -632,6 +652,19 @@
     "SNACK_EXPENSE_REJECTED": "Spesa rifiutata",
     "SETTLE_DIALOG_TITLE": "Salda importo",
     "SETTLE_DIALOG_HINT": "Importo totale: {{max}} {{currency}}. Puoi inserire un importo parziale.",
-    "SETTLE_DIALOG_CONFIRM": "Salda"
+    "SETTLE_DIALOG_CONFIRM": "Salda",
+    "CONFIRM_RECEIVED_BTN": "Segna come ricevuto",
+    "AWAITING_YOUR_CONFIRMATION": "In attesa della tua conferma",
+    "RECEIVE_DIALOG_TITLE": "Conferma ricezione",
+    "RECEIVE_DIALOG_HINT": "Conferma di aver ricevuto {{max}} {{currency}} da {{name}}. Puoi anche inserire un importo parziale.",
+    "RECEIVE_DIALOG_CONFIRM": "Conferma ricezione",
+    "SCAN_ANALYZING": "Analisi dello scontrino…",
+    "SCAN_SUGGESTION": "Rilevato",
+    "SCAN_APPLY": "Applica",
+    "SCAN_DISMISS": "Ignora",
+    "SCAN_NOTHING": "Niente rilevato – inserisci manualmente.",
+    "SCAN_FAILED": "Analisi non riuscita – inserisci manualmente.",
+    "SCANNER_FOCUSING": "Messa a fuoco…",
+    "SCANNER_TAP_FOCUS": "Tocca due volte per mettere a fuoco"
   }
 }

@@ -1,5 +1,5 @@
 @if (show()) {
-<div class="backdrop" (click)="closeDialog()" role="presentation">
+<app-overlay (dismissed)="closeDialog()">
     <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
         aria-labelledby="sync-dialog-title">
         <h2 class="title" id="sync-dialog-title">{{ 'SETTINGS.SYNC_MACHINES' | translate }}</h2>
@@ -46,5 +46,5 @@
             <button class="btn btn--ghost" (click)="closeDialog()">{{ 'COMMON.CANCEL' | translate }}</button>
         </div>
     </div>
-</div>
+</app-overlay>
 }

@@ -5,10 +5,11 @@ import { MasterPasswordService } from '../../../../core/services/master-password
 import { SensitiveListsService } from '../../../../core/services/sensitive-lists.service';
 import { WebAuthnService } from '../../../../core/services/webauthn.service';
 import { AppStore } from '../../../../store/app.store';
+import { OverlayComponent } from '../../../../shared/overlay/overlay.component';
 
 @Component({
     selector: 'app-reveal-dialog',
-    imports: [FormsModule, TranslatePipe],
+    imports: [OverlayComponent, FormsModule, TranslatePipe],
     templateUrl: './reveal-dialog.component.html',
     styleUrl: './reveal-dialog.component.scss',
 })

@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild, computed, effect, inject, signal, untracked } from '@angular/core';
+import { Component, OnInit, ViewChild, computed, effect, inject, signal, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -10,6 +10,7 @@ import { NemesisFilterDialogComponent } from '../nemesis-filter-dialog/nemesis-f
 import { DebtEntry } from '../../../core/models/nemesis.model';
 import { NemesisSettlementSortOrder } from '../nemesis-dashboard/nemesis-dashboard.types';
 import { animateOverlayClose } from '../../../core/utils/sheet-transition.util';
+import { OverlayComponent } from '../../../shared/overlay/overlay.component';
 
 @Component({
     selector: 'app-nemesis-settlements-panel',
@@ -21,6 +22,7 @@ import { animateOverlayClose } from '../../../core/utils/sheet-transition.util';
         LucideX,
         SettlementMatrixComponent,
         NemesisFilterDialogComponent,
+        OverlayComponent,
     ],
     templateUrl: './nemesis-settlements-panel.component.html',
     styleUrls: ['./nemesis-settlements-panel.component.scss'],
@@ -35,8 +37,9 @@ export class NemesisSettlementsPanelComponent implements OnInit {
     protected readonly highlightedDebtToUserId = signal<string | null>(null);
     protected readonly pendingSettlementDebt = signal<DebtEntry | null>(null);
     protected readonly pendingSettlementAmount = signal<number>(0);
+    protected readonly settleMode = signal<'pay' | 'receive'>('pay');
 
-    @ViewChild('settleOverlay') private settleOverlayRef?: ElementRef<HTMLElement>;
+    @ViewChild('settleOverlay') private settleOverlayRef?: OverlayComponent;
 
     constructor() {
         effect(() => {
@@ -70,7 +73,7 @@ export class NemesisSettlementsPanelComponent implements OnInit {
         });
     }
 
-    private memberNameById(userId: string): string {
+    protected memberNameById(userId: string): string {
         const m = this.store.members().find(m => m.userId === userId);
         return m?.displayName ?? userId.slice(0, 8) + '…';
     }
@@ -107,13 +110,20 @@ export class NemesisSettlementsPanelComponent implements OnInit {
     );
 
     protected openSettleDialog(debt: DebtEntry): void {
+        this.settleMode.set('pay');
+        this.pendingSettlementDebt.set(debt);
+        this.pendingSettlementAmount.set(debt.amount);
+    }
+
+    protected openReceiveDialog(debt: DebtEntry): void {
+        this.settleMode.set('receive');
         this.pendingSettlementDebt.set(debt);
         this.pendingSettlementAmount.set(debt.amount);
     }
 
     protected async closeSettleDialog(): Promise<void> {
         if (!this.pendingSettlementDebt()) return;
-        await animateOverlayClose(this.settleOverlayRef?.nativeElement);
+        await animateOverlayClose(this.settleOverlayRef?.element);
         this.pendingSettlementDebt.set(null);
     }
 
@@ -121,12 +131,21 @@ export class NemesisSettlementsPanelComponent implements OnInit {
         const debt = this.pendingSettlementDebt();
         const amount = this.pendingSettlementAmount();
         if (!debt || amount <= 0) return;
-        await this.store.submitSettlement({
-            fromUserId: debt.fromUserId,
-            toUserId: debt.toUserId,
-            amount,
-            currency: debt.currency,
-        });
+        if (this.settleMode() === 'receive') {
+            await this.store.confirmReceived({
+                fromUserId: debt.fromUserId,
+                toUserId: debt.toUserId,
+                amount,
+                currency: debt.currency,
+            });
+        } else {
+            await this.store.submitSettlement({
+                fromUserId: debt.fromUserId,
+                toUserId: debt.toUserId,
+                amount,
+                currency: debt.currency,
+            });
+        }
         await this.closeSettleDialog();
     }
 

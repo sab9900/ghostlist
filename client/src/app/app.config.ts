@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { ApplicationConfig, EnvironmentInjector, inject, isDevMode, provideAppInitializer, provideBrowserGlobalErrorListeners, provideZonelessChangeDetection, runInInjectionContext } from '@angular/core';
 import { PreloadAllModules, provideRouter, withPreloading } from '@angular/router';
 import { provideServiceWorker } from '@angular/service-worker';
+import { Capacitor } from '@capacitor/core';
 import { provideTranslateService } from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 
@@ -27,8 +28,21 @@ export const appConfig: ApplicationConfig = {
         provideRouter(routes, withPreloading(PreloadAllModules)),
         provideHttpClient(),
         provideServiceWorker('ghost-sw.js', {
-            enabled: !isDevMode(),
+            enabled: !isDevMode() && !Capacitor.isNativePlatform(),
             registrationStrategy: 'registerWhenStable:30000',
+        }),
+        // On native the assets are bundled in the app package, so a service worker only adds a stale
+        // caching layer in front of them — a fresh `cap copy` then keeps getting shadowed by the old
+        // cache. Besides not registering one (above), actively unregister any SW a previous build left
+        // behind and drop its caches, so existing installs self-heal on the next launch.
+        provideAppInitializer(() => {
+            if (!Capacitor.isNativePlatform()) return;
+            if ('serviceWorker' in navigator) {
+                void navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => void r.unregister()));
+            }
+            if ('caches' in window) {
+                void caches.keys().then(keys => keys.forEach(k => void caches.delete(k)));
+            }
         }),
         provideTranslateService({ fallbackLang: 'en_US' }),
         provideTranslateHttpLoader({ prefix: '/i18n/', suffix: '.json' }),

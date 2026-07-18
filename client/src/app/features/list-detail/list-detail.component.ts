@@ -64,6 +64,8 @@ function loadPaneWidth(prefsCache: PrefsCacheService): number {
 export class ListDetailComponent implements OnDestroy {
     @ViewChild('tabsNav') private tabsNavRef?: ElementRef<HTMLElement>;
 
+    private tabScrollPrimed = false;
+
     protected readonly store = inject(AppStore);
     private readonly hub = inject(HubService);
     private readonly route = inject(ActivatedRoute);
@@ -233,6 +235,10 @@ export class ListDetailComponent implements OnDestroy {
 
         effect(() => {
             this.activeTab();
+            if (!this.tabScrollPrimed) {
+                this.tabScrollPrimed = true;
+                return;
+            }
             requestAnimationFrame(() => {
                 const nav = this.tabsNavRef?.nativeElement;
                 if (!nav) return;

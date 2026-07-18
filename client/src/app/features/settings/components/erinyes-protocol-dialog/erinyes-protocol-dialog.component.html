@@ -4,7 +4,7 @@
     <app-ghost-mist mode="always" />
 </div>
 }
-<div class="backdrop" (click)="cancel()" role="presentation">
+<app-overlay (dismissed)="cancel()">
     <div class="dialog" [class.dialog--wide]="step() === 'running' || step() === 'done'"
         (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="erinyes-title">
 
@@ -126,5 +126,5 @@
         }
 
     </div>
-</div>
+</app-overlay>
 }

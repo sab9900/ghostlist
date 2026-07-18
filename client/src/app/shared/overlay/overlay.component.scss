@@ -1,0 +1,72 @@
+app-overlay {
+    display: contents;
+}
+
+.ov-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: var(--z-overlay, 300);
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    animation: ov-backdrop-in var(--duration-normal) var(--ease-out) both;
+}
+
+// When the keyboard is up, the app shell only reaches the keyboard's top edge,
+// so the backdrop stops there and the app background shows through the
+// keyboard's rounded corners. This strip paints the keyboard-height area just
+// below the backdrop with the same dim so those corners match. It is absolutely
+// positioned and out of flow, so it does NOT affect where the dialog/sheet sits.
+.ov-backdrop::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    height: var(--keyboard-height, 0px);
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.ov-backdrop--dialog {
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+    // Reserve the keyboard's height so the vertically-centred dialog stays
+    // centred within the visible area above the keyboard. --keyboard-height is
+    // maintained globally by KeyboardInsetService.
+    padding-bottom: calc(var(--space-4) + var(--keyboard-height, 0px));
+    transition: padding-bottom var(--duration-normal) var(--ease-out);
+}
+
+.ov-backdrop--sheet {
+    align-items: flex-end;
+    justify-content: center;
+    // Reserve the keyboard's height so the sheet sits above the keyboard.
+    padding-bottom: var(--keyboard-height, 0px);
+    transition: padding-bottom var(--duration-normal) var(--ease-out);
+
+    @media (min-width: 640px) {
+        align-items: center;
+        padding: var(--space-4);
+        padding-bottom: calc(var(--space-4) + var(--keyboard-height, 0px));
+    }
+}
+
+// Single, shared entrance for the projected dialog content, owned here so every
+// dialog animates identically instead of each component re-inventing it. Sheets
+// keep their own slide-in / slide-out, which is the correct bottom-sheet motion.
+// (encapsulation is None, so this reaches the projected child — the .dialog.)
+.ov-backdrop--dialog > * {
+    animation: ov-dialog-in var(--duration-normal) var(--ease-out) both;
+}
+
+@keyframes ov-backdrop-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes ov-dialog-in {
+    from { opacity: 0; transform: scale(0.96) translateY(8px); }
+    to   { opacity: 1; transform: none; }
+}

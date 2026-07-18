@@ -1,5 +1,5 @@
 @if (show()) {
-<div class="backdrop" (click)="cancel.emit()" role="presentation">
+<app-overlay (dismissed)="cancel.emit()">
     <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
         aria-labelledby="biometric-confirm-title" aria-describedby="biometric-confirm-hint">
         <h2 class="title" id="biometric-confirm-title">{{ 'SETTINGS.SECURITY.CONFIRM.TITLE' | translate }}</h2>
@@ -17,5 +17,5 @@
             </button>
         </div>
     </div>
-</div>
+</app-overlay>
 }

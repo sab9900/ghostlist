@@ -1,9 +1,10 @@
 import { Component, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
+import { OverlayComponent } from '../../../../shared/overlay/overlay.component';
 
 @Component({
     selector: 'app-mark-all-read-dialog',
-    imports: [TranslatePipe],
+    imports: [OverlayComponent, TranslatePipe],
     templateUrl: './mark-all-read-dialog.component.html',
     styleUrl: './mark-all-read-dialog.component.scss',
 })

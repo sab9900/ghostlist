@@ -2,10 +2,11 @@ import { Component, effect, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { DecryptedItem } from '../../items-tab.types';
+import { OverlayComponent } from '../../../../../shared/overlay/overlay.component';
 
 @Component({
     selector: 'app-reminder-dialog',
-    imports: [FormsModule, TranslatePipe],
+    imports: [OverlayComponent, FormsModule, TranslatePipe],
     templateUrl: './reminder-dialog.component.html',
     styleUrl: './reminder-dialog.component.scss',
 })

@@ -4,16 +4,11 @@ import { Subscription, filter } from 'rxjs';
 import { PageTransitionService } from '../services/page-transition.service';
 import {
     IOS_EASE,
-    LEAVE_BLUR_PX,
-    LEAVE_DARKEN,
     PAGE_POP_DURATION_MS,
     PAGE_PUSH_DURATION_MS,
     PAGE_REPLACE_DURATION_MS,
-    PARALLAX_PERCENT,
-    SCRIM_OPACITY,
     Z_BACK,
     Z_FRONT,
-    Z_SCRIM,
 } from '../utils/ios-motion';
 import { cloneSnapshot } from '../utils/page-snapshot.util';
 
@@ -63,11 +58,6 @@ export class PageTransitionDirective implements OnInit, OnDestroy {
         const direction = this.transitions.resolveDirection(nextUrl);
         const gestureDriven = this.transitions.consumeGestureFlag();
 
-        // TEMP DEBUG — remove once the first-transition issue is diagnosed.
-        console.debug('[page-transition] onNavigationStart', {
-            nextUrl, direction, gestureDriven, hasActivatedOnce: this.hasActivatedOnce,
-        });
-
         if (direction === 'replace') return;
 
         this.cleanupActive?.();
@@ -83,13 +73,6 @@ export class PageTransitionDirective implements OnInit, OnDestroy {
 
         const outgoingEl = this.hostEl.nextElementSibling as HTMLElement | null;
         this.pendingOutgoingClone = outgoingEl ? cloneSnapshot(outgoingEl) : null;
-
-        // TEMP DEBUG
-        console.debug('[page-transition] captured snapshot', {
-            outgoingElFound: !!outgoingEl,
-            outgoingElTag: outgoingEl?.tagName,
-            cloneCreated: !!this.pendingOutgoingClone,
-        });
     }
 
     private onActivate(): void {
@@ -100,23 +83,12 @@ export class PageTransitionDirective implements OnInit, OnDestroy {
 
         const incomingEl = this.hostEl.nextElementSibling as HTMLElement | null;
 
-        // TEMP DEBUG — remove once the first-transition issue is diagnosed.
-        console.debug('[page-transition] onActivate', {
-            hasActivatedOnce: this.hasActivatedOnce,
-            direction,
-            hasOutgoingClone: !!outgoingClone,
-            incomingElFound: !!incomingEl,
-            incomingElTag: incomingEl?.tagName,
-        });
-
         if (!this.hasActivatedOnce) {
             this.hasActivatedOnce = true;
-            console.debug('[page-transition] SKIPPED — first-ever activation');
             return;
         }
 
         if (!incomingEl || direction === null) {
-            console.debug('[page-transition] BAILED — missing incomingEl or direction is null');
             return;
         }
 
@@ -157,90 +129,54 @@ export class PageTransitionDirective implements OnInit, OnDestroy {
         const parent = this.hostEl.parentElement;
         if (!parent) return this.runFade(incomingEl);
 
-        const scrim = this.matchLayersToIncoming(incomingEl, outgoingClone, parent);
+        this.mountBackLayer(incomingEl, outgoingClone, parent);
 
         outgoingClone.style.zIndex = String(Z_BACK);
-        scrim.style.zIndex = String(Z_SCRIM);
         incomingEl.style.zIndex = String(Z_FRONT);
 
         const frontAnim = incomingEl.animate(
             [{ transform: 'translate3d(100%,0,0)' }, { transform: 'translate3d(0,0,0)' }],
             { duration: PAGE_PUSH_DURATION_MS, easing: IOS_EASE, fill: 'both' },
         );
-        const backAnim = outgoingClone.animate(
-            [
-                { transform: 'translate3d(0,0,0)', filter: 'blur(0px) brightness(1)' },
-                { transform: `translate3d(-${PARALLAX_PERCENT}%,0,0)`, filter: `blur(${LEAVE_BLUR_PX}px) brightness(${LEAVE_DARKEN})` },
-            ],
-            { duration: PAGE_PUSH_DURATION_MS, easing: IOS_EASE, fill: 'both' },
-        );
-        const scrimAnim = scrim.animate(
-            [{ opacity: 0 }, { opacity: SCRIM_OPACITY }],
-            { duration: PAGE_PUSH_DURATION_MS, easing: IOS_EASE, fill: 'both' },
-        );
 
-        return this.finishLayeredTransition(incomingEl, outgoingClone, scrim, [frontAnim, backAnim, scrimAnim]);
+        return this.finishLayeredTransition(incomingEl, outgoingClone, [frontAnim]);
     }
 
     private runPop(incomingEl: HTMLElement, outgoingClone: HTMLElement): () => void {
         const parent = this.hostEl.parentElement;
         if (!parent) return this.runFade(incomingEl);
 
-        const scrim = this.matchLayersToIncoming(incomingEl, outgoingClone, parent);
+        this.mountBackLayer(incomingEl, outgoingClone, parent);
 
         outgoingClone.style.zIndex = String(Z_FRONT);
-        scrim.style.zIndex = String(Z_SCRIM);
         incomingEl.style.zIndex = String(Z_BACK);
 
         const frontAnim = outgoingClone.animate(
-            [
-                { transform: 'translate3d(0,0,0)', filter: 'blur(0px) brightness(1)' },
-                { transform: 'translate3d(100%,0,0)', filter: `blur(${LEAVE_BLUR_PX}px) brightness(${LEAVE_DARKEN})` },
-            ],
-            { duration: PAGE_POP_DURATION_MS, easing: IOS_EASE, fill: 'both' },
-        );
-        const backAnim = incomingEl.animate(
-            [{ transform: `translate3d(-${PARALLAX_PERCENT}%,0,0)` }, { transform: 'translate3d(0,0,0)' }],
-            { duration: PAGE_POP_DURATION_MS, easing: IOS_EASE, fill: 'both' },
-        );
-        const scrimAnim = scrim.animate(
-            [{ opacity: SCRIM_OPACITY }, { opacity: 0 }],
+            [{ transform: 'translate3d(0,0,0)' }, { transform: 'translate3d(100%,0,0)' }],
             { duration: PAGE_POP_DURATION_MS, easing: IOS_EASE, fill: 'both' },
         );
 
-        return this.finishLayeredTransition(incomingEl, outgoingClone, scrim, [frontAnim, backAnim, scrimAnim]);
+        return this.finishLayeredTransition(incomingEl, outgoingClone, [frontAnim]);
     }
 
-    private matchLayersToIncoming(incomingEl: HTMLElement, outgoingClone: HTMLElement, parent: HTMLElement): HTMLElement {
-        const scrim = document.createElement('div');
-        scrim.setAttribute('aria-hidden', 'true');
-        scrim.style.background = '#000';
-        scrim.style.opacity = '0';
-        scrim.style.pointerEvents = 'none';
-
-        for (const layer of [outgoingClone, scrim]) {
-            layer.style.position = 'absolute';
-            layer.style.top = '0';
-            layer.style.left = '0';
-            layer.style.width = '100%';
-            layer.style.height = '100%';
-            layer.style.margin = '0';
-            layer.style.willChange = 'transform';
-        }
+    private mountBackLayer(incomingEl: HTMLElement, outgoingClone: HTMLElement, parent: HTMLElement): void {
+        outgoingClone.style.position = 'absolute';
+        outgoingClone.style.top = '0';
+        outgoingClone.style.left = '0';
+        outgoingClone.style.width = '100%';
+        outgoingClone.style.height = '100%';
+        outgoingClone.style.margin = '0';
+        outgoingClone.style.willChange = 'transform';
 
         parent.insertBefore(outgoingClone, this.hostEl);
-        parent.insertBefore(scrim, this.hostEl);
 
         incomingEl.style.position = 'relative';
         incomingEl.style.willChange = 'transform';
-
-        return scrim;
     }
 
     private finishLayeredTransition(
         incomingEl: HTMLElement,
         outgoingClone: HTMLElement,
-        scrim: HTMLElement,
         anims: Animation[],
     ): () => void {
         let done = false;
@@ -249,7 +185,6 @@ export class PageTransitionDirective implements OnInit, OnDestroy {
             done = true;
             for (const anim of anims) anim.cancel();
             outgoingClone.remove();
-            scrim.remove();
             incomingEl.style.position = '';
             incomingEl.style.zIndex = '';
             incomingEl.style.willChange = '';

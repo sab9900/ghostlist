@@ -10,7 +10,9 @@ import {
     NemesisReceiptDto,
     SaveReceiptRequest,
     SubmitSettlementRequest,
+    ConfirmReceivedSettlementRequest,
     UpdateNemesisSettingsRequest,
+    UpdateExpenseSplitRequest,
     CreateGhostListItemRequest,
     CreateGhostMessageRequest,
     CreateItemReminderRequest,
@@ -371,6 +373,12 @@ export class ApiService {
         });
     }
 
+    confirmReceivedSettlement(request: ConfirmReceivedSettlementRequest): Observable<string> {
+        return this.http.post<string>(`${this.BASE}/nemesis/settlements/confirm-received`, request, {
+            headers: { ...this.deviceIdHeaders(), ...this.userIdHeaders() },
+        });
+    }
+
     confirmSettlement(settlementId: string): Observable<void> {
         return this.http.post<void>(`${this.BASE}/nemesis/settlements/${settlementId}/confirm`, null, {
             headers: this.userIdHeaders(),
@@ -395,6 +403,18 @@ export class ApiService {
         });
     }
 
+    updateExpenseSplit(expenseId: string, request: UpdateExpenseSplitRequest): Observable<void> {
+        return this.http.put<void>(`${this.BASE}/nemesis/expenses/${expenseId}/split`, request, {
+            headers: this.userIdHeaders(),
+        });
+    }
+
+    deleteExpense(expenseId: string): Observable<void> {
+        return this.http.delete<void>(`${this.BASE}/nemesis/expenses/${expenseId}`, {
+            headers: this.userIdHeaders(),
+        });
+    }
+
     getArchivedExpenses(listId: string, cursor?: string): Observable<ArchivedExpensesDto> {
         const params = cursor ? { cursor } : undefined;
         return this.http.get<ArchivedExpensesDto>(`${this.BASE}/nemesis/${listId}/archived-expenses`, { params });
@@ -402,6 +422,12 @@ export class ApiService {
 
     forgiveSettlement(settlementId: string): Observable<void> {
         return this.http.post<void>(`${this.BASE}/nemesis/settlements/${settlementId}/forgive`, null, {
+            headers: this.userIdHeaders(),
+        });
+    }
+
+    purgeNemesisLedger(listId: string): Observable<void> {
+        return this.http.post<void>(`${this.BASE}/nemesis/${listId}/purge`, null, {
             headers: this.userIdHeaders(),
         });
     }

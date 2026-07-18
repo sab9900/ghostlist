@@ -15,6 +15,7 @@
                 </span>
                 <span class="card__meta">
                     <span class="card__amount">{{ expense.amount | number:'1.2-2' }} {{ expense.currency }}</span>
+                    <span class="card__share">{{ 'NEMESIS.SHARE_PER_PERSON' | translate: { amount: (sharePerPerson(expense) | number:'1.2-2'), currency: expense.currency } }}</span>
                     <span class="card__payer">{{ 'NEMESIS.PAYER_PREFIX' | translate: { name: memberName(expense.paidByUserId) } }}</span>
                     @if (expense.status === VerificationStatus.Verified) {
                         <span class="card__status card__status--verified">{{ 'NEMESIS.STATUS_VERIFIED' | translate }}</span>

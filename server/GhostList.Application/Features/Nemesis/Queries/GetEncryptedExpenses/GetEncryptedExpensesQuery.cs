@@ -63,12 +63,14 @@ public class GetEncryptedExpensesQueryHandler(IApplicationDbContext context)
         var expenses = await context.NemesisExpenses
             .Include(e => e.Verifications)
             .Where(e => e.GhostListId == request.GhostListId &&
+                        e.DeletedAt == null &&
                         (!e.IsArchived || e.Status == VerificationStatus.Verified))
             .OrderBy(e => e.CreatedAt)
             .ToListAsync(cancellationToken);
 
         var settlements = await context.NemesisSettlements
             .Where(s => s.GhostListId == request.GhostListId
+                     && s.DeletedAt == null
                      && (s.Status == SettlementStatus.Pending
                          || s.Status == SettlementStatus.Confirmed
                          || (s.ResolvedAt != null && s.ResolvedAt >= cutoff)))

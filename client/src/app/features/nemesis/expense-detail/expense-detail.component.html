@@ -76,8 +76,13 @@
             </div>
         }
 
-        @if (canVerify || canReject) {
+        @if (canVerify || canReject || canDelete) {
             <div class="action-row">
+                @if (canDelete) {
+                    <button class="action-btn action-btn--delete" type="button" (click)="deleteRequested.emit(expense.id)">
+                        {{ 'NEMESIS.DETAIL_DELETE_BTN' | translate }}
+                    </button>
+                }
                 @if (canReject) {
                     <button class="action-btn action-btn--reject" type="button" (click)="rejectRequested.emit(expense.id)">
                         {{ 'NEMESIS.DETAIL_REJECT_BTN' | translate }}

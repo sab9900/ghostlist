@@ -191,6 +191,13 @@
         border: 1px solid var(--color-error, #ef4444);
         &:hover { background: var(--color-error, #ef4444); color: #fff; }
     }
+
+    &--delete {
+        background: transparent;
+        color: var(--color-error, #ef4444);
+        border: 1px solid var(--color-error, #ef4444);
+        &:hover { background: var(--color-error, #ef4444); color: #fff; }
+    }
 }
 
 .archive-btn {

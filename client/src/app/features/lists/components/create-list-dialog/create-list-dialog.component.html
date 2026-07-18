@@ -1,5 +1,5 @@
 @if (show()) {
-<div class="backdrop" (click)="close.emit()" role="presentation">
+<app-overlay (dismissed)="close.emit()">
     <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
         aria-labelledby="create-dialog-title">
         <h2 class="title" id="create-dialog-title">{{ 'LISTS.CREATE_TITLE' | translate }}</h2>
@@ -20,5 +20,5 @@
             </button>
         </div>
     </div>
-</div>
+</app-overlay>
 }

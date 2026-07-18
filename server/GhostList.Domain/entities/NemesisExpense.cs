@@ -21,6 +21,8 @@ public class NemesisExpense
     public string? CreatedByDeviceId { get; private set; }
     public string? CreatedByUserId { get; private set; }
 
+    public DateTime? DeletedAt { get; private set; }
+
     private readonly List<NemesisVerification> _verifications = [];
     public IReadOnlyList<NemesisVerification> Verifications => _verifications.AsReadOnly();
 
@@ -76,6 +78,32 @@ public class NemesisExpense
         IsArchived = true;
     }
 
+    public void UpdateSplit(
+        string encryptedPayload,
+        string payloadInitializationVector,
+        int splitCount,
+        IReadOnlyList<string>? removedUserIds = null)
+    {
+        if (Status != VerificationStatus.Pending)
+            throw new InvalidOperationException("Only pending expenses can be updated.");
+
+        if (splitCount < 0)
+            throw new ArgumentOutOfRangeException(nameof(splitCount));
+
+        EncryptedPayload = encryptedPayload;
+        PayloadInitializationVector = payloadInitializationVector;
+        SplitCount = splitCount;
+
+        if (removedUserIds is { Count: > 0 })
+            _verifications.RemoveAll(v => removedUserIds.Contains(v.VerifiedByUserId));
+
+        if (_verifications.Count >= SplitCount)
+        {
+            Status = VerificationStatus.Verified;
+            IsArchived = true;
+        }
+    }
+
     public void Archive()
     {
         IsArchived = true;
@@ -85,5 +113,10 @@ public class NemesisExpense
     {
         EncryptedReceiptKey = encryptedReceiptKey;
         ReceiptBlobKey = receiptBlobKey;
+    }
+
+    public void SoftDelete()
+    {
+        DeletedAt ??= DateTime.UtcNow;
     }
 }

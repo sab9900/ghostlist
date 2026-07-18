@@ -1,10 +1,11 @@
 import { Component, effect, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
+import { OverlayComponent } from '../../../../shared/overlay/overlay.component';
 
 @Component({
     selector: 'app-biometric-confirm-dialog',
-    imports: [FormsModule, TranslatePipe],
+    imports: [OverlayComponent, FormsModule, TranslatePipe],
     templateUrl: './biometric-confirm-dialog.component.html',
     styleUrl: './biometric-confirm-dialog.component.scss',
 })

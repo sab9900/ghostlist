@@ -3,10 +3,11 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { KnownList } from '../../../../core/models';
 import { QrCodeComponent } from '../../../../shared/qr-code/qr-code.component';
 import { AppStore } from '../../../../store/app.store';
+import { OverlayComponent } from '../../../../shared/overlay/overlay.component';
 
 @Component({
     selector: 'app-export-dialog',
-    imports: [TranslatePipe, QrCodeComponent],
+    imports: [OverlayComponent, TranslatePipe, QrCodeComponent],
     templateUrl: './export-dialog.component.html',
     styleUrl: './export-dialog.component.scss',
 })

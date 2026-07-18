@@ -1,9 +1,13 @@
 using GhostList.Application.Features.Nemesis.Commands.ArchiveExpense;
+using GhostList.Application.Features.Nemesis.Commands.ConfirmReceivedSettlement;
 using GhostList.Application.Features.Nemesis.Commands.ConfirmSettlement;
 using GhostList.Application.Features.Nemesis.Commands.DeclineSettlement;
 using GhostList.Application.Features.Nemesis.Commands.CreateExpense;
+using GhostList.Application.Features.Nemesis.Commands.DeleteExpense;
 using GhostList.Application.Features.Nemesis.Commands.ForgiveSettlement;
+using GhostList.Application.Features.Nemesis.Commands.PurgeNemesisLedger;
 using GhostList.Application.Features.Nemesis.Commands.RejectExpense;
+using GhostList.Application.Features.Nemesis.Commands.UpdateExpenseSplit;
 using GhostList.Application.Features.Nemesis.Commands.SaveNemesisReceipt;
 using GhostList.Application.Features.Nemesis.Commands.SubmitSettlement;
 using GhostList.Application.Features.Nemesis.Commands.UpdateNemesisSettings;
@@ -73,6 +77,26 @@ public class NemesisController(IMediator mediator) : ControllerBase
         return NoContent();
     }
 
+    [HttpPut("expenses/{expenseId:guid}/split")]
+    public async Task<IActionResult> UpdateExpenseSplit(Guid expenseId, [FromBody] UpdateExpenseSplitRequest request, CancellationToken ct)
+    {
+        await mediator.Send(new UpdateExpenseSplitCommand(
+            expenseId,
+            request.EncryptedPayload,
+            request.PayloadInitializationVector,
+            request.SplitCount,
+            request.RemovedUserIds), ct);
+        return NoContent();
+    }
+
+    [HttpDelete("expenses/{expenseId:guid}")]
+    public async Task<IActionResult> DeleteExpense(Guid expenseId, CancellationToken ct)
+    {
+        var userId = Request.Headers["X-User-Id"].FirstOrDefault();
+        await mediator.Send(new DeleteExpenseCommand(expenseId, userId), ct);
+        return NoContent();
+    }
+
     [HttpPost("expenses/{expenseId:guid}/archive")]
     public async Task<IActionResult> ArchiveExpense(Guid expenseId, CancellationToken ct)
     {
@@ -107,6 +131,23 @@ public class NemesisController(IMediator mediator) : ControllerBase
         return CreatedAtAction(nameof(GetExpenses), new { listId = request.GhostListId }, id);
     }
 
+    [HttpPost("settlements/confirm-received")]
+    public async Task<ActionResult<Guid>> ConfirmReceivedSettlement([FromBody] ConfirmReceivedSettlementRequest request, CancellationToken ct)
+    {
+        var deviceId = Request.Headers["X-Device-Id"].FirstOrDefault();
+        var userId = Request.Headers["X-User-Id"].FirstOrDefault();
+
+        var id = await mediator.Send(new ConfirmReceivedSettlementCommand(
+            request.GhostListId,
+            request.EncryptedPayload,
+            request.PayloadInitializationVector,
+            deviceId,
+            userId,
+            request.PayerUserId), ct);
+
+        return CreatedAtAction(nameof(GetExpenses), new { listId = request.GhostListId }, id);
+    }
+
     [HttpPost("settlements/{settlementId:guid}/confirm")]
     public async Task<IActionResult> ConfirmSettlement(Guid settlementId, CancellationToken ct)
     {
@@ -125,6 +166,13 @@ public class NemesisController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> ForgiveSettlement(Guid settlementId, CancellationToken ct)
     {
         await mediator.Send(new ForgiveSettlementCommand(settlementId), ct);
+        return NoContent();
+    }
+
+    [HttpPost("{listId:guid}/purge")]
+    public async Task<IActionResult> PurgeNemesisLedger(Guid listId, CancellationToken ct)
+    {
+        await mediator.Send(new PurgeNemesisLedgerCommand(listId), ct);
         return NoContent();
     }
 
@@ -147,10 +195,22 @@ public record SaveReceiptRequest(string EncryptedReceipt, string ReceiptIv);
 
 public record VerifyExpenseRequest(string UserId);
 
+public record UpdateExpenseSplitRequest(
+    string EncryptedPayload,
+    string PayloadInitializationVector,
+    int SplitCount,
+    IReadOnlyList<string>? RemovedUserIds = null);
+
 public record SubmitSettlementRequest(
     Guid GhostListId,
     string EncryptedPayload,
     string PayloadInitializationVector,
     string? ReceiverUserId = null);
+
+public record ConfirmReceivedSettlementRequest(
+    Guid GhostListId,
+    string EncryptedPayload,
+    string PayloadInitializationVector,
+    string? PayerUserId = null);
 
 public record UpdateNemesisSettingsRequest(int ExpiryDays, int HideAfterDays);

@@ -320,7 +320,7 @@
 </section>
 
 @if (shareStep() === 'scan') {
-<div class="dialog-backdrop" (click)="cancelShare()" role="presentation">
+<app-overlay (dismissed)="cancelShare()">
     <div class="dialog dialog--qr" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
         aria-labelledby="share-scan-title">
         <h2 class="dialog__title" id="share-scan-title">{{ 'LIST_SETTINGS.SCAN_QR' | translate }}</h2>
@@ -332,7 +332,7 @@
             <button class="btn btn--ghost" (click)="cancelShare()">{{ 'COMMON.CANCEL' | translate }}</button>
         </div>
     </div>
-</div>
+</app-overlay>
 }
 
 <section class="settings-section settings-section--danger" aria-labelledby="danger-heading">

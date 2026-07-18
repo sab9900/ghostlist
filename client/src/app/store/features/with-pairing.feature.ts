@@ -59,6 +59,7 @@ export function withPairing() {
             // state while fetchMembersForList's network round-trip + decrypt
             // is in flight again.
             const membersCache = new Map<string, ListMember[]>();
+            const membersComplete = new Map<string, boolean>();
 
             const buildSyncPayload = (): string => {
                 const lists = store.knownLists();
@@ -243,6 +244,7 @@ export function withPairing() {
                 async fetchMembersForList(listId: string, encryptionKey: string): Promise<ListMember[]> {
                     const records = await firstValueFrom(api.getMembers(listId));
                     const members: ListMember[] = [];
+                    let complete = true;
                     for (const r of records) {
                         try {
                             const plain = await crypto.decrypt(r.encryptedPayload, r.initializationVector, encryptionKey);
@@ -259,14 +261,21 @@ export function withPairing() {
                                 isCurrentUser,
                                 lastReadMessageAt: r.lastReadMessageAt,
                             });
-                        } catch { }
+                        } catch {
+                            complete = false;
+                        }
                     }
                     membersCache.set(listId, members);
+                    membersComplete.set(listId, complete);
                     return members;
                 },
 
                 peekCachedMembers(listId: string): ListMember[] {
                     return membersCache.get(listId) ?? [];
+                },
+
+                peekMembersComplete(listId: string): boolean {
+                    return membersComplete.get(listId) ?? false;
                 },
 
                 async initSyncReceive(): Promise<SyncQrPayload> {

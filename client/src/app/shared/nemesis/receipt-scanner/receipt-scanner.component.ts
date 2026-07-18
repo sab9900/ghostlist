@@ -13,10 +13,6 @@ export interface ScanConfirmResult {
 
 type ScanState = 'initializing' | 'live' | 'stable' | 'processing' | 'result' | 'error';
 
-function delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 function loadImageDimensions(url: string): Promise<{ width: number; height: number }> {
     return new Promise((resolve, reject) => {
         const img = new Image();
@@ -24,21 +20,6 @@ function loadImageDimensions(url: string): Promise<{ width: number; height: numb
         img.onerror = () => reject(new Error('Bild konnte nicht geladen werden'));
         img.src = url;
     });
-}
-
-function scaleOcrResult(result: OcrResult, factor: number): OcrResult {
-    return {
-        ...result,
-        words: result.words.map(w => ({
-            ...w,
-            bbox: {
-                x0: w.bbox.x0 * factor,
-                y0: w.bbox.y0 * factor,
-                x1: w.bbox.x1 * factor,
-                y1: w.bbox.y1 * factor,
-            },
-        })),
-    };
 }
 
 @Component({
@@ -55,7 +36,6 @@ export class ReceiptScannerComponent implements AfterViewInit, OnDestroy {
     @ViewChild('videoEl') videoRef!: ElementRef<HTMLVideoElement>;
     @ViewChild('captureCanvas') captureRef!: ElementRef<HTMLCanvasElement>;
     @ViewChild('motionCanvas') motionRef!: ElementRef<HTMLCanvasElement>;
-    @ViewChild('ocrCanvas') ocrCanvasRef!: ElementRef<HTMLCanvasElement>;
     @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
 
     protected state: ScanState = 'initializing';
@@ -63,6 +43,9 @@ export class ReceiptScannerComponent implements AfterViewInit, OnDestroy {
     protected ocrResult: OcrResult | null = null;
     protected svgViewBox = '0 0 1 1';
     protected errorMessage: string | null = null;
+    protected focusing = false;
+
+    private focusHintTimer: ReturnType<typeof setTimeout> | null = null;
 
     private stream: MediaStream | null = null;
     private motionTimer: ReturnType<typeof setInterval> | null = null;
@@ -74,11 +57,6 @@ export class ReceiptScannerComponent implements AfterViewInit, OnDestroy {
     private cameraStartedAt = 0;
     private hasSeenMotion = false;
 
-    private liveOcrActive = false;
-    private liveOcrGeneration = 0;
-    private lastOcrAt = 0;
-    private ocrBusy = false;
-
     private readonly INTERVAL_MS = 350;
     private readonly STABLE_THRESHOLD = 10;
 
@@ -86,10 +64,6 @@ export class ReceiptScannerComponent implements AfterViewInit, OnDestroy {
     private readonly MOTION_W = 160;
     private readonly MOTION_H = 90;
     private readonly WARMUP_MS = 900;
-
-    private readonly OCR_W = 640;
-    private readonly LIVE_OCR_INTERVAL_MS = 700;
-    private readonly OCR_FRESH_MS = 1500;
 
     constructor(
         private readonly ocr: OcrService,
@@ -106,21 +80,66 @@ export class ReceiptScannerComponent implements AfterViewInit, OnDestroy {
 
     private async startCamera(): Promise<void> {
         try {
-            this.stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
-                audio: false,
-            });
+            await this.acquireStream();
             const video = this.videoRef.nativeElement;
-            video.srcObject = this.stream;
-            await video.play();
             this.svgViewBox = `0 0 ${video.videoWidth} ${video.videoHeight}`;
             this.state = 'live';
+            this.ocr.prewarm();
             this.startMotion();
-            this.startLiveOcr();
         } catch {
             this.state = 'error';
             this.errorMessage = 'NEMESIS.SCANNER_CAMERA_DENIED';
         }
+    }
+
+    private async acquireStream(): Promise<void> {
+        this.stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+            audio: false,
+        });
+        const video = this.videoRef.nativeElement;
+        video.srcObject = this.stream;
+        await video.play();
+    }
+
+    // Double-tap the live view to re-trigger autofocus. Where the camera supports a single-shot focus
+    // constraint we pulse it (no visible interruption); otherwise we re-acquire the stream, which forces
+    // the camera to focus again. Stability is reset so the refocus frame doesn't immediately auto-capture.
+    protected async refocus(): Promise<void> {
+        if (this.state !== 'live' && this.state !== 'stable') return;
+        const track = this.stream?.getVideoTracks?.()[0];
+        if (!track) return;
+
+        this.showFocusHint();
+        this.resetStability();
+
+        try {
+            const caps = (track as unknown as { getCapabilities?: () => { focusMode?: string[] } }).getCapabilities?.();
+            const modes = caps?.focusMode ?? [];
+            if (modes.includes('single-shot')) {
+                await track.applyConstraints({ advanced: [{ focusMode: 'single-shot' }] } as unknown as MediaTrackConstraints);
+                if (modes.includes('continuous')) {
+                    await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] } as unknown as MediaTrackConstraints);
+                }
+            } else {
+                this.stopStream();
+                await this.acquireStream();
+            }
+        } catch {
+        }
+    }
+
+    private showFocusHint(): void {
+        this.focusing = true;
+        if (this.focusHintTimer !== null) clearTimeout(this.focusHintTimer);
+        this.focusHintTimer = setTimeout(() => { this.focusing = false; }, 600);
+    }
+
+    private resetStability(): void {
+        this.stableCount = 0;
+        this.prevFrameData = null;
+        this.hasSeenMotion = false;
+        this.cameraStartedAt = Date.now();
     }
 
     private startMotion(): void {
@@ -173,57 +192,8 @@ export class ReceiptScannerComponent implements AfterViewInit, OnDestroy {
         return sum / (a.data.length / 4);
     }
 
-    private startLiveOcr(): void {
-        this.liveOcrActive = true;
-        const generation = ++this.liveOcrGeneration;
-        void this.liveOcrLoop(generation);
-    }
-
-    private stopLiveOcr(): void {
-        this.liveOcrActive = false;
-        this.liveOcrGeneration++;
-    }
-
-    private async liveOcrLoop(generation: number): Promise<void> {
-        while (this.liveOcrActive && generation === this.liveOcrGeneration) {
-            if (this.state === 'live' || this.state === 'stable') {
-                await this.runLiveOcrTick(generation);
-            }
-            await delay(this.LIVE_OCR_INTERVAL_MS);
-        }
-    }
-
-    private async runLiveOcrTick(generation: number): Promise<void> {
-        if (this.ocrBusy) return;
-        const video = this.videoRef?.nativeElement;
-        if (!video || video.readyState < 2 || video.videoWidth === 0) return;
-
-        const scale = this.OCR_W / video.videoWidth;
-        const ocrH = Math.max(1, Math.round(video.videoHeight * scale));
-        const canvas = this.ocrCanvasRef.nativeElement;
-        canvas.width = this.OCR_W;
-        canvas.height = ocrH;
-        canvas.getContext('2d')!.drawImage(video, 0, 0, this.OCR_W, ocrH);
-
-        const blob = await new Promise<Blob | null>(res => canvas.toBlob(b => res(b), 'image/jpeg', 0.85));
-        if (!blob || generation !== this.liveOcrGeneration) return;
-
-        this.ocrBusy = true;
-        try {
-            const result = await this.ocr.scan(blob);
-            if (generation !== this.liveOcrGeneration) return;
-            if (this.state !== 'live' && this.state !== 'stable') return;
-            this.ocrResult = scaleOcrResult(result, 1 / scale);
-            this.lastOcrAt = Date.now();
-        } catch {
-        } finally {
-            this.ocrBusy = false;
-        }
-    }
-
     private async capture(): Promise<void> {
         this.stopMotion();
-        this.stopLiveOcr();
         this.state = 'processing';
 
         const video = this.videoRef.nativeElement;
@@ -241,13 +211,10 @@ export class ReceiptScannerComponent implements AfterViewInit, OnDestroy {
 
         this.stopStream();
 
-        const hasFreshLiveResult = this.ocrResult !== null && (Date.now() - this.lastOcrAt) < this.OCR_FRESH_MS;
-        if (!hasFreshLiveResult) {
-            try {
-                this.ocrResult = await this.ocr.scan(this.capturedBlob);
-            } catch {
-                this.ocrResult = null;
-            }
+        try {
+            this.ocrResult = await this.ocr.scan(this.capturedBlob);
+        } catch {
+            this.ocrResult = null;
         }
         this.state = 'result';
     }
@@ -268,7 +235,6 @@ export class ReceiptScannerComponent implements AfterViewInit, OnDestroy {
         if (!file) return;
 
         this.stopMotion();
-        this.stopLiveOcr();
         this.stopStream();
         this.state = 'processing';
 
@@ -336,8 +302,8 @@ export class ReceiptScannerComponent implements AfterViewInit, OnDestroy {
 
     private stopAll(): void {
         this.stopMotion();
-        this.stopLiveOcr();
         this.stopStream();
+        if (this.focusHintTimer !== null) clearTimeout(this.focusHintTimer);
         if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
     }
 
@@ -361,11 +327,7 @@ export class ReceiptScannerComponent implements AfterViewInit, OnDestroy {
         return this.state === 'processing' || this.state === 'result';
     }
 
-    protected get liveHasData(): boolean {
-        return this.detectedAmount !== null || this.detectedDescription !== null;
-    }
-
     protected get showOverlay(): boolean {
-        return (this.isLive || this.state === 'result') && this.ocrResult !== null;
+        return this.state === 'result' && this.ocrResult !== null;
     }
 }

@@ -9,10 +9,11 @@ import { WebAuthnService } from '../../../../core/services/webauthn.service';
 import { QrCodeComponent } from '../../../../shared/qr-code/qr-code.component';
 import { QrScannerComponent } from '../../../../shared/qr-scanner/qr-scanner.component';
 import { AppStore } from '../../../../store/app.store';
+import { OverlayComponent } from '../../../../shared/overlay/overlay.component';
 
 @Component({
     selector: 'app-sync-dialog',
-    imports: [TranslatePipe, QrCodeComponent, QrScannerComponent, LucideCopy],
+    imports: [OverlayComponent, TranslatePipe, QrCodeComponent, QrScannerComponent, LucideCopy],
     templateUrl: './sync-dialog.component.html',
     styleUrl: './sync-dialog.component.scss',
 })

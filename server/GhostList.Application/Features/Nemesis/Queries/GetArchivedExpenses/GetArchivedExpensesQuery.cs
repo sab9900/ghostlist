@@ -20,7 +20,7 @@ public class GetArchivedExpensesQueryHandler(IApplicationDbContext context)
     {
         var query = context.NemesisExpenses
             .Include(e => e.Verifications)
-            .Where(e => e.GhostListId == request.GhostListId && e.IsArchived);
+            .Where(e => e.GhostListId == request.GhostListId && e.IsArchived && e.DeletedAt == null);
 
         if (request.Cursor.HasValue)
             query = query.Where(e => e.CreatedAt < request.Cursor.Value);

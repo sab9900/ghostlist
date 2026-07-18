@@ -22,6 +22,7 @@
             [members]="uniqueMembers"
             [highlightedToUserId]="highlightedDebtToUserId()"
             (settleRequested)="openSettleDialog($event)"
+            (confirmReceivedRequested)="openReceiveDialog($event)"
             (confirmSettlementRequested)="onConfirmSettlementRequested($event)"
             (declineSettlementRequested)="onDeclineSettlementRequested($event)"
             (forgiveSettlementRequested)="onForgiveSettlementRequested($event)"
@@ -42,11 +43,11 @@
 </div>
 
 @if (pendingSettlementDebt()) {
-    <div class="overlay" #settleOverlay (click)="closeSettleDialog()">
+    <app-overlay #settleOverlay variant="sheet" (dismissed)="closeSettleDialog()">
         <div class="sheet sheet--form" (click)="$event.stopPropagation()">
 
             <div class="sheet__header">
-                <span class="sheet__title">{{ 'NEMESIS.SETTLE_DIALOG_TITLE' | translate }}</span>
+                <span class="sheet__title">{{ (settleMode() === 'receive' ? 'NEMESIS.RECEIVE_DIALOG_TITLE' : 'NEMESIS.SETTLE_DIALOG_TITLE') | translate }}</span>
                 <button class="sheet__close" (click)="closeSettleDialog()" [attr.aria-label]="'NEMESIS.DETAIL_CLOSE_ARIA' | translate">
                     <svg lucideX [size]="20" aria-hidden="true"></svg>
                 </button>
@@ -54,9 +55,10 @@
 
             <div class="sheet__body">
                 <p class="settle-dialog__hint">
-                    {{ 'NEMESIS.SETTLE_DIALOG_HINT' | translate: {
+                    {{ (settleMode() === 'receive' ? 'NEMESIS.RECEIVE_DIALOG_HINT' : 'NEMESIS.SETTLE_DIALOG_HINT') | translate: {
                         max: (pendingSettlementDebt()!.amount | number:'1.2-2'),
-                        currency: pendingSettlementDebt()!.currency
+                        currency: pendingSettlementDebt()!.currency,
+                        name: memberNameById(pendingSettlementDebt()!.fromUserId)
                     } }}
                 </p>
                 <div class="form__row">
@@ -80,10 +82,10 @@
                     class="sheet__submit"
                     [disabled]="(pendingSettlementAmount() ?? 0) <= 0"
                     (click)="confirmSettle()">
-                    {{ 'NEMESIS.SETTLE_DIALOG_CONFIRM' | translate }}
+                    {{ (settleMode() === 'receive' ? 'NEMESIS.RECEIVE_DIALOG_CONFIRM' : 'NEMESIS.SETTLE_DIALOG_CONFIRM') | translate }}
                 </button>
             </div>
 
         </div>
-    </div>
+    </app-overlay>
 }

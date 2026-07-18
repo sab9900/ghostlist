@@ -52,7 +52,7 @@
     gap: var(--space-3);
     padding: var(--space-4);
     list-style: none;
-    overscroll-behavior-y: none;
+    
 
     &:empty {
         display: none;

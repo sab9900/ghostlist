@@ -1,0 +1,4 @@
+<div #backdrop class="ov-backdrop" [class.ov-backdrop--dialog]="variant() === 'dialog'"
+    [class.ov-backdrop--sheet]="variant() === 'sheet'" role="presentation" (click)="onBackdropClick($event)">
+    <ng-content></ng-content>
+</div>

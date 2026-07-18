@@ -1,23 +1,56 @@
 <div class="nemesis-shell" [class.nemesis-shell--busy]="nemesisStore.loading()">
 
-    <nav class="seg" role="tablist">
-        <a class="seg__btn"
-            [routerLink]="['expenses']"
-            routerLinkActive="seg__btn--active"
-            role="tab">
-            {{ 'NEMESIS.SEGMENT_EXPENSES' | translate }}
-        </a>
-        <a class="seg__btn"
-            [routerLink]="['settlements']"
-            routerLinkActive="seg__btn--active"
-            role="tab">
-            {{ 'NEMESIS.SEGMENT_SETTLE' | translate }}
-        </a>
-    </nav>
+    @if (layout.isDesktop()) {
 
-    <div class="nemesis-outlet">
-        <router-outlet appTabTransition [appTabOrder]="['expenses', 'settlements']"></router-outlet>
-    </div>
+        <nav class="seg" role="tablist">
+            <button class="seg__btn"
+                type="button"
+                [class.seg__btn--active]="activePanel() === 'expenses'"
+                (click)="selectPanel('expenses')"
+                role="tab"
+                [attr.aria-selected]="activePanel() === 'expenses'">
+                {{ 'NEMESIS.SEGMENT_EXPENSES' | translate }}
+            </button>
+            <button class="seg__btn"
+                type="button"
+                [class.seg__btn--active]="activePanel() === 'settlements'"
+                (click)="selectPanel('settlements')"
+                role="tab"
+                [attr.aria-selected]="activePanel() === 'settlements'">
+                {{ 'NEMESIS.SEGMENT_SETTLE' | translate }}
+            </button>
+        </nav>
+
+        <div class="nemesis-outlet">
+            @if (activePanel() === 'expenses') {
+                <app-nemesis-expenses-panel />
+            } @else {
+                <app-nemesis-settlements-panel />
+            }
+        </div>
+
+    } @else {
+
+        <nav class="seg" role="tablist">
+            <a class="seg__btn"
+                [routerLink]="['expenses']"
+                routerLinkActive="seg__btn--active"
+                role="tab">
+                {{ 'NEMESIS.SEGMENT_EXPENSES' | translate }}
+            </a>
+            <a class="seg__btn"
+                [routerLink]="['settlements']"
+                routerLinkActive="seg__btn--active"
+                role="tab">
+                {{ 'NEMESIS.SEGMENT_SETTLE' | translate }}
+            </a>
+        </nav>
+
+        <div class="nemesis-outlet">
+            <router-outlet appTabTransition [appTabOrder]="['expenses', 'settlements']"></router-outlet>
+        </div>
+
+    }
 
     @if (nemesisStore.error()) {
         <p class="error" role="alert">{{ nemesisStore.error() }}</p>

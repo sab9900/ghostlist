@@ -40,6 +40,8 @@ public interface IGhostListNotifier
 
     Task NotifyNemesisExpenseCreated(Guid listId, NemesisExpenseCreatedNotification notification);
     Task NotifyNemesisExpenseVerified(Guid listId, NemesisExpenseVerifiedNotification notification);
+    Task NotifyNemesisExpenseUpdated(Guid listId, NemesisExpenseUpdatedNotification notification);
+    Task NotifyNemesisExpenseDeleted(Guid listId, NemesisExpenseDeletedNotification notification);
     Task NotifyNemesisSettlementCreated(Guid listId, NemesisSettlementCreatedNotification notification);
     Task NotifyNemesisSettlementConfirmed(Guid listId, NemesisSettlementConfirmedNotification notification);
     Task NotifyNemesisSettlementDeclined(Guid listId, NemesisSettlementDeclinedNotification notification);
@@ -49,6 +51,8 @@ public interface IGhostListNotifier
     Task NotifyNemesisSettlementExpired(Guid listId, NemesisSettlementExpiredNotification notification);
     Task NotifyNemesisSettlementForgiven(Guid listId, NemesisSettlementForgivenNotification notification);
     Task NotifyNemesisSettlementExpiring(Guid listId, NemesisSettlementExpiringNotification notification);
+
+    Task NotifyNemesisLedgerPurged(Guid listId, NemesisLedgerPurgedNotification notification);
 
     Task NotifyReactionChanged(Guid listId, ReactionChangedNotification notification);
 }

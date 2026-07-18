@@ -24,6 +24,7 @@ import { VaultKeyService } from '../../../core/services/vault-key.service';
 import { formatReminderDate } from '../../../core/utils/reminder-date.util';
 import { AvatarComponent } from '../../../shared/avatar/avatar.component';
 import { QrScannerComponent } from '../../../shared/qr-scanner/qr-scanner.component';
+import { OverlayComponent } from '../../../shared/overlay/overlay.component';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { AppStore } from '../../../store/app.store';
@@ -40,7 +41,7 @@ interface MemberGroup {
 
 @Component({
     selector: 'app-settings-tab',
-    imports: [DatePipe, FormsModule, QrScannerComponent, TranslatePipe, LucideAlarmClock, BiometricConfirmDialogComponent, AvatarComponent],
+    imports: [DatePipe, FormsModule, QrScannerComponent, TranslatePipe, LucideAlarmClock, BiometricConfirmDialogComponent, AvatarComponent, OverlayComponent],
     templateUrl: './settings-tab.component.html',
     styleUrl: './settings-tab.component.scss',
 })

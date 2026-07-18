@@ -156,6 +156,67 @@ public class NemesisExpenseTests
     }
 
     [Fact]
+    public void UpdateSplit_UpdatesPayloadIvAndSplitCount()
+    {
+        var expense = NemesisExpense.Create(Guid.NewGuid(), "enc", "iv", splitCount: 3);
+
+        expense.UpdateSplit("enc2", "iv2", splitCount: 2);
+
+        expense.EncryptedPayload.Should().Be("enc2");
+        expense.PayloadInitializationVector.Should().Be("iv2");
+        expense.SplitCount.Should().Be(2);
+    }
+
+    [Fact]
+    public void UpdateSplit_WhenRemainingVerificationsReachNewSplitCount_PromotesToVerified()
+    {
+        var expense = NemesisExpense.Create(Guid.NewGuid(), "enc", "iv", splitCount: 3);
+        expense.AddVerification("user1");
+        expense.AddVerification("user2");
+
+        expense.UpdateSplit("enc2", "iv2", splitCount: 2);
+
+        expense.Status.Should().Be(VerificationStatus.Verified);
+        expense.IsArchived.Should().BeTrue();
+    }
+
+    [Fact]
+    public void UpdateSplit_RemovesLeaverVerificationAndRecomputesStatus()
+    {
+        var expense = NemesisExpense.Create(Guid.NewGuid(), "enc", "iv", splitCount: 3);
+        expense.AddVerification("user1");
+        expense.AddVerification("leaver");
+
+        expense.UpdateSplit("enc2", "iv2", splitCount: 2, removedUserIds: ["leaver"]);
+
+        expense.Verifications.Should().ContainSingle(v => v.VerifiedByUserId == "user1");
+        expense.Verifications.Should().NotContain(v => v.VerifiedByUserId == "leaver");
+        expense.Status.Should().Be(VerificationStatus.Pending);
+    }
+
+    [Fact]
+    public void UpdateSplit_WhenSplitCountDropsToZero_PromotesToVerified()
+    {
+        var expense = NemesisExpense.Create(Guid.NewGuid(), "enc", "iv", splitCount: 1);
+
+        expense.UpdateSplit("enc2", "iv2", splitCount: 0);
+
+        expense.Status.Should().Be(VerificationStatus.Verified);
+        expense.IsArchived.Should().BeTrue();
+    }
+
+    [Fact]
+    public void UpdateSplit_OnVerifiedExpense_ThrowsInvalidOperationException()
+    {
+        var expense = NemesisExpense.Create(Guid.NewGuid(), "enc", "iv", splitCount: 1);
+        expense.AddVerification("user1");
+
+        var act = () => expense.UpdateSplit("enc2", "iv2", splitCount: 1);
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
     public void AttachReceipt_SetsReceiptFields()
     {
         var expense = NemesisExpense.Create(Guid.NewGuid(), "enc", "iv", splitCount: 1);
@@ -164,5 +225,36 @@ public class NemesisExpenseTests
 
         expense.EncryptedReceiptKey.Should().Be("enc_receipt_key");
         expense.ReceiptBlobKey.Should().Be("receipts/abc123");
+    }
+
+    [Fact]
+    public void Create_DeletedAtIsNull()
+    {
+        var expense = NemesisExpense.Create(Guid.NewGuid(), "enc", "iv", splitCount: 1);
+
+        expense.DeletedAt.Should().BeNull();
+    }
+
+    [Fact]
+    public void SoftDelete_SetsDeletedAt()
+    {
+        var before = DateTime.UtcNow;
+        var expense = NemesisExpense.Create(Guid.NewGuid(), "enc", "iv", splitCount: 1);
+
+        expense.SoftDelete();
+
+        expense.DeletedAt.Should().NotBeNull().And.BeOnOrAfter(before);
+    }
+
+    [Fact]
+    public void SoftDelete_IsIdempotent()
+    {
+        var expense = NemesisExpense.Create(Guid.NewGuid(), "enc", "iv", splitCount: 1);
+        expense.SoftDelete();
+        var first = expense.DeletedAt;
+
+        expense.SoftDelete();
+
+        expense.DeletedAt.Should().Be(first);
     }
 }

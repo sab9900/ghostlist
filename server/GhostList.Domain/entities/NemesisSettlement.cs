@@ -22,6 +22,7 @@ public class NemesisSettlement
     public string? ReceiverUserId { get; private set; }
 
     public DateTime CreatedAt { get; private set; }
+    public DateTime? DeletedAt { get; private set; }
 
     private NemesisSettlement() { }
 
@@ -45,6 +46,32 @@ public class NemesisSettlement
             PaidAt = DateTime.UtcNow,
             CreatedAt = DateTime.UtcNow,
             PayerDeviceId = payerDeviceId,
+            PayerUserId = payerUserId,
+            ReceiverUserId = receiverUserId,
+        };
+    }
+
+    public static NemesisSettlement CreateConfirmedByReceiver(
+        Guid ghostListId,
+        string encryptedPayload,
+        string payloadInitializationVector,
+        string? payerUserId = null,
+        string? receiverUserId = null)
+    {
+        var now = DateTime.UtcNow;
+        return new NemesisSettlement
+        {
+            Id = Guid.NewGuid(),
+            GhostListId = ghostListId,
+            EncryptedPayload = encryptedPayload,
+            PayloadInitializationVector = payloadInitializationVector,
+            Status = SettlementStatus.Confirmed,
+            IsPaidByPayer = false,
+            IsConfirmedByReceiver = true,
+            PaidAt = null,
+            ConfirmedAt = now,
+            ResolvedAt = now,
+            CreatedAt = now,
             PayerUserId = payerUserId,
             ReceiverUserId = receiverUserId,
         };
@@ -95,5 +122,10 @@ public class NemesisSettlement
 
         Status = SettlementStatus.Forgiven;
         ResolvedAt = DateTime.UtcNow;
+    }
+
+    public void SoftDelete()
+    {
+        DeletedAt ??= DateTime.UtcNow;
     }
 }

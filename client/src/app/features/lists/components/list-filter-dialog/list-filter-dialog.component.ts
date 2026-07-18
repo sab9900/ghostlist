@@ -3,10 +3,11 @@ import { FormsModule } from '@angular/forms';
 import { LucideX } from '@lucide/angular';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ListSortOrder } from '../../../../core/services/user-preferences.service';
+import { OverlayComponent } from '../../../../shared/overlay/overlay.component';
 
 @Component({
     selector: 'app-list-filter-dialog',
-    imports: [FormsModule, TranslatePipe, LucideX],
+    imports: [OverlayComponent, FormsModule, TranslatePipe, LucideX],
     templateUrl: './list-filter-dialog.component.html',
     styleUrl: './list-filter-dialog.component.scss',
 })

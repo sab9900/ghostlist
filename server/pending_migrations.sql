@@ -66,3 +66,36 @@ CREATE INDEX IF NOT EXISTS "IX_NemesisSettlements_GhostListId"
 INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
 VALUES ('20260701000000_AddNemesis', '9.0.0')
 ON CONFLICT DO NOTHING;
+
+-- ── 20260701100001_AddNotifyOnNemesis ──────────────────────────────────────
+ALTER TABLE "DeviceSubscriptions"
+    ADD COLUMN IF NOT EXISTS "NotifyOnNemesis" boolean NOT NULL DEFAULT TRUE;
+
+INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+VALUES ('20260701100000_AddNotifyOnNemesis', '9.0.0')
+ON CONFLICT DO NOTHING;
+INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+VALUES ('20260701100001_AddNotifyOnNemesis', '9.0.0')
+ON CONFLICT DO NOTHING;
+
+-- ── 20260701200000_AddUserIdToDeviceSubscriptions ──────────────────────────
+ALTER TABLE "DeviceSubscriptions"
+    ADD COLUMN IF NOT EXISTS "UserId" character varying(64);
+
+CREATE INDEX IF NOT EXISTS "IX_DeviceSubscriptions_UserId"
+    ON "DeviceSubscriptions" ("UserId");
+
+INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+VALUES ('20260701200000_AddUserIdToDeviceSubscriptions', '9.0.0')
+ON CONFLICT DO NOTHING;
+
+-- ── 20260718120000_AddNemesisSoftDelete ────────────────────────────────────
+ALTER TABLE "NemesisExpenses"
+    ADD COLUMN IF NOT EXISTS "DeletedAt" timestamp with time zone;
+
+ALTER TABLE "NemesisSettlements"
+    ADD COLUMN IF NOT EXISTS "DeletedAt" timestamp with time zone;
+
+INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+VALUES ('20260718120000_AddNemesisSoftDelete', '9.0.0')
+ON CONFLICT DO NOTHING;

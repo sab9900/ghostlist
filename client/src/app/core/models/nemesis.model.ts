@@ -5,12 +5,12 @@ export enum VerificationStatus {
 }
 
 export enum SettlementStatus {
-    Pending = 0,
-    Confirmed = 1,
-    Declined = 2,
-    Expired = 3,
-    Voided = 4,
-    Forgiven = 5,
+    Pending = 'Pending',
+    Confirmed = 'Confirmed',
+    Declined = 'Declined',
+    Expired = 'Expired',
+    Voided = 'Voided',
+    Forgiven = 'Forgiven',
 }
 
 export interface NemesisVerificationDto {
@@ -129,7 +129,21 @@ export interface SubmitSettlementRequest {
     receiverUserId?: string;
 }
 
+export interface ConfirmReceivedSettlementRequest {
+    ghostListId: string;
+    encryptedPayload: string;
+    payloadInitializationVector: string;
+    payerUserId?: string;
+}
+
 export interface UpdateNemesisSettingsRequest {
     expiryDays: number;
     hideAfterDays: number;
+}
+
+export interface UpdateExpenseSplitRequest {
+    encryptedPayload: string;
+    payloadInitializationVector: string;
+    splitCount: number;
+    removedUserIds?: string[];
 }

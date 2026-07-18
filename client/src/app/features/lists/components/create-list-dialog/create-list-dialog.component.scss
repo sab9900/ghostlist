@@ -1,19 +1,3 @@
-.backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-4);
-    z-index: 100;
-
-    @media (min-width: 900px) {
-        position: absolute;
-    }
-}
-
 .dialog {
     background: var(--color-surface);
     border: 1px solid var(--color-border);

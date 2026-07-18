@@ -1,5 +1,5 @@
 @if (show()) {
-<div class="backdrop" (click)="cancel.emit()" role="presentation">
+<app-overlay (dismissed)="cancel.emit()">
     <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
         aria-labelledby="mark-all-read-title" aria-describedby="mark-all-read-hint">
         <h2 class="title" id="mark-all-read-title">{{ 'LISTS.MARK_ALL_READ_TITLE' | translate }}</h2>
@@ -11,5 +11,5 @@
             </button>
         </div>
     </div>
-</div>
+</app-overlay>
 }

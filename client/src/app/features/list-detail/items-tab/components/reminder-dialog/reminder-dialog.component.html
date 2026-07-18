@@ -1,7 +1,7 @@
 @if (item(); as it) {
-<div class="backdrop" (click)="close.emit()" role="dialog" aria-modal="true"
-    [attr.aria-label]="'ITEMS.REMINDER_DIALOG_TITLE' | translate">
-    <div class="dialog" (click)="$event.stopPropagation()">
+<app-overlay (dismissed)="close.emit()">
+    <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+        [attr.aria-label]="'ITEMS.REMINDER_DIALOG_TITLE' | translate">
         <h3 class="title">{{ 'ITEMS.REMINDER_DIALOG_TITLE' | translate }}</h3>
         <p class="text">{{ it.text }}</p>
 
@@ -26,5 +26,5 @@
             }
         </div>
     </div>
-</div>
+</app-overlay>
 }

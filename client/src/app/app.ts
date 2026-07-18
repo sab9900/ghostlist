@@ -7,6 +7,7 @@ import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { LucideBell, LucideLock } from '@lucide/angular';
 import { TranslatePipe } from '@ngx-translate/core';
+import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter, map, startWith } from 'rxjs';
 import { PageTransitionDirective } from './core/directives/page-transition.directive';
 import { BadgeService } from './core/services/badge.service';
@@ -57,6 +58,7 @@ export class App {
     protected readonly layout = inject(LayoutService);
     private readonly keyboardInset = inject(KeyboardInsetService);
     private readonly prefsCache = inject(PrefsCacheService);
+    private readonly swUpdate = inject(SwUpdate);
 
     private readonly _badge = inject(BadgeService);
     protected readonly webAuthn = inject(WebAuthnService);
@@ -142,6 +144,15 @@ export class App {
         this.scheduleInactivityTimer();
 
         this.infoCenter.checkForUpdates();
+
+        if (this.isWebPlatform && this.swUpdate.isEnabled) {
+            this.swUpdate.versionUpdates.pipe(
+                filter((evt): evt is VersionReadyEvent => evt.type === 'VERSION_READY')
+            ).subscribe(() => {
+                void this.swUpdate.activateUpdate().then(() => location.reload());
+            });
+            void this.swUpdate.checkForUpdate();
+        }
     }
 
     engageLock(): void {

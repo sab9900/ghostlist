@@ -231,4 +231,97 @@ public class NemesisSettlementTests
 
         settlement.ReceiverUserId.Should().Be("user42");
     }
+
+    [Fact]
+    public void CreateConfirmedByReceiver_SetsStatusToConfirmed()
+    {
+        var settlement = NemesisSettlement.CreateConfirmedByReceiver(Guid.NewGuid(), "enc", "iv");
+
+        settlement.Status.Should().Be(SettlementStatus.Confirmed);
+    }
+
+    [Fact]
+    public void CreateConfirmedByReceiver_SetsIsConfirmedByReceiverToTrue()
+    {
+        var settlement = NemesisSettlement.CreateConfirmedByReceiver(Guid.NewGuid(), "enc", "iv");
+
+        settlement.IsConfirmedByReceiver.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CreateConfirmedByReceiver_SetsIsPaidByPayerToFalse()
+    {
+        var settlement = NemesisSettlement.CreateConfirmedByReceiver(Guid.NewGuid(), "enc", "iv");
+
+        settlement.IsPaidByPayer.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CreateConfirmedByReceiver_SetsConfirmedAtAndResolvedAt()
+    {
+        var before = DateTime.UtcNow;
+        var settlement = NemesisSettlement.CreateConfirmedByReceiver(Guid.NewGuid(), "enc", "iv");
+
+        settlement.ConfirmedAt.Should().BeOnOrAfter(before);
+        settlement.ResolvedAt.Should().BeOnOrAfter(before);
+    }
+
+    [Fact]
+    public void CreateConfirmedByReceiver_LeavesPaidAtNull()
+    {
+        var settlement = NemesisSettlement.CreateConfirmedByReceiver(Guid.NewGuid(), "enc", "iv");
+
+        settlement.PaidAt.Should().BeNull();
+    }
+
+    [Fact]
+    public void CreateConfirmedByReceiver_StoresPayerAndReceiverUserIds()
+    {
+        var settlement = NemesisSettlement.CreateConfirmedByReceiver(
+            Guid.NewGuid(), "enc", "iv", payerUserId: "debtor7", receiverUserId: "creditor9");
+
+        settlement.PayerUserId.Should().Be("debtor7");
+        settlement.ReceiverUserId.Should().Be("creditor9");
+    }
+
+    [Fact]
+    public void CreateConfirmedByReceiver_CannotBeDeclinedAfterwards()
+    {
+        var settlement = NemesisSettlement.CreateConfirmedByReceiver(Guid.NewGuid(), "enc", "iv");
+
+        var act = () => settlement.Decline();
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void SoftDelete_SetsDeletedAt()
+    {
+        var before = DateTime.UtcNow;
+        var settlement = NemesisSettlement.Create(Guid.NewGuid(), "enc", "iv");
+
+        settlement.SoftDelete();
+
+        settlement.DeletedAt.Should().NotBeNull().And.BeOnOrAfter(before);
+    }
+
+    [Fact]
+    public void SoftDelete_IsIdempotent()
+    {
+        var settlement = NemesisSettlement.Create(Guid.NewGuid(), "enc", "iv");
+        settlement.SoftDelete();
+        var first = settlement.DeletedAt;
+
+        settlement.SoftDelete();
+
+        settlement.DeletedAt.Should().Be(first);
+    }
+
+    [Fact]
+    public void Create_DeletedAtIsNull()
+    {
+        var settlement = NemesisSettlement.Create(Guid.NewGuid(), "enc", "iv");
+
+        settlement.DeletedAt.Should().BeNull();
+    }
 }

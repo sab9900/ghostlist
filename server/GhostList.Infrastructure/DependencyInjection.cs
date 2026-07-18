@@ -70,6 +70,21 @@ public static class DependencyInjection
 
             ALTER TABLE "GhostListItems"
             ADD COLUMN IF NOT EXISTS "Priority" integer NOT NULL DEFAULT 0;
+
+            ALTER TABLE "DeviceSubscriptions"
+            ADD COLUMN IF NOT EXISTS "NotifyOnNemesis" boolean NOT NULL DEFAULT TRUE;
+
+            ALTER TABLE "DeviceSubscriptions"
+            ADD COLUMN IF NOT EXISTS "UserId" character varying(64);
+
+            CREATE INDEX IF NOT EXISTS "IX_DeviceSubscriptions_UserId"
+            ON "DeviceSubscriptions" ("UserId");
+
+            ALTER TABLE "NemesisExpenses"
+            ADD COLUMN IF NOT EXISTS "DeletedAt" timestamp with time zone;
+
+            ALTER TABLE "NemesisSettlements"
+            ADD COLUMN IF NOT EXISTS "DeletedAt" timestamp with time zone;
             """);
     }
 }

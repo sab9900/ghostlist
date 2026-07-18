@@ -35,6 +35,11 @@ export class ExpenseListComponent {
         return expense.verifications.some(v => v.verifiedByUserId === this.currentUserId);
     }
 
+    sharePerPerson(expense: DecryptedExpense): number {
+        if (!expense.splitBetween.length) return 0;
+        return Math.round((expense.amount / expense.splitBetween.length) * 100) / 100;
+    }
+
     canVerify(expense: DecryptedExpense): boolean {
         return expense.status === VerificationStatus.Pending &&
             !this.hasUserVerified(expense) &&

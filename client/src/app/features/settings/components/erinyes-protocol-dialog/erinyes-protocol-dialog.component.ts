@@ -6,12 +6,13 @@ import { ErinyesProtocolService, ErinyesStep } from '../../../../core/services/e
 import { MasterPasswordService } from '../../../../core/services/master-password.service';
 import { WebAuthnService } from '../../../../core/services/webauthn.service';
 import { GhostMistComponent } from '../../../../shared/ghost-mist/ghost-mist.component';
+import { OverlayComponent } from '../../../../shared/overlay/overlay.component';
 
 type DialogStep = 'intro' | 'password' | 'biometric' | 'confirm' | 'running' | 'done';
 
 @Component({
     selector: 'app-erinyes-protocol-dialog',
-    imports: [FormsModule, TranslatePipe, LucideFlame, LucideDoorOpen, LucideShieldOff, LucideTrash2, LucideCircleCheckBig, LucideLoaderCircle, GhostMistComponent],
+    imports: [OverlayComponent, FormsModule, TranslatePipe, LucideFlame, LucideDoorOpen, LucideShieldOff, LucideTrash2, LucideCircleCheckBig, LucideLoaderCircle, GhostMistComponent],
     templateUrl: './erinyes-protocol-dialog.component.html',
     styleUrl: './erinyes-protocol-dialog.component.scss',
 })

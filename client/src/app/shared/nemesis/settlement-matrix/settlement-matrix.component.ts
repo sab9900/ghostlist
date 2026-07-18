@@ -18,6 +18,7 @@ export class SettlementMatrixComponent {
     @Input() members: ListMember[] = [];
     @Input() highlightedToUserId: string | null = null;
     @Output() settleRequested = new EventEmitter<DebtEntry>();
+    @Output() confirmReceivedRequested = new EventEmitter<DebtEntry>();
     @Output() confirmSettlementRequested = new EventEmitter<string>();
     @Output() declineSettlementRequested = new EventEmitter<string>();
     @Output() forgiveSettlementRequested = new EventEmitter<string>();

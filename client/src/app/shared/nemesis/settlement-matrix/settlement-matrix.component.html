@@ -56,11 +56,19 @@
         <section>
             <h3 class="heading">{{ 'NEMESIS.RECEIVE_HEADING' | translate }}</h3>
             @for (debt of othersOweMe; track debt.fromUserId + debt.toUserId) {
-                <div class="debt">
+                @let rsid = pendingSettlementId(debt);
+                <div class="debt" [class.debt--awaiting]="!!rsid">
                     <div class="debt__info">
                         <span class="debt__label">← {{ memberName(debt.fromUserId) }}</span>
                         <span class="debt__amount">{{ debt.amount | number:'1.2-2' }} {{ debt.currency }}</span>
                     </div>
+                    @if (rsid) {
+                        <span class="debt__awaiting">{{ 'NEMESIS.AWAITING_YOUR_CONFIRMATION' | translate }}</span>
+                    } @else {
+                        <button class="debt__confirm-received" (click)="confirmReceivedRequested.emit(debt)">
+                            {{ 'NEMESIS.CONFIRM_RECEIVED_BTN' | translate }}
+                        </button>
+                    }
                 </div>
             }
         </section>

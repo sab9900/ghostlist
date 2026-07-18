@@ -6,10 +6,11 @@ import { ExportQrPayload, ListFullError, ReceiveQrPayload } from '../../../../co
 import { QrCodeComponent } from '../../../../shared/qr-code/qr-code.component';
 import { QrScannerComponent } from '../../../../shared/qr-scanner/qr-scanner.component';
 import { AppStore } from '../../../../store/app.store';
+import { OverlayComponent } from '../../../../shared/overlay/overlay.component';
 
 @Component({
     selector: 'app-import-dialog',
-    imports: [FormsModule, TranslatePipe, QrCodeComponent, QrScannerComponent],
+    imports: [OverlayComponent, FormsModule, TranslatePipe, QrCodeComponent, QrScannerComponent],
     templateUrl: './import-dialog.component.html',
     styleUrl: './import-dialog.component.scss',
 })

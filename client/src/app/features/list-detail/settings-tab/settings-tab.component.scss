@@ -2,7 +2,7 @@
     display: block;
     overflow-y: auto;
     flex: 1;
-    overscroll-behavior-y: none;
+    
 }
 
 .settings-section {
@@ -353,20 +353,6 @@
             color: var(--color-on-primary);
         }
     }
-}
-
-.dialog-backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-4);
-    padding-bottom: calc(var(--keyboard-height, 0px) + var(--space-4));
-    transition: padding-bottom 200ms var(--ease-out);
-    z-index: 100;
 }
 
 .dialog {

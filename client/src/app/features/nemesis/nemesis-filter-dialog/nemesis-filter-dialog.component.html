@@ -1,5 +1,5 @@
-@if (show() || closing()) {
-<div class="backdrop" #backdrop (click)="requestClose()" role="presentation">
+@if (show()) {
+<app-overlay (dismissed)="closed.emit()">
     <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
         aria-labelledby="nemesis-filter-dialog-title">
         <h2 class="title" id="nemesis-filter-dialog-title">
@@ -48,8 +48,8 @@
         </div>
 
         <div class="actions">
-            <button class="btn btn--primary" (click)="requestClose()">{{ 'COMMON.CLOSE' | translate }}</button>
+            <button class="btn btn--primary" (click)="closed.emit()">{{ 'COMMON.CLOSE' | translate }}</button>
         </div>
     </div>
-</div>
+</app-overlay>
 }

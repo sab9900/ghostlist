@@ -1,5 +1,5 @@
 @if (show()) {
-<div class="backdrop" (click)="closeDialog()" role="presentation">
+<app-overlay (dismissed)="closeDialog()">
     <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
         aria-labelledby="export-dialog-title">
         <h2 class="title" id="export-dialog-title">{{ 'LISTS.EXPORT_TITLE' | translate }}</h2>
@@ -41,5 +41,5 @@
             </button>
         </div>
     </div>
-</div>
+</app-overlay>
 }

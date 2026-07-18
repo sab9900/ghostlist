@@ -1,5 +1,5 @@
 @if (code()) {
-<div class="backdrop" role="presentation">
+<app-overlay [dismissOnBackdrop]="false">
     <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="recovery-code-title"
         aria-describedby="recovery-code-hint">
         <h2 class="title" id="recovery-code-title">{{ 'SETTINGS.SECURITY.RECOVERY.TITLE' | translate }}</h2>
@@ -20,5 +20,5 @@
             </button>
         </div>
     </div>
-</div>
+</app-overlay>
 }

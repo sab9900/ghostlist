@@ -2,10 +2,11 @@ import { Component, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Clipboard } from '@capacitor/clipboard';
 import { TranslatePipe } from '@ngx-translate/core';
+import { OverlayComponent } from '../../../../shared/overlay/overlay.component';
 
 @Component({
     selector: 'app-recovery-code-dialog',
-    imports: [FormsModule, TranslatePipe],
+    imports: [OverlayComponent, FormsModule, TranslatePipe],
     templateUrl: './recovery-code-dialog.component.html',
     styleUrl: './recovery-code-dialog.component.scss',
 })

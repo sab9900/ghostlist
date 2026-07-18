@@ -1,10 +1,11 @@
 import { Component, effect, input, output, signal, viewChild, ElementRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
+import { OverlayComponent } from '../../../../shared/overlay/overlay.component';
 
 @Component({
     selector: 'app-create-list-dialog',
-    imports: [FormsModule, TranslatePipe],
+    imports: [OverlayComponent, FormsModule, TranslatePipe],
     templateUrl: './create-list-dialog.component.html',
     styleUrl: './create-list-dialog.component.scss',
 })

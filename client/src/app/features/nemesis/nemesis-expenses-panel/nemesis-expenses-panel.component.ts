@@ -1,4 +1,4 @@
-import { Component, computed, effect, ElementRef, inject, Injector, signal, untracked, ViewChild } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, signal, untracked, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -16,6 +16,7 @@ import { DecryptedExpense, VerificationStatus } from '../../../core/models/nemes
 import { NemesisFilterDialogComponent } from '../nemesis-filter-dialog/nemesis-filter-dialog.component';
 import { NemesisExpenseSortOrder } from '../nemesis-dashboard/nemesis-dashboard.types';
 import { animateOverlayClose } from '../../../core/utils/sheet-transition.util';
+import { OverlayComponent } from '../../../shared/overlay/overlay.component';
 
 @Component({
     selector: 'app-nemesis-expenses-panel',
@@ -33,6 +34,7 @@ import { animateOverlayClose } from '../../../core/utils/sheet-transition.util';
         ReceiptScannerComponent,
         ExpenseDetailComponent,
         NemesisFilterDialogComponent,
+        OverlayComponent,
     ],
     templateUrl: './nemesis-expenses-panel.component.html',
     styleUrls: ['./nemesis-expenses-panel.component.scss'],
@@ -42,20 +44,21 @@ export class NemesisExpensesPanelComponent {
     private readonly userIdService = inject(UserIdService);
     private readonly imageViewer = inject(ImageViewerService);
     private readonly translate = inject(TranslateService);
-    private readonly injector = inject(Injector);
     private readonly ocr = inject(OcrService);
     private readonly pdfRender = inject(PdfRenderService);
     private readonly shareHandler = inject(ShareHandlerService);
 
     @ViewChild('directFileInput') private directFileInputRef!: ElementRef<HTMLInputElement>;
-    @ViewChild('addSheetOverlay') private addSheetOverlayRef?: ElementRef<HTMLElement>;
-    @ViewChild('detailOverlay') private detailOverlayRef?: ElementRef<HTMLElement>;
+    @ViewChild('addSheetOverlay') private addSheetOverlayRef?: OverlayComponent;
+    @ViewChild('detailOverlay') private detailOverlayRef?: OverlayComponent;
 
     protected showScanner = false;
     protected readonly showAddSheet = signal(false);
     protected readonly selectedExpense = signal<DecryptedExpense | null>(null);
 
-    protected pendingReceipt: { blob: Blob; detectedAmount: number | null } | null = null;
+    protected pendingReceipt: { blob: Blob } | null = null;
+    protected scanStatus: 'analyzing' | 'ready' | 'empty' | 'failed' | null = null;
+    protected scanSuggestion: { amount: number | null; merchant: string | null } | null = null;
 
     protected newExpense = {
         description: '',
@@ -171,7 +174,7 @@ export class NemesisExpensesPanelComponent {
 
     protected async closeAddSheet(): Promise<void> {
         if (!this.showAddSheet()) return;
-        await animateOverlayClose(this.addSheetOverlayRef?.nativeElement);
+        await animateOverlayClose(this.addSheetOverlayRef?.element);
         this.showAddSheet.set(false);
         this.resetForm();
     }
@@ -183,7 +186,7 @@ export class NemesisExpensesPanelComponent {
 
     protected async onDetailClosed(): Promise<void> {
         if (!this.selectedExpense()) return;
-        await animateOverlayClose(this.detailOverlayRef?.nativeElement);
+        await animateOverlayClose(this.detailOverlayRef?.element);
         this.selectedExpense.set(null);
     }
 
@@ -201,17 +204,19 @@ export class NemesisExpensesPanelComponent {
         await this.onDetailClosed();
     }
 
+    protected async onDeleteRequested(expenseId: string): Promise<void> {
+        await this.store.deleteExpense(expenseId);
+        await this.onDetailClosed();
+    }
+
     protected openScanner(): void {
         this.showScanner = true;
     }
 
     protected onScanConfirmed(result: ScanConfirmResult): void {
         this.showScanner = false;
-        this.pendingReceipt = { blob: result.blob, detectedAmount: result.detectedAmount };
-        if (result.detectedAmount !== null) this.newExpense.amount = result.detectedAmount;
-        if (result.detectedDescription && !this.newExpense.description) {
-            this.newExpense.description = result.detectedDescription;
-        }
+        this.pendingReceipt = { blob: result.blob };
+        this.setSuggestion(result.detectedAmount, result.detectedDescription);
     }
 
     protected onScanCancelled(): void {
@@ -231,32 +236,60 @@ export class NemesisExpensesPanelComponent {
     }
 
     // Shared by the manual upload button and by files arriving through the OS/PWA share sheet.
-    // Renders PDFs to an image first (Tesseract can't read PDF directly), then runs OCR and
-    // prefills the currently-open add-expense form. Failures (bad PDF, OCR timeout) are caught
-    // so the user still ends up with a working form instead of a silently-broken sheet.
+    // Renders PDFs to an image first (Tesseract can't read PDF directly), then runs OCR. The receipt
+    // always attaches; OCR results are surfaced as an explicit suggestion (setSuggestion) rather than
+    // written silently into the form, so a mis-read never overwrites what the user is typing.
     private async processReceiptFile(file: Blob): Promise<void> {
+        this.scanSuggestion = null;
+        this.scanStatus = 'analyzing';
+
         let imageBlob: Blob = file;
         if (file.type === 'application/pdf') {
             try {
                 imageBlob = await this.pdfRender.renderFirstPageToBlob(file);
             } catch {
+                this.pendingReceipt = null;
+                this.scanStatus = 'failed';
                 return;
             }
         }
 
-        let detectedAmount: number | null = null;
-        let detectedDescription: string | null = null;
+        this.pendingReceipt = { blob: imageBlob };
+
         try {
             const result = await this.ocr.scan(imageBlob);
-            detectedAmount = result.detectedAmount;
-            detectedDescription = this.ocr.extractDescription(result.text);
+            this.setSuggestion(result.detectedAmount, this.ocr.extractDescription(result.text));
         } catch {
-            // no OCR data — the user can still fill the form manually with the receipt attached
+            this.scanStatus = 'failed';
         }
+    }
 
-        this.pendingReceipt = { blob: imageBlob, detectedAmount };
-        if (detectedAmount !== null) this.newExpense.amount = detectedAmount;
-        if (detectedDescription && !this.newExpense.description) this.newExpense.description = detectedDescription;
+    private setSuggestion(amount: number | null, merchant: string | null): void {
+        if (amount === null && !merchant) {
+            this.scanSuggestion = null;
+            this.scanStatus = 'empty';
+            return;
+        }
+        this.scanSuggestion = { amount, merchant };
+        this.scanStatus = 'ready';
+    }
+
+    protected applySuggestion(): void {
+        const suggestion = this.scanSuggestion;
+        if (!suggestion) return;
+        if (suggestion.amount !== null) this.newExpense.amount = suggestion.amount;
+        if (suggestion.merchant && !this.newExpense.description) this.newExpense.description = suggestion.merchant;
+        this.dismissSuggestion();
+    }
+
+    protected dismissSuggestion(): void {
+        this.scanSuggestion = null;
+        this.scanStatus = null;
+    }
+
+    protected removeReceipt(): void {
+        this.pendingReceipt = null;
+        this.dismissSuggestion();
     }
 
     protected autoResizeDesc(event: Event): void {
@@ -296,5 +329,6 @@ export class NemesisExpensesPanelComponent {
             splitBetween: [],
         };
         this.pendingReceipt = null;
+        this.dismissSuggestion();
     }
 }

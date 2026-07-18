@@ -24,6 +24,25 @@ public record NemesisExpenseVerifiedNotification(
     VerificationStatus Status,
     string VerifiedByUserId);
 
+public record NemesisExpenseUpdatedNotification(
+    Guid Id,
+    Guid GhostListId,
+    string EncryptedPayload,
+    string PayloadInitializationVector,
+    VerificationStatus Status,
+    int SplitCount,
+    bool IsArchived,
+    DateTime CreatedAt,
+    string? CreatedByDeviceId,
+    string? CreatedByUserId,
+    string? EncryptedReceiptKey,
+    string? ReceiptBlobKey,
+    IReadOnlyList<NemesisExpenseVerificationRecord> Verifications);
+
+public record NemesisExpenseDeletedNotification(
+    Guid ExpenseId,
+    Guid GhostListId);
+
 public record NemesisSettlementCreatedNotification(
     Guid Id,
     Guid GhostListId,
@@ -64,3 +83,5 @@ public record NemesisSettlementExpiringNotification(
     Guid SettlementId,
     Guid GhostListId,
     int DaysLeft);
+
+public record NemesisLedgerPurgedNotification(Guid GhostListId);

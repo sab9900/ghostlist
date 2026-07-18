@@ -164,6 +164,27 @@ export interface NemesisExpenseArchivedEvent {
     ghostListId: string;
 }
 
+export interface NemesisExpenseUpdatedEvent {
+    id: string;
+    ghostListId: string;
+    encryptedPayload: string;
+    payloadInitializationVector: string;
+    status: string;
+    splitCount: number;
+    isArchived: boolean;
+    createdAt: string;
+    createdByDeviceId: string | null;
+    createdByUserId: string | null;
+    encryptedReceiptKey: string | null;
+    receiptBlobKey: string | null;
+    verifications: { verifiedByUserId: string; verifiedAt: string }[];
+}
+
+export interface NemesisExpenseDeletedEvent {
+    expenseId: string;
+    ghostListId: string;
+}
+
 export interface NemesisSettlementVoidedEvent {
     settlementId: string;
     ghostListId: string;
@@ -183,6 +204,10 @@ export interface NemesisSettlementExpiringEvent {
     settlementId: string;
     ghostListId: string;
     daysLeft: number;
+}
+
+export interface NemesisLedgerPurgedEvent {
+    ghostListId: string;
 }
 
 export interface ReactionChangedEvent {
